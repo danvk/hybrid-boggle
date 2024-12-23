@@ -33,8 +33,8 @@ PYBIND11_MODULE(example, m)
         .def("StartsWord", &Trie::StartsWord)
         .def("Descend", &Trie::Descend, py::return_value_policy::reference)
         .def("IsWord", &Trie::IsWord)
-        .def("Mark", static_cast<uintptr_t (Trie::*)()>(&Trie::Mark))
-        .def("SetMark", static_cast<void (Trie::*)(uintptr_t)>(&Trie::Mark))
+        .def("Mark", py::overload_cast<>(&Trie::Mark))
+        .def("SetMark", py::overload_cast<uintptr_t>(&Trie::Mark))
         // Possible that these should be ::reference_internal instead
         // See https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
         .def("AddWord", &Trie::AddWord, py::return_value_policy::reference)
