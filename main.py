@@ -3,3 +3,5 @@
 import example
 print(example.add(1, 2))
 print(example.add(i=1, j=2))
+
+print(example.fib(100000))
