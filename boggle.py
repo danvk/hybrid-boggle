@@ -44,9 +44,10 @@ class Boggler:
             if t.Mark() != self._runs:
                 t.SetMark(self._runs)
                 self._score += SCORES[length]
+                # print(Trie.ReverseLookup(self._trie, t))
 
-        x = i % 4
-        y = i // 4
+        x = i // 4
+        y = i % 4
         for dx in range(-1, 2):
             nx = x + dx
             if nx < 0 or nx > 3:
