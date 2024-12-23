@@ -1,6 +1,8 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
+#include "trie.h"
+
 int add(int i, int j)
 {
     return i + j;
@@ -25,4 +27,12 @@ PYBIND11_MODULE(example, m)
           py::arg("i"), py::arg("j"));
 
     m.def("fib", &fib, "Largest fibonacci number less than n.");
+
+    py::class_<Trie>(m, "Trie")
+        .def(py::init())
+        .def("AddWord", &Trie::AddWord)
+        .def("FindWord", &Trie::FindWord)
+        .def("Size", &Trie::Size)
+        .def("NumNodes", &Trie::NumNodes)
+        .def_static("CreateFromFile", &Trie::CreateFromFile);
 }
