@@ -21,3 +21,7 @@ print("hello:", t.FindWord("hello"))
 print("heloo:", t.FindWord("heloo"))
 t.SetMark(1)
 print("root mark:", t.Mark())
+
+child = t.FindWord("python")
+print(child)
+print("reverse:", example.Trie.ReverseLookup(t, child))

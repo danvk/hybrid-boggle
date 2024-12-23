@@ -41,5 +41,6 @@ PYBIND11_MODULE(example, m)
         .def("FindWord", &Trie::FindWord, py::return_value_policy::reference)
         .def("Size", &Trie::Size)
         .def("NumNodes", &Trie::NumNodes)
+        .def_static("ReverseLookup", py::overload_cast<const Trie*, const Trie*>(&Trie::ReverseLookup))
         .def_static("CreateFromFile", &Trie::CreateFromFile);
 }
