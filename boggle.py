@@ -8,6 +8,30 @@ from example import Trie
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
 LETTER_Q = ord('q') - ord('a')
 
+
+def idx(x: int, y: int):
+    return 4 * x + y
+
+def pos(idx: int):
+    return (idx // 4, idx % 4)
+
+
+NEIGHBORS = []
+for i in range(0, 16):
+    x, y = pos(i)
+    n = []
+    for dx in range(-1, 2):
+        nx = x + dx
+        if nx < 0 or nx > 3:
+            continue
+        for dy in range(-1, 2):
+            ny = y + dy
+            if ny < 0 or ny > 3:
+                continue
+            n.append(idx(nx, ny))
+    NEIGHBORS.append(n)
+
+
 class Boggler:
     def __init__(self, trie):
         self._trie = trie
@@ -32,8 +56,9 @@ class Boggler:
         t = self._trie
         for i in range(0, 16):
             c = self._cells[i]
-            if t.StartsWord(c):
-                self.do_dfs(i, 0, t.Descend(c))
+            d = t.Descend(c)
+            if d:
+                self.do_dfs(i, 0, d)
         return self._score
 
     def do_dfs(self, i: int, length: int, t):
@@ -46,21 +71,12 @@ class Boggler:
                 self._score += SCORES[length]
                 # print(Trie.ReverseLookup(self._trie, t))
 
-        x = i // 4
-        y = i % 4
-        for dx in range(-1, 2):
-            nx = x + dx
-            if nx < 0 or nx > 3:
-                continue
-            for dy in range(-1, 2):
-                ny = y + dy
-                if ny < 0 or ny > 3:
-                    continue
-                idx = 4 * nx + ny
-                if not self._used[idx]:
-                    cc = self._cells[idx]
-                    if t.StartsWord(cc):
-                        self.do_dfs(idx, length, t.Descend(cc))
+        for idx in NEIGHBORS[i]:
+            if not self._used[idx]:
+                cc = self._cells[idx]
+                d = t.Descend(cc)
+                if d:
+                    self.do_dfs(idx, length, d)
 
         self._used[i] = False
 
