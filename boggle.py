@@ -68,12 +68,11 @@ class Boggler:
 def main():
     t = Trie.CreateFromFile("boggle-words.txt")
     b = Boggler(t)
-    print(f"Loaded {t.Size()} words")
+    # print(f"Loaded {t.Size()} words")
     for line in fileinput.input():
         board = line.strip()
         b.set_board(board)
-        print(b)
-        print(b.score())
+        print(f"{board}: {b.score()}")
 
 
 if __name__ == '__main__':
