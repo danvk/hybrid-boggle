@@ -87,16 +87,15 @@ Trie* Trie::FindWord(const char* wd) {
   return Descend(c)->FindWord(wd + 1);
 }
 
-Trie* Trie::CreateFromFile(const char* filename) {
-  Trie* t = new Trie;
+std::unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   char line[80];
   FILE* f = fopen(filename, "r");
   if (!f) {
     fprintf(stderr, "Couldn't open %s\n", filename);
-    delete t;
     return NULL;
   }
 
+  std::unique_ptr<Trie> t(new Trie);
   while (!feof(f) && fscanf(f, "%s", line)) {
     t->AddWord(line);
   }

@@ -29,9 +29,11 @@ PYBIND11_MODULE(example, m)
     m.def("fib", &fib, "Largest fibonacci number less than n.");
 
     py::class_<Trie>(m, "Trie")
-        .def(py::init())
-        .def("AddWord", &Trie::AddWord)
-        .def("FindWord", &Trie::FindWord)
+        // .def(py::init())
+        // Possible that these should be ::reference_internal instead
+        // See https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
+        .def("AddWord", &Trie::AddWord, py::return_value_policy::reference)
+        .def("FindWord", &Trie::FindWord, py::return_value_policy::reference)
         .def("Size", &Trie::Size)
         .def("NumNodes", &Trie::NumNodes)
         .def_static("CreateFromFile", &Trie::CreateFromFile);

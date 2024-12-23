@@ -26,7 +26,7 @@ class Trie {
   // Trie construction
   // Returns a pointer to the new Trie node at the end of the word.
   Trie* AddWord(const char* wd);
-  static Trie* CreateFromFile(const char* filename);
+  static std::unique_ptr<Trie> CreateFromFile(const char* filename);
 
   // Some slower methods that operate on the entire Trie (not just a node).
   size_t Size();
