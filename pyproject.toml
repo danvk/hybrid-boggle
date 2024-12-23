@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "pybind11-toy"
+version = "0.1.0"
+description = ""
+authors = ["Dan Vanderkam <danvdk@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.12.8"
+pybind11 = "^2.13.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
