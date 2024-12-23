@@ -1,0 +1,6 @@
+{
+    "C_Cpp.default.includePath": [
+        "/Users/danvk/.pyenv/versions/3.12.8/include/python3.12",
+        "/Users/danvk/Library/Caches/pypoetry/virtualenvs/pybind11-toy-gDCFGCgE-py3.12/lib/python3.12/site-packages/pybind11/include"
+    ]
+}
