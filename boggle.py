@@ -148,8 +148,8 @@ def main():
         board = line.strip()
         # b.set_board(board)
         # print(f"{board}: {b.score()}")
-        score = b.Score(board)
-        print(f"{board}: {score}")
+        _score = b.Score(board)
+        # print(f"{board}: {score}")
         n += 1
     end_s = time.time()
     elapsed_s = end_s - start_s
