@@ -4,11 +4,13 @@
 import fileinput
 import sys
 import time
+from typing import Iterable
 from example import Trie
 
 
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
 LETTER_Q = ord('q') - ord('a')
+LETTER_A = ord('a')
 
 
 def idx(x: int, y: int):
@@ -82,8 +84,63 @@ class Boggler:
         self._used[i] = False
 
 
+class PyTrie:
+    def __init__(self):
+        self.is_word = False
+        self.mark = 0
+        self.children = [None] * 26
+
+    def StartsWord(self, i):
+        return self.children[i] is not None
+
+    def Descend(self, i):
+        return self.children[i]
+
+    def IsWord(self):
+        return self.is_word
+
+    def Mark(self):
+        return self.mark
+
+    def SetMark(self, mark):
+        self.mark = mark
+
+    # ---
+
+    def SetIsWord(self):
+        self.is_word = True
+
+    def AddWord(self, word):
+        if word == '':
+            self.SetIsWord()
+            return self
+        c = ord(word[0]) - LETTER_A
+        try:
+            if not self.StartsWord(c):
+                self.children[c] = PyTrie()
+        except IndexError:
+            print(c, word)
+            raise
+        return self.Descend(c).AddWord(word[1:])
+
+    def Size(self):
+        return (1 if self.IsWord() else 0) + sum(c.Size() for c in self.children if c)
+
+    def NumNodes(self):
+        return 1 + sum(c.NumNodes() for c in self.children if c)
+
+
+def make_py_trie(dict_input: str):
+    t = PyTrie()
+    for word in open(dict_input):
+        word = word.strip()
+        t.AddWord(word)
+    return t
+
+
 def main():
-    t = Trie.CreateFromFile("boggle-words.txt")
+    # t = Trie.CreateFromFile("boggle-words.txt")
+    t = make_py_trie("boggle-words.txt")
     b = Boggler(t)
     # print(f"Loaded {t.Size()} words")
     start_s = time.time()
