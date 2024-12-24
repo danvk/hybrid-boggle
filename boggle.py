@@ -4,8 +4,7 @@
 import fileinput
 import sys
 import time
-from typing import Iterable
-from example import Trie
+from example import Trie as CppTrie, Boggler as CppBoggler
 
 
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
@@ -36,7 +35,7 @@ for i in range(0, 16):
     NEIGHBORS.append(n)
 
 
-class Boggler:
+class HybridBoggler:
     def __init__(self, trie):
         self._trie = trie
         self._runs = 0
@@ -139,16 +138,18 @@ def make_py_trie(dict_input: str):
 
 
 def main():
-    # t = Trie.CreateFromFile("boggle-words.txt")
-    t = make_py_trie("boggle-words.txt")
-    b = Boggler(t)
+    t = CppTrie.CreateFromFile("boggle-words.txt")
+    # t = make_py_trie("boggle-words.txt")
+    b = CppBoggler(t)
     # print(f"Loaded {t.Size()} words")
     start_s = time.time()
     n = 0
     for line in fileinput.input():
         board = line.strip()
-        b.set_board(board)
-        print(f"{board}: {b.score()}")
+        # b.set_board(board)
+        # print(f"{board}: {b.score()}")
+        score = b.Score(board)
+        print(f"{board}: {score}")
         n += 1
     end_s = time.time()
     elapsed_s = end_s - start_s

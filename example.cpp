@@ -2,6 +2,7 @@
 namespace py = pybind11;
 
 #include "trie.h"
+#include "boggler.h"
 
 int add(int i, int j)
 {
@@ -43,4 +44,8 @@ PYBIND11_MODULE(example, m)
         .def("NumNodes", &Trie::NumNodes)
         .def_static("ReverseLookup", py::overload_cast<const Trie*, const Trie*>(&Trie::ReverseLookup))
         .def_static("CreateFromFile", &Trie::CreateFromFile);
+
+    py::class_<Boggler>(m, "Boggler")
+        .def(py::init<Trie*>())
+        .def("Score", &Boggler::Score);
 }
