@@ -4,7 +4,7 @@
 import fileinput
 import sys
 import time
-from example import Trie as CppTrie, Boggler as CppBoggler
+from example import Trie as CppTrie, Boggler as CppBoggler, BucketBoggler
 
 
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
@@ -140,21 +140,29 @@ def make_py_trie(dict_input: str):
 def main():
     t = CppTrie.CreateFromFile("boggle-words.txt")
     # t = make_py_trie("boggle-words.txt")
-    b = CppBoggler(t)
-    # print(f"Loaded {t.Size()} words")
-    start_s = time.time()
-    n = 0
-    for line in fileinput.input():
-        board = line.strip()
-        # b.set_board(board)
-        # print(f"{board}: {b.score()}")
-        _score = b.Score(board)
-        # print(f"{board}: {score}")
-        n += 1
-    end_s = time.time()
-    elapsed_s = end_s - start_s
-    rate = n / elapsed_s
-    sys.stderr.write(f'{n} boards in {elapsed_s:.2f}s = {rate:.2f} boards/s\n')
+
+    bb = BucketBoggler(t)
+    assert bb.ParseBoard("abc def ghi jkl mno pqr stu vwx yza")
+    print(bb.UpperBound(1000))
+    d = bb.Details()
+    print(d.max_nomark, d.sum_union)
+
+    if False:
+        b = CppBoggler(t)
+        # print(f"Loaded {t.Size()} words")
+        start_s = time.time()
+        n = 0
+        for line in fileinput.input():
+            board = line.strip()
+            # b.set_board(board)
+            # print(f"{board}: {b.score()}")
+            _score = b.Score(board)
+            # print(f"{board}: {score}")
+            n += 1
+        end_s = time.time()
+        elapsed_s = end_s - start_s
+        rate = n / elapsed_s
+        sys.stderr.write(f'{n} boards in {elapsed_s:.2f}s = {rate:.2f} boards/s\n')
 
 
 if __name__ == '__main__':

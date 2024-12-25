@@ -3,6 +3,7 @@ namespace py = pybind11;
 
 #include "trie.h"
 #include "boggler.h"
+#include "ibuckets.h"
 
 int add(int i, int j)
 {
@@ -48,4 +49,16 @@ PYBIND11_MODULE(example, m)
     py::class_<Boggler>(m, "Boggler")
         .def(py::init<Trie*>())
         .def("Score", &Boggler::Score);
+
+    py::class_<BucketBoggler>(m, "BucketBoggler")
+        .def(py::init<Trie*>())
+        .def("ParseBoard", &BucketBoggler::ParseBoard)
+        .def("UpperBound", &BucketBoggler::UpperBound)
+        .def("as_string", &BucketBoggler::as_string)
+        .def("Details", &BucketBoggler::Details)
+        .def("NumReps", &BucketBoggler::NumReps);
+
+    py::class_<ScoreDetails>(m, "ScoreDetails")
+        .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
+        .def_readwrite("sum_union", &ScoreDetails::sum_union);
 }
