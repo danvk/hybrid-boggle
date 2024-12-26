@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-import itertools
+import random
 import sys
 from dataclasses import dataclass
 import time
 from typing import Sequence
+
+from tqdm import tqdm
 
 from example import Trie, BucketBoggler
 
@@ -202,19 +204,15 @@ def main():
     bb = BucketBoggler(t)
     breaker = Breaker(bb, best_score)
 
-    # TODO: filter to non-canonical outside the main loop
-    # to get a more realistic progress bar.
+    # This gets a more useful, accurate error bar than filter inside the main loop.
+    canonical_indices = [
+        idx for idx in range(0, max_index) if is_canonical(num_classes, idx)
+    ]
+    random.shuffle(canonical_indices)
 
     num_non_canonical = 0
     good_boards = []
-    for idx in range(0, max_index):
-        if idx % 100 == 0:
-            # TODO: switch to tqdm
-            print(f"{idx} / {max_index} classes broken")
-        if not is_canonical(num_classes, idx):
-            num_non_canonical += 1
-            continue
-
+    for idx in tqdm(canonical_indices):
         breaker.FromId(classes, idx)
         details = breaker.Break()
         if details.failures:
