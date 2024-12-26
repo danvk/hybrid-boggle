@@ -8,9 +8,11 @@ using std::max;
 
 // For debugging:
 static const bool PrintWords  = false;
+
+// There's only one "Qu" die, but we allow a board consisting entirely of Qu.
 const int kWordScores[] =
-      //0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10
-      { 0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11 };
+      //0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+      { 0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
 
 bool BucketBoggler::ParseBoard(const char* bd) {
   int cell = 0;

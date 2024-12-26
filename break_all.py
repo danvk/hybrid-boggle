@@ -2,7 +2,7 @@
 
 import argparse
 import random
-import sys
+from collections import Counter
 from dataclasses import dataclass
 import time
 from typing import Sequence
@@ -237,6 +237,9 @@ def main():
 
     start_s = time.time()
     good_boards = []
+    depths = Counter()
+    times = Counter()
+    all_details: list[tuple[int, BreakDetails]] = []
     for idx in tqdm(indices):
         breaker.FromId(classes, idx)
         details = breaker.Break()
@@ -244,11 +247,21 @@ def main():
             for failure in details.failures:
                 print(f"Found unbreakable board for {idx}: {failure}")
             good_boards += details.failures
+        depths[details.max_depth] += 1
+        times[round(10 * details.elapsed_s) / 10] += 1
+        all_details.append((idx, details))
     end_s = time.time()
 
     print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
     print("All failures:")
     print("\n".join(good_boards))
+    print(f"Depths: {depths.most_common()}")
+    print(f"Times (s): {times.most_common()}")
+
+    all_details.sort()
+    with open('/tmp/details.txt', 'w') as out:
+        for idx, d in all_details:
+            out.write(f'{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{d.elapsed_s}\n')
 
 if __name__ == "__main__":
     main()
