@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import random
 import sys
 from dataclasses import dataclass
@@ -85,7 +86,7 @@ class Breaker:
         bd = self.bb.as_string().split(' ')
         for i, split in enumerate(splits):
             bd[cell] = split
-            # TODO: C++ version uses ParseBoard() + Cell() here.
+            # C++ version uses ParseBoard() + Cell() here.
             assert self.bb.ParseBoard(' '.join(bd))
             self.AttackBoard(level + 1, i + 1, len(splits))
 
@@ -190,37 +191,62 @@ def is_canonical(num_classes: int, idx: int):
 
 
 def main():
-    (_, classes_str, score_str, dict_file) = sys.argv
-    best_score = int(score_str)
+    parser = argparse.ArgumentParser(
+        description='Find all 3x3 boggle boards with >=N points',
+    )
+    parser.add_argument(
+        "classes", type=str, help="Space-separated list of letter classes"
+    )
+    parser.add_argument(
+        "best_score",
+        type=int,
+        help="Print boards with a score >= to this. Filter boards below this. A higher number will result in a faster run.",
+    )
+    parser.add_argument(
+        "--dictionary",
+        type=str,
+        default="boggle-words.txt",
+        help='Path to dictionary file with one word per line. Words must be "bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
+    )
+    parser.add_argument(
+        "--board_ids",
+        help="Comma-separated list of board IDs. Omit to consider all canonically-rotated boards.",
+    )
+    args = parser.parse_args()
+
+    best_score = args.best_score
     assert best_score > 0
-    t = Trie.CreateFromFile(dict_file)
+    t = Trie.CreateFromFile(args.dictionary)
     assert t
-    classes = classes_str.split(' ')
+    classes = args.classes.split(' ')
     num_classes = len(classes)
     max_index = num_classes ** 9
-    print(classes)
-    print(max_index)
 
     bb = BucketBoggler(t)
     breaker = Breaker(bb, best_score)
 
-    # This gets a more useful, accurate error bar than filter inside the main loop.
-    canonical_indices = [
-        idx for idx in range(0, max_index) if is_canonical(num_classes, idx)
-    ]
-    random.shuffle(canonical_indices)
+    if args.board_ids:
+        indices = [int(x) for x in args.board_ids.split(',')]
+    else:
+        # This gets a more useful, accurate error bar than going in order
+        # and filtering inside the main loop.
+        indices = [
+            idx for idx in range(0, max_index) if is_canonical(num_classes, idx)
+        ]
+        random.shuffle(indices)
 
-    num_non_canonical = 0
+    start_s = time.time()
     good_boards = []
-    for idx in tqdm(canonical_indices):
+    for idx in tqdm(indices):
         breaker.FromId(classes, idx)
         details = breaker.Break()
         if details.failures:
             for failure in details.failures:
-                print(f"Found unbreakable board: {failure}")
+                print(f"Found unbreakable board for {idx}: {failure}")
             good_boards += details.failures
+    end_s = time.time()
 
-    print(f"Non-canonical boards: {num_non_canonical} / {max_index}")
+    print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
     print("All failures:")
     print("\n".join(good_boards))
 
