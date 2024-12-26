@@ -1,4 +1,4 @@
-from break_all import from_board_id, board_id, is_canonical
+from break_all import even_split, from_board_id, board_id, is_canonical
 
 
 classes = ['a', 'b', 'c', 'd']
@@ -18,3 +18,10 @@ def test_is_canonical():
     assert from_board_id(classes, 149220) == 'a b c d c b a b c'
     assert board_id([[2, 1, 0], [1, 2, 3], [2, 1, 0]], 4) == 28230
     assert is_canonical(4, 28230)
+
+
+def test_even_split():
+    assert even_split([1, 2, 3], 4) == [[1], [2], [3]]
+    assert even_split([1, 2, 3, 4], 4) == [[1], [2], [3], [4]]
+    assert even_split([1, 2, 3, 4, 5], 4) == [[1, 2], [3], [4], [5]]
+    assert even_split([1, 2, 3, 4, 5, 6, 7], 3) == [[1, 2, 3], [4, 5], [6, 7]]

@@ -27,6 +27,8 @@ class BucketBoggler {
   // Returns the possible characters in this cell. The result can be modified.
   char* Cell(int idx) { return bd_[idx]; }
 
+  void SetCell(int idx, char* val);
+
   // Returns the number of individual boards in the current board class. This
   // isn't guaranteed to fit in a uint64_t, but will for any class you care to
   // evaluate.

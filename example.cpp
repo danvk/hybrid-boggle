@@ -55,6 +55,8 @@ PYBIND11_MODULE(example, m)
         .def("ParseBoard", &BucketBoggler::ParseBoard)
         .def("UpperBound", &BucketBoggler::UpperBound)
         .def("as_string", &BucketBoggler::as_string)
+        .def("Cell", &BucketBoggler::Cell)
+        .def("SetCell", &BucketBoggler::SetCell)
         .def("Details", &BucketBoggler::Details)
         .def("NumReps", &BucketBoggler::NumReps);
 

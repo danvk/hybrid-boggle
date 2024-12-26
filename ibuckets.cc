@@ -57,6 +57,10 @@ const char* BucketBoggler::as_string() {
   return board_rep_;
 }
 
+void BucketBoggler::SetCell(int idx, char* val) {
+  strcpy(bd_[idx], val);
+}
+
 int BucketBoggler::UpperBound(int bailout_score) {
   details_.max_nomark = 0;
   details_.sum_union = 0;

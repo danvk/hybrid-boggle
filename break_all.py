@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+import itertools
 import sys
 from dataclasses import dataclass
+import time
+from typing import Sequence
 
 from example import Trie, BucketBoggler
 
@@ -14,27 +17,95 @@ class BreakDetails:
     elapsed_s: float
     failures: list[str]
 
+SPLIT_ORDER = ( 4, 5, 3, 1, 7, 0, 2, 6, 8 )
 
 class Breaker:
     def __init__(self, boggler: BucketBoggler, best_score):
         self.bb = boggler
         self.best_score = best_score
+        self.details_ = None
+        self.elim_ = 0
+        self.orig_reps_ = 0
 
     def FromId(self, classes, idx: int):
         board = from_board_id(classes, idx)
         return self.bb.ParseBoard(board)
 
-    def Break() -> BreakDetails:
-        pass
+    def Break(self) -> BreakDetails:
+        self.details_ = BreakDetails(
+            max_depth=0,
+            num_reps=0,
+            elapsed_s=0.0,
+            start_time_s=0.0,
+            failures=[],
+        )
+        self.elim_ = 0
+        self.orig_reps_ = self.bb.NumReps()
+        self.details_.start_time_s = time.time()
+        self.AttackBoard()
+        self.details_.elapsed_s = time.time() - self.details_.start_time_s
+        self.details_.num_reps = self.orig_reps_
+        # TODO: debug output
+        return self.details_
 
-    def PickABucket(level: int) -> list[str]:
-        pass
+    def PickABucket(self, level: int) -> list[str]:
+        pick = -1
+        splits = []
 
-    def SplitBucket(level: int) -> None:
-        pass
+        # TODO: lots of comments in C++ source with ideas for exploration here.
+        for order in SPLIT_ORDER:
+            # TODO: could do this all in Python to avoid C++ <-> Py
+            if len(self.bb.Cell(order)) > 1:
+                pick = order
+                break
 
-    def AttackBoard(level: int, num: int, out_of: int) -> None:
-        pass
+        cell = self.bb.Cell(pick)
+        cell_len = len(cell)
+        if cell_len == 26:
+            # TODO: is this ever useful?
+            splits = ['aeiou', 'sy', 'bdfgjkmpvwxzq', 'chlnrt']
+        elif cell_len >= 9:
+            splits = [''.join(split) for split in even_split(cell, 4)]
+        else:
+            splits = [*cell]
+
+        return pick, splits
+
+    def SplitBucket(self, level: int) -> None:
+        cell, splits = self.PickABucket(level)
+        if cell == -1:
+            # it's just a board
+            board = self.bb.as_string().replace(' ', '')
+            print(f"Unable to break board: {board}")
+            self.details_.failures.append(board)
+            return
+
+        bd = self.bb.as_string().split(' ')
+        for i, split in enumerate(splits):
+            bd[cell] = split
+            # TODO: C++ version uses ParseBoard() + Cell() here.
+            assert self.bb.ParseBoard(' '.join(bd))
+            self.AttackBoard(level + 1, i + 1, len(splits))
+
+    def AttackBoard(self, level: int = 0, num: int = 1, out_of: int = 1) -> None:
+        # TODO: debug output
+        # reps = self.bb.NumReps()
+        if self.bb.UpperBound(self.best_score) <= self.best_score:
+            self.elim_ += self.bb.NumReps()
+            self.details_.max_depth = max(self.details_.max_depth, level)
+        else:
+            self.SplitBucket(level)
+
+
+# TODO: there's probably a more concise way to express this.
+def even_split[T](xs: Sequence[T], num_buckets: int) -> list[list[T]]:
+    splits = [[]]
+    length = len(xs)
+    for i, x in enumerate(xs):
+        if num_buckets * i >= (len(splits) * length):
+            splits.append([])
+        splits[-1].append(x)
+    return splits
 
 
 def from_board_id(classes: list[str], idx: int) -> str:
@@ -66,7 +137,7 @@ def swap(ary, a, b):
 def is_canonical(num_classes: int, idx: int):
     if idx < 0:
         return False
-    bd = [[0 for x in range(0, 3)] for y in range(0, 3)]
+    bd = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
     left = idx
     for i in range(0, 9):
         bd[i//3][i%3] = left % num_classes
