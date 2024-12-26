@@ -1,5 +1,7 @@
 #ifndef TRIE_H__
 #define TRIE_H__
+
+#include <memory>
 #include <string>
 #include <vector>
 #include <sys/types.h>
