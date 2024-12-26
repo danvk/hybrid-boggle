@@ -143,6 +143,7 @@ def is_canonical(num_classes: int, idx: int):
         bd[i//3][i%3] = left % num_classes
         left //= num_classes
     assert left == 0
+
     for rot in (0, 1):
         # ABC    CBA
         # DEF -> FED
@@ -177,7 +178,7 @@ def is_canonical(num_classes: int, idx: int):
         for i in range(0, 3):
             swap(bd, (i, 0), (i, 2))
         for i in range(0, 3):
-            for j in range(0, 3):
+            for j in range(0, i):
                 swap(bd, (i, j), (j, i))
 
         if board_id(bd, num_classes) < idx:
@@ -194,16 +195,24 @@ def main():
     assert t
     classes = classes_str.split(' ')
     num_classes = len(classes)
-    max_index = 9 ** num_classes
+    max_index = num_classes ** 9
+    print(classes)
+    print(max_index)
 
     bb = BucketBoggler(t)
     breaker = Breaker(bb, best_score)
 
+    # TODO: filter to non-canonical outside the main loop
+    # to get a more realistic progress bar.
+
+    num_non_canonical = 0
     good_boards = []
     for idx in range(0, max_index):
         if idx % 100 == 0:
-            print("{idx} classes broken")
+            # TODO: switch to tqdm
+            print(f"{idx} / {max_index} classes broken")
         if not is_canonical(num_classes, idx):
+            num_non_canonical += 1
             continue
 
         breaker.FromId(classes, idx)
@@ -213,6 +222,7 @@ def main():
                 print(f"Found unbreakable board: {failure}")
             good_boards += details.failures
 
+    print(f"Non-canonical boards: {num_non_canonical} / {max_index}")
     print("All failures:")
     print("\n".join(good_boards))
 

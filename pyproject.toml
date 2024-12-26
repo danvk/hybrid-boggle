@@ -9,6 +9,7 @@ readme = "README.md"
 python = "3.12.8"
 pybind11 = "^2.13.6"
 pytest = "^8.3.4"
+tqdm = "^4.67.1"
 
 
 [build-system]
