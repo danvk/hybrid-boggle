@@ -62,6 +62,7 @@ def swap(ary, a, b):
     ary[ax][ay], ary[bx][by] = ary[bx][by], ary[ax][ay]
 
 
+# TODO: can probably express this all more concisely in Python
 def is_canonical(num_classes: int, idx: int):
     if idx < 0:
         return False
@@ -72,7 +73,6 @@ def is_canonical(num_classes: int, idx: int):
         left //= num_classes
     assert left == 0
     for rot in (0, 1):
-        # TODO: can probably express this all more concisely in Python
         # ABC    CBA
         # DEF -> FED
         # GHI    IHG
