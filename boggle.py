@@ -4,7 +4,7 @@
 import fileinput
 import sys
 import time
-from example import Trie as CppTrie, Boggler as CppBoggler, BucketBoggler
+from example import Trie as CppTrie, Boggler as CppBoggler
 
 
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
