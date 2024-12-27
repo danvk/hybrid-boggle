@@ -88,8 +88,9 @@ class Breaker:
         for i, split in enumerate(splits):
             bd[cell] = split
             # C++ version uses ParseBoard() + Cell() here.
-            assert self.bb.ParseBoard(' '.join(bd))
-            self.AttackBoard(level + 1, i + 1, len(splits))
+            if is_canonical_bucket(bd):
+                assert self.bb.ParseBoard(' '.join(bd))
+                self.AttackBoard(level + 1, i + 1, len(splits))
 
     def AttackBoard(self, level: int = 0, num: int = 1, out_of: int = 1) -> None:
         # TODO: debug output
@@ -110,6 +111,13 @@ def even_split[T](xs: Sequence[T], num_buckets: int) -> list[list[T]]:
             splits.append([])
         splits[-1].append(x)
     return splits
+
+
+def is_canonical_bucket(bd: list[str]) -> bool:
+    bd_2d = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
+    for i in range(0, 9):
+        bd_2d[i//3][i%3] = bd[i]
+    return canonicalize(bd_2d) == bd_2d
 
 
 def from_board_id(classes: list[str], idx: int) -> str:
@@ -203,12 +211,11 @@ def main():
         ]
         random.shuffle(indices)
 
-    sym_group_size = Counter()
-    for idx in indices:
-        sym_group_size[symmetry_group_size(num_classes, idx)] += 1
-
-    print(sym_group_size.most_common())
-    return
+    # sym_group_size = Counter()
+    # for idx in indices:
+    #     sym_group_size[symmetry_group_size(num_classes, idx)] += 1
+    # print(sym_group_size.most_common())
+    # return
 
     start_s = time.time()
     good_boards = []
