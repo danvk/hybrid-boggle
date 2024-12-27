@@ -1,6 +1,7 @@
 # Calculate all symmetries for 2D matrices.
 
 from itertools import chain
+from typing import Sequence
 
 
 def rot90[T](mat: list[list[T]]):
@@ -49,3 +50,35 @@ def mat_to_str[T](mat: list[list[T]]):
 def canonicalize[T](mat: list[list[T]]):
     """Return the canonical form of a 2D matrix."""
     return min(chain([mat], all_symmetries(mat)), key=mat_to_str)
+
+
+def is_canonical(mat: list[list]):
+    me = mat_to_str(mat)
+    for sym in all_symmetries(mat):
+        if mat_to_str(sym) < me:
+            return False
+    return True
+
+
+def find_symmetry_ids(mat: list[list]):
+    """Find all symmetries of a 2D matrix."""
+    this_str = mat_to_str(mat)
+    return [
+        i for i, sym in enumerate(all_symmetries(mat)) if mat_to_str(sym) == this_str
+    ]
+
+
+def apply_symmetry_ids[T](mat: list[list[T]], ids: Sequence[int]):
+    syms = all_symmetries(mat)
+    return [
+        syms[i] for i in ids
+    ]
+
+
+def is_canonical_within_group[T](mat: list[list], ids: Sequence[int]):
+    """Return the canonical form of a 2D matrix within its symmetry group."""
+    me = mat_to_str(mat)
+    for sym in apply_symmetry_ids(mat, ids):
+        if mat_to_str(sym) < me:
+            return False
+    return True

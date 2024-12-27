@@ -10,7 +10,7 @@ from typing import Sequence
 from tqdm import tqdm
 
 from example import Trie, BucketBoggler
-from symmetry import all_symmetries, canonicalize, mat_to_str
+from symmetry import all_symmetries, canonicalize, find_symmetry_ids, is_canonical, is_canonical_within_group, mat_to_str
 
 
 @dataclass
@@ -30,9 +30,13 @@ class Breaker:
         self.details_ = None
         self.elim_ = 0
         self.orig_reps_ = 0
+        self.root_symmetries = None
+        self.num_skipped_noncanonical = 0
+        self.num_evaluations = 0
 
     def FromId(self, classes, idx: int):
         board = from_board_id(classes, idx)
+        self.root_symmetries = find_symmetry_ids(id_to_class_numbers(len(classes), idx))
         return self.bb.ParseBoard(board)
 
     def Break(self) -> BreakDetails:
@@ -87,14 +91,16 @@ class Breaker:
         bd = self.bb.as_string().split(' ')
         for i, split in enumerate(splits):
             bd[cell] = split
-            # C++ version uses ParseBoard() + Cell() here.
-            if is_canonical_bucket(bd):
+            if is_canonical_bucket(bd, self.root_symmetries):
                 assert self.bb.ParseBoard(' '.join(bd))
                 self.AttackBoard(level + 1, i + 1, len(splits))
+            else:
+                self.num_skipped_noncanonical += 1
 
     def AttackBoard(self, level: int = 0, num: int = 1, out_of: int = 1) -> None:
         # TODO: debug output
         # reps = self.bb.NumReps()
+        self.num_evaluations += 1
         if self.bb.UpperBound(self.best_score) <= self.best_score:
             self.elim_ += self.bb.NumReps()
             self.details_.max_depth = max(self.details_.max_depth, level)
@@ -113,11 +119,13 @@ def even_split[T](xs: Sequence[T], num_buckets: int) -> list[list[T]]:
     return splits
 
 
-def is_canonical_bucket(bd: list[str]) -> bool:
+def is_canonical_bucket(bd: list[str], symmetry_ids: list[int]) -> bool:
+    if not symmetry_ids:
+        return True
     bd_2d = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
     for i in range(0, 9):
         bd_2d[i//3][i%3] = bd[i]
-    return canonicalize(bd_2d) == bd_2d
+    return is_canonical_within_group(bd_2d, symmetry_ids)
 
 
 def from_board_id(classes: list[str], idx: int) -> str:
@@ -139,17 +147,20 @@ def from_board_id(classes: list[str], idx: int) -> str:
 #     return id
 
 
-def is_canonical(num_classes: int, idx: int):
-    if idx < 0:
-        return False
+def id_to_class_numbers(num_classes: int, idx: int) -> list[list[int]]:
     bd = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
     left = idx
     for i in range(0, 9):
         bd[i//3][i%3] = left % num_classes
         left //= num_classes
     assert left == 0
+    return bd
 
-    return canonicalize(bd) == bd
+
+def is_canonical_id(num_classes: int, idx: int):
+    assert idx >= 0
+    bd = id_to_class_numbers(num_classes, idx)
+    return is_canonical(bd)
 
 
 def symmetry_group_size(num_classes: int, idx: int):
@@ -207,7 +218,7 @@ def main():
         # This gets a more useful, accurate error bar than going in order
         # and filtering inside the main loop.
         indices = [
-            idx for idx in range(0, max_index) if is_canonical(num_classes, idx)
+            idx for idx in range(0, max_index) if is_canonical_id(num_classes, idx)
         ]
         random.shuffle(indices)
 
@@ -240,6 +251,8 @@ def main():
     print("\n".join(good_boards))
     print(f"Depths: {depths.most_common()}")
     print(f"Times (s): {times.most_common()}")
+    print(f"Evaluated {breaker.num_evaluations} boards.")
+    print(f"Skipped {breaker.num_skipped_noncanonical} non-canonical boards.")
 
     all_details.sort()
     with open('/tmp/details.txt', 'w') as out:
