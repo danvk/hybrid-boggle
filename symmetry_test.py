@@ -1,4 +1,4 @@
-from symmetry import all_symmetries, flip_x, flip_y, mat_to_str, rot90
+from symmetry import all_symmetries, canonicalize, flip_x, flip_y, mat_to_str, rot90
 
 def test_rot90():
     mat = [
@@ -88,3 +88,14 @@ def test_fourfold_sym():
     for sym in syms4:
         assert len(sym) == 4
         assert len(sym[0]) == 3
+
+
+def test_canonicalize():
+    mat = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+    ]
+    assert canonicalize(mat) == mat
+    for sym in all_symmetries(mat):
+        assert canonicalize(sym) == mat

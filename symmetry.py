@@ -1,5 +1,8 @@
 # Calculate all symmetries for 2D matrices.
 
+from itertools import chain
+
+
 def rot90[T](mat: list[list[T]]):
     """Rotate an NxM matrix 90 degrees clockwise."""
     n = len(mat)
@@ -40,4 +43,9 @@ def all_symmetries[T](mat: list[list[T]], no_rotations=False):
 
 def mat_to_str[T](mat: list[list[T]]):
     """Convert a 2D matrix to a string."""
-    return '\n'.join([' '.join(map(str, row)) for row in mat])
+    return '\n'.join(' '.join(str(row) for row in mat))
+
+
+def canonicalize[T](mat: list[list[T]]):
+    """Return the canonical form of a 2D matrix."""
+    return min(chain([mat], all_symmetries(mat)), key=mat_to_str)
