@@ -1,4 +1,4 @@
-from symmetry import rot90
+from symmetry import flip_x, rot90
 
 def test_rot90():
     mat = [
@@ -13,6 +13,7 @@ def test_rot90():
     ]
     assert rot90(mat) == expected
 
+
 def test_rot90_asym():
     mat = [
         [1, 2, 3],
@@ -26,3 +27,17 @@ def test_rot90_asym():
         [12, 9, 6, 3],
     ]
     assert rot90(mat) == expected
+
+
+def test_flip_x():
+    mat = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+    ]
+    expected = [
+        [7, 8, 9],
+        [4, 5, 6],
+        [1, 2, 3],
+    ]
+    assert flip_x(mat) == expected
