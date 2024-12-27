@@ -10,7 +10,7 @@ from typing import Sequence
 from tqdm import tqdm
 
 from example import Trie, BucketBoggler
-from symmetry import all_symmetries, mat_to_str
+from symmetry import all_symmetries, canonicalize, mat_to_str
 
 
 @dataclass
@@ -141,12 +141,18 @@ def is_canonical(num_classes: int, idx: int):
         left //= num_classes
     assert left == 0
 
-    this_bd = mat_to_str(bd)
-    for sym in all_symmetries(bd):
-        if mat_to_str(sym) < this_bd:
-            return False
+    return canonicalize(bd) == bd
 
-    return True
+
+def symmetry_group_size(num_classes: int, idx: int):
+    bd = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
+    left = idx
+    for i in range(0, 9):
+        bd[i//3][i%3] = left % num_classes
+        left //= num_classes
+    assert left == 0
+
+    return len(set(mat_to_str(sym) for sym in [bd] + all_symmetries(bd)))
 
 
 def main():
@@ -197,6 +203,13 @@ def main():
         ]
         random.shuffle(indices)
 
+    sym_group_size = Counter()
+    for idx in indices:
+        sym_group_size[symmetry_group_size(num_classes, idx)] += 1
+
+    print(sym_group_size.most_common())
+    return
+
     start_s = time.time()
     good_boards = []
     depths = Counter()
@@ -204,6 +217,7 @@ def main():
     all_details: list[tuple[int, BreakDetails]] = []
     for idx in tqdm(indices):
         breaker.FromId(classes, idx)
+
         details = breaker.Break()
         if details.failures:
             for failure in details.failures:
