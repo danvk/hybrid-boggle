@@ -10,6 +10,7 @@ python = "3.12.8"
 pybind11 = "^2.13.6"
 pytest = "^8.3.4"
 tqdm = "^4.67.1"
+ruff = "^0.8.4"
 
 
 [build-system]
