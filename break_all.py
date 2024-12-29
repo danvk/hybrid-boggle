@@ -9,7 +9,7 @@ from typing import Sequence
 
 from tqdm import tqdm
 
-from example import Trie, BucketBoggler
+from example import Trie, BucketBoggler33
 
 
 @dataclass
@@ -23,7 +23,7 @@ class BreakDetails:
 SPLIT_ORDER = ( 4, 5, 3, 1, 7, 0, 2, 6, 8 )
 
 class Breaker:
-    def __init__(self, boggler: BucketBoggler, best_score):
+    def __init__(self, boggler: BucketBoggler33, best_score):
         self.bb = boggler
         self.best_score = best_score
         self.details_ = None
@@ -225,7 +225,7 @@ def main():
     num_classes = len(classes)
     max_index = num_classes ** 9
 
-    bb = BucketBoggler(t)
+    bb = BucketBoggler33(t)
     breaker = Breaker(bb, best_score)
 
     if args.board_ids:

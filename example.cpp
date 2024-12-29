@@ -50,12 +50,13 @@ PYBIND11_MODULE(example, m)
         .def(py::init<Trie*>())
         .def("Score", &Boggler::Score);
 
+    using BucketBoggler33 = BucketBoggler<3, 3>;
     py::class_<BucketBoggler33>(m, "BucketBoggler33")
         .def(py::init<Trie*>())
         .def("ParseBoard", &BucketBoggler33::ParseBoard);
         // .def("UpperBound", &BucketBoggler33::UpperBound)
-        // .def("as_string", &BucketBoggler33::as_string)
-        // .def("Cell", &BucketBoggler33::Cell)
+        // .def("as_string",  &BucketBoggler33::as_string)
+        // .def("Cell",    &BucketBoggler33::Cell)
         // .def("SetCell", &BucketBoggler33::SetCell)
         // .def("Details", &BucketBoggler33::Details)
         // .def("NumReps", &BucketBoggler33::NumReps);

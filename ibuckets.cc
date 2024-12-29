@@ -102,6 +102,12 @@ inline int BucketBoggler<M, N>::DoAllDescents(int idx, int len, Trie* t) {
   return max_score;
 }
 
+template <int M, int N>
+int BucketBoggler<M, N>::DoDFS(int i, int len, Trie* t) {
+  fprintf(stderr, "Not implemented for %dx%d\n", M, N);
+  exit(1);
+}
+
 template<>
 int BucketBoggler<3, 3>::DoDFS(int i, int len, Trie* t) {
   int score = 0;
