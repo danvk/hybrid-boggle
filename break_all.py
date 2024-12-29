@@ -10,7 +10,6 @@ from typing import Sequence
 from tqdm import tqdm
 
 from example import Trie, BucketBoggler
-from symmetry import all_symmetries, canonicalize, find_symmetry_ids, is_canonical, is_canonical_within_group, mat_to_str
 
 
 @dataclass
@@ -30,13 +29,9 @@ class Breaker:
         self.details_ = None
         self.elim_ = 0
         self.orig_reps_ = 0
-        self.root_symmetries = None
-        self.num_skipped_noncanonical = 0
-        self.num_evaluations = 0
 
     def FromId(self, classes, idx: int):
         board = from_board_id(classes, idx)
-        self.root_symmetries = find_symmetry_ids(id_to_class_numbers(len(classes), idx))
         return self.bb.ParseBoard(board)
 
     def Break(self) -> BreakDetails:
@@ -91,16 +86,13 @@ class Breaker:
         bd = self.bb.as_string().split(' ')
         for i, split in enumerate(splits):
             bd[cell] = split
-            if is_canonical_bucket(bd, self.root_symmetries):
-                assert self.bb.ParseBoard(' '.join(bd))
-                self.AttackBoard(level + 1, i + 1, len(splits))
-            else:
-                self.num_skipped_noncanonical += 1
+            # C++ version uses ParseBoard() + Cell() here.
+            assert self.bb.ParseBoard(' '.join(bd))
+            self.AttackBoard(level + 1, i + 1, len(splits))
 
     def AttackBoard(self, level: int = 0, num: int = 1, out_of: int = 1) -> None:
         # TODO: debug output
         # reps = self.bb.NumReps()
-        self.num_evaluations += 1
         if self.bb.UpperBound(self.best_score) <= self.best_score:
             self.elim_ += self.bb.NumReps()
             self.details_.max_depth = max(self.details_.max_depth, level)
@@ -119,15 +111,6 @@ def even_split[T](xs: Sequence[T], num_buckets: int) -> list[list[T]]:
     return splits
 
 
-def is_canonical_bucket(bd: list[str], symmetry_ids: list[int]) -> bool:
-    if not symmetry_ids:
-        return True
-    bd_2d = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
-    for i in range(0, 9):
-        bd_2d[i//3][i%3] = bd[i]
-    return is_canonical_within_group(bd_2d, symmetry_ids)
-
-
 def from_board_id(classes: list[str], idx: int) -> str:
     num_classes = len(classes)
     board: list[str] = []
@@ -139,31 +122,24 @@ def from_board_id(classes: list[str], idx: int) -> str:
     return ' '.join(board)
 
 
-# def board_id(bd: list[list[int]], num_classes: int) -> int:
-#     id = 0
-#     for i in range(8, -1, -1):
-#         id *= num_classes
-#         id += bd[i//3][i%3]
-#     return id
+def board_id(bd: list[list[int]], num_classes: int) -> int:
+    id = 0
+    for i in range(8, -1, -1):
+        id *= num_classes
+        id += bd[i//3][i%3]
+    return id
 
 
-def id_to_class_numbers(num_classes: int, idx: int) -> list[list[int]]:
-    bd = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
-    left = idx
-    for i in range(0, 9):
-        bd[i//3][i%3] = left % num_classes
-        left //= num_classes
-    assert left == 0
-    return bd
+def swap(ary, a, b):
+    ax, ay = a
+    bx, by = b
+    ary[ax][ay], ary[bx][by] = ary[bx][by], ary[ax][ay]
 
 
-def is_canonical_id(num_classes: int, idx: int):
-    assert idx >= 0
-    bd = id_to_class_numbers(num_classes, idx)
-    return is_canonical(bd)
-
-
-def symmetry_group_size(num_classes: int, idx: int):
+# TODO: can probably express this all more concisely in Python
+def is_canonical(num_classes: int, idx: int):
+    if idx < 0:
+        return False
     bd = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
     left = idx
     for i in range(0, 9):
@@ -171,7 +147,47 @@ def symmetry_group_size(num_classes: int, idx: int):
         left //= num_classes
     assert left == 0
 
-    return len(set(mat_to_str(sym) for sym in [bd] + all_symmetries(bd)))
+    for rot in (0, 1):
+        # ABC    CBA
+        # DEF -> FED
+        # GHI    IHG
+        for i in range(0, 3):
+            swap(bd, (0, i), (2, i))
+        if board_id(bd, num_classes) < idx:
+            return False
+
+        # CBA    IHG
+        # FED -> FED
+        # IHG    CBA
+        for i in range(0, 3):
+            swap(bd, (i, 0), (i, 2))
+        if board_id(bd, num_classes) < idx:
+            return False
+
+        # IHG    GHI
+        # FED -> DEF
+        # CBA    ABC
+        for i in range(0, 3):
+            swap(bd, (0, i), (2, i))
+        if board_id(bd, num_classes) < idx:
+            return False
+
+        if rot == 1:
+            break
+
+        # GHI    ABC    ADG
+        # DEF -> DEF -> BEH
+        # ABC    GHI    CFI
+        for i in range(0, 3):
+            swap(bd, (i, 0), (i, 2))
+        for i in range(0, 3):
+            for j in range(0, i):
+                swap(bd, (i, j), (j, i))
+
+        if board_id(bd, num_classes) < idx:
+            return False
+
+    return True
 
 
 def main():
@@ -191,13 +207,13 @@ def main():
         "--dictionary",
         type=str,
         default="boggle-words.txt",
-        help='Path to dictionary file with one word per line. Words must be'
+        help='Path to dictionary file with one word per line. Words must be '
         '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
     )
     parser.add_argument(
         "--board_ids",
-        help="Comma-separated list of board IDs. "
-        "Omit to consider all canonically-rotated boards.",
+        help="Comma-separated list of board IDs. Omit to consider all "
+        "canonically-rotated boards.",
     )
     args = parser.parse_args()
 
@@ -218,15 +234,9 @@ def main():
         # This gets a more useful, accurate error bar than going in order
         # and filtering inside the main loop.
         indices = [
-            idx for idx in range(0, max_index) if is_canonical_id(num_classes, idx)
+            idx for idx in range(0, max_index) if is_canonical(num_classes, idx)
         ]
         random.shuffle(indices)
-
-    # sym_group_size = Counter()
-    # for idx in indices:
-    #     sym_group_size[symmetry_group_size(num_classes, idx)] += 1
-    # print(sym_group_size.most_common())
-    # return
 
     start_s = time.time()
     good_boards = []
@@ -235,7 +245,6 @@ def main():
     all_details: list[tuple[int, BreakDetails]] = []
     for idx in tqdm(indices):
         breaker.FromId(classes, idx)
-
         details = breaker.Break()
         if details.failures:
             for failure in details.failures:
@@ -251,8 +260,6 @@ def main():
     print("\n".join(good_boards))
     print(f"Depths: {depths.most_common()}")
     print(f"Times (s): {times.most_common()}")
-    print(f"Evaluated {breaker.num_evaluations} boards.")
-    print(f"Skipped {breaker.num_skipped_noncanonical} non-canonical boards.")
 
     all_details.sort()
     with open('/tmp/details.txt', 'w') as out:
