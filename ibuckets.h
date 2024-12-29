@@ -12,6 +12,7 @@ struct ScoreDetails {
   int sum_union;   // all words that can be found, counting each once.
 };
 
+template <int M, int N>
 class BucketBoggler {
  public:
   BucketBoggler(Trie* t) : dict_(t), runs_(0) {}
@@ -49,10 +50,12 @@ class BucketBoggler {
 
   Trie* dict_;
   uintptr_t runs_;
-  char bd_[9][27];  // null-terminated lists of possible letters
+  char bd_[M*N][27];  // null-terminated lists of possible letters
   int used_;
   ScoreDetails details_;
-  char board_rep_[27*9];  // for as_string()
+  char board_rep_[27*M*N];  // for as_string()
 };
+
+typedef BucketBoggler<3, 3> BucketBoggler33;
 
 #endif

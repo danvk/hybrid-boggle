@@ -50,17 +50,18 @@ PYBIND11_MODULE(example, m)
         .def(py::init<Trie*>())
         .def("Score", &Boggler::Score);
 
-    py::class_<BucketBoggler>(m, "BucketBoggler")
+    py::class_<BucketBoggler33>(m, "BucketBoggler33")
         .def(py::init<Trie*>())
-        .def("ParseBoard", &BucketBoggler::ParseBoard)
-        .def("UpperBound", &BucketBoggler::UpperBound)
-        .def("as_string", &BucketBoggler::as_string)
-        .def("Cell", &BucketBoggler::Cell)
-        .def("SetCell", &BucketBoggler::SetCell)
-        .def("Details", &BucketBoggler::Details)
-        .def("NumReps", &BucketBoggler::NumReps);
+        .def("ParseBoard", &BucketBoggler33::ParseBoard);
+        // .def("UpperBound", &BucketBoggler33::UpperBound)
+        // .def("as_string", &BucketBoggler33::as_string)
+        // .def("Cell", &BucketBoggler33::Cell)
+        // .def("SetCell", &BucketBoggler33::SetCell)
+        // .def("Details", &BucketBoggler33::Details)
+        // .def("NumReps", &BucketBoggler33::NumReps);
 
     py::class_<ScoreDetails>(m, "ScoreDetails")
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
         .def_readwrite("sum_union", &ScoreDetails::sum_union);
+
 }

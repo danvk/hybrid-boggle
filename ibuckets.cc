@@ -14,7 +14,9 @@ const int kWordScores[] =
       //0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18
       { 0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
 
-bool BucketBoggler::ParseBoard(const char* bd) {
+template <int M, int N>
+bool BucketBoggler<M, N>::ParseBoard(const char* bd) {
+  int max_len = M * N - 1;
   int cell = 0;
   int cell_pos = 0;
   while (char c = *bd++) {
@@ -23,7 +25,7 @@ bool BucketBoggler::ParseBoard(const char* bd) {
       bd_[cell][cell_pos] = '\0';
       cell += 1;
       cell_pos = 0;
-      if (cell > 8) return false;  // too many cells
+      if (cell > max_len) return false;  // too many cells
     } else if (c == '.') {
       // explicit "don't go here" cell, useful for tests
       bd_[cell][0] = '\0';
@@ -35,41 +37,45 @@ bool BucketBoggler::ParseBoard(const char* bd) {
     }
   }
   bd_[cell][cell_pos] = '\0';
-  return (cell_pos > 0 && cell == 8);
+  return (cell_pos > 0 && cell == max_len);
 }
 
-uint64_t BucketBoggler::NumReps() const {
+template <int M, int N>
+uint64_t BucketBoggler<M, N>::NumReps() const {
   uint64_t reps = 1;
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < M*N; i++)
     reps *= strlen(bd_[i]);
   return reps;
 }
 
-const char* BucketBoggler::as_string() {
+template <int M, int N>
+const char* BucketBoggler<M, N>::as_string() {
   char* c = board_rep_;
-  for (int i=0; i<9; i++) {
+  for (int i=0; i<M*N; i++) {
     if (*bd_[i]) {
       strcpy(c, bd_[i]);
       c += strlen(bd_[i]);
     } else {
       strcpy(c++, ".");
     }
-    *c++ = (i == 8 ? '\0' : ' ');
+    *c++ = (i == (M*N-1) ? '\0' : ' ');
   }
   return board_rep_;
 }
 
-void BucketBoggler::SetCell(int idx, char* val) {
+template <int M, int N>
+void BucketBoggler<M, N>::SetCell(int idx, char* val) {
   strcpy(bd_[idx], val);
 }
 
-int BucketBoggler::UpperBound(int bailout_score) {
+template <int M, int N>
+int BucketBoggler<M, N>::UpperBound(int bailout_score) {
   details_.max_nomark = 0;
   details_.sum_union = 0;
 
   used_ = 0;
   runs_ += 1;
-  for (int i = 0; i < 9; i++) {
+  for (int i = 0; i < M*N; i++) {
     int max_score = DoAllDescents(i, 0, dict_);
     details_.max_nomark += max_score;
     // This is "&&" because we're interested in knowing if we've _failed_ to
@@ -83,7 +89,8 @@ int BucketBoggler::UpperBound(int bailout_score) {
   return min(details_.max_nomark, details_.sum_union);
 }
 
-inline int BucketBoggler::DoAllDescents(int idx, int len, Trie* t) {
+template <int M, int N>
+inline int BucketBoggler<M, N>::DoAllDescents(int idx, int len, Trie* t) {
   int max_score = 0;
   for (int j = 0; bd_[idx][j]; j++) {
     int cc = bd_[idx][j] - 'a';
@@ -95,7 +102,8 @@ inline int BucketBoggler::DoAllDescents(int idx, int len, Trie* t) {
   return max_score;
 }
 
-int BucketBoggler::DoDFS(int i, int len, Trie* t) {
+template<>
+int BucketBoggler<3, 3>::DoDFS(int i, int len, Trie* t) {
   int score = 0;
   used_ ^= (1 << i);
 
