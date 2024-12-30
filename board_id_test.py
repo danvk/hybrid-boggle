@@ -24,3 +24,9 @@ def test_is_canonical_board_id():
     ]
     is_canon = {id: is_canonical_board_id(4, (3, 3), id) for id in board_ids}
     assert is_canon == {1234: True, 78912: False, 78960: False, 123456: False}
+
+
+def test_num_canonical():
+    n_classes = 4
+    indices = [idx for idx in range(0, 4**9) if is_canonical_board_id(n_classes, (3, 3), idx)]
+    assert len(indices) == 34960
