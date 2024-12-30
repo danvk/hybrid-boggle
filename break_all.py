@@ -190,7 +190,8 @@ def main():
     depths = Counter()
     times = Counter()
     all_details: list[tuple[int, BreakDetails]] = []
-    for idx in tqdm(indices):
+    # smoothing=0 means to show the average pace so far, which is the best estimator.
+    for idx in tqdm(indices, smoothing=0):
         breaker.FromId(classes, idx)
         details = breaker.Break()
         if details.failures:
