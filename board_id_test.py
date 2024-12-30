@@ -29,4 +29,7 @@ def test_is_canonical_board_id():
 def test_num_canonical():
     n_classes = 4
     indices = [idx for idx in range(0, 4**9) if is_canonical_board_id(n_classes, (3, 3), idx)]
+    with open('/tmp/indices.txt', 'w') as out:
+        for idx in indices:
+            out.write(f'{idx}\n')
     assert len(indices) == 34960
