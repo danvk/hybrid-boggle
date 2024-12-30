@@ -39,12 +39,14 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
     assert left == 0
 
     for rot in (0, 1):
+        print(f'{rot=}')
         # ABC    CBA
         # DEF -> FED
         # GHI    IHG
         for i in range(0, h):
             swap(bd, (0, i), (w-1, i))
         if board_id(bd, dims, num_classes) < idx:
+            print(bd)
             return False
 
         # CBA    IHG
@@ -53,6 +55,7 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         for i in range(0, h):
             swap(bd, (i, 0), (i, h-1))
         if board_id(bd, dims, num_classes) < idx:
+            print(bd)
             return False
 
         # IHG    GHI
@@ -61,6 +64,7 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         for i in range(0, h):
             swap(bd, (0, i), (w-1, i))
         if board_id(bd, dims, num_classes) < idx:
+            print(bd)
             return False
 
         if rot == 1:
@@ -76,6 +80,7 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
                 swap(bd, (i, j), (j, i))
 
         if board_id(bd, dims, num_classes) < idx:
+            print(bd)
             return False
 
     return True
