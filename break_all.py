@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import itertools
 import random
 from collections import Counter
 from dataclasses import dataclass
@@ -10,7 +11,7 @@ from typing import Sequence
 from tqdm import tqdm
 
 from board_id import from_board_id, is_canonical_board_id
-from example import Trie, BucketBoggler33
+from example import Trie, BucketBoggler33, BucketBoggler34
 
 
 @dataclass
@@ -21,12 +22,24 @@ class BreakDetails:
     elapsed_s: float
     failures: list[str]
 
-SPLIT_ORDER = ( 4, 5, 3, 1, 7, 0, 2, 6, 8 )
+# SPLIT_ORDER = ( 4, 5, 3, 1, 7, 0, 2, 6, 8 )
 
-DIMS = (3, 3)
+def to_idx(x, y): return x * 4 + y
+
+SPLIT_ORDER = tuple(
+    to_idx(x, y) for x, y in (
+        (1, 1), (1, 2),  # middle
+        (0, 1), (2, 1), (0, 2), (2, 2),  # middle sides
+        (1, 0), (1, 3), # top/bottom middle
+        (0, 0), (2, 0), (0, 3), (2, 3), # corners
+    )
+)
+assert len(SPLIT_ORDER) == 12
+
+DIMS = (3, 4)
 
 class Breaker:
-    def __init__(self, boggler: BucketBoggler33, best_score):
+    def __init__(self, boggler: BucketBoggler34, best_score):
         self.bb = boggler
         self.best_score = best_score
         self.details_ = None
@@ -71,6 +84,7 @@ class Breaker:
             # TODO: is this ever useful?
             splits = ['aeiou', 'sy', 'bdfgjkmpvwxzq', 'chlnrt']
         elif cell_len >= 9:
+            # TODO: 4 splits is an interesting choice here
             splits = [''.join(split) for split in even_split(cell, 4)]
         else:
             splits = [*cell]
@@ -139,6 +153,12 @@ def main():
         help="Comma-separated list of board IDs. Omit to consider all "
         "canonically-rotated boards.",
     )
+    parser.add_argument(
+        '--max_boards',
+        help="Limit the number of boards to consider.",
+        type=int,
+        default=0,
+    )
     args = parser.parse_args()
 
     best_score = args.best_score
@@ -147,9 +167,10 @@ def main():
     assert t
     classes = args.classes.split(' ')
     num_classes = len(classes)
-    max_index = num_classes ** 9
+    w, h = DIMS
+    max_index = num_classes ** (w*h)
 
-    bb = BucketBoggler33(t)
+    bb = BucketBoggler34(t)
     breaker = Breaker(bb, best_score)
 
     if args.board_ids:
@@ -157,10 +178,12 @@ def main():
     else:
         # This gets a more useful, accurate error bar than going in order
         # and filtering inside the main loop.
-        indices = [
-            idx for idx in range(0, max_index) if is_canonical_board_id(num_classes, DIMS, idx)
-        ]
+        indices = [idx for idx in range(0, max_index)]
         random.shuffle(indices)
+        indices = (idx for idx in indices if is_canonical_board_id(num_classes, DIMS, idx))
+        if args.max_boards:
+            indices = itertools.islice(indices, args.max_boards)
+        indices = [*indices]
 
     start_s = time.time()
     good_boards = []

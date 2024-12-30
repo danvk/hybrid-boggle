@@ -11,6 +11,7 @@ def from_board_id(classes: list[str], dims: tuple[int, int], idx: int) -> str:
     return ' '.join(board)
 
 
+# TODO: maybe should be i // h to match C++
 def board_id(bd: list[list[int]], dims: tuple[int, int], num_classes: int) -> int:
     w, h = dims
     id = 0
@@ -23,7 +24,7 @@ def board_id(bd: list[list[int]], dims: tuple[int, int], num_classes: int) -> in
 def swap(ary, a, b):
     ax, ay = a
     bx, by = b
-    ary[ax][ay], ary[bx][by] = ary[bx][by], ary[ax][ay]
+    ary[ay][ax], ary[by][bx] = ary[by][bx], ary[ay][ax]
 
 
 # TODO: can probably express this all more concisely in Python
@@ -38,7 +39,9 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         left //= num_classes
     assert left == 0
 
-    for rot in (0, 1):
+    rots = (0, 1) if w == h else (0, )
+
+    for rot in rots:
         # ABC    CBA
         # DEF -> FED
         # GHI    IHG
@@ -50,7 +53,7 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         # CBA    IHG
         # FED -> FED
         # IHG    CBA
-        for i in range(0, h):
+        for i in range(0, w):
             swap(bd, (i, 0), (i, h-1))
         if board_id(bd, dims, num_classes) < idx:
             return False
@@ -63,7 +66,7 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         if board_id(bd, dims, num_classes) < idx:
             return False
 
-        if rot == 1:
+        if rot == rots[-1]:
             break
 
         # GHI    ABC    ADG
