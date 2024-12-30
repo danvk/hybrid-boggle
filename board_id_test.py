@@ -17,6 +17,6 @@ def test_board_id_round_trip():
 
 
 def test_is_canonical_board_id():
-    # assert is_canonical_board_id(4, (3, 3), 0)
-    # assert not is_canonical_board_id(4, (3, 3), 100068)
+    assert is_canonical_board_id(4, (3, 3), 0)
+    assert not is_canonical_board_id(4, (3, 3), 100068)
     assert not is_canonical_board_id(4, (3, 3), 4309)

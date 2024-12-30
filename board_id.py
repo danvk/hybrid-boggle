@@ -76,7 +76,7 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         for i in range(0, w):
             swap(bd, (i, 0), (i, h-1))
         for i in range(0, w):
-            for j in range(0, h):
+            for j in range(0, i):
                 swap(bd, (i, j), (j, i))
 
         if board_id(bd, dims, num_classes) < idx:
