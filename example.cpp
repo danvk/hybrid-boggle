@@ -64,5 +64,4 @@ PYBIND11_MODULE(example, m)
     py::class_<ScoreDetails>(m, "ScoreDetails")
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
         .def_readwrite("sum_union", &ScoreDetails::sum_union);
-
 }
