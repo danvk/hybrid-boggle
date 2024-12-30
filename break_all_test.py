@@ -1,23 +1,5 @@
-from break_all import even_split, from_board_id, board_id, is_canonical_id
-
-
-classes = ['a', 'b', 'c', 'd']
-
-
-def test_board_round_trip():
-    board = from_board_id(classes, 0)
-    assert board == 'a a a a a a a a a'
-    assert board_id([[0, 0, 0], [0, 0, 0], [0, 0, 0]], 4) == 0
-
-    assert is_canonical_id(4, 0)
-
-
-def test_is_canonical():
-    assert board_id([[0, 1, 2], [3, 2, 1], [0, 1, 2]], 4) == 149220
-    assert not is_canonical_id(4, 149220)
-    assert from_board_id(classes, 149220) == 'a b c d c b a b c'
-    assert board_id([[2, 1, 0], [1, 2, 3], [2, 1, 0]], 4) == 28230
-    assert is_canonical_id(4, 28230)
+from break_all import even_split
+from example import BucketBoggler34, Trie
 
 
 def test_even_split():
@@ -25,3 +7,19 @@ def test_even_split():
     assert even_split([1, 2, 3, 4], 4) == [[1], [2], [3], [4]]
     assert even_split([1, 2, 3, 4, 5], 4) == [[1, 2], [3], [4], [5]]
     assert even_split([1, 2, 3, 4, 5, 6, 7], 3) == [[1, 2, 3], [4, 5], [6, 7]]
+
+
+def test_bucket_boggle34():
+    t = Trie.CreateFromFile('boggle-words.txt')
+    bb = BucketBoggler34(t)
+    # s l p i a e n t r d e s
+    assert bb.ParseBoard('lnrsy lnrsy chkmpt aeiou aeiou aeiou lnrsy chkmpt lnrsy bdfgjvwxz aeiou lnrsy')
+    assert bb.UpperBound(1600000) > 1600
+    d = bb.Details()
+    print(d.max_nomark, d.sum_union)
+
+    # assert bb.ParseBoard('s l p i a e n t r d e s')
+    assert bb.ParseBoard('s i n d l a t e p e r s')
+    assert bb.UpperBound(1600000) > 1600
+    d = bb.Details()
+    print(d.max_nomark, d.sum_union)

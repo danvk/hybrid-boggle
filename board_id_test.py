@@ -23,12 +23,13 @@ def test_is_canonical_board_id33():
 
 
 def test_best_34():
-    best = "s l p i a e n t r d e s".split(" ")
+    best = "s i n d l a t e p e r s".split(" ")
     classes = ['bdfgjvwxz', 'aeiou', 'lnrsy', 'chkmpt']
     best_class = ' '.join([next(c for c in classes if x in c) for x in best])
-    assert best_class == 'lnrsy lnrsy chkmpt aeiou aeiou aeiou lnrsy chkmpt lnrsy bdfgjvwxz aeiou lnrsy'
+    assert best_class == 'lnrsy aeiou lnrsy bdfgjvwxz lnrsy aeiou chkmpt aeiou chkmpt aeiou lnrsy lnrsy'
     best_idxs = [next(i for i, c in enumerate(classes) if x in c) for x in best]
-    assert best_idxs == [2, 2, 3, 1, 1, 1, 2, 3, 2, 0, 1, 2]
-    best_idxs2d = [[2, 2, 3], [1, 1, 1], [2, 3, 2], [0, 1, 2]]
-    assert board_id(best_idxs2d, (3, 4), 4) == 9627002
-    assert from_board_id(classes, (3, 4), 9627002) == best_class
+    assert best_idxs == [2, 1, 2, 0, 2, 1, 3, 1, 3, 1, 2, 2]
+    best_idxs2d = [[2, 1, 2], [0, 2, 1], [3, 1, 3], [1, 2, 2]]
+    assert board_id(best_idxs2d, (3, 4), 4) == 10974758
+    assert from_board_id(classes, (3, 4), 10974758) == best_class
+    # assert is_canonical_board_id(4, (3, 4), 9627002)
