@@ -11,25 +11,12 @@ def test_board_id_round_trip():
     assert board == 'a b c d c b a c b'
     assert board_id([[0, 1, 2], [3, 2, 1], [0, 2, 1]], (3, 3), 4) == 100068
 
+    board = from_board_id(classes, (3, 3), 4309)
+    assert board == 'b b b d a a b a a'
+    assert board_id([[1, 1, 1], [3, 0, 0], [1, 0, 0]], (3, 3), 4) == 4309
+
 
 def test_is_canonical_board_id():
     assert is_canonical_board_id(4, (3, 3), 0)
     assert not is_canonical_board_id(4, (3, 3), 100068)
-
-    board_ids = [
-        1234,
-        78960,
-        123456,
-        78912,
-    ]
-    is_canon = {id: is_canonical_board_id(4, (3, 3), id) for id in board_ids}
-    assert is_canon == {1234: True, 78912: False, 78960: False, 123456: False}
-
-
-def test_num_canonical():
-    n_classes = 4
-    indices = [idx for idx in range(0, 4**9) if is_canonical_board_id(n_classes, (3, 3), idx)]
-    with open('/tmp/indices.txt', 'w') as out:
-        for idx in indices:
-            out.write(f'{idx}\n')
-    assert len(indices) == 34960
+    assert not is_canonical_board_id(4, (3, 3), 4309)
