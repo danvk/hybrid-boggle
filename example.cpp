@@ -61,6 +61,17 @@ PYBIND11_MODULE(example, m)
         .def("Details", &BucketBoggler33::Details)
         .def("NumReps", &BucketBoggler33::NumReps);
 
+    using BucketBoggler34 = BucketBoggler<3, 4>;
+    py::class_<BucketBoggler34>(m, "BucketBoggler34")
+        .def(py::init<Trie*>())
+        .def("ParseBoard", &BucketBoggler34::ParseBoard)
+        .def("UpperBound", &BucketBoggler34::UpperBound)
+        .def("as_string",  &BucketBoggler34::as_string)
+        .def("Cell",    &BucketBoggler34::Cell)
+        .def("SetCell", &BucketBoggler34::SetCell)
+        .def("Details", &BucketBoggler34::Details)
+        .def("NumReps", &BucketBoggler34::NumReps);
+
     py::class_<ScoreDetails>(m, "ScoreDetails")
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
         .def_readwrite("sum_union", &ScoreDetails::sum_union);
