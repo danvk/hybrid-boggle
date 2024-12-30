@@ -75,7 +75,7 @@ def apply_symmetry_ids[T](mat: list[list[T]], ids: Sequence[int]):
     ]
 
 
-def is_canonical_within_group[T](mat: list[list], ids: Sequence[int]):
+def is_canonical_within_group(mat: list[list], ids: Sequence[int]):
     """Return the canonical form of a 2D matrix within its symmetry group."""
     me = mat_to_str(mat)
     for sym in apply_symmetry_ids(mat, ids):

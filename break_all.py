@@ -9,6 +9,7 @@ from typing import Sequence
 
 from tqdm import tqdm
 
+from board_id import from_board_id, is_canonical_board_id
 from example import Trie, BucketBoggler33
 
 
@@ -22,6 +23,8 @@ class BreakDetails:
 
 SPLIT_ORDER = ( 4, 5, 3, 1, 7, 0, 2, 6, 8 )
 
+DIMS = (3, 3)
+
 class Breaker:
     def __init__(self, boggler: BucketBoggler33, best_score):
         self.bb = boggler
@@ -31,7 +34,7 @@ class Breaker:
         self.orig_reps_ = 0
 
     def FromId(self, classes, idx: int):
-        board = from_board_id(classes, idx)
+        board = from_board_id(classes, DIMS, idx)
         return self.bb.ParseBoard(board)
 
     def Break(self) -> BreakDetails:
@@ -111,85 +114,6 @@ def even_split[T](xs: Sequence[T], num_buckets: int) -> list[list[T]]:
     return splits
 
 
-def from_board_id(classes: list[str], idx: int) -> str:
-    num_classes = len(classes)
-    board: list[str] = []
-    left = idx
-    for i in range(0, 9):
-        board.append(classes[left % num_classes])
-        left //= num_classes
-    assert left == 0
-    return ' '.join(board)
-
-
-def board_id(bd: list[list[int]], num_classes: int) -> int:
-    id = 0
-    for i in range(8, -1, -1):
-        id *= num_classes
-        id += bd[i//3][i%3]
-    return id
-
-
-def swap(ary, a, b):
-    ax, ay = a
-    bx, by = b
-    ary[ax][ay], ary[bx][by] = ary[bx][by], ary[ax][ay]
-
-
-# TODO: can probably express this all more concisely in Python
-def is_canonical(num_classes: int, idx: int):
-    if idx < 0:
-        return False
-    bd = [[0 for _x in range(0, 3)] for _y in range(0, 3)]
-    left = idx
-    for i in range(0, 9):
-        bd[i//3][i%3] = left % num_classes
-        left //= num_classes
-    assert left == 0
-
-    for rot in (0, 1):
-        # ABC    CBA
-        # DEF -> FED
-        # GHI    IHG
-        for i in range(0, 3):
-            swap(bd, (0, i), (2, i))
-        if board_id(bd, num_classes) < idx:
-            return False
-
-        # CBA    IHG
-        # FED -> FED
-        # IHG    CBA
-        for i in range(0, 3):
-            swap(bd, (i, 0), (i, 2))
-        if board_id(bd, num_classes) < idx:
-            return False
-
-        # IHG    GHI
-        # FED -> DEF
-        # CBA    ABC
-        for i in range(0, 3):
-            swap(bd, (0, i), (2, i))
-        if board_id(bd, num_classes) < idx:
-            return False
-
-        if rot == 1:
-            break
-
-        # GHI    ABC    ADG
-        # DEF -> DEF -> BEH
-        # ABC    GHI    CFI
-        for i in range(0, 3):
-            swap(bd, (i, 0), (i, 2))
-        for i in range(0, 3):
-            for j in range(0, i):
-                swap(bd, (i, j), (j, i))
-
-        if board_id(bd, num_classes) < idx:
-            return False
-
-    return True
-
-
 def main():
     parser = argparse.ArgumentParser(
         description='Find all 3x3 boggle boards with >=N points',
@@ -234,7 +158,7 @@ def main():
         # This gets a more useful, accurate error bar than going in order
         # and filtering inside the main loop.
         indices = [
-            idx for idx in range(0, max_index) if is_canonical(num_classes, idx)
+            idx for idx in range(0, max_index) if is_canonical_board_id(num_classes, DIMS, idx)
         ]
         random.shuffle(indices)
 
