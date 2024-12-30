@@ -15,3 +15,12 @@ def test_board_id_round_trip():
 def test_is_canonical_board_id():
     assert is_canonical_board_id(4, (3, 3), 0)
     assert not is_canonical_board_id(4, (3, 3), 100068)
+
+    board_ids = [
+        1234,
+        78960,
+        123456,
+        78912,
+    ]
+    is_canon = {id: is_canonical_board_id(4, (3, 3), id) for id in board_ids}
+    assert is_canon == {1234: True, 78912: False, 78960: False, 123456: False}
