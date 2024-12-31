@@ -103,6 +103,9 @@ class Breaker:
                 pick = order
                 break
 
+        if pick == -1:
+            return pick, splits
+
         cell = self.bb.Cell(pick)
         cell_len = len(cell)
         if cell_len == 26:
