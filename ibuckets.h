@@ -26,9 +26,9 @@ class BucketBoggler {
   const char* as_string();
 
   // Returns the possible characters in this cell. The result can be modified.
-  char* Cell(int idx) { return bd_[idx]; }
+  char* Cell(unsigned int idx) { return bd_[idx]; }
 
-  void SetCell(int idx, char* val);
+  void SetCell(unsigned int idx, char* val);
 
   // Returns the number of individual boards in the current board class. This
   // isn't guaranteed to fit in a uint64_t, but will for any class you care to
@@ -42,16 +42,16 @@ class BucketBoggler {
   const ScoreDetails& Details() const { return details_; };  // See below.
 
   // Compute an upper bound without any of the costly statistics.
-  int UpperBound(int bailout_score = INT_MAX);
+  unsigned int UpperBound(unsigned int bailout_score = INT_MAX);
 
  private:
-  int DoAllDescents(int idx, int len, Trie* t);
-  int DoDFS(int i, int len, Trie* t);
+  unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
+  unsigned int DoDFS(unsigned int i, unsigned int len, Trie* t);
 
   Trie* dict_;
   uintptr_t runs_;
   char bd_[M*N][27];  // null-terminated lists of possible letters
-  int used_;
+  unsigned int used_;
   ScoreDetails details_;
   char board_rep_[27*M*N];  // for as_string()
 };
@@ -66,7 +66,7 @@ using std::max;
 static const bool PrintWords  = false;
 
 // There's only one "Qu" die, but we allow a board consisting entirely of Qu.
-const int kWordScores[] =
+const unsigned int kWordScores[] =
       //0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18
       { 0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
 
@@ -120,12 +120,12 @@ const char* BucketBoggler<M, N>::as_string() {
 }
 
 template <int M, int N>
-void BucketBoggler<M, N>::SetCell(int idx, char* val) {
+void BucketBoggler<M, N>::SetCell(unsigned int idx, char* val) {
   strcpy(bd_[idx], val);
 }
 
 template <int M, int N>
-int BucketBoggler<M, N>::UpperBound(int bailout_score) {
+unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
   details_.max_nomark = 0;
   details_.sum_union = 0;
 
@@ -146,7 +146,7 @@ int BucketBoggler<M, N>::UpperBound(int bailout_score) {
 }
 
 template <int M, int N>
-inline int BucketBoggler<M, N>::DoAllDescents(int idx, int len, Trie* t) {
+inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx, unsigned int len, Trie* t) {
   int max_score = 0;
   for (int j = 0; bd_[idx][j]; j++) {
     int cc = bd_[idx][j] - 'a';
@@ -159,18 +159,18 @@ inline int BucketBoggler<M, N>::DoAllDescents(int idx, int len, Trie* t) {
 }
 
 template <int M, int N>
-int BucketBoggler<M, N>::DoDFS(int i, int len, Trie* t) {
+unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
   fprintf(stderr, "Not implemented for %dx%d\n", M, N);
   exit(1);
 }
 
 template<>
-int BucketBoggler<3, 3>::DoDFS(int i, int len, Trie* t) {
-  int score = 0;
+unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  unsigned int score = 0;
   used_ ^= (1 << i);
 
 // Using these macros avoids all kinds of branching.
-  int idx;
+  unsigned int idx;
 #define HIT(x,y) do { idx = (x) * 3 + y; \
                       if ((used_ & (1 << idx)) == 0) { \
                         score += DoAllDescents(idx, len, t); \
@@ -201,7 +201,7 @@ int BucketBoggler<3, 3>::DoDFS(int i, int len, Trie* t) {
 #undef HIT8
 
   if (t->IsWord()) {
-    int word_score = kWordScores[len];
+    unsigned int word_score = kWordScores[len];
     score += word_score;
     if (PrintWords)
       printf(" +%2d (%d,%d) %s\n", word_score, i/3, i%3,
@@ -218,12 +218,12 @@ int BucketBoggler<3, 3>::DoDFS(int i, int len, Trie* t) {
 }
 
 template<>
-int BucketBoggler<3, 4>::DoDFS(int i, int len, Trie* t) {
-  int score = 0;
+unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  unsigned int score = 0;
   used_ ^= (1 << i);
 
 // Using these macros avoids all kinds of branching.
-  int idx;
+  unsigned int idx;
 #define HIT(x,y) do { idx = (x) * 4 + y; \
                       if ((used_ & (1 << idx)) == 0) { \
                         score += DoAllDescents(idx, len, t); \
@@ -257,7 +257,7 @@ int BucketBoggler<3, 4>::DoDFS(int i, int len, Trie* t) {
 #undef HIT8
 
   if (t->IsWord()) {
-    int word_score = kWordScores[len];
+    unsigned int word_score = kWordScores[len];
     score += word_score;
     if (PrintWords)
       printf(" +%2d (%d,%d) %s\n", word_score, i/4, i%4,
