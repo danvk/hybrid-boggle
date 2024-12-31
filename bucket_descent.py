@@ -37,19 +37,28 @@ def mutate_buckets(buckets: list[int], n: int) -> list[int]:
     return out
 
 
-def bucket_score(bb: BucketBoggler33, buckets: list[int], board_indices: list[int]) -> float:
+def class_for_board(buckets: list[int], classes: list[str], board: list[int]) -> str:
+    return ' '.join(classes[buckets[b]] for b in board)
+
+
+def bucket_score(bb: BucketBoggler33, buckets: list[int], boards: list[list[int]]) -> float:
     """Score a bucketing of the letters."""
     classes = realize_bucket(buckets)
-    return score_for_classes(bb, classes, board_indices)
-
-
-def score_for_classes(bb: BucketBoggler33, classes: str, board_indices: list[int]) -> float:
     scores = []
-    for idx in board_indices:
-        bd = from_board_id(classes, (3, 3), idx)
+    for idx in boards:
+        bd = class_for_board(buckets, classes, idx)
         bb.ParseBoard(bd)
         scores.append(bb.UpperBound(1_000_000))
     return sum(scores) / len(scores)
+
+
+def class_to_buckets(classes: str) -> list[int]:
+    """Convert a string of classes to a list of buckets."""
+    out = {}
+    for i, letters in enumerate(classes.split()):
+        for c in letters:
+            out[c] = i
+    return [out[c] for c in 'abcdefghijklmnopqrstuvwxyz']
 
 
 def main():
@@ -58,25 +67,32 @@ def main():
     assert t
     num_classes = 4
     w, h = 3, 3
-    max_index = num_classes ** (w*h)
     bb = BucketBoggler33(t)
 
-    board_indices = [
-        random.randint(0, max_index)
+    boards = [
+        [
+            random.randint(0, 25)
+            for _ in range(w * h)
+        ]
         for _ in range(10)
     ]
 
-    score = score_for_classes(bb, 'bdfgjvwxz aeiou lnrsy chkmpt', board_indices)
+    manual = 'bdfgjvwxzq aeiou lnrsy chkmpt'
+    manual_buckets = class_to_buckets(manual)
+    # print(manual_buckets)
+    # print(realize_bucket(manual_buckets))
+    # assert realize_bucket(manual_buckets) == manual.split()
+    score = bucket_score(bb, manual_buckets, boards)
     print(f"Manual score: {score}")
 
     init = random_buckets(num_classes)
     print(f"Initial: {realize_bucket(init)}")
-    score = bucket_score(bb, init, board_indices)
+    score = bucket_score(bb, init, boards)
     print(f"Initial score: {score}")
 
     for i in range(1000):
         new = mutate_buckets(init, num_classes)
-        new_score = bucket_score(bb, new, board_indices)
+        new_score = bucket_score(bb, new, boards)
         if new_score < score:
             init = new
             score = new_score
