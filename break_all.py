@@ -178,7 +178,15 @@ def main():
         type=int,
         default=0,
     )
+    parser.add_argument(
+        '--random_seed',
+        help="Explicitly set the random seed.",
+        type=int,
+        default=-1,
+    )
     args = parser.parse_args()
+    if args.random_seed >= 0:
+        random.seed(args.random_seed)
 
     best_score = args.best_score
     assert best_score > 0
