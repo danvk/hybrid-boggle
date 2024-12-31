@@ -22,11 +22,11 @@ class BreakDetails:
     elapsed_s: float
     failures: list[str]
 
-# SPLIT_ORDER = ( 4, 5, 3, 1, 7, 0, 2, 6, 8 )
+SPLIT_ORDER_33 = ( 4, 5, 3, 1, 7, 0, 2, 6, 8 )
 
 def to_idx(x, y): return x * 4 + y
 
-SPLIT_ORDER = tuple(
+SPLIT_ORDER_34 = tuple(
     to_idx(x, y) for x, y in (
         (1, 1), (1, 2),  # middle
         (0, 1), (2, 1), (0, 2), (2, 2),  # middle sides
@@ -34,20 +34,31 @@ SPLIT_ORDER = tuple(
         (0, 0), (2, 0), (0, 3), (2, 3), # corners
     )
 )
-assert len(SPLIT_ORDER) == 12
+assert len(SPLIT_ORDER_34) == 12
 
-DIMS = (3, 4)
+SPLIT_ORDER = {
+    (3, 3): SPLIT_ORDER_33,
+    (3, 4): SPLIT_ORDER_34,
+}
+Bogglers = {
+    (3, 3): BucketBoggler33,
+    (3, 4): BucketBoggler34,
+}
+
+type BucketBoggler = BucketBoggler33 | BucketBoggler34
 
 class Breaker:
-    def __init__(self, boggler: BucketBoggler34, best_score):
+    def __init__(self, boggler: BucketBoggler, dims: tuple[int, int], best_score: int):
         self.bb = boggler
         self.best_score = best_score
         self.details_ = None
         self.elim_ = 0
         self.orig_reps_ = 0
+        self.dims = dims
+        self.split_order = SPLIT_ORDER[dims]
 
     def FromId(self, classes, idx: int):
-        board = from_board_id(classes, DIMS, idx)
+        board = from_board_id(classes, self.dims, idx)
         return self.bb.ParseBoard(board)
 
     def Break(self) -> BreakDetails:
@@ -72,7 +83,7 @@ class Breaker:
         splits = []
 
         # TODO: lots of comments in C++ source with ideas for exploration here.
-        for order in SPLIT_ORDER:
+        for order in self.split_order:
             # TODO: could do this all in Python to avoid C++ <-> Py
             if len(self.bb.Cell(order)) > 1:
                 pick = order
@@ -118,6 +129,7 @@ class Breaker:
 
 
 # TODO: there's probably a more concise way to express this.
+# Or maybe not https://stackoverflow.com/a/54802737/388951
 def even_split[T](xs: Sequence[T], num_buckets: int) -> list[list[T]]:
     splits = [[]]
     length = len(xs)
@@ -140,6 +152,13 @@ def main():
         type=int,
         help="Print boards with a score >= to this. Filter boards below this. "
         "A higher number will result in a faster run.",
+    )
+    parser.add_argument(
+        "--size",
+        type=int,
+        choices=[33, 34],
+        default=33,
+        help="Size of the boggle board. 33 or 34.",
     )
     parser.add_argument(
         "--dictionary",
@@ -167,23 +186,29 @@ def main():
     assert t
     classes = args.classes.split(' ')
     num_classes = len(classes)
-    w, h = DIMS
+    w, h = dims = args.size // 10, args.size % 10
+    assert 3 <= w <= 4
+    assert 3 <= h <= 4
     max_index = num_classes ** (w*h)
 
-    bb = BucketBoggler34(t)
-    breaker = Breaker(bb, best_score)
+    bb = Bogglers[dims](t)
+    breaker = Breaker(bb, dims, best_score)
 
     if args.board_ids:
         indices = [int(x) for x in args.board_ids.split(',')]
     else:
         # This gets a more useful, accurate error bar than going in order
         # and filtering inside the main loop.
-        indices = [idx for idx in range(0, max_index)]
-        random.shuffle(indices)
-        indices = (idx for idx in indices if is_canonical_board_id(num_classes, DIMS, idx))
+        start_s = time.time()
         if args.max_boards:
-            indices = itertools.islice(indices, args.max_boards)
-        indices = [*indices]
+            # This is dramatically faster than slicing the full permutation array.
+            oversample = random.sample(range(max_index), k=16*args.max_boards)
+            indices = (idx for idx in oversample if is_canonical_board_id(num_classes, dims, idx))
+            indices = [*itertools.islice(indices, args.max_boards)]
+        else:
+            indices = [idx for idx in range(0, max_index) if is_canonical_board_id(num_classes, dims, idx)]
+            random.shuffle(indices)
+        print(f'Found {len(indices)} canonical boards in {time.time() - start_s:.02f}s.')
 
     start_s = time.time()
     good_boards = []
