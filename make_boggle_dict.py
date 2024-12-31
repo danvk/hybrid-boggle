@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Filter a word list to just valid Boggle words, and replace "qu" with "q"."""
 
-
 import fileinput
 
 
@@ -10,9 +9,9 @@ def is_boggle_word(word: str):
     if size < 3 or size > 17:
         return False
     for i, let in enumerate(word):
-        if let < 'a' or let > 'z':
+        if let < "a" or let > "z":
             return False
-        if let == 'q' and (i + 1 >= size or word[i+1] != 'u'):
+        if let == "q" and (i + 1 >= size or word[i + 1] != "u"):
             return False
     return True
 
@@ -20,7 +19,7 @@ def is_boggle_word(word: str):
 def bogglify_word(word: str) -> str | None:
     if not is_boggle_word(word):
         return None
-    return word.replace('qu', 'q')
+    return word.replace("qu", "q")
 
 
 def main():
@@ -31,5 +30,5 @@ def main():
             print(word)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

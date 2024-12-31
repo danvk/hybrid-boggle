@@ -33,18 +33,12 @@ def all_symmetries[T](mat: list[list[T]], no_rotations=False):
         return flips
     r90 = rot90(mat)
     r90fy = flip_y(r90)
-    return [
-        *flips,
-        r90,
-        flip_x(r90),
-        r90fy,
-        flip_x(r90fy)
-    ]
+    return [*flips, r90, flip_x(r90), r90fy, flip_x(r90fy)]
 
 
 def mat_to_str[T](mat: list[list[T]]):
     """Convert a 2D matrix to a string."""
-    return '\n'.join(' '.join(str(row) for row in mat))
+    return "\n".join(" ".join(str(row) for row in mat))
 
 
 def canonicalize[T](mat: list[list[T]]):
@@ -70,9 +64,7 @@ def find_symmetry_ids(mat: list[list]):
 
 def apply_symmetry_ids[T](mat: list[list[T]], ids: Sequence[int]):
     syms = all_symmetries(mat)
-    return [
-        syms[i] for i in ids
-    ]
+    return [syms[i] for i in ids]
 
 
 def is_canonical_within_group(mat: list[list], ids: Sequence[int]):

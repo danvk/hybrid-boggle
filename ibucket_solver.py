@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-from example import Trie, BucketBoggler
+
+from example import BucketBoggler, Trie
 
 
 def main():

@@ -1,5 +1,6 @@
 from symmetry import all_symmetries, canonicalize, flip_x, flip_y, mat_to_str, rot90
 
+
 def test_rot90():
     mat = [
         [1, 2, 3],

@@ -4,16 +4,18 @@
 import fileinput
 import sys
 import time
-from example import Trie as CppTrie, Boggler as CppBoggler
 
+from example import Boggler as CppBoggler
+from example import Trie as CppTrie
 
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
-LETTER_Q = ord('q') - ord('a')
-LETTER_A = ord('a')
+LETTER_Q = ord("q") - ord("a")
+LETTER_A = ord("a")
 
 
 def idx(x: int, y: int):
     return 4 * x + y
+
 
 def pos(idx: int):
     return (idx // 4, idx % 4)
@@ -46,11 +48,11 @@ class HybridBoggler:
     def set_board(self, bd: str):
         assert len(bd) == 16
         for i, let in enumerate(bd):
-            assert 'a' <= let <= 'z'
-            self._cells[i] = ord(let) - ord('a')
+            assert "a" <= let <= "z"
+            self._cells[i] = ord(let) - ord("a")
 
     def __str__(self):
-        return ''.join(chr(ord('a') + let) for let in self._cells)
+        return "".join(chr(ord("a") + let) for let in self._cells)
 
     def score(self):
         self._score = 0
@@ -110,7 +112,7 @@ class PyTrie:
         self.is_word = True
 
     def AddWord(self, word):
-        if word == '':
+        if word == "":
             self.SetIsWord()
             return self
         c = ord(word[0]) - LETTER_A
@@ -155,8 +157,8 @@ def main():
     end_s = time.time()
     elapsed_s = end_s - start_s
     rate = n / elapsed_s
-    sys.stderr.write(f'{n} boards in {elapsed_s:.2f}s = {rate:.2f} boards/s\n')
+    sys.stderr.write(f"{n} boards in {elapsed_s:.2f}s = {rate:.2f} boards/s\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

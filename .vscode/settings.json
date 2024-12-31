@@ -2,5 +2,21 @@
     "C_Cpp.default.includePath": [
         "/Users/danvk/.pyenv/versions/3.12.8/include/python3.12",
         "/Users/danvk/Library/Caches/pypoetry/virtualenvs/pybind11-toy-gDCFGCgE-py3.12/lib/python3.12/site-packages/pybind11/include"
-    ]
+    ],
+    // See https://stackoverflow.com/q/76457139/388951
+    "ruff.codeAction.disableRuleComment": {
+        "enable": false
+    },
+    "[python]": {
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports.ruff": "always",
+        },
+        // "editor.wordBasedSuggestions": "off"
+    },
+    "markdownlint.config": {
+        "code-block-style": false
+    }
 }
