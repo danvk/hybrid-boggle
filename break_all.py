@@ -62,7 +62,14 @@ type BucketBoggler = BucketBoggler33 | BucketBoggler34
 
 
 class Breaker:
-    def __init__(self, boggler: BucketBoggler, dims: tuple[int, int], best_score: int):
+    def __init__(
+        self,
+        boggler: BucketBoggler,
+        dims: tuple[int, int],
+        best_score: int,
+        *,
+        num_splits: int,
+    ):
         self.bb = boggler
         self.best_score = best_score
         self.details_ = None
@@ -70,6 +77,7 @@ class Breaker:
         self.orig_reps_ = 0
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
+        self.num_splits = num_splits
 
     def FromId(self, classes, idx: int):
         board = from_board_id(classes, self.dims, idx)
@@ -112,8 +120,7 @@ class Breaker:
             # TODO: is this ever useful?
             splits = ["aeiou", "sy", "bdfgjkmpvwxzq", "chlnrt"]
         elif cell_len >= 9:
-            # TODO: 4 splits is an interesting choice here
-            splits = ["".join(split) for split in even_split(cell, 4)]
+            splits = ["".join(split) for split in even_split(cell, self.num_splits)]
         else:
             splits = [*cell]
 
@@ -201,6 +208,12 @@ def main():
         type=int,
         default=-1,
     )
+    parser.add_argument(
+        "--num_splits",
+        type=int,
+        default=4,
+        help="Number of partitions to use when breaking a bucket.",
+    )
     args = parser.parse_args()
     if args.random_seed >= 0:
         random.seed(args.random_seed)
@@ -217,7 +230,7 @@ def main():
     max_index = num_classes ** (w * h)
 
     bb = Bogglers[dims](t)
-    breaker = Breaker(bb, dims, best_score)
+    breaker = Breaker(bb, dims, best_score, num_splits=args.num_splits)
 
     if args.board_ids:
         indices = [int(x) for x in args.board_ids.split(",")]
