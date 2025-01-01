@@ -100,21 +100,22 @@ class Breaker:
         # TODO: debug output
         return self.details_
 
-    def PickABucket(self, level: int) -> list[str]:
+    def PickABucket(self, level: int):
         pick = -1
         splits = []
 
+        cells = self.bb.as_string().split(" ")
+
         # TODO: lots of comments in C++ source with ideas for exploration here.
         for order in self.split_order:
-            # TODO: could do this all in Python to avoid C++ <-> Py
-            if len(self.bb.Cell(order)) > 1:
+            if len(cells[order]) > 1:
                 pick = order
                 break
 
         if pick == -1:
-            return pick, splits
+            return pick, splits, cells
 
-        cell = self.bb.Cell(pick)
+        cell = cells[pick]
         cell_len = len(cell)
         if cell_len == 26:
             # TODO: is this ever useful?
@@ -124,19 +125,19 @@ class Breaker:
         else:
             splits = [*cell]
 
-        return pick, splits
+        return pick, splits, cells
 
     def SplitBucket(self, level: int) -> None:
-        cell, splits = self.PickABucket(level)
+        cell, splits, cells = self.PickABucket(level)
         if cell == -1:
             # it's just a board
-            board = self.bb.as_string().replace(" ", "")
+            board = "".join(cells)
             print(f"Unable to break board: {board}")
             self.details_.failures.append(board)
             return
 
-        bd = self.bb.as_string().split(" ")
         for i, split in enumerate(splits):
+            bd = [*cells]
             bd[cell] = split
             # C++ version uses ParseBoard() + Cell() here.
             assert self.bb.ParseBoard(" ".join(bd))
