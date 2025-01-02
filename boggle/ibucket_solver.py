@@ -98,6 +98,8 @@ def main():
     print(bb.as_string())
     with Timer("C++"):
         print(bb.UpperBound(500_000))
+    d = bb.Details()
+    print(d.max_nomark, d.sum_union)
 
     pyt = make_py_trie("boggle-words.txt")
     assert pyt.FindWord("qinqennia") is not None
@@ -110,6 +112,8 @@ def main():
     print(pbb.as_string())
     with Timer("py"):
         print(pbb.UpperBound(500_000))
+    d = pbb.details_
+    print(d.max_nomark, d.sum_union)
 
 
 if __name__ == "__main__":
