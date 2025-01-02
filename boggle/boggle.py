@@ -5,7 +5,8 @@ import fileinput
 import sys
 import time
 
-from cpp_boggle import Boggler as CppBoggler, Trie as CppTrie
+from cpp_boggle import Boggler as CppBoggler
+from cpp_boggle import Trie as CppTrie
 
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
 LETTER_Q = ord("q") - ord("a")
@@ -31,6 +32,8 @@ for i in range(0, 16):
         for dy in range(-1, 2):
             ny = y + dy
             if ny < 0 or ny > 3:
+                continue
+            if nx == 0 and ny == 0:
                 continue
             n.append(idx(nx, ny))
     NEIGHBORS.append(n)
@@ -128,6 +131,26 @@ class PyTrie:
 
     def NumNodes(self):
         return 1 + sum(c.NumNodes() for c in self.children if c)
+
+    def FindWord(self, word):
+        if word == "":
+            return self
+        c = ord(word[0]) - LETTER_A
+        if self.StartsWord(c):
+            return self.Descend(c).FindWord(word[1:])
+        return None
+
+
+def reverse_lookup(root: PyTrie, node: PyTrie):
+    if root is node:
+        return ""
+    for i, child in enumerate(root.children):
+        if not child:
+            continue
+        child_result = reverse_lookup(child, node)
+        if child_result is not None:
+            return chr(i + LETTER_A) + child_result
+    return None
 
 
 def make_py_trie(dict_input: str):
