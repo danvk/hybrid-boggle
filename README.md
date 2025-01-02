@@ -12,6 +12,9 @@ Setup:
 
 ```
 poetry install
-c++ -O3 -Wall -shared -std=c++14 -fPIC $(python3 -m pybind11 --includes) example.cpp trie.cc boggler.cc -o example$(python3-config --extension-suffix) -undefined dynamic_lookup
+./build.sh
+poetry run pytest
 ```
 
+[complete]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
+[danvk/performance-boggle]: https://github.com/danvk/performance-boggle
