@@ -4,7 +4,7 @@ import argparse
 import itertools
 import random
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -21,6 +21,44 @@ class BreakDetails:
     start_time_s: float
     elapsed_s: float
     failures: list[str]
+    elim_level: Counter[int]
+    by_level: Counter[int]
+    secs_by_level: defaultdict[int, float]
+
+
+def print_details(d: BreakDetails):
+    print(f"max_depth: {d.max_depth}")
+    print(f"num_reps: {d.num_reps}")
+    print(f"elapsed_s: {d.elapsed_s}")
+    print(f"failures: {d.failures}")
+    print("by_level:")
+    for k in sorted(d.by_level.keys()):
+        elim = d.elim_level[k]
+        ev = d.by_level[k]
+        print(f"  {k:2d}: {elim} broken ({ev} evals)")
+    print("secs_by_level:")
+    total_s = sum(d.secs_by_level.values())
+    for k, v in sorted(d.secs_by_level.items()):
+        print(f"  {k:2d}: {v:.4f} / {v / total_s:.2%}")
+
+
+def merge_details(a: BreakDetails, b: BreakDetails) -> BreakDetails:
+    return BreakDetails(
+        max_depth=max(a.max_depth, b.max_depth),
+        num_reps=a.num_reps + b.num_reps,
+        start_time_s=a.start_time_s,
+        elapsed_s=a.elapsed_s + b.elapsed_s,
+        failures=a.failures + b.failures,
+        elim_level=a.elim_level + b.elim_level,
+        by_level=a.by_level + b.by_level,
+        secs_by_level=defaultdict(
+            float,
+            {
+                k: a.secs_by_level[k] + b.secs_by_level[k]
+                for k in set(a.secs_by_level) | set(b.secs_by_level)
+            },
+        ),
+    )
 
 
 SPLIT_ORDER_33 = (4, 5, 3, 1, 7, 0, 2, 6, 8)
@@ -90,6 +128,9 @@ class Breaker:
             elapsed_s=0.0,
             start_time_s=0.0,
             failures=[],
+            by_level=Counter(),
+            elim_level=Counter(),
+            secs_by_level=defaultdict(float),
         )
         self.elim_ = 0
         self.orig_reps_ = self.bb.NumReps()
@@ -146,9 +187,15 @@ class Breaker:
     def AttackBoard(self, level: int = 0, num: int = 1, out_of: int = 1) -> None:
         # TODO: debug output
         # reps = self.bb.NumReps()
-        if self.bb.UpperBound(self.best_score) <= self.best_score:
+        self.details_.by_level[level] += 1
+        start_s = time.time()
+        ub = self.bb.UpperBound(self.best_score)
+        elapsed_s = time.time() - start_s
+        self.details_.secs_by_level[level] += elapsed_s
+        if ub <= self.best_score:
             self.elim_ += self.bb.NumReps()
             self.details_.max_depth = max(self.details_.max_depth, level)
+            self.details_.elim_level[level] += 1
         else:
             self.SplitBucket(level)
 
@@ -215,6 +262,11 @@ def main():
         default=4,
         help="Number of partitions to use when breaking a bucket.",
     )
+    parser.add_argument(
+        "--log_per_board_stats",
+        action="store_true",
+        help="Log stats on every board, not just a summary at the end.",
+    )
     args = parser.parse_args()
     if args.random_seed >= 0:
         random.seed(args.random_seed)
@@ -259,10 +311,12 @@ def main():
             f"Found {len(indices)} canonical boards in {time.time() - start_s:.02f}s."
         )
 
+    combined_details = None
     start_s = time.time()
     good_boards = []
     depths = Counter()
     times = Counter()
+    log_per_board_stats = args.log_per_board_stats
     all_details: list[tuple[int, BreakDetails]] = []
     # smoothing=0 means to show the average pace so far, which is the best estimator.
     for idx in tqdm(indices, smoothing=0):
@@ -275,6 +329,15 @@ def main():
         depths[details.max_depth] += 1
         times[round(10 * details.elapsed_s) / 10] += 1
         all_details.append((idx, details))
+        if log_per_board_stats:
+            breaker.FromId(classes, idx)
+            print(breaker.bb.as_string())
+            print_details(details)
+        combined_details = (
+            details
+            if combined_details is None
+            else merge_details(combined_details, details)
+        )
     end_s = time.time()
 
     print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
@@ -282,6 +345,8 @@ def main():
     print("\n".join(good_boards))
     print(f"Depths: {depths.most_common()}")
     print(f"Times (s): {times.most_common()}")
+
+    print_details(combined_details)
 
     all_details.sort()
     with open("/tmp/details.txt", "w") as out:
