@@ -1,12 +1,13 @@
 [tool.poetry]
-name = "pybind11-toy"
+name = "hybrid-boggle"
 version = "0.1.0"
 description = ""
 authors = ["Dan Vanderkam <danvdk@gmail.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "3.12.8"
+python = "^3.13"
 pybind11 = "^2.13.6"
 pytest = "^8.3.4"
 tqdm = "^4.67.1"
