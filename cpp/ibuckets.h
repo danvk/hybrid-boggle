@@ -63,7 +63,7 @@ using std::min;
 using std::max;
 
 // For debugging:
-static const bool PrintWords  = true;
+static const bool PrintWords  = false;
 
 // There's only one "Qu" die, but we allow a board consisting entirely of Qu.
 const unsigned int kWordScores[] =

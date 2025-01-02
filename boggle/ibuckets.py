@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from boggle.boggle import LETTER_A, LETTER_Q, SCORES, PyTrie, reverse_lookup
 
-PRINT_WORDS = True
+PRINT_WORDS = False
 
 
 def init_neighbors33():
@@ -36,7 +36,7 @@ def init_neighbors33():
 
 
 NEIGHBORS = init_neighbors33()
-print("py ", NEIGHBORS)
+# print("py ", NEIGHBORS)
 
 
 @dataclass
