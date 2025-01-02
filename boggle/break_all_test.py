@@ -1,6 +1,6 @@
-from example import BucketBoggler34, Trie
+from cpp_boggle import BucketBoggler34, Trie
 
-from break_all import even_split
+from boggle.break_all import even_split
 
 
 def test_even_split():

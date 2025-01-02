@@ -11,7 +11,7 @@ from typing import Sequence
 from cpp_boggle import BucketBoggler33, BucketBoggler34, Trie
 from tqdm import tqdm
 
-from board_id import from_board_id, is_canonical_board_id
+from boggle.board_id import from_board_id, is_canonical_board_id
 
 
 @dataclass

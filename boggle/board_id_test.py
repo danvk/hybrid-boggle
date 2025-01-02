@@ -1,4 +1,4 @@
-from board_id import board_id, from_board_id, is_canonical_board_id
+from boggle.board_id import board_id, from_board_id, is_canonical_board_id
 
 
 def test_board_id_round_trip33():

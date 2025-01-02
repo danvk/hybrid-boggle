@@ -5,8 +5,7 @@ import fileinput
 import sys
 import time
 
-from example import Boggler as CppBoggler
-from example import Trie as CppTrie
+from cpp_boggle import Boggler as CppBoggler, Trie as CppTrie
 
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
 LETTER_Q = ord("q") - ord("a")

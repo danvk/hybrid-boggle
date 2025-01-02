@@ -1,4 +1,4 @@
-from symmetry import all_symmetries, canonicalize, flip_x, flip_y, mat_to_str, rot90
+from boggle.symmetry import all_symmetries, canonicalize, flip_x, flip_y, mat_to_str, rot90
 
 
 def test_rot90():
