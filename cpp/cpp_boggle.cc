@@ -5,31 +5,11 @@ namespace py = pybind11;
 #include "boggler.h"
 #include "ibuckets.h"
 
-int add(int i, int j)
+PYBIND11_MODULE(cpp_boggle, m)
 {
-    return i + j;
-}
+    m.doc() = "C++ Boggle Solving Tools";
 
-int fib(int n)
-{
-    int a = 0, b = 1;
-    while (b < n) {
-        int tmp = b;
-        b = a + b;
-        a = tmp;
-    }
-    return a;
-}
-
-PYBIND11_MODULE(example, m)
-{
-    m.doc() = "pybind11 example plugin"; // optional module docstring
-
-    m.def("add", &add, "A function which adds two numbers",
-          py::arg("i"), py::arg("j"));
-
-    m.def("fib", &fib, "Largest fibonacci number less than n.");
-
+    // TODO: add docstrings for all methods
     py::class_<Trie>(m, "Trie")
         // .def(py::init())
         .def("StartsWord", &Trie::StartsWord)

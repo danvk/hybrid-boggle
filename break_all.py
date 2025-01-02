@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Sequence
 
-from example import BucketBoggler33, BucketBoggler34, Trie
+from cpp_boggle import BucketBoggler33, BucketBoggler34, Trie
 from tqdm import tqdm
 
 from board_id import from_board_id, is_canonical_board_id
