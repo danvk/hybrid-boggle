@@ -11,7 +11,7 @@ PYBIND11_MODULE(cpp_boggle, m)
 
     // TODO: add docstrings for all methods
     py::class_<Trie>(m, "Trie")
-        // .def(py::init())
+        .def(py::init())
         .def("StartsWord", &Trie::StartsWord)
         .def("Descend", &Trie::Descend, py::return_value_policy::reference)
         .def("IsWord", &Trie::IsWord)
