@@ -27,15 +27,16 @@ def init_neighbors33():
                 ny = y + dy
                 if ny < 0 or ny > 2:
                     continue
-                if nx == 0 and ny == 0:
+                if dx == 0 and dy == 0:
                     continue
                 n.append(idx(nx, ny))
+        n.sort()
         ns.append(n)
     return ns
 
 
 NEIGHBORS = init_neighbors33()
-print(NEIGHBORS)
+print("py ", NEIGHBORS)
 
 
 @dataclass
@@ -114,7 +115,7 @@ class PyBucketBoggler:
             score += word_score
             if PRINT_WORDS:
                 word = reverse_lookup(self.trie_, t)
-                print(" +%2d (%d,%d) %s" % (word_score, idx // 3, idx % 3, word))
+                print(" +%2d (%d,%d) %s" % (word_score, i // 3, i % 3, word))
             if t.Mark() != self.runs_:
                 self.details_.sum_union += word_score
                 t.SetMark(self.runs_)

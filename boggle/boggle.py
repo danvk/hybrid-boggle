@@ -33,7 +33,7 @@ for i in range(0, 16):
             ny = y + dy
             if ny < 0 or ny > 3:
                 continue
-            if nx == 0 and ny == 0:
+            if dx == 0 and dy == 0:
                 continue
             n.append(idx(nx, ny))
     NEIGHBORS.append(n)
