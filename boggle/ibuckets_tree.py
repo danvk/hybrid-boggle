@@ -41,7 +41,9 @@ def max_of_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
 
 
 def max_tree_max(t: TreeOrScalar) -> int:
-    pass
+    if type(t) is int:
+        return t
+    return max(t.choices.values())
 
 
 class TreeBucketBoggler(PyBucketBoggler):

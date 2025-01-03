@@ -1,4 +1,4 @@
-from boggle.ibuckets_tree import MaxTree, add_max_trees
+from boggle.ibuckets_tree import MaxTree, add_max_trees, max_tree_max
 
 
 def test_max_tree_ops():
@@ -11,3 +11,8 @@ def test_max_tree_ops():
     assert add_max_trees(low_tree, tree) == MaxTree(cell=0, choices={"a": 2, "b": 3})
     assert add_max_trees(low_tree, scalar) == MaxTree(cell=0, choices={"a": 3, "b": 3})
     assert add_max_trees(scalar3, scalar) == 5
+
+    assert max_tree_max(scalar) == 2
+    assert max_tree_max(scalar3) == 3
+    assert max_tree_max(tree) == 2
+    assert max_tree_max(low_tree) == 1
