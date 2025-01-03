@@ -11,7 +11,10 @@ from boggle.ibuckets import NEIGHBORS, PyBucketBoggler, ScoreDetails
 class MaxTree:
     cell: int
     choices: dict[str, int]
-    """Invariant: all of these values are > default."""
+    """Invariants:
+    1. len(choices) > 0
+    2. all(c > default for c in choices.values())
+    """
     default: int = 0
     """Value for cells that aren't explicitly listed in choices."""
 
@@ -71,16 +74,15 @@ def max_of_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
         bc = b.choices
         bd = b.default
         md = max(a.default, b.default)
-        return maybe_collapse(
-            MaxTree(
-                cell=a.cell,
-                choices={
-                    k: m
-                    for k in set(itertools.chain(ac.keys(), bc.keys()))
-                    if (m := max(ac.get(k, ad), bc.get(k, bd))) > md
-                },
-                default=md,
-            )
+        # This can't fully collapse.
+        return MaxTree(
+            cell=a.cell,
+            choices={
+                k: m
+                for k in set(itertools.chain(ac.keys(), bc.keys()))
+                if (m := max(ac.get(k, ad), bc.get(k, bd))) > md
+            },
+            default=md,
         )
 
 

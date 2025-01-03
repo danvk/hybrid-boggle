@@ -69,6 +69,14 @@ def test_max_tree_with_default():
         cell=0, choices={"a": 4, "b": 4, "c": 3}, default=2
     )
 
+    tree_with_high_default = MaxTree(cell=0, choices={"d": 11}, default=10)
+    assert max_of_max_trees(scalar, tree_with_high_default) == tree_with_high_default
+    assert (
+        max_of_max_trees(tree_with_default, tree_with_high_default)
+        == tree_with_high_default
+    )
+    assert max_of_max_trees(tree_ac, tree_with_high_default) == tree_with_high_default
+
 
 BIGINT = 1_000_000
 
