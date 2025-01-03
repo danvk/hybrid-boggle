@@ -11,6 +11,8 @@ from boggle.ibuckets import NEIGHBORS, PyBucketBoggler, ScoreDetails
 class MaxTree:
     cell: int
     choices: dict[str, int]
+    default: int = 0
+    """Value for cells that aren't explicitly listed in choices."""
 
 
 type TreeOrScalar = int | MaxTree
@@ -20,19 +22,26 @@ def add_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
     if type(a) is int:
         if type(b) is int:
             return a + b
-        return MaxTree(cell=b.cell, choices={k: a + v for k, v in b.choices.items()})
+        return MaxTree(
+            cell=b.cell,
+            choices={k: a + v for k, v in b.choices.items()},
+            default=a + b.default,
+        )
     else:
         if type(b) is int:
             return add_max_trees(b, a)
         assert a.cell == b.cell
         ac = a.choices
+        ad = a.default
         bc = b.choices
+        bd = b.default
         return MaxTree(
             cell=a.cell,
             choices={
-                k: ac.get(k, 0) + bc.get(k, 0)
+                k: ac.get(k, ad) + bc.get(k, bd)
                 for k in set(itertools.chain(ac.keys(), bc.keys()))
             },
+            default=ad + bd,
         )
 
 
@@ -110,7 +119,8 @@ class TreeBucketBoggler(PyBucketBoggler):
                         idx, length + (2 if cc == LETTER_Q else 1), t.Descend(cc)
                     )
                     assert type(tscore) is int
-                    choices[char] = tscore
+                    if tscore > 0:
+                        choices[char] = tscore
             # TODO: if they're all the same, then this is not a tree.
             return MaxTree(cell=idx, choices=choices) if choices else 0
 
