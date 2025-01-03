@@ -1,7 +1,7 @@
 import pytest
 from cpp_boggle import BucketBoggler33, Trie
 
-from boggle.boggle import PyTrie
+from boggle.boggle import HybridBoggler, PyTrie
 from boggle.ibuckets import PyBucketBoggler
 
 BIGINT = 1_000_000
@@ -115,7 +115,7 @@ def test_q(Boggler, TrieT):
 
 
 @pytest.mark.parametrize("Boggler, TrieT", PARAMS)
-def test_tea_tier(Boggler, TrieT):
+def test_tar_tier(Boggler, TrieT):
     # https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/
 
     t = TrieT()
@@ -134,6 +134,7 @@ def test_tea_tier(Boggler, TrieT):
     assert 3 == bb.UpperBound(BIGINT)
     assert 3 == bb.Details().sum_union
     assert 3 == bb.Details().max_nomark
+    assert 2 == bb.NumReps()
 
     #  t h z
     #  h e z
@@ -142,3 +143,20 @@ def test_tea_tier(Boggler, TrieT):
     assert 1 == bb.UpperBound(BIGINT)
     assert 1 == bb.Details().sum_union
     assert 2 == bb.Details().max_nomark
+
+
+def test_tar_tier_boggler():
+    # Analogous to test_tar_tier(), but try each board.
+    t = PyTrie()
+    t.AddWord("tar")
+    t.AddWord("tie")
+    t.AddWord("tier")
+    t.AddWord("tea")
+    t.AddWord("the")
+
+    b = HybridBoggler(t)
+    b.set_board("tizzazzzrzzzzzzz")
+    assert b.score() == 1
+
+    b.set_board("tizzezzzrzzzzzzz")
+    assert b.score() == 2
