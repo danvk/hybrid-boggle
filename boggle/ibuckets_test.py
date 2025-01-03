@@ -53,6 +53,16 @@ def run_test_bound(Boggler, TrieT):
     assert 0 == bb.Details().sum_union
     assert 0 == bb.Details().max_nomark
 
+    # s e h
+    # e a t
+    # p u c
+    assert bb.ParseBoard("s e p e a u h t c")
+    score = bb.UpperBound(BIGINT)
+    assert 4 == bb.Details().sum_union  # sea(t), tea(s)
+    assert 6 == bb.Details().max_nomark  # seat*2, sea*2, tea
+    assert 1 + 1 + 1 + 1 == score  # all words
+    assert 4 == bb.UpperBound(BIGINT)
+
 
 def test_bound_py():
     run_test_bound(PyBucketBoggler, PyTrie)
