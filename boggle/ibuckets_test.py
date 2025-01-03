@@ -123,6 +123,7 @@ def test_tea_tier(Boggler, TrieT):
     t.AddWord("tie")
     t.AddWord("tier")
     t.AddWord("tea")
+    t.AddWord("the")
 
     bb = Boggler(t)
 
@@ -133,3 +134,11 @@ def test_tea_tier(Boggler, TrieT):
     assert 3 == bb.UpperBound(BIGINT)
     assert 3 == bb.Details().sum_union
     assert 3 == bb.Details().max_nomark
+
+    #  t h z
+    #  h e z
+    #  z z z
+    assert bb.ParseBoard("t h z h e z z z z")
+    assert 1 == bb.UpperBound(BIGINT)
+    assert 1 == bb.Details().sum_union
+    assert 2 == bb.Details().max_nomark
