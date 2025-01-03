@@ -35,6 +35,7 @@ def add_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
                 a, b = b, a
             # TODO: prune. Could be faster, too!
             # TODO: cache a.choices[ac] lookup
+            # TODO: collapse useless nodes
             return MaxTree(
                 cell=a.cell,
                 choices={
@@ -79,6 +80,7 @@ def max_of_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
                 a, b = b, a
             # TODO: prune. Could be faster, too!
             # TODO: cache a.choices[ac] lookup
+            # TODO: collapse useless nodes
             return MaxTree(
                 cell=a.cell,
                 choices={
