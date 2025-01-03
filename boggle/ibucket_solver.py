@@ -139,5 +139,16 @@ def main():
         try_all2(pbb, 1, 4)
 
 
+def main_profile():
+    pyt = make_py_trie("boggle-words.txt")
+    tbb = TreeBucketBoggler(pyt)
+    board = "aeiou chkmpt lnrsy lnrsy lnrsy aeiou aeiou aeiou bdfgjvwxz"
+    tbb.ParseBoard(board)
+    score = tbb.UpperBound(500_000, {1, 4})
+    d = tbb.Details()
+    print("force 1, 4", score, d.max_nomark, d.sum_union)
+
+
 if __name__ == "__main__":
+    # main_profile()
     main()
