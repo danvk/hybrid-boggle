@@ -136,10 +136,10 @@ def test_tar_tier(Boggler, TrieT):
     assert 3 == bb.Details().max_nomark
     assert 2 == bb.NumReps()
 
-    #  t h z
-    #  h e z
-    #  z z z
-    assert bb.ParseBoard("t h z h e z z z z")
+    #  t h .
+    #  h e .
+    #  . . .
+    assert bb.ParseBoard("t h . h e . . . .")
     assert 1 == bb.UpperBound(BIGINT)
     assert 1 == bb.Details().sum_union
     assert 2 == bb.Details().max_nomark

@@ -60,8 +60,12 @@ class PyBucketBoggler:
         self.details = ScoreDetails(0, 0)
 
     def ParseBoard(self, board: str):
-        self.bd_ = board.split(" ")
-        return len(self.bd_) == 9 and all(self.bd_)
+        cells = board.split(" ")
+        if len(cells) != 9 or not all(cells):
+            return False
+        # '.' is an explicit "don't go here," which is useful for testing.
+        self.bd_ = [b if b != "." else "" for b in cells]
+        return True
 
     def NumReps(self) -> int:
         return math.prod(len(cell) for cell in self.bd_)
