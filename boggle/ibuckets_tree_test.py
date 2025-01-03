@@ -22,13 +22,13 @@ def test_tar_tier():
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
-    assert 3 == bb.UpperBound(BIGINT, -1)
+    assert 3 == bb.UpperBound(BIGINT, set())
     assert 3 == bb.Details().sum_union
     assert 3 == bb.Details().max_nomark
     assert 2 == bb.NumReps()
 
     # A force on an irrelevant cell has no effect
-    assert 3 == bb.UpperBound(BIGINT, 0)
+    assert 3 == bb.UpperBound(BIGINT, {0})
 
     # A force on the choice cell reduces the bound.
-    assert 2 == bb.UpperBound(BIGINT, 3)
+    assert 2 == bb.UpperBound(BIGINT, {3})
