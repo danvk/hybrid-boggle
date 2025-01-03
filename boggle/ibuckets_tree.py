@@ -37,7 +37,27 @@ def add_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
 
 
 def max_of_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
-    pass
+    if type(a) is int:
+        if type(b) is int:
+            return max(a, b)
+        if a >= max_tree_max(b):
+            return a
+        return MaxTree(
+            cell=b.cell, choices={k: max(a, v) for k, v in b.choices.items()}
+        )
+    else:
+        if type(b) is int:
+            return max_of_max_trees(b, a)
+        assert a.cell == b.cell
+        ac = a.choices
+        bc = b.choices
+        return MaxTree(
+            cell=a.cell,
+            choices={
+                k: max(ac.get(k, 0), bc.get(k, 0))
+                for k in set(itertools.chain(ac.keys(), bc.keys()))
+            },
+        )
 
 
 def max_tree_max(t: TreeOrScalar) -> int:
