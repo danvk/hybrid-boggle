@@ -1,3 +1,4 @@
+import pytest
 from cpp_boggle import BucketBoggler33, Trie
 
 from boggle.boggle import PyTrie
@@ -6,7 +7,11 @@ from boggle.ibuckets import PyBucketBoggler
 BIGINT = 1_000_000
 
 
-def run_test_boards(Boggler):
+PARAMS = [(PyBucketBoggler, PyTrie), (BucketBoggler33, Trie)]
+
+
+@pytest.mark.parametrize("Boggler, TrieT", PARAMS)
+def test_boards(Boggler, TrieT):
     bb = Boggler(None)
 
     assert not bb.ParseBoard("")
@@ -30,15 +35,8 @@ def run_test_boards(Boggler):
     assert 3 * 4 * 4 == bb.NumReps()
 
 
-def test_boards_py():
-    run_test_boards(PyBucketBoggler)
-
-
-def test_boards_cpp():
-    run_test_boards(BucketBoggler33)
-
-
-def run_test_bound(Boggler, TrieT):
+@pytest.mark.parametrize("Boggler, TrieT", PARAMS)
+def test_bound(Boggler, TrieT):
     t = TrieT()
     t.AddWord("sea")
     t.AddWord("seat")
@@ -73,10 +71,15 @@ def run_test_bound(Boggler, TrieT):
     assert 2 == score
     assert 2 == bb.UpperBound(BIGINT)
 
+    # Add in a "seat", test its (sum union's) shortcomings. Can't have 'seats'
+    # and 'teas' on the board simultaneously, but it still counts both.
+    # st z z
+    #  e a st
+    #  z z s
+    bb.SetCell(5, "st")
+    bb.SetCell(8, "s")
 
-def test_bound_py():
-    run_test_bound(PyBucketBoggler, PyTrie)
-
-
-def test_bound_cpp():
-    run_test_bound(BucketBoggler33, Trie)
+    score = bb.UpperBound(BIGINT)
+    assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
+    assert 4 == bb.Details().max_nomark  # sea(t(s))
+    assert 4 == score
