@@ -114,7 +114,8 @@ class TreeBucketBoggler(PyBucketBoggler):
             # print(i, max_score)
             # TODO: bailout
 
-        # print(max_tree)
+        print(max_tree)
+        # TODO: could return the tree here, it's incredibly useful for pruning.
         self.details_.max_nomark = max_tree_max(max_tree)
         return min(self.details_.max_nomark, self.details_.sum_union)
 

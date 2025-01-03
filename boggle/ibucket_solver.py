@@ -80,8 +80,9 @@ def main():
     t = Trie.CreateFromFile("boggle-words.txt")
     bb = BucketBoggler33(t)
     bb.ParseBoard(board)
+    cell = 4
     print("C++")
-    try_all(bb, 4)
+    try_all(bb, cell)
 
     # print("---")
 
@@ -89,7 +90,7 @@ def main():
     pbb = PyBucketBoggler(pyt)
     pbb.ParseBoard(board)
     print("Python")
-    try_all(pbb, 4)
+    try_all(pbb, cell)
 
     print("---\nTree boggler\n")
     tbb = TreeBucketBoggler(pyt)
@@ -100,7 +101,7 @@ def main():
         print("no force", score, d.max_nomark, d.sum_union)
 
     with Timer("force 4"):
-        score = tbb.UpperBound(500_000, 4)
+        score = tbb.UpperBound(500_000, cell)
         d = tbb.Details()
         print("force 4", score, d.max_nomark, d.sum_union)
 
