@@ -40,6 +40,8 @@ for i in range(0, 16):
 
 
 class HybridBoggler:
+    """Hybrid or pure-Python Boggler (depending on the Trie)."""
+
     def __init__(self, trie):
         self._trie = trie
         self._runs = 0
@@ -87,6 +89,7 @@ class HybridBoggler:
         self._used[i] = False
 
 
+# TODO: move into a trie.py file
 class PyTrie:
     def __init__(self):
         self.is_word = False

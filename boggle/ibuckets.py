@@ -1,6 +1,5 @@
 # Bucketed Boggle in Python
 
-import itertools
 import math
 from dataclasses import dataclass
 
