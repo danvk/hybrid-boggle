@@ -11,6 +11,7 @@ from boggle.ibuckets import NEIGHBORS, PyBucketBoggler, ScoreDetails
 class MaxTree:
     cell: int
     choices: dict[str, int]
+    """Invariant: all of these values are > default."""
     default: int = 0
     """Value for cells that aren't explicitly listed in choices."""
 
@@ -51,21 +52,35 @@ def max_of_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
             return max(a, b)
         if a >= max_tree_max(b):
             return a
-        return MaxTree(
-            cell=b.cell, choices={k: max(a, v) for k, v in b.choices.items()}
+        # There's a new default, so we can filter any entries that are lower.
+        # This can never be empty thanks to the max_tree_max check.
+        md = max(a, b.default)
+        mt = MaxTree(
+            cell=b.cell,
+            choices={k: m for k, v in b.choices.items() if (m := max(a, v)) > md},
+            default=md,
         )
+        assert mt.choices
+        return mt
     else:
         if type(b) is int:
             return max_of_max_trees(b, a)
         assert a.cell == b.cell
         ac = a.choices
+        ad = a.default
         bc = b.choices
-        return MaxTree(
-            cell=a.cell,
-            choices={
-                k: max(ac.get(k, 0), bc.get(k, 0))
-                for k in set(itertools.chain(ac.keys(), bc.keys()))
-            },
+        bd = b.default
+        md = max(a.default, b.default)
+        return maybe_collapse(
+            MaxTree(
+                cell=a.cell,
+                choices={
+                    k: m
+                    for k in set(itertools.chain(ac.keys(), bc.keys()))
+                    if (m := max(ac.get(k, ad), bc.get(k, bd))) > md
+                },
+                default=md,
+            )
         )
 
 
@@ -73,6 +88,10 @@ def max_tree_max(t: TreeOrScalar) -> int:
     if type(t) is int:
         return t
     return max(t.choices.values())
+
+
+def maybe_collapse(t: MaxTree) -> TreeOrScalar:
+    return t if t.choices else t.default
 
 
 class TreeBucketBoggler(PyBucketBoggler):
