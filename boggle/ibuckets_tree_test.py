@@ -56,6 +56,17 @@ def test_max_tree_with_default():
         cell=0, choices={"a": 7, "b": 4, "c": 5}, default=2
     )
 
+    assert max_tree_max(tree_with_default) == 4
+    assert max_tree_max(tree_ac) == 4
+
+    assert max_of_max_trees(scalar, tree_with_default) == tree_with_default
+    assert max_of_max_trees(scalar, tree_ac) == MaxTree(
+        cell=0, choices={"a": 4, "c": 3}, default=2
+    )
+    assert max_of_max_trees(tree_with_default, tree_ac) == MaxTree(
+        cell=0, choices={"a": 4, "b": 4, "c": 3}, default=2
+    )
+
 
 BIGINT = 1_000_000
 
