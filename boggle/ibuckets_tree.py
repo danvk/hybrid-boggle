@@ -111,10 +111,10 @@ class TreeBucketBoggler(PyBucketBoggler):
         for i in range(0, 9):
             max_score = self.DoAllDescents(i, 0, self.trie_)
             max_tree = add_max_trees(max_tree, max_score)
-            print(i, max_score)
+            # print(i, max_score)
             # TODO: bailout
 
-        print(max_tree)
+        # print(max_tree)
         self.details_.max_nomark = max_tree_max(max_tree)
         return min(self.details_.max_nomark, self.details_.sum_union)
 
