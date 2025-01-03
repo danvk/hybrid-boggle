@@ -96,14 +96,19 @@ def main():
     tbb = TreeBucketBoggler(pyt)
     tbb.ParseBoard(board)
     with Timer("no force"):
-        score = tbb.UpperBound(500_000, -1)
+        score = tbb.UpperBound(500_000, set())
         d = tbb.Details()
         print("no force", score, d.max_nomark, d.sum_union)
 
     with Timer("force 4"):
-        score = tbb.UpperBound(500_000, cell)
+        score = tbb.UpperBound(500_000, {cell})
         d = tbb.Details()
         print("force 4", score, d.max_nomark, d.sum_union)
+
+    with Timer("force 1, 4"):
+        score = tbb.UpperBound(500_000, {1, 4})
+        d = tbb.Details()
+        print("force 1, 4", score, d.max_nomark, d.sum_union)
 
 
 if __name__ == "__main__":
