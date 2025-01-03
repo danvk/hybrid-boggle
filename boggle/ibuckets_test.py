@@ -63,6 +63,16 @@ def run_test_bound(Boggler, TrieT):
     assert 1 + 1 + 1 + 1 == score  # all words
     assert 4 == bb.UpperBound(BIGINT)
 
+    # a board where both [st]ea can be found, but not simultaneously
+    # st z z
+    #  e a s
+    assert bb.ParseBoard("st z z e a s z z z")
+    score = bb.UpperBound(BIGINT)
+    assert 3 == bb.Details().sum_union  # tea(s) + sea
+    assert 2 == bb.Details().max_nomark  # tea(s)
+    assert 2 == score
+    assert 2 == bb.UpperBound(BIGINT)
+
 
 def test_bound_py():
     run_test_bound(PyBucketBoggler, PyTrie)
