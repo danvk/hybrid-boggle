@@ -1,6 +1,7 @@
 # Bucketed Boggle in Python
 
 import itertools
+import math
 from dataclasses import dataclass
 
 from boggle.boggle import LETTER_A, LETTER_Q, SCORES, PyTrie, reverse_lookup
@@ -61,10 +62,10 @@ class PyBucketBoggler:
 
     def ParseBoard(self, board: str):
         self.bd_ = board.split(" ")
-        assert len(self.bd_) == 9
+        return len(self.bd_) == 9 and all(self.bd_)
 
-    def NumReps(self):
-        return itertools.product(len(cell) for cell in self.bd_)
+    def NumReps(self) -> int:
+        return math.prod(len(cell) for cell in self.bd_)
 
     def as_string(self):
         return " ".join(self.bd_)
