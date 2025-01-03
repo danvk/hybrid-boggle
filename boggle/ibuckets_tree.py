@@ -48,7 +48,8 @@ class TreeBucketBoggler(PyBucketBoggler):
             return max_score
         else:
             # This cell is being forced and there is a choice to track.
-            choices = {}
+            # MaxTree requires that all choices be filled out explicitly.
+            choices = {k: 0 for k in self.bd_[idx]}
             for char in self.bd_[idx]:
                 cc = ord(char) - LETTER_A
                 if t.StartsWord(cc):
@@ -58,8 +59,12 @@ class TreeBucketBoggler(PyBucketBoggler):
                     assert type(tscore) is int
                     if tscore > 0:
                         choices[char] = tscore
-            # TODO: if they're all the same, then this is not a tree.
-            return MaxTree(cell=idx, choices=choices) if choices else 0
+            # TODO: this could be determined more efficiently
+            minv = min(choices.values())
+            maxv = max(choices.values())
+            if minv == maxv:
+                return minv
+            return MaxTree(cell=idx, choices=choices)
 
     def DoDFS(self, i: int, length: int, t: PyTrie):
         score: TreeOrScalar = 0

@@ -1,4 +1,3 @@
-import itertools
 from dataclasses import dataclass
 
 
@@ -25,6 +24,8 @@ def add_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
         assert a.cell == b.cell
         ac = a.choices
         bc = b.choices
+        # assert set(ac.keys()) == set(bc.keys())
+        # It's unlikely that these all reduce to the same value
         return MaxTree(
             cell=a.cell,
             choices={k: av + bc[k] for k, av in ac.items()},
@@ -49,7 +50,8 @@ def max_of_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
         assert a.cell == b.cell
         ac = a.choices
         bc = b.choices
-        # This can't fully collapse.
+        # assert set(ac.keys()) == set(bc.keys())
+        # It's unlikely that these all reduce to the same value
         return MaxTree(
             cell=a.cell,
             choices={k: max(av, bc[k]) for k, av in ac.items()},
