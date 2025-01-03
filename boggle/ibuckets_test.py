@@ -83,3 +83,33 @@ def test_bound(Boggler, TrieT):
     assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
     assert 4 == bb.Details().max_nomark  # sea(t(s))
     assert 4 == score
+
+
+@pytest.mark.parametrize("Boggler, TrieT", PARAMS)
+def test_q(Boggler, TrieT):
+    t = TrieT()
+    t.AddWord("qa")  # qua = 1
+    t.AddWord("qas")  # qua = 1
+    t.AddWord("qest")  # quest = 2
+
+    bb = Boggler(t)
+    score = 0
+
+    # q a s
+    # a e z
+    # s t z
+    assert bb.ParseBoard("q a s a e z s t z")
+    score = bb.UpperBound(BIGINT)
+    assert 4 == bb.Details().sum_union
+    assert 6 == bb.Details().max_nomark  # (qa + qas)*2 + qest
+    assert 4 == score
+
+    # Make sure "qu" gets parsed as "either 'qu' or 'u'"
+    # qu a s
+    # a e z
+    # s t z
+    assert bb.ParseBoard("qu a s a e z s t z")
+    score = bb.UpperBound(BIGINT)
+    assert 4 == bb.Details().sum_union
+    assert 6 == bb.Details().max_nomark  # (qa + qas)*2 + qest
+    assert 4 == score
