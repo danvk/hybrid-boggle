@@ -7,6 +7,7 @@ from cpp_boggle import BucketBoggler33, Trie
 
 from boggle.boggle import make_py_trie
 from boggle.ibuckets import PyBucketBoggler
+from boggle.ibuckets_tree import TreeBucketBoggler
 
 
 class Timer:
@@ -50,7 +51,7 @@ def main_old():
     print(d.max_nomark, d.sum_union)
 
 
-def try_all(bb):
+def try_all(bb, force_cell=-1):
     print(bb.as_string())
     with Timer("root"):
         score = bb.UpperBound(500_000)
@@ -59,7 +60,7 @@ def try_all(bb):
 
     cells = bb.as_string().split(" ")
     for i, cell in enumerate(cells):
-        if len(cell) == 1:
+        if (force_cell != -1 and i != force_cell) or len(cell) == 1:
             continue
         max_cell = 0
         with Timer(f"force {i}"):
@@ -80,15 +81,28 @@ def main():
     bb = BucketBoggler33(t)
     bb.ParseBoard(board)
     print("C++")
-    try_all(bb)
+    try_all(bb, 4)
 
-    print("---")
+    # print("---")
 
     pyt = make_py_trie("boggle-words.txt")
     pbb = PyBucketBoggler(pyt)
     pbb.ParseBoard(board)
     print("Python")
-    try_all(pbb)
+    try_all(pbb, 4)
+
+    print("---\nTree boggler\n")
+    tbb = TreeBucketBoggler(pyt)
+    tbb.ParseBoard(board)
+    with Timer("no force"):
+        score = tbb.UpperBound(500_000, -1)
+        d = tbb.Details()
+        print("no force", score, d.max_nomark, d.sum_union)
+
+    with Timer("force 4"):
+        score = tbb.UpperBound(500_000, 4)
+        d = tbb.Details()
+        print("force 4", score, d.max_nomark, d.sum_union)
 
 
 if __name__ == "__main__":
