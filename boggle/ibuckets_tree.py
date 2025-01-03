@@ -1,5 +1,6 @@
 # ibuckets with a "choice tree" to track a limited number of choices
 
+import itertools
 from dataclasses import dataclass
 
 from boggle.boggle import LETTER_A, LETTER_Q, SCORES, PyTrie
@@ -16,7 +17,23 @@ type TreeOrScalar = int | MaxTree
 
 
 def add_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
-    pass
+    if type(a) is int:
+        if type(b) is int:
+            return a + b
+        return MaxTree(cell=b.cell, choices={k: a + v for k, v in b.choices.items()})
+    else:
+        if type(b) is int:
+            return add_max_trees(b, a)
+        assert a.cell == b.cell
+        ac = a.choices
+        bc = b.choices
+        return MaxTree(
+            cell=a.cell,
+            choices={
+                k: ac.get(k, 0) + bc.get(k, 0)
+                for k in set(itertools.chain(ac.keys(), bc.keys()))
+            },
+        )
 
 
 def max_of_max_trees(a: TreeOrScalar, b: TreeOrScalar) -> TreeOrScalar:
@@ -70,6 +87,7 @@ class TreeBucketBoggler(PyBucketBoggler):
                     )
                     assert type(tscore) is int
                     score.choices[char] = tscore
+            # TODO: if they're all the same, then this is not a tree.
             return score
 
     def DoDFS(self, i: int, length: int, t: PyTrie):
