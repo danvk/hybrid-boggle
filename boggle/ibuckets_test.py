@@ -93,7 +93,6 @@ def test_q(Boggler, TrieT):
     t.AddWord("qest")  # quest = 2
 
     bb = Boggler(t)
-    score = 0
 
     # q a s
     # a e z
@@ -113,3 +112,24 @@ def test_q(Boggler, TrieT):
     assert 4 == bb.Details().sum_union
     assert 6 == bb.Details().max_nomark  # (qa + qas)*2 + qest
     assert 4 == score
+
+
+@pytest.mark.parametrize("Boggler, TrieT", PARAMS)
+def test_tea_tier(Boggler, TrieT):
+    # https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/
+
+    t = TrieT()
+    t.AddWord("tar")
+    t.AddWord("tie")
+    t.AddWord("tier")
+    t.AddWord("tea")
+
+    bb = Boggler(t)
+
+    #  t i z
+    # ae z z
+    #  r z z
+    assert bb.ParseBoard("t i z ae z z r z z")
+    assert 3 == bb.UpperBound(BIGINT)
+    assert 3 == bb.Details().sum_union
+    assert 3 == bb.Details().max_nomark
