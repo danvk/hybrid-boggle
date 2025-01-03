@@ -143,6 +143,7 @@ def test_tar_tier(Boggler, TrieT):
     assert 1 == bb.UpperBound(BIGINT)
     assert 1 == bb.Details().sum_union
     assert 2 == bb.Details().max_nomark
+    assert bb.as_string() == "t h . h e . . . ."
 
 
 def test_tar_tier_boggler():

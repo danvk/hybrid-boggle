@@ -4,6 +4,7 @@
 import fileinput
 import sys
 import time
+from typing import Self
 
 from cpp_boggle import Boggler as CppBoggler
 from cpp_boggle import Trie as CppTrie
@@ -48,15 +49,19 @@ class HybridBoggler:
         self._cells = [0] * 16
         self._used = [False] * 16
         self._score = 0
+        self.print_words = False
 
     def set_board(self, bd: str):
         assert len(bd) == 16
         for i, let in enumerate(bd):
-            assert "a" <= let <= "z"
-            self._cells[i] = ord(let) - ord("a")
+            if let == ".":
+                self._cells[i] = -1
+            else:
+                assert "a" <= let <= "z"
+                self._cells[i] = ord(let) - ord("a")
 
     def __str__(self):
-        return "".join(chr(ord("a") + let) for let in self._cells)
+        return "".join(chr(ord("a") + let) if let != -1 else "." for let in self._cells)
 
     def score(self):
         self._score = 0
@@ -64,6 +69,8 @@ class HybridBoggler:
         t = self._trie
         for i in range(0, 16):
             c = self._cells[i]
+            if c == -1:
+                continue
             d = t.Descend(c)
             if d:
                 self.do_dfs(i, 0, d)
@@ -77,11 +84,14 @@ class HybridBoggler:
             if t.Mark() != self._runs:
                 t.SetMark(self._runs)
                 self._score += SCORES[length]
-                # print(Trie.ReverseLookup(self._trie, t))
+                if self.print_words:
+                    print(self._trie.__class__.ReverseLookup(self._trie, t))
 
         for idx in NEIGHBORS[i]:
             if not self._used[idx]:
                 cc = self._cells[idx]
+                if cc == -1:
+                    continue
                 d = t.Descend(cc)
                 if d:
                     self.do_dfs(idx, length, d)
@@ -142,6 +152,10 @@ class PyTrie:
         if self.StartsWord(c):
             return self.Descend(c).FindWord(word[1:])
         return None
+
+    @staticmethod
+    def ReverseLookup(root: Self, node: Self):
+        return reverse_lookup(root, node)
 
 
 def reverse_lookup(root: PyTrie, node: PyTrie):

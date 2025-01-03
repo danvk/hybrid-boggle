@@ -71,7 +71,7 @@ class PyBucketBoggler:
         return math.prod(len(cell) for cell in self.bd_)
 
     def as_string(self):
-        return " ".join(self.bd_)
+        return " ".join(b if b else "." for b in self.bd_)
 
     def Cell(self, i: int):
         return self.bd_[i]
