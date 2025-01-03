@@ -1,4 +1,11 @@
-from boggle.ibuckets_tree import MaxTree, add_max_trees, max_of_max_trees, max_tree_max
+from boggle.boggle import PyTrie
+from boggle.ibuckets_tree import (
+    MaxTree,
+    TreeBucketBoggler,
+    add_max_trees,
+    max_of_max_trees,
+    max_tree_max,
+)
 
 
 def test_max_tree_ops():
@@ -28,3 +35,36 @@ def test_max_tree_ops():
         cell=0, choices={"a": 1, "b": 7, "c": 3}
     )
     assert max_of_max_trees(scalar3, scalar) == 3
+
+
+BIGINT = 1_000_000
+
+
+def test_tar_tier():
+    # This is the motivating example for choice trees, see
+    # https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/
+
+    t = PyTrie()
+    t.AddWord("tar")
+    t.AddWord("tie")
+    t.AddWord("tier")
+    t.AddWord("tea")
+    t.AddWord("the")
+
+    #  t i .
+    # ae . .
+    #  r . .
+    bb = TreeBucketBoggler(t)
+    assert bb.ParseBoard("t i z ae z z r z z")
+
+    # With no force, we match the behavior of scalar ibuckets
+    assert 3 == bb.UpperBound(BIGINT, -1)
+    assert 3 == bb.Details().sum_union
+    assert 3 == bb.Details().max_nomark
+    assert 2 == bb.NumReps()
+
+    # A force on an irrelevant cell has no effect
+    assert 3 == bb.UpperBound(BIGINT, 0)
+
+    # A force on the choice cell reduces the bound.
+    assert 2 == bb.UpperBound(BIGINT, 3)
