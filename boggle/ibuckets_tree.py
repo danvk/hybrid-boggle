@@ -13,6 +13,7 @@ from boggle.max_tree import (
 
 class TreeBucketBoggler(PyBucketBoggler):
     force_cells: set[int]
+    max_tree: TreeOrScalar
 
     def __init__(self, trie: PyTrie):
         super().__init__(trie)
@@ -32,6 +33,7 @@ class TreeBucketBoggler(PyBucketBoggler):
         print(max_tree)
         # TODO: could return the tree here, it's incredibly useful for pruning.
         self.details_.max_nomark = max_tree_max(max_tree)
+        self.max_tree = max_tree
         return min(self.details_.max_nomark, self.details_.sum_union)
 
     def DoAllDescents(self, idx: int, length: int, t: PyTrie) -> TreeOrScalar:

@@ -153,3 +153,14 @@ def pivot(t: MaxTree) -> MaxTree:
             tree.choices[c1] = minv
 
     return tree
+
+
+def print_tabular(t: MaxTree, prefix=""):
+    if type(t) is int:
+        print(f"{prefix}: {t}")
+        return
+
+    for choice in sorted(t.choices.keys()):
+        child = t.choices[choice]
+        add = f"{t.cell}={choice}"
+        print_tabular(child, f"{prefix}, {add}" if prefix else add)

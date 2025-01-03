@@ -8,6 +8,7 @@ from cpp_boggle import BucketBoggler33, Trie
 from boggle.boggle import make_py_trie
 from boggle.ibuckets import PyBucketBoggler
 from boggle.ibuckets_tree import TreeBucketBoggler
+from boggle.max_tree import print_tabular
 
 
 class Timer:
@@ -75,6 +76,27 @@ def try_all(bb, force_cell=-1):
         print(f"{i}: {max_cell}")
 
 
+def try_all2(bb, cell1: int, cell2: int):
+    cells = bb.as_string().split(" ")
+    max_cell = 0
+    for choice1 in cells[cell1]:
+        for choice2 in cells[cell2]:
+            cp = [*cells]
+            cp[cell1] = choice1
+            cp[cell2] = choice2
+            assert bb.ParseBoard(" ".join(cp))
+            score = bb.UpperBound(500_000)
+            d = bb.Details()
+            print(
+                f"{cell1}={choice1}, {cell2}={choice2}",
+                score,
+                d.max_nomark,
+                d.sum_union,
+            )
+            max_cell = max(max_cell, score)
+    print(f"max (explicit): {max_cell}")
+
+
 def main():
     (board,) = sys.argv[1:]
     t = Trie.CreateFromFile("boggle-words.txt")
@@ -109,6 +131,12 @@ def main():
         score = tbb.UpperBound(500_000, {1, 4})
         d = tbb.Details()
         print("force 1, 4", score, d.max_nomark, d.sum_union)
+
+    print_tabular(tbb.max_tree)
+
+    with Timer("try_all2"):
+        pbb.ParseBoard(board)
+        try_all2(pbb, 1, 4)
 
 
 if __name__ == "__main__":
