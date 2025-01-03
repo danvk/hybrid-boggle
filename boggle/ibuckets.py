@@ -76,6 +76,9 @@ class PyBucketBoggler:
     def SetCell(self, i: int, chars: str):
         self.bd_[i] = chars
 
+    def Details(self):
+        return self.details_
+
     def UpperBound(self, bailout_score: int):
         self.details_ = ScoreDetails(0, 0)
         self.used_ = 0

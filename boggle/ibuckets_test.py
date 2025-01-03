@@ -1,7 +1,9 @@
-from cpp_boggle import BucketBoggler33
+from cpp_boggle import BucketBoggler33, Trie
 
 from boggle.boggle import PyTrie
 from boggle.ibuckets import PyBucketBoggler
+
+BIGINT = 1_000_000
 
 
 def run_test_boards(Boggler):
@@ -34,3 +36,27 @@ def test_boards_py():
 
 def test_boards_cpp():
     run_test_boards(BucketBoggler33)
+
+
+def run_test_bound(Boggler, TrieT):
+    t = TrieT()
+    t.AddWord("sea")
+    t.AddWord("seat")
+    t.AddWord("seats")
+    t.AddWord("tea")
+    t.AddWord("teas")
+
+    bb = Boggler(t)
+
+    assert bb.ParseBoard("a b c d e f g h i")
+    assert 0 == bb.UpperBound(BIGINT)
+    assert 0 == bb.Details().sum_union
+    assert 0 == bb.Details().max_nomark
+
+
+def test_bound_py():
+    run_test_bound(PyBucketBoggler, PyTrie)
+
+
+def test_bound_cpp():
+    run_test_bound(BucketBoggler33, Trie)
