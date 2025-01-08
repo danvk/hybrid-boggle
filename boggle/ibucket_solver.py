@@ -2,13 +2,16 @@
 
 import sys
 import time
+from collections import Counter
 
-from cpp_boggle import BucketBoggler33, Trie
+import numpy as np
+from cpp_boggle import BucketBoggler34, Trie
+from tqdm import tqdm
 
-from boggle.boggle import make_py_trie
+from boggle.breaker import Breaker
 from boggle.ibuckets import PyBucketBoggler
 from boggle.ibuckets_tree import TreeBucketBoggler
-from boggle.max_tree import print_tabular
+from boggle.trie import make_py_trie
 
 
 class Timer:
@@ -29,7 +32,7 @@ def main_old():
     (board,) = sys.argv[1:]
     t = Trie.CreateFromFile("boggle-words.txt")
     assert t.FindWord("qinqennia") is not None
-    bb = BucketBoggler33(t)
+    bb = BucketBoggler34(t)
     bb.ParseBoard(board)
     print(bb.as_string())
     with Timer("C++"):
@@ -76,7 +79,7 @@ def try_all(bb, force_cell=-1):
         print(f"{i}: {max_cell}")
 
 
-def try_all2(bb, cell1: int, cell2: int):
+def try_all2(bb: PyBucketBoggler, cell1: int, cell2: int):
     cells = bb.as_string().split(" ")
     max_cell = 0
     for choice1 in cells[cell1]:
@@ -86,57 +89,161 @@ def try_all2(bb, cell1: int, cell2: int):
             cp[cell2] = choice2
             assert bb.ParseBoard(" ".join(cp))
             score = bb.UpperBound(500_000)
-            d = bb.Details()
-            print(
-                f"{cell1}={choice1}, {cell2}={choice2}",
-                score,
-                d.max_nomark,
-                d.sum_union,
-            )
+            # d = bb.Details()
+            # print(
+            #     f"{cell1}={choice1}, {cell2}={choice2}",
+            #     score,
+            #     d.max_nomark,
+            #     d.sum_union,
+            # )
             max_cell = max(max_cell, score)
     print(f"max (explicit): {max_cell}")
+
+
+def try_all_tree(bb: TreeBucketBoggler):
+    print(bb.as_string())
+    cells = bb.as_string().split(" ")
+    max_cell = 0
+    i = 4
+    with Timer(f"force {i}"):
+        for c in cells[4]:
+            cp = [*cells]
+            cp[4] = c
+            assert bb.ParseBoard(" ".join(cp))
+
+            with Timer(f"force {i}={c}"):
+                score = bb.UpperBound({0, 1, 2, 3, 5, 6, 7, 8})
+            # d = bb.Details()
+            print(f"{i}/{c}", score)
+            max_cell = max(max_cell, score)
+    print(f"{i}: {max_cell}")
+
+
+def mopup(bb: BucketBoggler34, root: str, tbb: TreeBucketBoggler):
+    # Iterate over all the remaining board classes and break them.
+    root_bd = root.split(" ")
+    best_score = 1500
+    breaker = Breaker(bb, (3, 4), best_score=best_score, num_splits=26)
+    max_tree = tbb.max_tree
+    cells = max_tree.cells
+    unbroken = np.argwhere(max_tree.data >= best_score)
+    for n, multi_idx in tqdm(enumerate(unbroken), smoothing=0, total=len(unbroken)):
+        bd = [*root_bd]
+        for i, v in enumerate(multi_idx):
+            bd[cells[i]] = root_bd[cells[i]][v]
+        bd_str = " ".join(bd)
+        breaker.bb.ParseBoard(bd_str)
+        # print(
+        #     n,
+        #     "/",
+        #     len(unbroken),
+        #     bd_str,
+        #     breaker.bb.NumReps(),
+        #     max_tree.data[tuple(multi_idx)],
+        # )
+        details = breaker.Break()
+        if details.failures:
+            print(details.failures)
+        # if details.max_depth > 1:
+        #     print(f"max_depth={details.max_depth}")
+
+
+def print_counter(c: Counter[str]):
+    for k in sorted(c.keys()):
+        print(f"{k}: {c[k]}")
 
 
 def main():
     (board,) = sys.argv[1:]
     t = Trie.CreateFromFile("boggle-words.txt")
-    bb = BucketBoggler33(t)
+    bb = BucketBoggler34(t)
     bb.ParseBoard(board)
-    cell = 4
+    cell = 5
     print("C++")
     try_all(bb, cell)
 
-    # print("---")
+    bb.ParseBoard(board)
+    # with Timer("C++ BucketBoggler explicit"):
+    #     try_all2(bb, cell, 8)
+
+    print("---")
 
     pyt = make_py_trie("boggle-words.txt")
-    pbb = PyBucketBoggler(pyt)
+    pbb = PyBucketBoggler(pyt, (3, 4))
     pbb.ParseBoard(board)
     print("Python")
-    try_all(pbb, cell)
+    # try_all(pbb, cell)
+    pyt.ResetMarks()
 
     print("---\nTree boggler\n")
-    tbb = TreeBucketBoggler(pyt)
+    tbb = TreeBucketBoggler(pyt, (3, 4), 2)
     tbb.ParseBoard(board)
-    with Timer("no force"):
-        score = tbb.UpperBound(500_000, set())
-        d = tbb.Details()
-        print("no force", score, d.max_nomark, d.sum_union)
 
-    with Timer("force 4"):
-        score = tbb.UpperBound(500_000, {cell})
-        d = tbb.Details()
-        print("force 4", score, d.max_nomark, d.sum_union)
+    # with Timer("no force"):
+    #     score = tbb.UpperBound(set())
+    #     print("no force", score)
+    #
+    # with Timer(f"force {cell}"):
+    #     score = tbb.UpperBound({cell})
+    #     print("force 4", score)
+    with Timer("force depth 5, 8"):
+        score = tbb.UpperBound({5, 8})
+        print("force depth 5, 8", score)
+    print_counter(tbb.universe.counts)
 
-    with Timer("force 1, 4"):
-        score = tbb.UpperBound(500_000, {1, 4})
-        d = tbb.Details()
-        print("force 1, 4", score, d.max_nomark, d.sum_union)
+    tbb.universe.reset_counts()
+    with Timer("force depth 2"):
+        # score = tbb.UpperBound({cell, 8})
+        score = tbb.UpperBound({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11})
+        print("force depth 2", score)
+    print_counter(tbb.universe.counts)
 
-    print_tabular(tbb.max_tree)
+    tbb.universe.reset_counts()
+    # with Timer("tree"):
+    #     score = tbb.UpperBound({1, 2, 4, 5, 6, 7, 8, 10})
+    # print(f"tree bucket boggler score: {score}")
+    # num_elim = (tbb.max_tree.data < 1500).sum()
+    # count = tbb.max_tree.data.size
+    # num_left = count - num_elim
+    # print(f"num left: {num_left} / {count}")
+    # print_counter(tbb.universe.counts)
+    # with Timer("mopup"):
+    #     mopup(bb, board, tbb)
+    # tbb.universe.print(tbb.max_tree)
 
-    with Timer("try_all2"):
-        pbb.ParseBoard(board)
-        try_all2(pbb, 1, 4)
+    # try_all_tree(tbb)
+
+    if False:
+        with Timer("force 1, 4, 7"):
+            score = tbb.UpperBound(500_000, {1, 4, 7})
+            d = tbb.Details()
+            print("force 1, 4, 7", score, d.max_nomark, d.sum_union)
+
+        with Timer("force 1, 4, 7, 3"):
+            score = tbb.UpperBound(500_000, {1, 4, 7, 3})
+            d = tbb.Details()
+            print("force 1, 4, 7, 3", score, d.max_nomark, d.sum_union)
+
+        with Timer("force 1, 4, 7, 3, 5"):
+            score = tbb.UpperBound(500_000, {1, 4, 7, 3, 5})
+            d = tbb.Details()
+            print("force 1, 4, 7, 3, 5", score, d.max_nomark, d.sum_union)
+
+        with Timer("force 1, 4, 7, 3, 5, 0"):
+            score = tbb.UpperBound(500_000, {1, 4, 7, 3, 5, 0})
+            d = tbb.Details()
+            print("force 1, 4, 7, 3, 5, 0", score, d.max_nomark, d.sum_union)
+
+        with Timer("force 1, 4, 7, 3, 5, 0, 6, 8, 2"):
+            score = tbb.UpperBound(500_000, {1, 4, 7, 3, 5, 0, 6, 8, 2})
+            d = tbb.Details()
+            print("force 1, 4, 7, 3, 5, 0, 6, 8, 2", score)
+
+    # tbb.universe.print(tbb.max_tree)
+
+    # with Timer("try_all2"):
+    #     pbb.ParseBoard(board)
+    #     try_all2(pbb, 1, 4)
 
 
 def main_profile():

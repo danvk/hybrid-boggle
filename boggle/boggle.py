@@ -4,70 +4,51 @@
 import fileinput
 import sys
 import time
-from typing import Self
 
 from cpp_boggle import Boggler as CppBoggler
 from cpp_boggle import Trie as CppTrie
 
-SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
-LETTER_Q = ord("q") - ord("a")
+from boggle.neighbors import NEIGHBORS
+
+SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
 LETTER_A = ord("a")
+LETTER_Q = ord("q") - LETTER_A
 
 
-def idx(x: int, y: int):
-    return 4 * x + y
-
-
-def pos(idx: int):
-    return (idx // 4, idx % 4)
-
-
-NEIGHBORS = []
-for i in range(0, 16):
-    x, y = pos(i)
-    n = []
-    for dx in range(-1, 2):
-        nx = x + dx
-        if nx < 0 or nx > 3:
-            continue
-        for dy in range(-1, 2):
-            ny = y + dy
-            if ny < 0 or ny > 3:
-                continue
-            if dx == 0 and dy == 0:
-                continue
-            n.append(idx(nx, ny))
-    NEIGHBORS.append(n)
-
-
-class HybridBoggler:
+class PyBoggler:
     """Hybrid or pure-Python Boggler (depending on the Trie)."""
 
-    def __init__(self, trie):
+    def __init__(self, trie, dims: tuple[int, int]):
         self._trie = trie
         self._runs = 0
-        self._cells = [0] * 16
-        self._used = [False] * 16
+        w, h = dims
+        self._n = w * h
+        self._cells = [0] * self._n
+        self._used = [False] * self._n
         self._score = 0
         self.print_words = False
+        self._neighbors = NEIGHBORS[dims]
+        assert not self._trie.IsWord()
 
     def set_board(self, bd: str):
-        assert len(bd) == 16
+        assert len(bd) == self._n
         for i, let in enumerate(bd):
             if let == ".":
                 self._cells[i] = -1
             else:
                 assert "a" <= let <= "z"
-                self._cells[i] = ord(let) - ord("a")
+                self._cells[i] = ord(let) - LETTER_A
 
     def __str__(self):
         return "".join(chr(ord("a") + let) if let != -1 else "." for let in self._cells)
 
     def score(self):
+        # This allows the same Trie to be used by multiple bogglers, e.g. for boggle_test.py
+        self._runs = 1 + self._trie.Mark()
+        self._trie.SetMark(self._runs)
         self._score = 0
-        self._runs += 1
         t = self._trie
-        for i in range(0, 16):
+        for i in range(0, self._n):
             c = self._cells[i]
             if c == -1:
                 continue
@@ -87,7 +68,7 @@ class HybridBoggler:
                 if self.print_words:
                     print(self._trie.__class__.ReverseLookup(self._trie, t))
 
-        for idx in NEIGHBORS[i]:
+        for idx in self._neighbors[i]:
             if not self._used[idx]:
                 cc = self._cells[idx]
                 if cc == -1:
@@ -97,85 +78,6 @@ class HybridBoggler:
                     self.do_dfs(idx, length, d)
 
         self._used[i] = False
-
-
-# TODO: move into a trie.py file
-class PyTrie:
-    def __init__(self):
-        self.is_word = False
-        self.mark = 0
-        self.children = [None] * 26
-
-    def StartsWord(self, i):
-        return self.children[i] is not None
-
-    def Descend(self, i):
-        return self.children[i]
-
-    def IsWord(self):
-        return self.is_word
-
-    def Mark(self):
-        return self.mark
-
-    def SetMark(self, mark):
-        self.mark = mark
-
-    # ---
-
-    def SetIsWord(self):
-        self.is_word = True
-
-    def AddWord(self, word):
-        if word == "":
-            self.SetIsWord()
-            return self
-        c = ord(word[0]) - LETTER_A
-        try:
-            if not self.StartsWord(c):
-                self.children[c] = PyTrie()
-        except IndexError:
-            print(c, word)
-            raise
-        return self.Descend(c).AddWord(word[1:])
-
-    def Size(self):
-        return (1 if self.IsWord() else 0) + sum(c.Size() for c in self.children if c)
-
-    def NumNodes(self):
-        return 1 + sum(c.NumNodes() for c in self.children if c)
-
-    def FindWord(self, word):
-        if word == "":
-            return self
-        c = ord(word[0]) - LETTER_A
-        if self.StartsWord(c):
-            return self.Descend(c).FindWord(word[1:])
-        return None
-
-    @staticmethod
-    def ReverseLookup(root: Self, node: Self):
-        return reverse_lookup(root, node)
-
-
-def reverse_lookup(root: PyTrie, node: PyTrie):
-    if root is node:
-        return ""
-    for i, child in enumerate(root.children):
-        if not child:
-            continue
-        child_result = reverse_lookup(child, node)
-        if child_result is not None:
-            return chr(i + LETTER_A) + child_result
-    return None
-
-
-def make_py_trie(dict_input: str):
-    t = PyTrie()
-    for word in open(dict_input):
-        word = word.strip()
-        t.AddWord(word)
-    return t
 
 
 def main():

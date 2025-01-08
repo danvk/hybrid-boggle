@@ -3,18 +3,20 @@
 
 import sys
 
-from boggle.boggle import HybridBoggler, make_py_trie
+from boggle.boggle import PyBoggler
+from boggle.trie import make_py_trie
 
 
 def main():
     (_, board) = sys.argv
     t = make_py_trie("boggle-words.txt")
-    boggler = HybridBoggler(t)
+    dims = {
+        9: (3, 3),
+        12: (3, 4),
+        16: (4, 4),
+    }[len(board)]
+    boggler = PyBoggler(t, dims)
     boggler.print_words = True
-    if len(board) == 9:
-        (a, b, c, d, e, f, g, h, i) = board
-        board = "".join((a, b, c, ".", d, e, f, ".", g, h, i, ".", ".", ".", ".", "."))
-        print(board)
     boggler.set_board(board)
     print("score:", boggler.score())
 

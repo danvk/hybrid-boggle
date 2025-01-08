@@ -1,8 +1,9 @@
 import pytest
 from cpp_boggle import BucketBoggler33, Trie
 
-from boggle.boggle import HybridBoggler, PyTrie
+from boggle.boggle import PyBoggler
 from boggle.ibuckets import PyBucketBoggler
+from boggle.trie import PyTrie
 
 BIGINT = 1_000_000
 
@@ -155,7 +156,7 @@ def test_tar_tier_boggler():
     t.AddWord("tea")
     t.AddWord("the")
 
-    b = HybridBoggler(t)
+    b = PyBoggler(t, (4, 4))
     b.set_board("tizzazzzrzzzzzzz")
     assert b.score() == 1
 

@@ -13,6 +13,7 @@ pytest = "^8.3.4"
 tqdm = "^4.67.1"
 ruff = "^0.8.4"
 gprof2dot = "^2024.6.6"
+numpy = "^2.2.1"
 
 
 [build-system]

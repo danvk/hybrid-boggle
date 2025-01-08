@@ -3,40 +3,11 @@
 import math
 from dataclasses import dataclass
 
-from boggle.boggle import LETTER_A, LETTER_Q, SCORES, PyTrie, reverse_lookup
+from boggle.boggle import LETTER_A, LETTER_Q, SCORES
+from boggle.neighbors import NEIGHBORS
+from boggle.trie import PyTrie, reverse_lookup
 
 PRINT_WORDS = False
-
-
-def init_neighbors33():
-    def idx(x: int, y: int):
-        return 3 * x + y
-
-    def pos(idx: int):
-        return (idx // 3, idx % 3)
-
-    ns: list[list[int]] = []
-    for i in range(0, 9):
-        x, y = pos(i)
-        n = []
-        for dx in range(-1, 2):
-            nx = x + dx
-            if nx < 0 or nx > 2:
-                continue
-            for dy in range(-1, 2):
-                ny = y + dy
-                if ny < 0 or ny > 2:
-                    continue
-                if dx == 0 and dy == 0:
-                    continue
-                n.append(idx(nx, ny))
-        n.sort()
-        ns.append(n)
-    return ns
-
-
-NEIGHBORS = init_neighbors33()
-# print("py ", NEIGHBORS)
 
 
 @dataclass
@@ -51,17 +22,20 @@ class PyBucketBoggler:
     runs_: int
     used_: int
     details_: ScoreDetails
+    neighbors: list[list[int]]
 
-    def __init__(self, trie: PyTrie):
+    def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         self.trie_ = trie
         self.runs_ = 0
         self.used_ = 0
         self.bd_ = []
         self.details = ScoreDetails(0, 0)
+        self.neighbors = NEIGHBORS[dims]
+        self.dims = dims
 
     def ParseBoard(self, board: str):
         cells = board.split(" ")
-        if len(cells) != 9 or not all(cells):
+        if len(cells) != self.dims[0] * self.dims[1] or not all(cells):
             return False
         # '.' is an explicit "don't go here," which is useful for testing.
         self.bd_ = [b if b != "." else "" for b in cells]
@@ -86,8 +60,7 @@ class PyBucketBoggler:
         self.details_ = ScoreDetails(0, 0)
         self.used_ = 0
         self.runs_ += 1
-        for i in range(0, 9):
-            # print(i)
+        for i in range(len(self.bd_)):
             max_score = self.DoAllDescents(i, 0, self.trie_)
             self.details_.max_nomark += max_score
             if (
@@ -113,7 +86,7 @@ class PyBucketBoggler:
         score = 0
         self.used_ ^= 1 << i
 
-        for idx in NEIGHBORS[i]:
+        for idx in self.neighbors[i]:
             if not self.used_ & (1 << idx):
                 score += self.DoAllDescents(idx, length, t)
 
