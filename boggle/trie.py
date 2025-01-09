@@ -9,10 +9,10 @@ class PyTrie:
         self.mark = 0
         self.children = [None] * 26
 
-    def StartsWord(self, i):
+    def StartsWord(self, i: int):
         return self.children[i] is not None
 
-    def Descend(self, i):
+    def Descend(self, i: int):
         return self.children[i]
 
     def IsWord(self):

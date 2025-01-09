@@ -7,8 +7,6 @@ from boggle.boggle import LETTER_A, LETTER_Q, SCORES
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie, reverse_lookup
 
-PRINT_WORDS = False
-
 
 @dataclass
 class ScoreDetails:
@@ -23,6 +21,7 @@ class PyBucketBoggler:
     used_: int
     details_: ScoreDetails
     neighbors: list[list[int]]
+    print_words: bool
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         self.trie_ = trie
@@ -32,6 +31,7 @@ class PyBucketBoggler:
         self.details = ScoreDetails(0, 0)
         self.neighbors = NEIGHBORS[dims]
         self.dims = dims
+        self.print_words = False
 
     def ParseBoard(self, board: str):
         cells = board.split(" ")
@@ -93,7 +93,7 @@ class PyBucketBoggler:
         if t.IsWord():
             word_score = SCORES[length]
             score += word_score
-            if PRINT_WORDS:
+            if self.print_words:
                 word = reverse_lookup(self.trie_, t)
                 print(" +%2d (%d,%d) %s" % (word_score, i // 3, i % 3, word))
             if t.Mark() != self.runs_:
