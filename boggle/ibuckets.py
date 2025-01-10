@@ -3,9 +3,9 @@
 import math
 from dataclasses import dataclass
 
-from boggle.boggle import LETTER_A, LETTER_Q, SCORES
+from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.neighbors import NEIGHBORS
-from boggle.trie import PyTrie, make_lookup_table, reverse_lookup
+from boggle.trie import PyTrie, make_lookup_table
 
 
 @dataclass

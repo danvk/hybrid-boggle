@@ -3,7 +3,7 @@
 from collections import Counter, defaultdict
 from typing import Self
 
-from boggle.boggle import LETTER_A, LETTER_Q, SCORES
+from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.trie import PyTrie
 

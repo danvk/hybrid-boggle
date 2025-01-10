@@ -1,6 +1,6 @@
 import functools
 
-from boggle.boggle import PyBoggler
+from boggle.boggler import PyBoggler
 from boggle.trie import make_py_trie
 
 

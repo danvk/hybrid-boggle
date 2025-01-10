@@ -1,6 +1,6 @@
 # ibuckets with a "choice tree" to track a limited number of choices
 
-from boggle.boggle import LETTER_A, LETTER_Q, SCORES
+from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.max_tree import MaxTree, MaxTreeUniverse
 from boggle.trie import PyTrie

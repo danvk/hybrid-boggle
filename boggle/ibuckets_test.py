@@ -1,7 +1,7 @@
 import pytest
 from cpp_boggle import BucketBoggler33, Trie
 
-from boggle.boggle import PyBoggler
+from boggle.boggler import PyBoggler
 from boggle.ibuckets import PyBucketBoggler
 from boggle.trie import PyTrie
 

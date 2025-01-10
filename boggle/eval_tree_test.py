@@ -2,7 +2,6 @@ from boggle.eval_tree import (
     CHOICE_NODE,
     EvalNode,
     EvalTreeBoggler,
-    PrintEvalTreeCounts,
     merge_trees,
 )
 from boggle.ibuckets import PyBucketBoggler
