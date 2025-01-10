@@ -80,6 +80,16 @@ def reverse_lookup(root: PyTrie, node: PyTrie):
     return None
 
 
+def make_lookup_table(t: PyTrie, prefix="", out=None) -> dict[PyTrie, str]:
+    """Construct a Trie -> str table for debugging."""
+    out = out or {}
+    out[t] = prefix
+    for i, child in enumerate(t.children):
+        if child:
+            make_lookup_table(child, prefix + chr(i + LETTER_A), out)
+    return out
+
+
 def make_py_trie(dict_input: str):
     t = PyTrie()
     for word in open(dict_input):

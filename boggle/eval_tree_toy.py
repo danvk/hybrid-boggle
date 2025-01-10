@@ -99,9 +99,9 @@ def main():
     PrintEvalTreeCounts()
     print("---")
 
-    with Timer("compress"):
-        for subtree in subtrees:
-            subtree.compress()
+    # with Timer("compress"):
+    #     for subtree in subtrees:
+    #         subtree.compress()
     for letter, subtree in zip(etb.bd_[5], subtrees):
         # subtree.check_consistency()
         c = subtree.node_count()
@@ -152,10 +152,10 @@ def main():
     print(f"max: {max2}")
     PrintEvalTreeCounts()
 
-    with Timer("compress"):
-        for subtrees in subsubtrees:
-            for subtree in subtrees:
-                subtree.compress()
+    # with Timer("compress"):
+    #     for subtrees in subsubtrees:
+    #         for subtree in subtrees:
+    #             subtree.compress()
     for letter5, subtrees in zip(etb.bd_[5], subsubtrees):
         for letter6, subtree in zip(etb.bd_[6], subtrees):
             b = counts[(letter5, letter6)]
@@ -180,7 +180,26 @@ def main():
                 max_score = max(score, max_score)
     print(f"Tree5 + Force6: {max_score}")
 
+    pbb.collect_words = True
+    cells = board.split(" ")
+    assert "a" in cells[5]
+    cells[5] = "a"
+    assert "e" in cells[6]
+    cells[6] = "e"
+    pbb.ParseBoard(" ".join(cells))
+    pbb.target_word = "tarweed"
+    pbb.UpperBound(500_000)
+    with open("/tmp/words.pbb.txt", "w") as out:
+        out.write("\n".join(pbb.words))
+        out.write("\n")
+
+    tree_words = subsubtrees[0][1].all_words(pbb.lookup_table)
+    with open("/tmp/words.etb.txt", "w") as out:
+        out.write("\n".join(tree_words))
+        out.write("\n")
     # print(subsubtrees[0][0].to_string(etb))
+
+    subsubtrees[0][1].print_paths("tarweed", pbb.lookup_table)
 
 
 if __name__ == "__main__":

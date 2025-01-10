@@ -1,6 +1,12 @@
-from boggle.eval_tree import EvalNode, EvalTreeBoggler
+from boggle.eval_tree import (
+    CHOICE_NODE,
+    EvalNode,
+    EvalTreeBoggler,
+    PrintEvalTreeCounts,
+    merge_trees,
+)
 from boggle.ibuckets import PyBucketBoggler
-from boggle.trie import PyTrie
+from boggle.trie import PyTrie, make_lookup_table
 
 # TODO: add assertions about choice_mask
 
@@ -108,48 +114,54 @@ def test_eval_tree_force():
     t3[1].check_consistency()
 
 
+MINI_DICT = [
+    "aeon",
+    "ail",
+    "air",
+    "ais",
+    "ear",
+    "eau",
+    "eel",
+    "eon",
+    "ion",
+    "lea",
+    "lee",
+    "lei",
+    "lie",
+    "lieu",
+    "loo",
+    "luau",
+    "nee",
+    "oar",
+    "oil",
+    "our",
+    "rei",
+    "ria",
+    "rue",
+    "sau",
+    "sea",
+    "see",
+    "sou",
+    "sue",
+    "yea",
+    "you",
+]
+
+
 def test_equivalence():
-    words = [
-        "aeon",
-        "ail",
-        "air",
-        "ais",
-        "ear",
-        "eau",
-        "eel",
-        "eon",
-        "ion",
-        "lea",
-        "lee",
-        "lei",
-        "lie",
-        "lieu",
-        "loo",
-        "luau",
-        "nee",
-        "oar",
-        "oil",
-        "our",
-        "rei",
-        "ria",
-        "rue",
-        "sau",
-        "sea",
-        "see",
-        "sou",
-        "sue",
-        "yea",
-        "you",
-    ]
     t = PyTrie()
-    for w in words:
+    for w in MINI_DICT:
         t.AddWord(w)
     board = ". . . . lnrsy aeiou aeiou aeiou . . . ."
     bb = PyBucketBoggler(t, (3, 4))
     bb.ParseBoard(board)
+    bb.collect_words = True
     score = bb.UpperBound(500_000)
     assert 5 == score
     assert score == bb.Details().max_nomark
+
+    # print("Root (PyBucketBoggler):")
+    # print("\n".join(bb.words))
 
     t.ResetMarks()
     etb = EvalTreeBoggler(t, (3, 4))
@@ -167,9 +179,21 @@ def test_equivalence():
     assert len(fives) == 5
 
     # print(fives[1].bound)
+    table = make_lookup_table(t)
+    root_words = root.all_words(table)
+    assert [*sorted(root_words)] == [*sorted(bb.words)]
+    # print("Root:")
+    # print("\n".join(root_words))
+    # print("---")
+    # print("5=e words:")
+    # print("\n".join(fives[1].all_words(table)))
+    # print("---")
+
     # print(fives[1].recompute_score())
     # fives[1].compress()
     # print(fives[1].to_dot(etb))
+    # PrintEvalTreeCounts()
+    # assert False
     # print(fives[1].bound)
     # print(fives[1].recompute_score())
 
@@ -181,8 +205,132 @@ def test_equivalence():
         if not fives[i]:
             assert bb.Details().max_nomark == 0
             continue
-        assert bb.Details().max_nomark == fives[i].bound
+        # print("5=e words (PyBucketBoggler):")
+        # print("\n".join(bb.words))
+        # Some combinations may have been ruled out by subtree merging.
+        # The word lists will be the same, however.
+        assert fives[i].bound <= bb.Details().max_nomark
         assert bb.Details().max_nomark == root.score_with_forces({5: i})
         fives[i].check_consistency()
         # Some choices may have been pruned out
         assert fives[i].choice_cells().issubset({4, 6, 7})
+        # The words should be identical, even if some combinations have been ruled out.
+        force_words = [*sorted(fives[i].all_words(table))]
+        assert force_words == [*sorted(bb.words)]
+
+
+def choice_node(cell: int, children):
+    n = EvalNode()
+    n.letter = CHOICE_NODE
+    n.cell = cell
+    n.children = children
+    n.points = 0
+    n.bound = 0
+    return n
+
+
+def letter_node(cell: int, letter: int, points=0, children=None):
+    n = EvalNode()
+    n.letter = letter
+    n.cell = cell
+    n.children = children or []
+    n.points = points
+    n.bound = 0
+    return n
+
+
+def test_merge_eval_trees():
+    t = PyTrie()
+    # for w in MINI_DICT:
+    #     t.AddWord(w)
+    board = ". . . . lnrsy aeiou aeiou aeiou . . . ."
+    etb = EvalTreeBoggler(t, (3, 4))
+    etb.ParseBoard(board)
+
+    t0 = choice_node(
+        cell=6,
+        children=[
+            letter_node(
+                cell=6,
+                letter=0,
+                children=[
+                    choice_node(
+                        cell=7,
+                        children=[letter_node(cell=7, letter=4, points=1)],  # eau
+                    )
+                ],
+            )
+        ],
+    )
+
+    t1 = choice_node(
+        cell=6,
+        children=[
+            letter_node(
+                cell=6,
+                letter=1,
+                children=[
+                    choice_node(
+                        cell=4,
+                        children=[letter_node(cell=4, letter=0, points=1)],  # eel
+                    )
+                ],
+            )
+        ],
+    )
+
+    # print("t0:")
+    # print(t0.to_dot(etb))
+
+    # print("t1:")
+    # print(t1.to_dot(etb))
+
+    # m = merge_trees(t0, t1)
+
+    # this one has more overlap with t0
+    t2 = choice_node(
+        cell=6,
+        children=[
+            letter_node(
+                cell=6,
+                letter=0,
+                children=[
+                    choice_node(
+                        cell=4,
+                        children=[letter_node(cell=7, letter=4, points=1)],  # eeu
+                    ),
+                    choice_node(
+                        cell=7,
+                        children=[
+                            letter_node(cell=7, letter=0, points=1),  # eaa
+                            letter_node(cell=7, letter=4, points=1),  # eau
+                        ],
+                    ),
+                ],
+            ),
+            letter_node(
+                cell=6,
+                letter=1,
+                children=[
+                    choice_node(
+                        cell=4,
+                        children=[letter_node(cell=4, letter=0, points=1)],  # eel
+                    )
+                ],
+            ),
+        ],
+    )
+
+    # print("t2")
+    # print(t2.to_dot(etb))
+
+    # print("t0+t2")
+    m = merge_trees(t0, t2)
+    # print(m.to_dot(etb))
+
+    # print("t1+t2")
+    m = merge_trees(t1, t2)
+    # print(m.to_dot(etb))
+
+    # TODO: assert something!
+    # assert False

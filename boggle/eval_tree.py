@@ -1,6 +1,6 @@
 # Try to speed up ibuckets by explicitly constructing an evaluation tree.
 
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Self
 
 from boggle.boggle import LETTER_A, LETTER_Q, SCORES
@@ -29,6 +29,7 @@ class EvalNode:
     bound: int
     points: int
     children: list[Self | None]
+    trie_node: PyTrie | None
 
     # TODO: could even track _which_ choice on each cell matters
     choice_mask: int
@@ -37,6 +38,7 @@ class EvalNode:
     def __init__(self):
         self.children = []
         self.choice_mask = 0
+        self.trie_node = None
 
     def recompute_score(self):
         # Should return self.bound
@@ -99,7 +101,12 @@ class EvalNode:
             out = [None] * num_lets
             for child in self.children:
                 if child:
-                    out[child.letter] = child
+                    # If this choice isn't a word on its own and it only has one child,
+                    # then we can remove it from the tree entirely.
+                    letter = child.letter
+                    if not child.points and len(child.children) == 1:
+                        child = child.children[0]
+                    out[letter] = child
                     assert child.choice_mask & (1 << cell) == 0
             return out
 
@@ -127,11 +134,37 @@ class EvalNode:
                 choice_mask = (1 << self.cell) & self.choice_mask
             else:
                 bound = self.points + sum(child.bound for child in children)
+                if children and len(children) > 1:
+                    # This groups twice because almost all the time there are no collisions.
+                    by_cell = {}
+                    any_collisions = False
+                    for child in children:
+                        if by_cell.get(child.cell):
+                            any_collisions = True
+                            break
+                        by_cell[child.cell] = True
+                    if any_collisions:
+                        # COUNTS["MERGE"] += 1
+                        by_cell = defaultdict(list)
+                        for c in children:
+                            by_cell[c.cell].append(c)
+                        children = []
+                        for letter, trees in by_cell.items():
+                            if len(trees) == 1:
+                                children.append(trees[0])
+                            else:
+                                child = trees[0]
+                                for c in trees[1:]:
+                                    child = merge_trees(child, c)
+                                children.append(child)
+                        children.sort(key=lambda c: c.cell)
+                        bound = self.points + sum(child.bound for child in children)
 
             if bound > 0:
                 node = EvalNode()
                 node.letter = self.letter
                 node.points = self.points
+                node.trie_node = self.trie_node
                 node.cell = self.cell
                 node.bound = bound
                 node.children = children
@@ -220,6 +253,22 @@ class EvalNode:
             if child:
                 yield from child.all_nodes()
 
+    def all_words(self, word_table: dict[PyTrie, str]) -> list[str]:
+        return [word_table[node.trie_node] for node in self.all_nodes() if node.points]
+
+    def print_paths(self, word: str, word_table: dict[PyTrie, str], prefix=""):
+        if self.letter == ROOT_NODE:
+            prefix = "r"
+        elif self.letter == CHOICE_NODE:
+            prefix += f"->(CH {self.cell})"
+        else:
+            prefix += f"->({self.cell}={self.letter})"
+        if self.points and word_table[self.trie_node] == word:
+            print(prefix)
+        else:
+            for child in self.children:
+                child.print_paths(word, word_table, prefix)
+
     def assign_from(self, other: Self):
         self.letter = other.letter
         self.cell = other.cell
@@ -263,6 +312,63 @@ class EvalNode:
         for _, child_dot in children:
             dot.append(child_dot)
         return me, "\n".join(dot)
+
+
+def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
+    assert a.cell == b.cell, f"{a.cell} != {b.cell}"
+    COUNTS["merge"] += 1
+
+    if a.letter == CHOICE_NODE and b.letter == CHOICE_NODE:
+        # merge equivalent choices
+        choices = {}
+        for child in a.children:
+            choices[child.letter] = child
+        for child in b.children:
+            # choices[child.letter] = child
+            existing = choices.get(child.letter)
+            if existing:
+                choices[child.letter] = merge_trees(existing, child)
+            else:
+                choices[child.letter] = child
+        children = [*choices.values()]
+        children.sort(key=lambda c: c.letter)
+        n = EvalNode()
+        n.letter = CHOICE_NODE
+        n.cell = a.cell
+        n.children = children
+        n.points = 0
+        n.bound = max(child.bound for child in children) if children else 0
+        n.choice_mask = a.choice_mask | b.choice_mask  # TODO: recalculate
+        return n
+    elif a.letter == b.letter:
+        # two sum nodes; merge equivalent children.
+        # merge equivalent choices
+        choices = {}
+        for child in a.children:
+            choices[child.cell] = child
+        for child in b.children:
+            # choices[child.letter] = child
+            existing = choices.get(child.cell)
+            if existing:
+                choices[child.cell] = merge_trees(existing, child)
+            else:
+                choices[child.cell] = child
+        children = [*choices.values()]
+        children.sort(key=lambda c: c.cell)
+
+        n = EvalNode()
+        n.letter = a.letter
+        n.cell = a.cell
+        n.children = children
+        # assert a.points == b.points, f"{a.cell}/{a.letter}: {a.points} != {b.points}"
+        n.points = max(a.points, b.points)  # TODO: why would these ever not match?
+        n.trie_node = a.trie_node or b.trie_node  # TODO: check for match
+        n.bound = n.points + sum(child.bound for child in children)
+        n.choice_mask = a.choice_mask | b.choice_mask  # TODO: recalculate?
+        return n
+    raise ValueError(
+        f"Cannot merge CHOICE_NODE with non-choice: {a.cell}: {a.letter}/{b.letter}"
+    )
 
 
 class EvalTreeBoggler(PyBucketBoggler):
@@ -335,6 +441,7 @@ class EvalTreeBoggler(PyBucketBoggler):
         if t.IsWord():
             word_score = SCORES[length]
             node.points = word_score
+            node.trie_node = t
             score += word_score
             if t.Mark() != self.runs_:
                 self.details_.sum_union += word_score
