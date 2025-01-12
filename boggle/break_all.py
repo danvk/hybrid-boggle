@@ -188,7 +188,7 @@ def main():
         for idx, d in all_details:
             rsb = d.root_score_bailout
             out.write(
-                f"{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{rsb[0]}\t{rsb[1]}{d.elapsed_s}\n"
+                f"{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{rsb[0]}\t{rsb[1]}\t{d.elapsed_s}\n"
             )
 
 

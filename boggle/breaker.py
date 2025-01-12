@@ -3,11 +3,11 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Sequence
 
-from cpp_boggle import BucketBoggler33, BucketBoggler34
+from cpp_boggle import BucketBoggler33, BucketBoggler34, BucketBoggler44
 
 from boggle.board_id import from_board_id
 
-type BucketBoggler = BucketBoggler33 | BucketBoggler34
+type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
 
 
 @dataclass
@@ -202,7 +202,32 @@ SPLIT_ORDER_34 = tuple(
 )
 assert len(SPLIT_ORDER_34) == 12
 
+SPLIT_ORDER_44 = tuple(
+    to_idx(x, y)
+    for x, y in (
+        (1, 1),
+        (1, 2),
+        (2, 1),
+        (2, 2),  # middle
+        (0, 1),
+        (3, 1),
+        (0, 2),
+        (3, 2),  # middle sides
+        (1, 0),
+        (1, 3),
+        (2, 0),
+        (2, 3),  # top/bottom middle
+        (0, 0),
+        (3, 0),
+        (0, 3),
+        (3, 3),  # corners
+    )
+)
+assert len(SPLIT_ORDER_44) == 16
+assert len(set(SPLIT_ORDER_44)) == 16
+
 SPLIT_ORDER = {
     (3, 3): SPLIT_ORDER_33,
     (3, 4): SPLIT_ORDER_34,
+    (4, 4): SPLIT_ORDER_44,
 }
