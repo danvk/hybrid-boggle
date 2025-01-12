@@ -384,7 +384,7 @@ class EvalTreeBoggler(PyBucketBoggler):
         root.letter = ROOT_NODE
         root.cell = 0  # irrelevant
         root.points = 0
-        self.details_ = ScoreDetails(0, 0)
+        self.details_ = ScoreDetails(0, 0, -1)
         self.used_ = 0
         self.runs_ += 1
 

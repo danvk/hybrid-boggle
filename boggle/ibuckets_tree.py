@@ -17,7 +17,7 @@ class TreeBucketBoggler(PyBucketBoggler):
 
     def UpperBound(self, force_cells: set[int]) -> int:
         self.universe = MaxTreeUniverse([*self.bd_], max_depth=self.max_depth)
-        self.details_ = ScoreDetails(0, 0)
+        self.details_ = ScoreDetails(0, 0, -1)
         self.used_ = 0
         self.runs_ += 1
         self.force_cells = force_cells

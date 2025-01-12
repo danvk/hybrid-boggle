@@ -1,28 +1,36 @@
 import argparse
 
-from tqdm import tqdm
-
 
 def from_board_id(classes: list[str], dims: tuple[int, int], idx: int) -> str:
     w, h = dims
     num_classes = len(classes)
     board: list[str] = []
     left = idx
+    # print("from_board_id")
     for i in range(0, w * h):
+        # print(left % num_classes)
         board.append(classes[left % num_classes])
         left //= num_classes
     assert left == 0
     return " ".join(board)
 
 
-# TODO: maybe should be i // h to match C++
 def board_id(bd: list[list[int]], dims: tuple[int, int], num_classes: int) -> int:
     w, h = dims
     id = 0
     for i in range(w * h - 1, -1, -1):
         id *= num_classes
-        id += bd[i // w][i % w]
+        id += bd[i % h][i // h]
     return id
+
+
+def to_2d[T](bd1d: list[T], dims: tuple[int, int]) -> list[list[T]]:
+    w, h = dims
+    bd = [[0 for _x in range(0, w)] for _y in range(0, h)]
+    assert len(bd1d) == w * h
+    for i, v in enumerate(bd1d):
+        bd[i % h][i // h] = v
+    return bd
 
 
 def swap(ary, a, b):
@@ -32,16 +40,26 @@ def swap(ary, a, b):
 
 
 # TODO: can probably express this all more concisely in Python
-def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
+def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
+    """Return an index for a more canonical version of this board.
+
+    Returns the original board ID if there is no such index.
+    This might not return the _most_ canonical version. Call repeatedly for that.
+    """
     w, h = dims
-    if idx < 0:
-        return False
+    assert idx >= 0
     bd = [[0 for _x in range(0, w)] for _y in range(0, h)]
     left = idx
+
+    # dims=(3, 4): bd is 4x3; len(bd) == 4, len(bd[0]) == 3
     for i in range(0, w * h):
-        bd[i // w][i % w] = left % num_classes
+        bd[i % h][i // h] = left % num_classes
         left //= num_classes
     assert left == 0
+
+    # if dims == (3, 4):
+    #     assert len(bd) == 4
+    #     assert len(bd[0]) == 3
 
     rots = (0, 1) if w == h else (0,)
 
@@ -49,26 +67,32 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         # ABC    CBA
         # DEF -> FED
         # GHI    IHG
-        for i in range(0, h):
-            swap(bd, (0, i), (w - 1, i))
-        if board_id(bd, dims, num_classes) < idx:
-            return False
+        for j in range(0, w // 2):
+            for i in range(0, h):
+                swap(bd, (j, i), (w - 1 - j, i))
+        other = board_id(bd, dims, num_classes)
+        if other < idx:
+            return other
 
         # CBA    IHG
         # FED -> FED
         # IHG    CBA
-        for i in range(0, w):
-            swap(bd, (i, 0), (i, h - 1))
-        if board_id(bd, dims, num_classes) < idx:
-            return False
+        for j in range(0, h // 2):
+            for i in range(0, w):
+                swap(bd, (i, j), (i, h - 1 - j))
+        other = board_id(bd, dims, num_classes)
+        if other < idx:
+            return other
 
         # IHG    GHI
         # FED -> DEF
         # CBA    ABC
-        for i in range(0, h):
-            swap(bd, (0, i), (w - 1, i))
-        if board_id(bd, dims, num_classes) < idx:
-            return False
+        for j in range(0, w // 2):
+            for i in range(0, h):
+                swap(bd, (j, i), (w - 1 - j, i))
+        other = board_id(bd, dims, num_classes)
+        if other < idx:
+            return other
 
         if rot == rots[-1]:
             break
@@ -76,16 +100,30 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
         # GHI    ABC    ADG
         # DEF -> DEF -> BEH
         # ABC    GHI    CFI
-        for i in range(0, w):
-            swap(bd, (i, 0), (i, h - 1))
+        for j in range(0, h // 2):
+            for i in range(0, w):
+                swap(bd, (i, j), (i, h - 1 - j))
         for i in range(0, w):
             for j in range(0, i):
                 swap(bd, (i, j), (j, i))
 
-        if board_id(bd, dims, num_classes) < idx:
-            return False
+        other = board_id(bd, dims, num_classes)
+        if other < idx:
+            return other
 
-    return True
+    return idx
+
+
+def get_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
+    other = canonicalize_id(num_classes, dims, idx)
+    if other == idx:
+        return idx
+    return get_canonical_board_id(num_classes, dims, other)
+
+
+def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
+    r = canonicalize_id(num_classes, dims, idx)
+    return r == idx
 
 
 def main():
@@ -106,11 +144,10 @@ def main():
 
     args = parser.parse_args()
     classes = args.classes.split(" ")
-    num_classes = len(classes)
+    n_classes = len(classes)
     w, h = dims = args.size // 10, args.size % 10
     assert 3 <= w <= 4
     assert 3 <= h <= 4
-    max_index = num_classes ** (w * h)
 
     boards: set[str] = set(args.boards)
     numeric_boards = {board for board in boards if board.isdigit()}
@@ -124,19 +161,29 @@ def main():
     if not boards:
         return
 
-    print(f"Searching for {boards}")
-
-    # This is horribly inefficient -- it should be possible to derive the ID directly
-    # from the letter classes. But maybe this is fine if we don't need to do this often.
-    for i in tqdm(range(max_index)):
-        # TODO: add flag to allow searching non-canonical boards (slower)
-        if not is_canonical_board_id(num_classes, dims, i):
+    # expand individual boards to their classes
+    expanded_boards = set()
+    for board in boards:
+        if " " in board:
+            expanded_boards.add(board)
             continue
-        board = from_board_id(classes, dims, i)
-        if board not in boards:
-            continue
+        board_class = " ".join(next(c for c in classes if b in c) for b in board)
+        print(f"Expanding {board} -> {board_class}")
+        expanded_boards.add(board_class)
+    boards = expanded_boards
 
-        print(f"{i}: {board}")
+    for board in boards:
+        bd_1d = board.split(" ")
+        nums = [classes.index(c) for c in bd_1d]
+        bd = to_2d(nums, dims)
+        bd_id = board_id(bd, dims, n_classes)
+        canon = (
+            "canonical"
+            if is_canonical_board_id(n_classes, dims, bd_id)
+            else f"canonical -> {get_canonical_board_id(n_classes, dims, bd_id)}"
+        )
+
+        print(f"{bd_id}\t{board}\t{canon}")
 
 
 if __name__ == "__main__":
