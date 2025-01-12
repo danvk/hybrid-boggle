@@ -1,3 +1,8 @@
+import argparse
+
+from tqdm import tqdm
+
+
 def from_board_id(classes: list[str], dims: tuple[int, int], idx: int) -> str:
     w, h = dims
     num_classes = len(classes)
@@ -81,3 +86,56 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
             return False
 
     return True
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Go between board IDs and board classes",
+    )
+    parser.add_argument(
+        "classes", type=str, help="Space-separated list of letter classes"
+    )
+    parser.add_argument(
+        "--size",
+        type=int,
+        choices=(33, 34, 44),
+        default=33,
+        help="Size of the boggle board.",
+    )
+    parser.add_argument("boards", nargs="+", help="Board classes (space-delimited)")
+
+    args = parser.parse_args()
+    classes = args.classes.split(" ")
+    num_classes = len(classes)
+    w, h = dims = args.size // 10, args.size % 10
+    assert 3 <= w <= 4
+    assert 3 <= h <= 4
+    max_index = num_classes ** (w * h)
+
+    boards: set[str] = set(args.boards)
+    numeric_boards = {board for board in boards if board.isdigit()}
+    boards -= numeric_boards
+
+    if numeric_boards:
+        for i in numeric_boards:
+            board = from_board_id(classes, dims, int(i))
+            print(f"{i}: {board}")
+
+    if not boards:
+        return
+
+    print(f"Searching for {boards}")
+
+    for i in tqdm(range(max_index)):
+        # TODO: add flag to allow searching non-canonical boards (slower)
+        if not is_canonical_board_id(num_classes, dims, i):
+            continue
+        board = from_board_id(classes, dims, i)
+        if board not in boards:
+            continue
+
+        print(f"{i}: {board}")
+
+
+if __name__ == "__main__":
+    main()
