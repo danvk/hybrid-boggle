@@ -12,6 +12,7 @@ from boggle.trie import PyTrie, make_lookup_table
 class ScoreDetails:
     max_nomark: int
     sum_union: int
+    bailout_cell: int
 
 
 class PyBucketBoggler:
@@ -29,7 +30,7 @@ class PyBucketBoggler:
         self.runs_ = 0
         self.used_ = 0
         self.bd_ = []
-        self.details = ScoreDetails(0, 0)
+        self.details_ = None
         self.neighbors = NEIGHBORS[dims]
         self.dims = dims
         self.collect_words = False
@@ -62,7 +63,7 @@ class PyBucketBoggler:
         return self.details_
 
     def UpperBound(self, bailout_score: int):
-        self.details_ = ScoreDetails(0, 0)
+        self.details_ = ScoreDetails(0, 0, -1)
         self.used_ = 0
         self.runs_ += 1
         self.words = None
@@ -76,8 +77,9 @@ class PyBucketBoggler:
             self.details_.max_nomark += max_score
             if (
                 self.details_.max_nomark > bailout_score
-                and self.details.sum_union > bailout_score
+                and self.details_.sum_union > bailout_score
             ):
+                self.details_.bailout_cell = i
                 break
         return min(self.details_.max_nomark, self.details_.sum_union)
 
@@ -87,14 +89,14 @@ class PyBucketBoggler:
             cc = ord(char) - LETTER_A
             if t.StartsWord(cc):
                 # print(" %s" % char)
-                if self.collect_words:
-                    self.cells.append((idx, char))
+                # if self.collect_words:
+                #     self.cells.append((idx, char))
                 tscore = self.DoDFS(
                     idx, length + (2 if cc == LETTER_Q else 1), t.Descend(cc)
                 )
                 max_score = max(max_score, tscore)
-                if self.collect_words:
-                    self.cells.pop()
+                # if self.collect_words:
+                #     self.cells.pop()
         return max_score
 
     def DoDFS(self, i: int, length: int, t: PyTrie):
@@ -112,11 +114,11 @@ class PyBucketBoggler:
                 word = self.lookup_table[t]
                 # print(" +%2d (%d,%d) %s" % (word_score, i // 3, i % 3, word))
                 self.words.append(word)
-                if word == self.target_word:
-                    print(
-                        word,
-                        "->".join(f"{cell}={letter}" for cell, letter in self.cells),
-                    )
+                # if word == self.target_word:
+                #     print(
+                #         word,
+                #         "->".join(f"{cell}={letter}" for cell, letter in self.cells),
+                #     )
             if t.Mark() != self.runs_:
                 self.details_.sum_union += word_score
                 t.SetMark(self.runs_)
