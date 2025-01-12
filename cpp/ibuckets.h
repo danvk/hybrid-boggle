@@ -10,6 +10,7 @@
 struct ScoreDetails {
   int max_nomark;  // select the maximizing letter at each juncture.
   int sum_union;   // all words that can be found, counting each once.
+  int bailout_cell;  // how many cells were tried before hitting the bailout? -1=no bailout.
 };
 
 template <int M, int N>
@@ -130,8 +131,12 @@ template <int M, int N>
 unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
   details_.max_nomark = 0;
   details_.sum_union = 0;
+  details_.bailout_cell = -1;
 
   used_ = 0;
+  // TODO:
+  // - Reset marks & runs_ every 1B runs.
+  // - Use the convention of marking the root node with the run count.
   runs_ += 1;
   for (int i = 0; i < M*N; i++) {
     int max_score = DoAllDescents(i, 0, dict_);
@@ -140,6 +145,7 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
     // establish a sufficiently-tight upper bound.
     if (details_.max_nomark > bailout_score &&
         details_.sum_union > bailout_score) {
+      details_.bailout_cell = i;
       break;
     }
   }

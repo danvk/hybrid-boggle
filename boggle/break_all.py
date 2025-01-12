@@ -6,7 +6,7 @@ import random
 import time
 from collections import Counter
 
-from cpp_boggle import BucketBoggler33, BucketBoggler34, Trie
+from cpp_boggle import BucketBoggler33, BucketBoggler34, BucketBoggler44, Trie
 from tqdm import tqdm
 
 from boggle.board_id import is_canonical_board_id
@@ -17,6 +17,7 @@ from boggle.trie import make_py_trie
 Bogglers = {
     (3, 3): BucketBoggler33,
     (3, 4): BucketBoggler34,
+    (4, 4): BucketBoggler44,
 }
 
 
@@ -36,9 +37,9 @@ def main():
     parser.add_argument(
         "--size",
         type=int,
-        choices=[33, 34],
+        choices=(33, 34, 44),
         default=33,
-        help="Size of the boggle board. 33 or 34.",
+        help="Size of the boggle board.",
     )
     parser.add_argument(
         "--dictionary",
@@ -180,13 +181,14 @@ def main():
     print(f"Depths: {depths.most_common()}")
     print(f"Times (s): {times.most_common()}")
 
-    print_details(combined_details)
+    if len(all_details) > 1:
+        print_details(combined_details)
 
-    all_details.sort()
     with open("/tmp/details.txt", "w") as out:
         for idx, d in all_details:
+            rsb = d.root_score_bailout
             out.write(
-                f"{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{d.elapsed_s}\n"
+                f"{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{rsb[0]}\t{rsb[1]}{d.elapsed_s}\n"
             )
 
 

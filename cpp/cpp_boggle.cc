@@ -54,5 +54,6 @@ PYBIND11_MODULE(cpp_boggle, m)
 
     py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
-        .def_readwrite("sum_union", &ScoreDetails::sum_union);
+        .def_readwrite("sum_union", &ScoreDetails::sum_union)
+        .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
 }

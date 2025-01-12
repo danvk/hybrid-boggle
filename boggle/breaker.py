@@ -1,4 +1,3 @@
-import random
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -21,6 +20,7 @@ class BreakDetails:
     elim_level: Counter[int]
     by_level: Counter[int]
     secs_by_level: defaultdict[int, float]
+    root_score_bailout: tuple[int, int]
 
 
 class Breaker:
@@ -55,6 +55,7 @@ class Breaker:
             by_level=Counter(),
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
+            root_score_bailout=None,
         )
         self.elim_ = 0
         self.orig_reps_ = self.bb.NumReps()
@@ -116,6 +117,8 @@ class Breaker:
         ub = self.bb.UpperBound(self.best_score)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
+        if level == 0:
+            self.details_.root_score_bailout = (ub, self.bb.Details().bailout_cell)
         if ub <= self.best_score:
             self.elim_ += self.bb.NumReps()
             self.details_.max_depth = max(self.details_.max_depth, level)
@@ -140,6 +143,7 @@ def print_details(d: BreakDetails):
     print(f"max_depth: {d.max_depth}")
     print(f"num_reps: {d.num_reps}")
     print(f"elapsed_s: {d.elapsed_s}")
+    print(f"root score: {d.root_score_bailout}")
     print(f"failures: {d.failures}")
     print("by_level:")
     for k in sorted(d.by_level.keys()):
@@ -168,6 +172,7 @@ def merge_details(a: BreakDetails, b: BreakDetails) -> BreakDetails:
                 for k in set(a.secs_by_level) | set(b.secs_by_level)
             },
         ),
+        root_score_bailout=None,
     )
 
 
