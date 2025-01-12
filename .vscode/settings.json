@@ -18,5 +18,9 @@
     },
     "markdownlint.config": {
         "code-block-style": false
+    },
+    "files.associations": {
+        "stdexcept": "cpp",
+        "string": "cpp"
     }
 }

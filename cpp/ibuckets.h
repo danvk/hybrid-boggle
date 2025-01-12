@@ -65,10 +65,12 @@ using std::max;
 // For debugging:
 static const bool PrintWords  = false;
 
-// There's only one "Qu" die, but we allow a board consisting entirely of Qu.
+// There's only one "Qu" die, but we allow a board with many of Qus.
+// This prevents reading uninitialized memory on words with lots of Qus, which
+// can cause spuriously high scores.
 const unsigned int kWordScores[] =
-      //0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-      { 0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
+      //0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      { 0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
 
 template <int M, int N>
 bool BucketBoggler<M, N>::ParseBoard(const char* bd) {
@@ -164,6 +166,8 @@ unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* 
   exit(1);
 }
 
+// 3x3 Boggle
+
 template<>
 unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
   unsigned int score = 0;
@@ -217,6 +221,8 @@ unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* 
   return score;
 }
 
+// 3x4 Boggle
+
 template<>
 unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
   unsigned int score = 0;
@@ -251,6 +257,66 @@ unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
     case 2*4 + 3: HIT(1, 3); HIT(1, 2); HIT(2, 2); break;
   }
 
+#undef HIT
+#undef HIT3x
+#undef HIT3y
+#undef HIT8
+
+  if (t->IsWord()) {
+    unsigned int word_score = kWordScores[len];
+    score += word_score;
+    if (PrintWords)
+      printf(" +%2d (%d,%d) %s\n", word_score, i/4, i%4,
+            Trie::ReverseLookup(dict_, t).c_str());
+
+    if (t->Mark() != runs_) {
+      details_.sum_union += word_score;
+      t->Mark(runs_);
+    }
+  }
+
+  used_ ^= (1 << i);
+  return score;
+}
+
+// 4x4 Boggle
+
+template<>
+unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  unsigned int score = 0;
+  used_ ^= (1 << i);
+
+  unsigned int idx;
+#define HIT(x,y) do { idx = (x) * 4 + y; \
+                      if ((used_ & (1 << idx)) == 0) { \
+                        score += DoAllDescents(idx, len, t); \
+                      } \
+		                } while(0)
+#define HIT3x(x,y) HIT(x,y); HIT(x+1,y); HIT(x+2,y)
+#define HIT3y(x,y) HIT(x,y); HIT(x,y+1); HIT(x,y+2)
+#define HIT8(x,y) HIT3x(x-1,y-1); HIT(x-1,y); HIT(x+1,y); HIT3x(x-1,y+1)
+
+  switch (i) {
+    case 0*4 + 0: HIT(0, 1); HIT(1, 0); HIT(1, 1); break;
+    case 0*4 + 1: HIT(0, 0); HIT3y(1, 0); HIT(0, 2); break;
+    case 0*4 + 2: HIT(0, 1); HIT3y(1, 1); HIT(0, 3); break;
+    case 0*4 + 3: HIT(0, 2); HIT(1, 2); HIT(1, 3); break;
+
+    case 1*4 + 0: HIT(0, 0); HIT(2, 0); HIT3x(0, 1); break;
+    case 1*4 + 1: HIT8(1, 1); break;
+    case 1*4 + 2: HIT8(1, 2); break;
+    case 1*4 + 3: HIT3x(0, 2); HIT(0, 3); HIT(2, 3); break;
+
+    case 2*4 + 0: HIT(1, 0); HIT(3, 0); HIT3x(1, 1); break;
+    case 2*4 + 1: HIT8(2, 1); break;
+    case 2*4 + 2: HIT8(2, 2); break;
+    case 2*4 + 3: HIT3x(1, 2); HIT(1, 3); HIT(3, 3); break;
+
+    case 3*4 + 0: HIT(2, 0); HIT(2, 1); HIT(3, 1); break;
+    case 3*4 + 1: HIT3y(2, 0); HIT(3, 0); HIT(3, 2); break;
+    case 3*4 + 2: HIT3y(2, 1); HIT(3, 1); HIT(3, 3); break;
+    case 3*4 + 3: HIT(2, 2); HIT(3, 2); HIT(2, 3); break;
+  }
 #undef HIT
 #undef HIT3x
 #undef HIT3y

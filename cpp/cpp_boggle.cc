@@ -1,9 +1,27 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
+using std::string;
+
 #include "trie.h"
 #include "boggler.h"
 #include "ibuckets.h"
+
+// See https://stackoverflow.com/a/47749076/388951
+template<int M, int N>
+void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
+    using BB = BucketBoggler<M, N>;
+    // TODO: do I care about buffer_protocol() here?
+    py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
+        .def(py::init<Trie*>())
+        .def("ParseBoard", &BB::ParseBoard)
+        .def("UpperBound", &BB::UpperBound)
+        .def("as_string",  &BB::as_string)
+        .def("Cell",    &BB::Cell)
+        .def("SetCell", &BB::SetCell)
+        .def("Details", &BB::Details)
+        .def("NumReps", &BB::NumReps);
+}
 
 PYBIND11_MODULE(cpp_boggle, m)
 {
@@ -30,29 +48,11 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def(py::init<Trie*>())
         .def("Score", &Boggler::Score);
 
-    using BucketBoggler33 = BucketBoggler<3, 3>;
-    py::class_<BucketBoggler33>(m, "BucketBoggler33")
-        .def(py::init<Trie*>())
-        .def("ParseBoard", &BucketBoggler33::ParseBoard)
-        .def("UpperBound", &BucketBoggler33::UpperBound)
-        .def("as_string",  &BucketBoggler33::as_string)
-        .def("Cell",    &BucketBoggler33::Cell)
-        .def("SetCell", &BucketBoggler33::SetCell)
-        .def("Details", &BucketBoggler33::Details)
-        .def("NumReps", &BucketBoggler33::NumReps);
+    declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
+    declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
+    declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
 
-    using BucketBoggler34 = BucketBoggler<3, 4>;
-    py::class_<BucketBoggler34>(m, "BucketBoggler34")
-        .def(py::init<Trie*>())
-        .def("ParseBoard", &BucketBoggler34::ParseBoard)
-        .def("UpperBound", &BucketBoggler34::UpperBound)
-        .def("as_string",  &BucketBoggler34::as_string)
-        .def("Cell",    &BucketBoggler34::Cell)
-        .def("SetCell", &BucketBoggler34::SetCell)
-        .def("Details", &BucketBoggler34::Details)
-        .def("NumReps", &BucketBoggler34::NumReps);
-
-    py::class_<ScoreDetails>(m, "ScoreDetails")
+    py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
         .def_readwrite("sum_union", &ScoreDetails::sum_union);
 }

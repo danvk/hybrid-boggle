@@ -126,6 +126,8 @@ def main():
 
     print(f"Searching for {boards}")
 
+    # This is horribly inefficient -- it should be possible to derive the ID directly
+    # from the letter classes. But maybe this is fine if we don't need to do this often.
     for i in tqdm(range(max_index)):
         # TODO: add flag to allow searching non-canonical boards (slower)
         if not is_canonical_board_id(num_classes, dims, i):

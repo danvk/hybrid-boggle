@@ -81,10 +81,9 @@ def main():
         help="Set to a board class to override --random_ids, --max_boards, etc.",
     )
     parser.add_argument(
-        "--ibuckets_implementation",
-        choices=("C++", "python"),
-        default="C++",
-        help="Which ibuckets implementation to use. Python is _much_ slower!",
+        "--python",
+        action="store_true",
+        help="Use Python implementation of ibucekts instead of C++. This is ~50x slower!",
     )
     args = parser.parse_args()
     if args.random_seed >= 0:
@@ -99,7 +98,7 @@ def main():
     assert 3 <= h <= 4
     max_index = num_classes ** (w * h)
 
-    if args.ibuckets_implementation == "python":
+    if args.python:
         t = make_py_trie(args.dictionary)
         assert t
         bb = PyBucketBoggler(t, dims)
