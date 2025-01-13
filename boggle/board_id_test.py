@@ -70,3 +70,12 @@ def test_2d_1d_round_trip():
         ["d", "e", "s"],
     ]
     assert to_1d(bd2d) == [*board]
+
+    board34plus = "sindlatepersabcd"
+    bd2d = to_2d(board34plus, (4, 4))
+    assert bd2d == [
+        ["s", "l", "p", "a"],  #
+        ["i", "a", "e", "b"],
+        ["n", "t", "r", "c"],
+        ["d", "e", "s", "d"],
+    ]
