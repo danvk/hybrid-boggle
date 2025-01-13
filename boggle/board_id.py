@@ -1,4 +1,5 @@
 import argparse
+from typing import Sequence
 
 
 def from_board_id(classes: list[str], dims: tuple[int, int], idx: int) -> str:
@@ -24,13 +25,22 @@ def board_id(bd: list[list[int]], dims: tuple[int, int], num_classes: int) -> in
     return id
 
 
-def to_2d[T](bd1d: list[T], dims: tuple[int, int]) -> list[list[T]]:
+def to_2d[T](bd1d: Sequence[T], dims: tuple[int, int]) -> list[list[T]]:
     w, h = dims
     bd = [[0 for _x in range(0, w)] for _y in range(0, h)]
     assert len(bd1d) == w * h
     for i, v in enumerate(bd1d):
         bd[i % h][i // h] = v
     return bd
+
+
+def to_1d[T](bd2d: Sequence[Sequence[T]]) -> list[T]:
+    out = []
+    w = len(bd2d[0])
+    h = len(bd2d)
+    for i in range(w * h):
+        out.append(bd2d[i % h][i // h])
+    return out
 
 
 def swap(ary, a, b):

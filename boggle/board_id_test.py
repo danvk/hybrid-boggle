@@ -3,6 +3,7 @@ from boggle.board_id import (
     from_board_id,
     get_canonical_board_id,
     is_canonical_board_id,
+    to_1d,
     to_2d,
 )
 
@@ -57,3 +58,15 @@ def test_best_34():
         ["lnrsy", "chkmpt", "lnrsy"],  # R T N
         ["lnrsy", "aeiou", "bdfgjvwxz"],  # S E D
     ]
+
+
+def test_2d_1d_round_trip():
+    board = "sindlatepers"
+    bd2d = to_2d(board, (3, 4))
+    assert bd2d == [
+        ["s", "l", "p"],  #
+        ["i", "a", "e"],
+        ["n", "t", "r"],
+        ["d", "e", "s"],
+    ]
+    assert to_1d(bd2d) == [*board]
