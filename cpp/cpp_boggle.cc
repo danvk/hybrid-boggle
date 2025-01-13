@@ -41,6 +41,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("FindWord", &Trie::FindWord, py::return_value_policy::reference)
         .def("Size", &Trie::Size)
         .def("NumNodes", &Trie::NumNodes)
+        .def("SetAllMarks", &Trie::SetAllMarks)
         .def_static("ReverseLookup", py::overload_cast<const Trie*, const Trie*>(&Trie::ReverseLookup))
         .def_static("CreateFromFile", &Trie::CreateFromFile);
 

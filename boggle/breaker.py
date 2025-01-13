@@ -85,7 +85,8 @@ class Breaker:
         cell_len = len(cell)
         if cell_len == 26:
             # TODO: is this ever useful?
-            splits = ["aeiou", "sy", "bdfgjkmpvwxzq", "chlnrt"]
+            splits = ["bdfgjqvwxz", "aeiou", "lnrsy", "chkmpt"]
+            # splits = ["aeiou", "sy", "bdfgjkmpvwxzq", "chlnrt"]
         elif cell_len >= 9:
             splits = ["".join(split) for split in even_split(cell, self.num_splits)]
         else:
@@ -98,7 +99,7 @@ class Breaker:
         if cell == -1:
             # it's just a board
             board = "".join(cells)
-            print(f"Unable to break board: {board}")
+            # print(f"Unable to break board: {board}")
             self.details_.failures.append(board)
             return
 
