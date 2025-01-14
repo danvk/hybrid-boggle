@@ -1,7 +1,8 @@
 # Try to speed up ibuckets by explicitly constructing an evaluation tree.
 
+import math
 from collections import Counter, defaultdict
-from typing import Self
+from typing import Callable, Self, Sequence
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
@@ -260,6 +261,16 @@ class EvalNode:
                 out.update(child.choice_cells())
         return out
 
+    def choice_letters(self, out=None) -> set[tuple[int, int]]:
+        """All letters on each cell that lead to points."""
+        if out is None:
+            out = set()
+        if self.letter >= 0:
+            out.add((self.cell, self.letter))
+        for child in self.children:
+            child.choice_letters(out)
+        return out
+
     def all_nodes(self):
         yield self
         for child in self.children:
@@ -325,6 +336,48 @@ class EvalNode:
         for _, child_dot in children:
             dot.append(child_dot)
         return me, "\n".join(dot)
+
+    def to_json(self, solver: PyBucketBoggler, max_depth=100):
+        out = {
+            "type": (
+                "ROOT"
+                if self.letter == ROOT_NODE
+                else "CHOICE"
+                if self.letter == CHOICE_NODE
+                else f"{self.letter}={solver.bd_[self.cell][self.letter]}"
+            ),
+            "cell": self.cell,
+            "bound": self.bound,
+            "mask": [i for i in range(16) if self.choice_mask & (1 << i)],
+        }
+        if self.points:
+            out["points"] = self.points
+        if self.children:
+            child_range = [child.bound for child in self.children]
+            child_range.sort()
+            out["child_bound_range"] = child_range
+            out["num_reps"] = num_possibilities(self.choice_letters())
+            if max_depth == 0:
+                out["children"] = self.node_count()
+            else:
+                out["children"] = [
+                    child.to_json(solver, max_depth - 1) for child in self.children
+                ]
+        return out
+
+
+def group_by[T, R](seq: Sequence[T], fn: Callable[[T], R]) -> dict[R, list[T]]:
+    out = dict[R, list[T]]()
+    for v in seq:
+        k = fn(v)
+        out.setdefault(k, [])
+        out[k].append(v)
+    return out
+
+
+def num_possibilities(letters: Sequence[tuple[int, int]]) -> int:
+    by_cell = group_by(letters, lambda x: x[0])
+    return math.prod(len(v) for v in by_cell.values())
 
 
 def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:

@@ -1,3 +1,4 @@
+import json
 import sys
 
 from boggle.eval_tree import EvalTreeBoggler, PrintEvalTreeCounts, ResetEvalTreeCount
@@ -47,6 +48,15 @@ def try_all2(bb: PyBucketBoggler, cell1: int, cell2: int):
             # )
             max_cell = max(max_cell, score)
     print(f"max (explicit): {max_cell}")
+
+
+def main_viz():
+    (board,) = sys.argv[1:]
+    pyt = make_py_trie("boggle-words.txt")
+    etb = EvalTreeBoggler(pyt, (3, 4))
+    etb.ParseBoard(board)
+    tree = etb.BuildTree()
+    json.dump(tree.to_json(etb, 5), sys.stdout, indent=2)
 
 
 def main():
@@ -203,4 +213,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    main_viz()

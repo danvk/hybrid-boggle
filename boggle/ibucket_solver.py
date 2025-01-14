@@ -8,7 +8,7 @@ import numpy as np
 from cpp_boggle import BucketBoggler34, Trie
 from tqdm import tqdm
 
-from boggle.breaker import Breaker
+from boggle.breaker import IBucketBreaker
 from boggle.ibuckets import PyBucketBoggler
 from boggle.ibuckets_tree import TreeBucketBoggler
 from boggle.trie import make_py_trie
@@ -124,7 +124,7 @@ def mopup(bb: BucketBoggler34, root: str, tbb: TreeBucketBoggler):
     # Iterate over all the remaining board classes and break them.
     root_bd = root.split(" ")
     best_score = 1500
-    breaker = Breaker(bb, (3, 4), best_score=best_score, num_splits=26)
+    breaker = IBucketBreaker(bb, (3, 4), best_score=best_score, num_splits=26)
     max_tree = tbb.max_tree
     cells = max_tree.cells
     unbroken = np.argwhere(max_tree.data >= best_score)
