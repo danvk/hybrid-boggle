@@ -17,6 +17,9 @@ template <int M, int N>
 class BucketBoggler {
  public:
   BucketBoggler(Trie* t) : dict_(t), runs_(0) {}
+  virtual ~BucketBoggler() {}
+
+  int NumCells() { return M * N; }
 
   // bd is a class of boards with cells delimited by spaces.
   // examples:
@@ -45,15 +48,30 @@ class BucketBoggler {
   // Compute an upper bound without any of the costly statistics.
   unsigned int UpperBound(unsigned int bailout_score = INT_MAX);
 
- private:
-  unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
-  unsigned int DoDFS(unsigned int i, unsigned int len, Trie* t);
 
+  void PrintNeighbors() {
+    for (int i = 0; i < M * N; i++) {
+      printf("%d: ", i);
+      for (int j = 1; j <= BucketBoggler<M, N>::NEIGHBORS[i][0]; j++) {
+        printf("%d ", BucketBoggler<M, N>::NEIGHBORS[i][j]);
+      }
+      printf("\n");
+    }
+  }
+
+ protected:
   Trie* dict_;
   uintptr_t runs_;
   char bd_[M*N][27];  // null-terminated lists of possible letters
   unsigned int used_;
   ScoreDetails details_;
+
+  static const int NEIGHBORS[M*N][9];
+
+ private:
+  unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
+  unsigned int DoDFS(unsigned int i, unsigned int len, Trie* t);
+
   char board_rep_[27*M*N];  // for as_string()
 };
 
@@ -344,5 +362,62 @@ unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
   used_ ^= (1 << i);
   return score;
 }
+// Generated via:
+// poetry run python -m boggle.neighbors
+// First entry is the number of neighbors in the list.
 
-#endif
+// 3x3
+template<>
+const int BucketBoggler<3, 3>::NEIGHBORS[3*3][9] = {
+  {3, 1, 3, 4},
+  {5, 0, 2, 3, 4, 5},
+  {3, 1, 4, 5},
+  {5, 0, 1, 4, 6, 7},
+  {8, 0, 1, 2, 3, 5, 6, 7, 8},
+  {5, 1, 2, 4, 7, 8},
+  {3, 3, 4, 7},
+  {5, 3, 4, 5, 6, 8},
+  {3, 4, 5, 7},
+};
+
+
+// 3x4
+template<>
+const int BucketBoggler<3, 4>::NEIGHBORS[3*4][9] = {
+  {3, 1, 4, 5},
+  {5, 0, 2, 4, 5, 6},
+  {5, 1, 3, 5, 6, 7},
+  {3, 2, 6, 7},
+  {5, 0, 1, 5, 8, 9},
+  {8, 0, 1, 2, 4, 6, 8, 9, 10},
+  {8, 1, 2, 3, 5, 7, 9, 10, 11},
+  {5, 2, 3, 6, 10, 11},
+  {3, 4, 5, 9},
+  {5, 4, 5, 6, 8, 10},
+  {5, 5, 6, 7, 9, 11},
+  {3, 6, 7, 10},
+};
+
+
+// 4x4
+template<>
+const int BucketBoggler<4, 4>::NEIGHBORS[4*4][9] = {
+  {3, 1, 4, 5},
+  {5, 0, 2, 4, 5, 6},
+  {5, 1, 3, 5, 6, 7},
+  {3, 2, 6, 7},
+  {5, 0, 1, 5, 8, 9},
+  {8, 0, 1, 2, 4, 6, 8, 9, 10},
+  {8, 1, 2, 3, 5, 7, 9, 10, 11},
+  {5, 2, 3, 6, 10, 11},
+  {5, 4, 5, 9, 12, 13},
+  {8, 4, 5, 6, 8, 10, 12, 13, 14},
+  {8, 5, 6, 7, 9, 11, 13, 14, 15},
+  {5, 6, 7, 10, 14, 15},
+  {3, 8, 9, 13},
+  {5, 8, 9, 10, 12, 14},
+  {5, 9, 10, 11, 13, 15},
+  {3, 10, 11, 14},
+};
+
+#endif  // BUCKET_H

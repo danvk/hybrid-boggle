@@ -6,12 +6,26 @@ import random
 import time
 from collections import Counter
 
-from cpp_boggle import BucketBoggler33, BucketBoggler34, BucketBoggler44, Trie
+# from cpp_boggle import Breaker as CppBreaker
+from cpp_boggle import (
+    BucketBoggler33,
+    BucketBoggler34,
+    BucketBoggler44,
+    TreeBuilder34,
+    Trie,
+)
 from tqdm import tqdm
 
-from boggle.board_id import is_canonical_board_id
-from boggle.breaker import BreakDetails, Breaker, merge_details, print_details
-from boggle.ibuckets import PyBucketBoggler
+from boggle.board_id import from_board_id, is_canonical_board_id
+from boggle.breaker import (
+    BreakDetails,
+    HybridTreeBreaker,
+    # TreeBreaker,
+    # TreeScoreBreaker,
+    merge_details,
+    print_details,
+)
+from boggle.eval_tree import EvalTreeBoggler
 from boggle.trie import make_py_trie
 
 Bogglers = {
@@ -84,7 +98,7 @@ def main():
     parser.add_argument(
         "--python",
         action="store_true",
-        help="Use Python implementation of ibucekts instead of C++. This is ~50x slower!",
+        help="Use Python implementation of ibuckets instead of C++. This is ~50x slower!",
     )
     args = parser.parse_args()
     if args.random_seed >= 0:
@@ -102,13 +116,15 @@ def main():
     if args.python:
         t = make_py_trie(args.dictionary)
         assert t
-        bb = PyBucketBoggler(t, dims)
+        etb = EvalTreeBoggler(t, dims)
     else:
         t = Trie.CreateFromFile(args.dictionary)
         assert t
-        bb = Bogglers[dims](t)
-
-    breaker = Breaker(bb, dims, best_score, num_splits=args.num_splits)
+        etb = TreeBuilder34(t)
+        # breaker = CppBreaker(etb, best_score)
+    # breaker = TreeScoreBreaker(etb, dims, best_score)
+    # breaker = TreeBreaker(etb, dims, best_score)
+    breaker = HybridTreeBreaker(etb, dims, best_score, switchover_level=4)
     break_class = None
 
     if args.board_ids:
@@ -151,9 +167,10 @@ def main():
     # smoothing=0 means to show the average pace so far, which is the best estimator.
     for idx in tqdm(indices, smoothing=0):
         if not break_class:
-            breaker.FromId(classes, idx)
+            board = from_board_id(classes, dims, idx)
+            assert breaker.SetBoard(board)
         else:
-            assert breaker.bb.ParseBoard(break_class)
+            assert breaker.SetBoard(break_class)
         details = breaker.Break()
         if details.failures:
             for failure in details.failures:
@@ -163,8 +180,7 @@ def main():
         times[round(10 * details.elapsed_s) / 10] += 1
         all_details.append((idx, details))
         if log_per_board_stats:
-            breaker.FromId(classes, idx)
-            print(break_class if break_class else breaker.bb.as_string())
+            print(break_class if break_class else from_board_id(classes, dims, idx))
             print_details(details)
         combined_details = (
             details
@@ -188,7 +204,7 @@ def main():
         for idx, d in all_details:
             rsb = d.root_score_bailout
             out.write(
-                f"{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{rsb[0]}\t{rsb[1]}\t{d.elapsed_s}\n"
+                f"{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{rsb}\t{d.elapsed_s}\n"
             )
 
 

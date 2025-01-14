@@ -30,3 +30,19 @@ NEIGHBORS34 = init_neighbors(3, 4)
 NEIGHBORS44 = init_neighbors(4, 4)
 
 NEIGHBORS = {(3, 3): NEIGHBORS33, (3, 4): NEIGHBORS34, (4, 4): NEIGHBORS44}
+
+
+def main():
+    for (w, h), neighbors in NEIGHBORS.items():
+        print(f"""// {w}x{h}
+template<>
+int BucketBoggler<{w}, {h}>::NEIGHBORS[{w}*{h}][9] = {{""")
+        for ns in neighbors:
+            ns_str = ", ".join(str(n) for n in ns)
+            print(f"  {{{len(ns)}, {ns_str}}},")
+
+        print("};\n\n")
+
+
+if __name__ == "__main__":
+    main()

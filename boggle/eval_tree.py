@@ -11,6 +11,11 @@ ROOT_NODE = -2
 CHOICE_NODE = -1
 
 
+# This produces more compact, efficient trees, but this adds complexity and
+# seems not to be worth the effort except for the most complex of trees.
+MERGE_AFTER_SPLIT = False
+
+
 COUNTS = Counter[str]()
 
 
@@ -53,16 +58,21 @@ class EvalNode:
                 child.recompute_score() if child else 0 for child in self.children
             )
 
-    def score_with_forces(self, forces: dict[int, int]) -> int:
+    def score_with_forces_dict(self, forces: dict[int, int], num_cells: int) -> int:
+        forces_list = [forces.get(i, -1) for i in range(num_cells)]
+        return self.score_with_forces(forces_list)
+
+    def score_with_forces(self, forces: list[int]) -> int:
         choice_mask = 0
-        for cell in forces:
-            choice_mask |= 1 << cell
+        for cell, letter in enumerate(forces):
+            if letter >= 0:
+                choice_mask |= 1 << cell
         return self.score_with_forces_mask(forces, choice_mask)
 
-    def score_with_forces_mask(self, forces: dict[int, int], choice_mask: int) -> int:
+    def score_with_forces_mask(self, forces: list[int], choice_mask: int) -> int:
         if self.letter == CHOICE_NODE:
-            force = forces.get(self.cell)
-            if force is not None:
+            force = forces[self.cell]
+            if force >= 0:
                 for child in self.children:
                     if child and child.letter == force:
                         return child.score_with_forces_mask(forces, choice_mask)
@@ -88,14 +98,14 @@ class EvalNode:
                 for child in self.children
             )
 
-    def force_cell(self, cell: int, num_lets: int) -> Self | list[Self]:
+    def force_cell(self, force_cell: int, num_lets: int) -> Self | list[Self]:
         """Try each possibility for a cell.
 
         num_lets is the number of possibilities for the cell.
         Returns a list of trees, one for each letter, or a Tree if there's no choice.
         """
         # COUNTS["force calls"] += 1
-        if self.letter == CHOICE_NODE and self.cell == cell:
+        if self.letter == CHOICE_NODE and self.cell == force_cell:
             # This is the forced cell.
             # We've already tried each possibility, but they may not be aligned.
             out = [None] * num_lets
@@ -107,17 +117,17 @@ class EvalNode:
                     if not child.points and len(child.children) == 1:
                         child = child.children[0]
                     out[letter] = child
-                    assert child.choice_mask & (1 << cell) == 0
+                    assert child.choice_mask & (1 << force_cell) == 0
             return out
 
-        if self.choice_mask & (1 << cell) == 0:
+        if self.choice_mask & (1 << force_cell) == 0:
             # There's no relevant choice below us, so we can bottom out.
             return self
 
         # Make the recursive calls and align the results.
         # For a choice node, take the max. For other nodes, take the sum.
         results = [
-            child.force_cell(cell, num_lets) if child else None
+            child.force_cell(force_cell, num_lets) if child else None
             for child in self.children
         ]
 
@@ -128,47 +138,50 @@ class EvalNode:
         out = []
         for i in range(num_lets):
             children = [result[i] for result in aligned_results if result[i]]
-            choice_mask = 0
+            node_choice_mask = 0
             if self.letter == CHOICE_NODE:
-                bound = max(child.bound for child in children) if children else 0
-                choice_mask = (1 << self.cell) & self.choice_mask
+                node_bound = max(child.bound for child in children) if children else 0
+                node_choice_mask = (1 << self.cell) & self.choice_mask
             else:
-                bound = self.points + sum(child.bound for child in children)
-                if children and len(children) > 1:
-                    # This groups twice because almost all the time there are no collisions.
-                    by_cell = {}
-                    any_collisions = False
-                    for child in children:
-                        if by_cell.get(child.cell):
-                            any_collisions = True
-                            break
-                        by_cell[child.cell] = True
-                    if any_collisions:
-                        # COUNTS["MERGE"] += 1
-                        by_cell = defaultdict(list)
-                        for c in children:
-                            by_cell[c.cell].append(c)
-                        children = []
-                        for letter, trees in by_cell.items():
-                            if len(trees) == 1:
-                                children.append(trees[0])
-                            else:
-                                child = trees[0]
-                                for c in trees[1:]:
-                                    child = merge_trees(child, c)
-                                children.append(child)
-                        children.sort(key=lambda c: c.cell)
-                        bound = self.points + sum(child.bound for child in children)
+                node_bound = self.points + sum(child.bound for child in children)
+                if MERGE_AFTER_SPLIT:
+                    if children and len(children) > 1:
+                        # This groups twice because almost all the time there are no collisions.
+                        by_cell = {}
+                        any_collisions = False
+                        for child in children:
+                            if by_cell.get(child.cell):
+                                any_collisions = True
+                                break
+                            by_cell[child.cell] = True
+                        if any_collisions:
+                            # COUNTS["MERGE"] += 1
+                            by_cell = defaultdict(list)
+                            for c in children:
+                                by_cell[c.cell].append(c)
+                            children = []
+                            for letter, trees in by_cell.items():
+                                if len(trees) == 1:
+                                    children.append(trees[0])
+                                else:
+                                    child = trees[0]
+                                    for c in trees[1:]:
+                                        child = merge_trees(child, c)
+                                    children.append(child)
+                            children.sort(key=lambda c: c.cell)
+                            node_bound = self.points + sum(
+                                child.bound for child in children
+                            )
 
-            if bound > 0:
+            if node_bound > 0:
                 node = EvalNode()
                 node.letter = self.letter
                 node.points = self.points
                 node.trie_node = self.trie_node
                 node.cell = self.cell
-                node.bound = bound
+                node.bound = node_bound
                 node.children = children
-                node.choice_mask = choice_mask
+                node.choice_mask = node_choice_mask
                 for child in children:
                     node.choice_mask |= child.choice_mask
                 # assert node.choice_mask == self.choice_mask
@@ -371,8 +384,19 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
     )
 
 
+def cells_from_mask(mask: int) -> list[int]:
+    i = 0
+    out = []
+    while mask:
+        if mask % 2:
+            out.append(i)
+        mask >>= 1
+        i += 1
+    return out
+
+
 class EvalTreeBoggler(PyBucketBoggler):
-    def __init__(self, trie: PyTrie, dims: tuple[int, int]):
+    def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
 
     def UpperBound(self, bailout_score):

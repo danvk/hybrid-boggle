@@ -1,4 +1,6 @@
 # Calculate all symmetries for 2D matrices.
+#
+# TODO: this may not be in sync w/ board_id.py
 
 from itertools import chain
 from typing import Sequence

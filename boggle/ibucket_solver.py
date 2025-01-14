@@ -33,6 +33,7 @@ def main_old():
     t = Trie.CreateFromFile("boggle-words.txt")
     assert t.FindWord("qinqennia") is not None
     bb = BucketBoggler34(t)
+    bb.PrintNeighbors()
     bb.ParseBoard(board)
     print(bb.as_string())
     with Timer("C++"):
@@ -46,7 +47,7 @@ def main_old():
     qt = pyt.Descend(ord("q") - ord("a"))
     assert qt is not None
     assert qt.StartsWord(ord("i") - ord("a"))
-    pbb = PyBucketBoggler(pyt)
+    pbb = PyBucketBoggler(pyt, dims=(3, 4))
     pbb.ParseBoard(board)
     print(pbb.as_string())
     with Timer("py"):
@@ -258,4 +259,5 @@ def main_profile():
 
 if __name__ == "__main__":
     # main_profile()
-    main()
+    # main()
+    main_old()
