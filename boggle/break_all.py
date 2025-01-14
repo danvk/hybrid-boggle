@@ -6,7 +6,6 @@ import random
 import time
 from collections import Counter
 
-# from cpp_boggle import Breaker as CppBreaker
 from cpp_boggle import (
     BucketBoggler33,
     BucketBoggler34,
@@ -20,8 +19,6 @@ from boggle.board_id import from_board_id, is_canonical_board_id
 from boggle.breaker import (
     BreakDetails,
     HybridTreeBreaker,
-    # TreeBreaker,
-    # TreeScoreBreaker,
     merge_details,
     print_details,
 )
@@ -79,12 +76,13 @@ def main():
         type=int,
         default=-1,
     )
-    parser.add_argument(
-        "--num_splits",
-        type=int,
-        default=4,
-        help="Number of partitions to use when breaking a bucket.",
-    )
+    # Only relevant to IBucketBreaker
+    # parser.add_argument(
+    #     "--num_splits",
+    #     type=int,
+    #     default=4,
+    #     help="Number of partitions to use when breaking a bucket.",
+    # )
     parser.add_argument(
         "--log_per_board_stats",
         action="store_true",
