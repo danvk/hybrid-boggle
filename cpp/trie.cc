@@ -5,6 +5,8 @@
 #include <utility>
 #include <map>
 
+using namespace std;
+
 static inline int idx(char x) { return x - 'a'; }
 
 // Initially, this node is empty
@@ -51,12 +53,11 @@ size_t Trie::NumNodes() {
 }
 
 // static
-bool Trie::ReverseLookup(const Trie* base, const Trie* child,
-                         std::string* out) {
+bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
   if (base==child) return true;
   for (int i=0; i<kNumLetters; i++) {
     if (base->StartsWord(i) && ReverseLookup(base->Descend(i), child, out)) {
-      *out = std::string(1,'a'+i) + *out;
+      string(1,'a'+i) + *out;
       return true;
     }
   }
@@ -64,8 +65,8 @@ bool Trie::ReverseLookup(const Trie* base, const Trie* child,
 }
 
 // static
-std::string Trie::ReverseLookup(const Trie* base, const Trie* child) {
-  std::string out;
+string Trie::ReverseLookup(const Trie* base, const Trie* child) {
+  string out;
   ReverseLookup(base, child, &out);
   return out;
 }
@@ -87,7 +88,7 @@ Trie* Trie::FindWord(const char* wd) {
   return Descend(c)->FindWord(wd + 1);
 }
 
-std::unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
+unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   char line[80];
   FILE* f = fopen(filename, "r");
   if (!f) {
@@ -95,7 +96,7 @@ std::unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
     return NULL;
   }
 
-  std::unique_ptr<Trie> t(new Trie);
+  unique_ptr<Trie> t(new Trie);
   while (!feof(f) && fscanf(f, "%s", line)) {
     t->AddWord(line);
   }

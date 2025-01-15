@@ -4,6 +4,8 @@
 #include "ibuckets.h"
 #include "eval_node.h"
 
+using namespace std;
+
 template <int M, int N>
 class TreeBuilder : public BucketBoggler<M, N> {
  public:
@@ -18,7 +20,7 @@ class TreeBuilder : public BucketBoggler<M, N> {
   using BucketBoggler<M, N>::details_;
 
   /** Build an EvalTree for the current board. */
-  std::unique_ptr<EvalNode> BuildTree();
+  unique_ptr<EvalNode> BuildTree();
 
  private:
   EvalNode* root_;
@@ -30,8 +32,8 @@ class TreeBuilder : public BucketBoggler<M, N> {
 
 // TODO: can this not be a template method?
 template <int M, int N>
-std::unique_ptr<EvalNode> TreeBuilder<M, N>::BuildTree() {
-  auto start = std::chrono::high_resolution_clock::now();
+unique_ptr<EvalNode> TreeBuilder<M, N>::BuildTree() {
+  auto start = chrono::high_resolution_clock::now();
   root_ = new EvalNode();
 
   root_->letter = EvalNode::ROOT_NODE;
@@ -60,10 +62,10 @@ std::unique_ptr<EvalNode> TreeBuilder<M, N>::BuildTree() {
 
   root_->bound = details_.max_nomark;
   dict_->Mark(runs_);
-  auto finish = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count();
-  std::cout << "build tree: " << duration << " ms" << std::endl;
-  return std::unique_ptr<EvalNode>(root_);
+  auto finish = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(finish - start).count();
+  cout << "build tree: " << duration << " ms" << endl;
+  return unique_ptr<EvalNode>(root_);
 }
 
 template<int M, int N>

@@ -3,8 +3,7 @@
 #include <variant>
 #include <vector>
 
-using std::vector;
-using std::variant;
+using namespace std;
 
 int EvalNode::NodeCount() const {
   int count = 1;
@@ -20,7 +19,7 @@ int EvalNode::RecomputeScore() const {
     int max_score = 0;
     for (int i = 0; i < children.size(); i++) {
       if (children[i])
-        max_score = std::max(max_score, children[i]->RecomputeScore());
+        max_score = max(max_score, children[i]->RecomputeScore());
     }
     return max_score;
   } else {
@@ -79,7 +78,7 @@ EvalNode::ForceCell(int force_cell, int num_lets) const {
   aligned_results.reserve(results.size());
   for (int i = 0; i < results.size(); i++) {
     auto &r = results[i];
-    if (std::holds_alternative<const EvalNode*>(r)) {
+    if (holds_alternative<const EvalNode*>(r)) {
         auto r1 = std::get<const EvalNode*>(r);
         vector<const EvalNode*> me;
         me.reserve(num_lets);

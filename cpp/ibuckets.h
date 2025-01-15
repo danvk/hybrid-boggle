@@ -3,6 +3,10 @@
 #include <limits.h>
 #include "trie.h"
 
+#include <algorithm>
+#include <iostream>
+#include <string.h>
+
 #ifndef BUCKET_H
 #define BUCKET_H
 
@@ -74,12 +78,6 @@ class BucketBoggler {
 
   char board_rep_[27*M*N];  // for as_string()
 };
-
-#include <algorithm>
-#include <iostream>
-#include <string.h>
-using std::min;
-using std::max;
 
 // For debugging:
 static const bool PrintWords  = false;
@@ -168,7 +166,7 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
     }
   }
 
-  return min(details_.max_nomark, details_.sum_union);
+  return std::min(details_.max_nomark, details_.sum_union);
 }
 
 template <int M, int N>
@@ -178,7 +176,7 @@ inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx, unsigne
     int cc = bd_[idx][j] - 'a';
     if (t->StartsWord(cc)) {
       int tscore = DoDFS(idx, len + (cc==kQ ? 2 : 1), t->Descend(cc));
-      max_score = max(tscore, max_score);
+      max_score = std::max(tscore, max_score);
     }
   }
   return max_score;

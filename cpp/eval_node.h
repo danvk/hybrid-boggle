@@ -8,6 +8,8 @@
 // TODO: clean up memory after ForceCell
 #define LEAK_LIKE_A_SIEVE true
 
+using namespace std;
+
 class EvalNode {
  public:
   EvalNode() {}
@@ -19,10 +21,10 @@ class EvalNode {
     }
   }
 
-  std::variant<const EvalNode*, std::vector<const EvalNode*>> ForceCell(int cell, int num_lets) const;
+  variant<const EvalNode*, vector<const EvalNode*>> ForceCell(int cell, int num_lets) const;
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
-  unsigned int ScoreWithForces(const std::vector<int>& forces) const;
+  unsigned int ScoreWithForces(const vector<int>& forces) const;
 
   char letter;
   char cell;
@@ -30,7 +32,7 @@ class EvalNode {
   static const char CHOICE_NODE = -1;
 
   // These might be the various options on a cell or the various directions.
-  std::vector<const EvalNode*> children;
+  vector<const EvalNode*> children;
 
   // cached computation across all children
   unsigned int bound;
@@ -44,7 +46,7 @@ class EvalNode {
   int NodeCount() const;
 
  private:
-  unsigned int ScoreWithForcesMask(const std::vector<int>& forces, uint16_t choice_mask) const;
+  unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const;
 };
 
 #endif  // EVAL_NODE_H

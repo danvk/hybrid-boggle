@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+using namespace std;
+
 const int kNumLetters = 26;
 const int kQ = 'q' - 'a';
 
@@ -28,7 +30,7 @@ class Trie {
   // Trie construction
   // Returns a pointer to the new Trie node at the end of the word.
   Trie* AddWord(const char* wd);
-  static std::unique_ptr<Trie> CreateFromFile(const char* filename);
+  static unique_ptr<Trie> CreateFromFile(const char* filename);
 
   // Some slower methods that operate on the entire Trie (not just a node).
   size_t Size();
@@ -36,9 +38,8 @@ class Trie {
   void SetAllMarks(unsigned mark);
   Trie* FindWord(const char* wd);
 
-  static bool ReverseLookup(const Trie* base, const Trie* child,
-                            std::string* out);
-  static std::string ReverseLookup(const Trie* base, const Trie* child);
+  static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
+  static string ReverseLookup(const Trie* base, const Trie* child);
 
  private:
   bool is_word_;

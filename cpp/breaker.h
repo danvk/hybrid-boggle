@@ -6,9 +6,7 @@
 #ifndef BREAKER_H
 #define BREAKER_H
 
-using std::string;
-using std::vector;
-using std::pair;
+using namespace std;
 
 class Breaker {
  public:
@@ -18,22 +16,22 @@ class Breaker {
     return etb_->ParseBoard(board);
   }
 
-  std::unordered_map<int, int> Break() {
+  unordered_map<int, int> Break() {
     by_level_.clear();
     elim_level_.clear();
     cells_.clear();
     for (int i = 0; i < etb_->NumCells(); i++) {
       cells_.push_back(etb_->bd_[i]);
-      std::cout << i << " " << cells_[i] << std::endl;
+      cout << i << " " << cells_[i] << endl;
     }
     auto tree = etb_->BuildTree();
-    std::cout << "num nodes: " << tree->NodeCount() << std::endl;
+    cout << "num nodes: " << tree->NodeCount() << endl;
 
     string choices;
     for (int i = 0; i < etb_->NumCells(); i++) {
       choices.append(" ");
     }
-    std::cout << "initial choices: " << choices << std::endl;
+    cout << "initial choices: " << choices << endl;
     AttackTree(tree.get(), 0, choices);
 
     return by_level_;
@@ -46,7 +44,7 @@ class Breaker {
         return order;
       }
     }
-    // std::cout << "pick: " << choice_mask << " " << pick << std::endl;
+    // cout << "pick: " << choice_mask << " " << pick << endl;
     return -1;
   }
 
@@ -58,7 +56,7 @@ class Breaker {
       for (auto c : choices) {
         board += c;
       }
-      std::cout << "Unable to break board " << board << std::endl;
+      cout << "Unable to break board " << board << endl;
       return;
     }
 
@@ -67,7 +65,7 @@ class Breaker {
 
     vector<pair<char, const EvalNode*>> tagged_trees;
     if (std::holds_alternative<const EvalNode*>(trees)) {
-      std::cout << "choice was not really a choice" << std::endl;
+      cout << "choice was not really a choice" << endl;
       auto t1 = std::get<const EvalNode*>(trees);
       tagged_trees.push_back(pair<char, const EvalNode*>('*', t1));
     } else {
@@ -100,8 +98,8 @@ class Breaker {
  private:
   TreeBuilder<3, 4>* etb_;
   unsigned int best_score_;
-  std::unordered_map<int, int> by_level_;
-  std::unordered_map<int, int> elim_level_;
+  unordered_map<int, int> by_level_;
+  unordered_map<int, int> elim_level_;
   vector<string> cells_;
 
   static const int SPLIT_ORDER[12];
