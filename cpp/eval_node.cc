@@ -35,7 +35,7 @@ int EvalNode::RecomputeScore() const {
 }
 
 variant<const EvalNode*, vector<const EvalNode*>>
-EvalNode::ForceCell(int force_cell, int num_lets) const {
+EvalNode::ForceCell(int force_cell, int num_lets, EvalNodeArena& arena) const {
   if (letter == EvalNode::CHOICE_NODE && cell == force_cell) {
     // This is the forced cell.
     // We've already tried each possibility, but they may not be aligned.
@@ -67,7 +67,7 @@ EvalNode::ForceCell(int force_cell, int num_lets) const {
   results.reserve(children.size());
   for (auto child : children) {
     if (child) {
-        results.push_back(child->ForceCell(force_cell, num_lets));
+        results.push_back(child->ForceCell(force_cell, num_lets, arena));
     } else {
         // TODO: can this happen?
         results.push_back({(EvalNode*)NULL});
@@ -116,6 +116,7 @@ EvalNode::ForceCell(int force_cell, int num_lets) const {
     EvalNode* node = NULL;
     if (node_bound) {
         node = new EvalNode;
+        arena.AddNode(node);
         node->letter = letter;
         node->points = points;
         node->cell = cell;
@@ -173,4 +174,8 @@ unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces, uint16_t f
         }
         return score;
     }
+}
+
+unique_ptr<EvalNodeArena> create_eval_node_arena() {
+  return unique_ptr<EvalNodeArena>(new EvalNodeArena);
 }

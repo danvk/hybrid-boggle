@@ -10,7 +10,9 @@ from cpp_boggle import (
     BucketBoggler33,
     BucketBoggler34,
     BucketBoggler44,
+    TreeBuilder33,
     TreeBuilder34,
+    TreeBuilder44,
     Trie,
 )
 from tqdm import tqdm
@@ -29,6 +31,12 @@ Bogglers = {
     (3, 3): BucketBoggler33,
     (3, 4): BucketBoggler34,
     (4, 4): BucketBoggler44,
+}
+
+TreeBuilders = {
+    (3, 3): TreeBuilder33,
+    (3, 4): TreeBuilder34,
+    (4, 4): TreeBuilder44,
 }
 
 
@@ -118,7 +126,7 @@ def main():
     else:
         t = Trie.CreateFromFile(args.dictionary)
         assert t
-        etb = TreeBuilder34(t)
+        etb = TreeBuilders[dims](t)
         # breaker = CppBreaker(etb, best_score)
     # breaker = TreeScoreBreaker(etb, dims, best_score)
     # breaker = TreeBreaker(etb, dims, best_score)

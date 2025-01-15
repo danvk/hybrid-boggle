@@ -1,11 +1,12 @@
 import pytest
 from cpp_boggle import EvalNode as CppEvalNode
-from cpp_boggle import TreeBuilder33, Trie
+from cpp_boggle import TreeBuilder33, Trie, create_eval_node_arena
 
 from boggle.eval_tree import (
     CHOICE_NODE,
     EvalNode,
     EvalTreeBoggler,
+    create_eval_node_arena_py,
     merge_trees,
 )
 from boggle.ibuckets import PyBucketBoggler
@@ -339,11 +340,14 @@ def test_merge_eval_trees():
     # assert False
 
 
-PARAMS = [(PyTrie, EvalTreeBoggler), (Trie, TreeBuilder33)]
+PARAMS = [
+    (PyTrie, EvalTreeBoggler, create_eval_node_arena_py),
+    (Trie, TreeBuilder33, create_eval_node_arena),
+]
 
 
-@pytest.mark.parametrize("TrieT, TreeBuilderT", PARAMS)
-def test_cpp_equivalence(TrieT, TreeBuilderT):
+@pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena", PARAMS)
+def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena):
     t = TrieT()
     t.AddWord("sea")
     t.AddWord("seat")
@@ -353,8 +357,9 @@ def test_cpp_equivalence(TrieT, TreeBuilderT):
 
     bb = TreeBuilderT(t)
 
+    arena = create_arena()
     assert bb.ParseBoard("a b c d e f g h i")
-    tree = bb.BuildTree()
+    tree = bb.BuildTree(arena)
     assert 0 == bb.Details().sum_union
     assert 0 == bb.Details().max_nomark
     assert 0 == tree.recompute_score()
@@ -365,7 +370,7 @@ def test_cpp_equivalence(TrieT, TreeBuilderT):
     # p u c
     print("sepeauhtc")
     assert bb.ParseBoard("s e p e a u h t c")
-    tree = bb.BuildTree()
+    tree = bb.BuildTree(arena)
     assert 4 == bb.Details().sum_union  # sea(t), tea(s)
     assert 6 == bb.Details().max_nomark  # seat*2, sea*2, tea
     assert 6 == tree.recompute_score()
@@ -378,7 +383,7 @@ def test_cpp_equivalence(TrieT, TreeBuilderT):
     # st z z
     #  e a s
     assert bb.ParseBoard("st z z e a s z z z")
-    tree = bb.BuildTree()
+    tree = bb.BuildTree(arena)
     assert 3 == bb.Details().sum_union  # tea(s) + sea
     assert 2 == bb.Details().max_nomark  # tea(s)
     assert 2 == tree.recompute_score()
@@ -393,7 +398,7 @@ def test_cpp_equivalence(TrieT, TreeBuilderT):
     bb.SetCell(5, "st")
     bb.SetCell(8, "s")
 
-    tree = bb.BuildTree()
+    tree = bb.BuildTree(arena)
     assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
     assert 4 == bb.Details().max_nomark  # sea(t(s))
     assert 4 == tree.recompute_score()
@@ -402,8 +407,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT):
     assert 20 == tree.node_count()
 
 
-@pytest.mark.parametrize("TrieT, TreeBuilderT", PARAMS)
-def test_cpp_force_equivalence(TrieT, TreeBuilderT):
+@pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena", PARAMS)
+def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena):
     t = TrieT()
     t.AddWord("tar")
     t.AddWord("tie")
@@ -411,6 +416,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT):
     t.AddWord("tea")
     t.AddWord("the")
 
+    arena = create_arena()
     bb = TreeBuilderT(t)
 
     #  t i .
@@ -419,7 +425,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT):
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
-    t = bb.BuildTree()
+    t = bb.BuildTree(arena)
     assert 3 == bb.Details().sum_union
     assert 3 == bb.Details().max_nomark
     assert 2 == bb.NumReps()
@@ -429,7 +435,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT):
     # print(t.to_string(bb))
 
     # A force on an irrelevant cell has no effect
-    t0 = t.force_cell(0, 1)
+    t0 = t.force_cell(0, 1, arena)
     # assert len(t0) == 1
     # assert t0[0].bound == 3
     # t0[0].check_consistency()
@@ -438,7 +444,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT):
     # t0.check_consistency()
 
     # A force on the choice cell reduces the bound.
-    t3 = t.force_cell(3, 2)
+    t3 = t.force_cell(3, 2, arena)
     # print(t3.to_string(bb))
     assert len(t3) == 2
     assert t3[0].bound == 1
@@ -446,7 +452,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT):
     # t3[0].check_consistency()
     # t3[1].check_consistency()
 
-    # (C++ segfaults, I think because of a double-free.)
+    print("checked all bounds")
 
     forces = [-1 for _ in range(9)]
     assert t.score_with_forces(forces) == 3  # no force

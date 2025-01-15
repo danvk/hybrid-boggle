@@ -3,9 +3,14 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Sequence
 
-from cpp_boggle import BucketBoggler33, BucketBoggler34, BucketBoggler44
+from cpp_boggle import (
+    BucketBoggler33,
+    BucketBoggler34,
+    BucketBoggler44,
+    create_eval_node_arena,
+)
 
-from boggle.eval_tree import EvalNode, EvalTreeBoggler
+from boggle.eval_tree import EvalNode, EvalTreeBoggler, create_eval_node_arena_py
 
 type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
 
@@ -167,6 +172,12 @@ class HybridTreeBreaker:
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
         self.switchover_level = switchover_level
+        # TODO: EvalTreeBoggler could have a method to produce an arena.
+        self.create_arena = (
+            create_eval_node_arena_py
+            if isinstance(boggler, EvalTreeBoggler)
+            else create_eval_node_arena
+        )
 
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
@@ -188,9 +199,10 @@ class HybridTreeBreaker:
         self.elim_ = 0
         self.orig_reps_ = self.etb.NumReps()
         self.details_.start_time_s = time.time()
-        tree = self.etb.BuildTree()
+        arena = self.create_arena()
+        tree = self.etb.BuildTree(arena)
         self.details_.secs_by_level[0] += time.time() - self.details_.start_time_s
-        self.AttackTree(tree, 0, [None for _ in self.cells])
+        self.AttackTree(tree, 0, [None for _ in self.cells], arena)
         self.details_.elapsed_s = time.time() - self.details_.start_time_s
         self.details_.num_reps = self.orig_reps_
         # TODO: debug output
@@ -206,7 +218,9 @@ class HybridTreeBreaker:
 
         return pick
 
-    def SplitBucket(self, tree: EvalNode, level: int, choices: list[str]) -> None:
+    def SplitBucket(
+        self, tree: EvalNode, level: int, choices: list[str], arena
+    ) -> None:
         cell = self.PickABucket(tree)
         if cell == -1:
             # it's just a board
@@ -219,7 +233,7 @@ class HybridTreeBreaker:
         n = len(self.cells[cell])
 
         start_s = time.time()
-        trees = tree.force_cell(cell, n)
+        trees = tree.force_cell(cell, n, arena)
         self.details_.secs_by_level[level] += time.time() - start_s
 
         if isinstance(trees, EvalNode):
@@ -231,15 +245,10 @@ class HybridTreeBreaker:
 
         for letter, tree in tagged_trees:
             choices[cell] = letter
-            self.AttackTree(tree, level + 1, choices)
+            self.AttackTree(tree, level + 1, choices, arena)
         choices[cell] = None
 
-    def AttackTree(
-        self,
-        tree: EvalNode,
-        level: int,
-        choices: list[str],
-    ) -> None:
+    def AttackTree(self, tree: EvalNode, level: int, choices: list[str], arena) -> None:
         self.details_.by_level[level] += 1
         ub = tree.bound
         if ub <= self.best_score:
@@ -254,7 +263,7 @@ class HybridTreeBreaker:
                 ]
                 self.SplitBucketScore(tree, level, score_choices)
             else:
-                self.SplitBucket(tree, level, choices)
+                self.SplitBucket(tree, level, choices, arena)
 
     # These methods come from TreeScoreBreaker
     def AttackTreeScore(self, tree: EvalNode, level: int, choices: list[int]) -> None:

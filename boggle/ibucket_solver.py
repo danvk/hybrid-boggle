@@ -8,6 +8,7 @@ import numpy as np
 from cpp_boggle import BucketBoggler34, Trie
 from tqdm import tqdm
 
+from boggle.break_all import Bogglers
 from boggle.breaker import IBucketBreaker
 from boggle.ibuckets import PyBucketBoggler
 from boggle.ibuckets_tree import TreeBucketBoggler
@@ -32,8 +33,16 @@ def main_old():
     (board,) = sys.argv[1:]
     t = Trie.CreateFromFile("boggle-words.txt")
     assert t.FindWord("qinqennia") is not None
-    bb = BucketBoggler34(t)
-    bb.PrintNeighbors()
+    dims = {
+        9: (3, 3),
+        12: (3, 4),
+        16: (4, 4),
+    }[len(board)]
+
+    bb = Bogglers[dims](t)
+    # bb.PrintNeighbors()
+    if " " not in board:
+        board = " ".join([*board])
     bb.ParseBoard(board)
     print(bb.as_string())
     with Timer("C++"):
@@ -47,7 +56,7 @@ def main_old():
     qt = pyt.Descend(ord("q") - ord("a"))
     assert qt is not None
     assert qt.StartsWord(ord("i") - ord("a"))
-    pbb = PyBucketBoggler(pyt, dims=(3, 4))
+    pbb = PyBucketBoggler(pyt, dims=dims)
     pbb.ParseBoard(board)
     print(pbb.as_string())
     with Timer("py"):

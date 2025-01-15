@@ -2,26 +2,21 @@
 #define EVAL_NODE_H
 
 #include <limits.h>
+#include <iostream>
 #include <map>
 #include <vector>
 
-// TODO: clean up memory after ForceCell
-#define LEAK_LIKE_A_SIEVE true
-
 using namespace std;
+
+class EvalNodeArena;
 
 class EvalNode {
  public:
   EvalNode() {}
-  ~EvalNode() {
-    for (int i = 0; i < children.size(); i++) {
-      if (!LEAK_LIKE_A_SIEVE) {
-        if (children[i]) delete children[i];
-      }
-    }
-  }
+  virtual ~EvalNode() {}
 
-  variant<const EvalNode*, vector<const EvalNode*>> ForceCell(int cell, int num_lets) const;
+  variant<const EvalNode*, vector<const EvalNode*>>
+  ForceCell(int cell, int num_lets, EvalNodeArena& arena) const;
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
@@ -48,5 +43,42 @@ class EvalNode {
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const;
 };
+
+class EvalNodeArena {
+ public:
+  ~EvalNodeArena() {
+    FreeTheChildren();
+  }
+
+  void FreeTheChildren() {
+    // cout << "Freeing " << owned_nodes.size() << " nodes" << endl;
+    for (auto node : owned_nodes) {
+      // cout << "Freeing " << node << endl;
+      delete node;
+      // cout << "(done)" << endl;
+    }
+    owned_nodes.clear();
+  }
+
+  int NumNodes() {
+    return owned_nodes.size();
+  }
+
+  void AddNode(EvalNode* node) {
+    // for (auto n : owned_nodes) {
+    //   if (n == node) {
+    //     cout << "Double add!" << endl;
+    //   }
+    // }
+    owned_nodes.push_back(node);
+  }
+
+  friend EvalNode;
+
+ private:
+  vector<EvalNode*> owned_nodes;
+};
+
+unique_ptr<EvalNodeArena> create_eval_node_arena();
 
 #endif  // EVAL_NODE_H

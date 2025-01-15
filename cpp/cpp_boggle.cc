@@ -11,7 +11,7 @@ using std::vector;
 #include "ibuckets.h"
 #include "eval_node.h"
 #include "tree_builder.h"
-#include "breaker.h"
+// #include "breaker.h"
 
 // See https://stackoverflow.com/a/47749076/388951
 template<int M, int N>
@@ -35,7 +35,7 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
     // TODO: do I care about buffer_protocol() here?
     py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
         .def(py::init<Trie*>())
-        .def("BuildTree", &BB::BuildTree)
+        .def("BuildTree", &BB::BuildTree, py::return_value_policy::reference)
         .def("ParseBoard", &BB::ParseBoard)
         .def("as_string",  &BB::as_string)
         .def("Cell",    &BB::Cell)
@@ -94,10 +94,17 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("score_with_forces", &EvalNode::ScoreWithForces)
         .def("recompute_score", &EvalNode::RecomputeScore)
         .def("node_count", &EvalNode::NodeCount)
-        .def("force_cell", &EvalNode::ForceCell);
+        .def("force_cell", &EvalNode::ForceCell, py::return_value_policy::reference);
 
-    py::class_<Breaker>(m, "Breaker")
-        .def(py::init<TreeBuilder<3,4>*, unsigned int>())
-        .def("SetBoard", &Breaker::SetBoard)
-        .def("Break", &Breaker::Break);
+    m.def("create_eval_node_arena", &create_eval_node_arena);
+
+    py::class_<EvalNodeArena>(m, "EvalNodeArena")
+        .def(py::init())
+        .def("free_the_children", &EvalNodeArena::FreeTheChildren)
+        .def("num_nodes", &EvalNodeArena::NumNodes);
+
+    // py::class_<Breaker>(m, "Breaker")
+    //     .def(py::init<TreeBuilder<3,4>*, unsigned int>())
+    //     .def("SetBoard", &Breaker::SetBoard)
+    //     .def("Break", &Breaker::Break);
 }

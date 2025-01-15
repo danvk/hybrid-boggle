@@ -29,6 +29,23 @@ def PrintEvalTreeCounts():
         print(k, COUNTS[k])
 
 
+class PyArena:
+    """This class is useless, but it helps maintain the same API as C++."""
+
+    def __init__(self):
+        pass
+
+    def free_the_children(self):
+        pass
+
+    def num_nodes(self):
+        return "n/a"
+
+
+def create_eval_node_arena_py():
+    return PyArena()
+
+
 class EvalNode:
     letter: int
     cell: int
@@ -99,7 +116,9 @@ class EvalNode:
                 for child in self.children
             )
 
-    def force_cell(self, force_cell: int, num_lets: int) -> Self | list[Self]:
+    def force_cell(
+        self, force_cell: int, num_lets: int, arena=None
+    ) -> Self | list[Self]:
         """Try each possibility for a cell.
 
         num_lets is the number of possibilities for the cell.
@@ -455,7 +474,7 @@ class EvalTreeBoggler(PyBucketBoggler):
     def UpperBound(self, bailout_score):
         raise NotImplementedError()
 
-    def BuildTree(self):
+    def BuildTree(self, arena=None):
         root = EvalNode()
         self.root = root
         root.letter = ROOT_NODE
