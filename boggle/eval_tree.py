@@ -7,6 +7,7 @@ from typing import Callable, Self, Sequence
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.trie import PyTrie
+from boggle.util import group_by, partition
 
 ROOT_NODE = -2
 CHOICE_NODE = -1
@@ -116,6 +117,90 @@ class EvalNode:
                 for child in self.children
             )
 
+    def lift_choice(self, cell: int, num_lets: int) -> Self:
+        """Return a version of this tree with a choice on the cell at the root.
+
+        Will return either a choice node for the cell, or another type of node
+        if there is the tree is independent of that cell.
+        """
+        if self.letter == CHOICE_NODE and self.cell == cell:
+            # This is already in the right form. Nothing more to do!
+            # TODO: consider pulling in the compressing optimization from force_cell
+            return self
+
+        if self.choice_mask & (1 << cell) == 0:
+            # There's no relevant choice below us, so we can bottom out.
+            return self
+
+        # TODO: make the code for constructing this directly (below) work.
+        #       (or don't if this is more efficient!)
+        choices = self.force_cell(cell, num_lets)
+        node = EvalNode()
+        node.letter = CHOICE_NODE
+        node.cell = cell
+        node.points = 0
+        node.bound = max(child.bound for child in choices)
+        node.trie_node = None
+        node.children = choices
+        node.choice_mask = 1 << cell
+        for child in choices:
+            node.choice_mask |= child.choice_mask
+        return node
+
+        subtrees = [child.lift_choice(cell, num_lets) for child in self.children]
+        # Force the subtrees to all be choice nodes on the specified cell.
+        # At least one must be a choice node, otherwise we would have returned earlier.
+        non_choices, choices = partition(
+            subtrees, lambda t: t.letter == CHOICE_NODE and t.cell == cell
+        )
+        assert choices
+
+        # this is where copies of subtrees get made
+        # an alternative is that a choice node could have a "baseline" subtree that
+        # always contributes and does not involve the choice cell.
+        aligned_results = [non_choices for _ in range(num_lets)]
+        for choice in choices:
+            # print("-", choice.letter, choice.cell)
+            for c in choice.children:
+                # print(c.cell, c.letter)
+                assert 0 <= c.letter < num_lets
+                aligned_results[c.letter].append(c)
+
+        out_children = []
+        for i, children in enumerate(aligned_results):
+            node_choice_mask = 0
+            if self.letter == CHOICE_NODE:
+                node_bound = max(child.bound for child in children) if children else 0
+                node_choice_mask = (1 << self.cell) & self.choice_mask
+            else:
+                node_bound = self.points + sum(child.bound for child in children)
+
+            if node_bound > 0:
+                node = EvalNode()
+                node.letter = i
+                node.points = self.points
+                node.trie_node = self.trie_node  # is this right?
+                node.cell = cell
+                node.bound = node_bound
+                node.children = children
+                node.choice_mask = node_choice_mask
+                for child in children:
+                    node.choice_mask |= child.choice_mask
+                out_children.append(node)
+
+        # Produce the choice node
+        node = EvalNode()
+        node.letter = CHOICE_NODE
+        node.cell = cell
+        node.points = 0
+        node.bound = max(child.bound for child in out_children)
+        node.trie_node = None
+        node.children = out_children
+        node.choice_mask = 1 << cell
+        for child in children:
+            node.choice_mask |= child.choice_mask
+        return node
+
     def force_cell(
         self, force_cell: int, num_lets: int, arena=None
     ) -> Self | list[Self]:
@@ -133,6 +218,7 @@ class EvalNode:
                 if child:
                     # If this choice isn't a word on its own and it only has one child,
                     # then we can remove it from the tree entirely.
+                    # TODO: can this be "while" instead of "if"?
                     letter = child.letter
                     if not child.points and len(child.children) == 1:
                         child = child.children[0]
@@ -235,6 +321,42 @@ class EvalNode:
 
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
+
+    def unique_node_count(self):
+        nodes = set()
+        queue = [self]
+        while queue:
+            node = queue.pop()
+            if node in nodes:
+                continue  # already visited this one
+            nodes.add(node)
+            for child in node.children:
+                queue.append(child)
+        return len(nodes)
+
+    def unique_node_count_by_hash(self):
+        nodes = set()
+        queue = [self]
+        while queue:
+            node = queue.pop()
+            h = hash(node)
+            if h in nodes:
+                continue  # already visited this one
+            nodes.add(h)
+            for child in node.children:
+                queue.append(child)
+        return len(nodes)
+
+    def __hash__(self):
+        if hasattr(self, "_hash"):
+            return getattr(self, "_hash")
+        text = f"{self.letter} {self.cell} {self.points} "
+        if self.trie_node:
+            text += str(hash(self.trie_node)) + " "
+        text += " ".join(str(hash(c)) for c in self.children)
+        h = hash(text)
+        self._hash = h
+        return h
 
     def _into_list(self, solver: PyBucketBoggler, lines: list[str], indent=""):
         line = ""
@@ -383,15 +505,6 @@ class EvalNode:
                     child.to_json(solver, max_depth - 1) for child in self.children
                 ]
         return out
-
-
-def group_by[T, R](seq: Sequence[T], fn: Callable[[T], R]) -> dict[R, list[T]]:
-    out = dict[R, list[T]]()
-    for v in seq:
-        k = fn(v)
-        out.setdefault(k, [])
-        out[k].append(v)
-    return out
 
 
 def num_possibilities(letters: Sequence[tuple[int, int]]) -> int:

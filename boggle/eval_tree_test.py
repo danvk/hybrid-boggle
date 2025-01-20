@@ -108,6 +108,12 @@ def test_eval_tree_force():
     assert t0.bound == 3
     t0.check_consistency()
 
+    t0 = t.lift_choice(0, 1)
+    assert t0.bound == 3
+    t0.check_consistency()
+    assert t0.letter == CHOICE_NODE
+    assert t0.cell == 0
+
     # A force on the choice cell reduces the bound.
     t3 = t.force_cell(3, 2)
     # print(t3.to_string(bb))
@@ -116,6 +122,18 @@ def test_eval_tree_force():
     assert t3[1].bound == 2
     t3[0].check_consistency()
     t3[1].check_consistency()
+
+    t3 = t.lift_choice(3, 2)
+    assert t3.bound == 2
+    assert t3.letter == CHOICE_NODE
+    assert t3.cell == 3
+    assert len(t3.children) == 2
+    assert t3.children[0].cell == 3
+    assert t3.children[0].letter == 0
+    assert t3.children[0].bound == 1
+    assert t3.children[1].cell == 3
+    assert t3.children[1].letter == 1
+    assert t3.children[0].bound == 2
 
 
 MINI_DICT = [

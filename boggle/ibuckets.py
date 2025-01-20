@@ -125,3 +125,8 @@ class PyBucketBoggler:
 
         self.used_ ^= 1 << i
         return score
+
+
+class PyBucketBoggler22(PyBucketBoggler):
+    def __init__(self, trie: PyTrie):
+        super().__init__(trie, (2, 2))

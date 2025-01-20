@@ -11,6 +11,7 @@ def main():
     (_, board) = sys.argv
     t = make_py_trie("boggle-words.txt")
     dims = {
+        4: (2, 2),
         9: (3, 3),
         12: (3, 4),
         16: (4, 4),

@@ -33,16 +33,18 @@ def main_old():
     (board,) = sys.argv[1:]
     t = Trie.CreateFromFile("boggle-words.txt")
     assert t.FindWord("qinqennia") is not None
+    if " " not in board:
+        board = " ".join([*board])
+    cells = board.split(" ")
     dims = {
+        4: (2, 2),
         9: (3, 3),
         12: (3, 4),
         16: (4, 4),
-    }[len(board)]
+    }[len(cells)]
 
     bb = Bogglers[dims](t)
     # bb.PrintNeighbors()
-    if " " not in board:
-        board = " ".join([*board])
     bb.ParseBoard(board)
     print(bb.as_string())
     with Timer("C++"):

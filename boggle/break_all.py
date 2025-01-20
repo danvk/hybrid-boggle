@@ -25,9 +25,11 @@ from boggle.breaker import (
     print_details,
 )
 from boggle.eval_tree import EvalTreeBoggler
+from boggle.ibuckets import PyBucketBoggler22
 from boggle.trie import make_py_trie
 
 Bogglers = {
+    (2, 2): PyBucketBoggler22,
     (3, 3): BucketBoggler33,
     (3, 4): BucketBoggler34,
     (4, 4): BucketBoggler44,
