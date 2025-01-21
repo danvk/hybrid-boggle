@@ -57,7 +57,7 @@ bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
   if (base==child) return true;
   for (int i=0; i<kNumLetters; i++) {
     if (base->StartsWord(i) && ReverseLookup(base->Descend(i), child, out)) {
-      string(1,'a'+i) + *out;
+      *out = string(1,'a'+i) + *out;
       return true;
     }
   }

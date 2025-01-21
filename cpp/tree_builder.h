@@ -33,7 +33,7 @@ class TreeBuilder : public BucketBoggler<M, N> {
 // TODO: can this not be a template method?
 template <int M, int N>
 const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
-  auto start = chrono::high_resolution_clock::now();
+  // auto start = chrono::high_resolution_clock::now();
   root_ = new EvalNode();
 
   root_->letter = EvalNode::ROOT_NODE;
@@ -63,8 +63,8 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
 
   root_->bound = details_.max_nomark;
   dict_->Mark(runs_);
-  auto finish = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(finish - start).count();
+  // auto finish = chrono::high_resolution_clock::now();
+  // auto duration = chrono::duration_cast<chrono::milliseconds>(finish - start).count();
   // TODO: record tree building time
   // cout << "build tree: " << duration << " ms" << endl;
   auto root = root_;
