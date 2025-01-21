@@ -34,7 +34,8 @@ class PyBoggler:
     def __str__(self):
         return "".join(chr(ord("a") + let) if let != -1 else "." for let in self._cells)
 
-    def score(self):
+    def score(self, bd: str):
+        self.set_board(bd)
         # This allows the same Trie to be used by multiple bogglers, e.g. for boggle_test.py
         self._runs = 1 + self._trie.Mark()
         self._trie.SetMark(self._runs)

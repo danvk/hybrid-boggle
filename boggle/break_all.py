@@ -6,15 +6,7 @@ import random
 import time
 from collections import Counter
 
-from cpp_boggle import (
-    BucketBoggler33,
-    BucketBoggler34,
-    BucketBoggler44,
-    TreeBuilder33,
-    TreeBuilder34,
-    TreeBuilder44,
-    Trie,
-)
+from cpp_boggle import Trie
 from tqdm import tqdm
 
 from boggle.board_id import from_board_id, is_canonical_board_id
@@ -24,22 +16,9 @@ from boggle.breaker import (
     merge_details,
     print_details,
 )
+from boggle.dimensional_bogglers import TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
-from boggle.ibuckets import PyBucketBoggler22
 from boggle.trie import make_py_trie
-
-Bogglers = {
-    (2, 2): PyBucketBoggler22,
-    (3, 3): BucketBoggler33,
-    (3, 4): BucketBoggler34,
-    (4, 4): BucketBoggler44,
-}
-
-TreeBuilders = {
-    (3, 3): TreeBuilder33,
-    (3, 4): TreeBuilder34,
-    (4, 4): TreeBuilder44,
-}
 
 
 def main():

@@ -8,8 +8,8 @@ import numpy as np
 from cpp_boggle import BucketBoggler34, Trie
 from tqdm import tqdm
 
-from boggle.break_all import Bogglers
 from boggle.breaker import IBucketBreaker
+from boggle.dimensional_bogglers import BucketBogglers
 from boggle.ibuckets import PyBucketBoggler
 from boggle.ibuckets_tree import TreeBucketBoggler
 from boggle.trie import make_py_trie
@@ -43,7 +43,7 @@ def main_old():
         16: (4, 4),
     }[len(cells)]
 
-    bb = Bogglers[dims](t)
+    bb = BucketBogglers[dims](t)
     # bb.PrintNeighbors()
     bb.ParseBoard(board)
     print(bb.as_string())

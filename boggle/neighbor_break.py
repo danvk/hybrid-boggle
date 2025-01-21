@@ -6,7 +6,7 @@ import itertools
 import math
 import sys
 
-from cpp_boggle import Boggler, BucketBoggler44, Trie
+from cpp_boggle import Boggler44, BucketBoggler44, Trie
 from tqdm import tqdm
 
 from boggle.breaker import Breaker
@@ -18,11 +18,8 @@ def main():
 
     t1 = Trie.CreateFromFile("boggle-words.txt")
     assert t1
-    t2 = Trie.CreateFromFile("boggle-words.txt")
-    assert t2
-    # TODO: let the two share a Trie; this requires coordinating the marks.
-    boggler = Boggler(t1)
-    bb = BucketBoggler44(t2)
+    boggler = Boggler44(t1)
+    bb = BucketBoggler44(t1)
     breaker = Breaker(bb, (4, 4), 3500, num_splits=10)
 
     a_to_z = "".join(chr(ord("a") + i) for i in range(26))
@@ -33,7 +30,7 @@ def main():
     n = len(base_board)
     all_indices = [*range(n)]
 
-    best_score = boggler.Score(base_board)
+    best_score = boggler.score(base_board)
     print(f"Starting from {best_score} {base_board}")
 
     seen = {base_board}
@@ -61,7 +58,7 @@ def main():
         for bd in details.failures:
             if bd in seen:
                 continue
-            score = boggler.Score(bd)
+            score = boggler.score(bd)
             if score < threshold:
                 continue
 

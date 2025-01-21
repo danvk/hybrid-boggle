@@ -5,7 +5,7 @@ import fileinput
 import sys
 import time
 
-from cpp_boggle import Boggler as CppBoggler
+from cpp_boggle import Boggler44 as CppBoggler
 from cpp_boggle import Trie as CppTrie
 
 
@@ -14,14 +14,14 @@ def main():
     # t = make_py_trie("boggle-words.txt")
 
     b = CppBoggler(t)
-    # print(f"Loaded {t.Size()} words")
+    print(f"Loaded {t.Size()} words")
     start_s = time.time()
     n = 0
     for line in fileinput.input():
         board = line.strip()
         # b.set_board(board)
         # print(f"{board}: {b.score()}")
-        _score = b.Score(board)
+        _score = b.score(board)
         # print(f"{board}: {score}")
         n += 1
     end_s = time.time()

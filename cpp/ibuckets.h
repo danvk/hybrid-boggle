@@ -2,6 +2,7 @@
 // each square. This can be quite CPU-intensive.
 #include <limits.h>
 #include "trie.h"
+#include "constants.h"
 
 #include <algorithm>
 #include <iostream>
@@ -52,7 +53,8 @@ class BucketBoggler {
   // Compute an upper bound without any of the costly statistics.
   unsigned int UpperBound(unsigned int bailout_score = INT_MAX);
 
-
+  /*
+  // This is to help ensure this is in sync w/ Python.
   void PrintNeighbors() {
     for (int i = 0; i < M * N; i++) {
       printf("%d: ", i);
@@ -62,6 +64,7 @@ class BucketBoggler {
       printf("\n");
     }
   }
+  */
 
  protected:
   Trie* dict_;
@@ -81,13 +84,6 @@ class BucketBoggler {
 
 // For debugging:
 static const bool PrintWords  = false;
-
-// There's only one "Qu" die, but we allow a board with many of Qus.
-// This prevents reading uninitialized memory on words with lots of Qus, which
-// can cause spuriously high scores.
-const unsigned int kWordScores[] =
-      //0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-      { 0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 };
 
 template <int M, int N>
 bool BucketBoggler<M, N>::ParseBoard(const char* bd) {
@@ -150,10 +146,9 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
   details_.bailout_cell = -1;
 
   used_ = 0;
-  // TODO:
-  // - Reset marks & runs_ every 1B runs.
-  // - Use the convention of marking the root node with the run count.
-  runs_ += 1;
+  runs_ = dict_->Mark() + 1;
+  dict_->Mark(runs_);
+  // TODO: reset marks & runs every 1B calls
   for (int i = 0; i < M*N; i++) {
     int max_score = DoAllDescents(i, 0, dict_);
     details_.max_nomark += max_score;

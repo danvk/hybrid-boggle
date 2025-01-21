@@ -157,8 +157,5 @@ def test_tar_tier_boggler():
     t.AddWord("the")
 
     b = PyBoggler(t, (4, 4))
-    b.set_board("tizzazzzrzzzzzzz")
-    assert b.score() == 1
-
-    b.set_board("tizzezzzrzzzzzzz")
-    assert b.score() == 2
+    assert b.score("tizzazzzrzzzzzzz") == 1
+    assert b.score("tizzezzzrzzzzzzz") == 2

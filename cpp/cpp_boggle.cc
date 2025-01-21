@@ -44,6 +44,17 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
         .def("NumReps", &BB::NumReps);
 }
 
+template<int M, int N>
+void declare_boggler(py::module &m, const string &pyclass_name) {
+    using BB = Boggler<M, N>;
+    // TODO: do I care about buffer_protocol() here?
+    py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
+        .def(py::init<Trie*>())
+        .def("score", &BB::Score)
+        .def("cell",    &BB::Cell)
+        .def("set_cell", &BB::SetCell);
+}
+
 // PYBIND11_MAKE_OPAQUE(EvalNode);
 // PYBIND11_MAKE_OPAQUE(vector<EvalNode*>);
 
@@ -69,9 +80,9 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def_static("ReverseLookup", py::overload_cast<const Trie*, const Trie*>(&Trie::ReverseLookup))
         .def_static("CreateFromFile", &Trie::CreateFromFile);
 
-    py::class_<Boggler>(m, "Boggler")
-        .def(py::init<Trie*>())
-        .def("Score", &Boggler::Score);
+    declare_boggler<3, 3>(m, "Boggler33");
+    declare_boggler<3, 4>(m, "Boggler34");
+    declare_boggler<4, 4>(m, "Boggler44");
 
     declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
     declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
