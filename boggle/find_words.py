@@ -18,8 +18,7 @@ def main():
     }[len(board)]
     boggler = PyBoggler(t, dims)
     boggler.print_words = True
-    boggler.set_board(board)
-    print("score:", boggler.score())
+    print("score:", boggler.score(board))
 
 
 if __name__ == "__main__":

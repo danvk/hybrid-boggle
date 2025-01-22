@@ -65,7 +65,8 @@ class PyBucketBoggler:
     def UpperBound(self, bailout_score: int):
         self.details_ = ScoreDetails(0, 0, -1)
         self.used_ = 0
-        self.runs_ += 1
+        self.runs_ = self.trie_.Mark() + 1
+        self.trie_.SetMark(self.runs_)
         self.words = None
         if self.collect_words:
             self.words = []

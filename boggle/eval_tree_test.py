@@ -1,16 +1,21 @@
+import itertools
+import math
+
 import pytest
 from cpp_boggle import EvalNode as CppEvalNode
 from cpp_boggle import TreeBuilder33, Trie, create_eval_node_arena
 
 from boggle.eval_tree import (
     CHOICE_NODE,
+    ROOT_NODE,
     EvalNode,
     EvalTreeBoggler,
     create_eval_node_arena_py,
+    eval_tree_from_json,
     merge_trees,
 )
 from boggle.ibuckets import PyBucketBoggler
-from boggle.trie import PyTrie, make_lookup_table
+from boggle.trie import PyTrie, make_lookup_table, make_py_trie
 
 # TODO: add assertions about choice_mask
 
@@ -87,35 +92,38 @@ def test_eval_tree_force():
     # ae . .
     #  r . .
     bb = EvalTreeBoggler(t, (3, 3))
-    assert bb.ParseBoard("t i z ae z z r z z")
+    assert bb.ParseBoard("tc i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
     t = bb.BuildTree()
     assert 3 == bb.Details().sum_union
     assert 3 == bb.Details().max_nomark
-    assert 2 == bb.NumReps()
+    assert 4 == bb.NumReps()
     assert 3 == t.bound
     assert 3 == t.recompute_score()
     t.check_consistency()
-    print(t.to_string(bb))
+    # print(t.to_string(bb))
 
     # A force on an irrelevant cell has no effect
-    t0 = t.force_cell(0, 1)
+    t0 = t.force_cell(0, num_lets=1)
     # assert len(t0) == 1
     # assert t0[0].bound == 3
     # t0[0].check_consistency()
-    assert isinstance(t0, EvalNode)
-    assert t0.bound == 3
-    t0.check_consistency()
+    assert isinstance(t0, list)
+    assert t0[0].bound == 3
+    t0[0].check_consistency()
 
-    t0 = t.lift_choice(0, 1)
+    t0 = t.lift_choice(0, num_lets=1)
     assert t0.bound == 3
     t0.check_consistency()
+    # print("lift 0")
+    # print(t0.to_string(bb))
     assert t0.letter == CHOICE_NODE
     assert t0.cell == 0
 
     # A force on the choice cell reduces the bound.
     t3 = t.force_cell(3, 2)
+    # print("lift 3")
     # print(t3.to_string(bb))
     assert len(t3) == 2
     assert t3[0].bound == 1
@@ -124,6 +132,7 @@ def test_eval_tree_force():
     t3[1].check_consistency()
 
     t3 = t.lift_choice(3, 2)
+    # print(t3.to_string(bb))
     assert t3.bound == 2
     assert t3.letter == CHOICE_NODE
     assert t3.cell == 3
@@ -133,7 +142,7 @@ def test_eval_tree_force():
     assert t3.children[0].bound == 1
     assert t3.children[1].cell == 3
     assert t3.children[1].letter == 1
-    assert t3.children[0].bound == 2
+    assert t3.children[1].bound == 2
 
 
 MINI_DICT = [
@@ -239,6 +248,105 @@ def test_equivalence():
         # The words should be identical, even if some combinations have been ruled out.
         force_words = [*sorted(fives[i].all_words(table))]
         assert force_words == [*sorted(bb.words)]
+
+
+def test_compress():
+    trie = PyTrie()
+    bb = PyBucketBoggler(trie)
+    bb.ParseBoard("a b c d e f g h i")
+    # A tree with only sum nodes compresses to a single node.
+    # TODO: implement from_string, this is pretty verbose!
+    all_sum = {
+        "letter": ROOT_NODE,
+        "cell": 0,
+        "bound": 5,
+        "children": [
+            {
+                "letter": 0,
+                "cell": 1,
+                "points": 1,
+                "bound": 2,
+                "children": [
+                    {
+                        "letter": 0,
+                        "cell": 2,
+                        "points": 1,
+                        "bound": 1,
+                    }
+                ],
+            },
+            {
+                "letter": 0,
+                "cell": 0,
+                "points": 3,
+                "bound": 3,
+            },
+        ],
+    }
+    t = eval_tree_from_json(all_sum)
+    print(t.to_string(bb))
+    t.compress_in_place()
+    print(t.to_string(bb))
+    assert t.letter == ROOT_NODE
+    assert t.bound == 5
+    assert t.points == 5
+    assert t.children == []
+
+    # Should compress nodes below a choice node
+    choice_at_root = {
+        "letter": CHOICE_NODE,
+        "cell": 3,
+        "bound": 5,
+        "children": [
+            {
+                "cell": 3,
+                "letter": 0,
+                "bound": 5,
+                "children": [
+                    {
+                        "letter": ROOT_NODE,
+                        "cell": 0,
+                        "bound": 5,
+                        "children": [
+                            {
+                                "letter": 0,
+                                "cell": 1,
+                                "points": 1,
+                                "bound": 2,
+                                "children": [
+                                    {
+                                        "letter": 0,
+                                        "cell": 2,
+                                        "points": 1,
+                                        "bound": 1,
+                                    }
+                                ],
+                            },
+                            {
+                                "letter": 0,
+                                "cell": 0,
+                                "points": 3,
+                                "bound": 3,
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    t = eval_tree_from_json(choice_at_root)
+    print(t.to_string(bb))
+    t.compress_in_place()
+    print(t.to_string(bb))
+    assert t.letter == CHOICE_NODE
+    assert t.bound == 5
+    assert t.points is None
+    assert len(t.children) == 1
+    t0 = t.children[0]
+    assert t0.cell == 3
+    assert t0.letter == 0
+    assert t0.bound == 5
+    assert t0.points == 5
 
 
 def choice_node(cell: int, children):
@@ -463,7 +571,6 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena):
 
     # A force on the choice cell reduces the bound.
     t3 = t.force_cell(3, 2, arena)
-    # print(t3.to_string(bb))
     assert len(t3) == 2
     assert t3[0].bound == 1
     assert t3[1].bound == 2
@@ -478,3 +585,111 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena):
     assert t.score_with_forces(forces) == 1
     forces[3] = 1
     assert t.score_with_forces(forces) == 2
+
+
+# Invariants:
+# - Each lift should produce a choice tree that matches max-nomark for directly evaluating the tree.
+# - This should remain true for all combinations of compress + dedupe
+
+
+@pytest.mark.parametrize(
+    "dedupe, compress", [(False, False), (False, True), (True, False), (True, True)]
+)
+def test_lift_invariants(dedupe, compress):
+    trie = make_py_trie("boggle-words-4.txt")
+    board = "lnrsy aeiou chkmpt bdfgjvwxz"
+    cells = board.split(" ")
+    dedupe = False
+    compress = False
+
+    arena = create_eval_node_arena_py()
+    etb = EvalTreeBoggler(trie, (2, 2))
+    ibb = PyBucketBoggler(trie, (2, 2))
+    assert etb.ParseBoard(board)
+    t = etb.BuildTree(arena, dedupe=dedupe)
+    assert t.bound == 29
+    assert ibb.ParseBoard(board)
+    assert 29 == ibb.UpperBound(bailout_score=123)
+    max_trees = [*t.max_subtrees()]
+    assert len(max_trees) == 1
+    assert max_trees == [[t]]
+
+    # Lifting a choice reduces the bound.
+    # The bounds on the child cells should match what you get from ibuckets.
+    tc0 = t.lift_choice(0, len(cells[0]), arena, dedupe=dedupe, compress=compress)
+    assert tc0.letter == CHOICE_NODE
+    assert tc0.cell == 0
+    assert len(tc0.children) == len(cells[0])
+    assert tc0.bound == 23
+    for i, letter in enumerate(cells[0]):
+        bd = " ".join(cell if j != 0 else letter for j, cell in enumerate(cells))
+        assert ibb.ParseBoard(bd)
+        assert ibb.UpperBound(123) == tc0.children[i].bound
+    max_trees = [*tc0.max_subtrees()]
+    assert len(max_trees) == len(cells[0])
+    assert max_trees == [[(0, i), child] for i, child in enumerate(tc0.children)]
+
+    # Lifting a second time reduces the bound again.
+    tc1 = tc0.lift_choice(1, len(cells[1]), arena, dedupe=dedupe, compress=compress)
+    assert tc1.letter == CHOICE_NODE
+    assert tc1.cell == 1
+    assert len(tc1.children) == len(cells[1])
+    assert tc1.bound == 17
+    max_trees = [*tc1.max_subtrees()]
+    assert len(max_trees) == len(cells[0]) * len(cells[1])
+    assert max_trees == [
+        [(1, i), (0, j), child0]
+        for i, child1 in enumerate(tc1.children)
+        for j, child0 in enumerate(child1.children)
+    ]
+    for i, letter0 in enumerate(cells[0]):
+        for j, letter1 in enumerate(cells[1]):
+            my_cells = [*cells]
+            my_cells[0] = letter0
+            my_cells[1] = letter1
+            bd = " ".join(my_cells)
+            assert ibb.ParseBoard(bd)
+            assert ibb.UpperBound(123) == tc1.children[j].children[i].bound
+
+    tc2 = tc1.lift_choice(2, len(cells[2]), arena, dedupe=dedupe, compress=compress)
+    assert tc2.letter == CHOICE_NODE
+    assert tc2.cell == 2
+    assert len(tc2.children) == len(cells[2])
+    assert tc2.bound == 14
+
+    tc3 = tc2.lift_choice(3, len(cells[3]), arena, dedupe=dedupe, compress=compress)
+    assert tc3.letter == CHOICE_NODE
+    assert tc3.cell == 3
+    assert len(tc3.children) == len(cells[3])
+    assert tc3.bound == 13
+    n = 0
+    n_non_null = 0
+    for tc2 in tc3.children:
+        assert tc2.letter == CHOICE_NODE
+        assert len(tc2.children) == len(cells[2])
+        for tc1 in tc2.children:
+            assert tc1.letter == CHOICE_NODE
+            assert len(tc1.children) == len(cells[1])
+            for tc0 in tc1.children:
+                assert tc0.letter == CHOICE_NODE
+                assert len(tc0.children) == len(cells[0])
+                n += len(tc0.children)
+                for t in tc0.children:
+                    assert not t or t.letter != CHOICE_NODE
+                    if t:
+                        n_non_null += 1
+
+    assert n == math.prod(len(cell) for cell in cells)
+    max_trees = [*tc3.max_subtrees()]
+    assert n_non_null == len(max_trees)
+
+    for idx in itertools.product(*(range(len(cell)) for cell in cells)):
+        i0, i1, i2, i3 = idx
+        bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
+        assert ibb.ParseBoard(bd)
+        ibb.UpperBound(123)
+        score = ibb.Details().max_nomark
+        print(idx, bd, score)
+        t = tc3.children[i3].children[i2].children[i1].children[i0]
+        assert score == (t.bound if t else 0)
+        # print(t.to_string(etb))

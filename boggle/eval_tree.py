@@ -2,11 +2,11 @@
 
 import math
 from collections import Counter, defaultdict
-from typing import Callable, Self, Sequence
+from typing import Self, Sequence
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
-from boggle.trie import PyTrie
+from boggle.trie import PyTrie, make_lookup_table
 from boggle.util import group_by, partition
 
 ROOT_NODE = -2
@@ -47,6 +47,10 @@ def create_eval_node_arena_py():
     return PyArena()
 
 
+cache_count = 1
+force_cell_cache = {}
+
+
 class EvalNode:
     letter: int
     cell: int
@@ -63,6 +67,8 @@ class EvalNode:
         self.children = []
         self.choice_mask = 0
         self.trie_node = None
+        self.cache_key = None
+        self.cache_value = None
 
     def recompute_score(self):
         # Should return self.bound
@@ -82,19 +88,32 @@ class EvalNode:
         return self.score_with_forces(forces_list)
 
     def score_with_forces(self, forces: list[int]) -> int:
+        global cache_count
+        cache_count += 1
+
         choice_mask = 0
         for cell, letter in enumerate(forces):
             if letter >= 0:
                 choice_mask |= 1 << cell
-        return self.score_with_forces_mask(forces, choice_mask)
+        return self.score_with_forces_mask(forces, choice_mask, cache_count)
 
-    def score_with_forces_mask(self, forces: list[int], choice_mask: int) -> int:
+    def score_with_forces_mask(
+        self, forces: list[int], choice_mask: int, cache_key: int
+    ) -> int:
+        if self.cache_key == cache_key:
+            return self.cache_value
+
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
                 for child in self.children:
                     if child and child.letter == force:
-                        return child.score_with_forces_mask(forces, choice_mask)
+                        v = child.score_with_forces_mask(forces, choice_mask, cache_key)
+                        self.cache_key = cache_key
+                        self.cache_value = v
+                        return v
+                self.cache_key = cache_key
+                self.cache_value = 0
                 return 0
 
         if not (self.choice_mask & choice_mask):
@@ -103,26 +122,38 @@ class EvalNode:
 
         # Otherwise, this is the same as regular scoring
         if self.letter == CHOICE_NODE:
-            return (
+            v = (
                 max(
-                    child.score_with_forces_mask(forces, choice_mask) if child else 0
+                    child.score_with_forces_mask(forces, choice_mask, cache_key)
+                    if child
+                    else 0
                     for child in self.children
                 )
                 if self.children
                 else 0
             )
         else:
-            return self.points + sum(
-                child.score_with_forces_mask(forces, choice_mask) if child else 0
+            v = self.points + sum(
+                child.score_with_forces_mask(forces, choice_mask, cache_key)
+                if child
+                else 0
                 for child in self.children
             )
+        self.cache_key = cache_key
+        self.cache_value = v
+        return v
 
-    def lift_choice(self, cell: int, num_lets: int) -> Self:
+    def lift_choice(
+        self, cell: int, num_lets: int, arena=None, dedupe=False, compress=False
+    ) -> Self:
         """Return a version of this tree with a choice on the cell at the root.
 
         Will return either a choice node for the cell, or another type of node
         if there is the tree is independent of that cell.
         """
+        global cache_count
+        cache_count += 1
+
         if self.letter == CHOICE_NODE and self.cell == cell:
             # This is already in the right form. Nothing more to do!
             # TODO: consider pulling in the compressing optimization from force_cell
@@ -134,7 +165,9 @@ class EvalNode:
 
         # TODO: make the code for constructing this directly (below) work.
         #       (or don't if this is more efficient!)
-        choices = self.force_cell(cell, num_lets)
+        choices = self.force_cell(
+            cell, num_lets, arena, dedupe=dedupe, compress=compress
+        )
         node = EvalNode()
         node.letter = CHOICE_NODE
         node.cell = cell
@@ -202,13 +235,29 @@ class EvalNode:
         return node
 
     def force_cell(
-        self, force_cell: int, num_lets: int, arena=None
+        self, force_cell: int, num_lets: int, arena=None, dedupe=False, compress=False
+    ) -> Self | list[Self]:
+        global cache_count, force_cell_cache
+        cache_count += 1
+        force_cell_cache = {}
+        out = self.force_cell_work(
+            force_cell, num_lets, arena, dedupe=dedupe, compress=compress
+        )
+        # print(f"cache size: {len(force_cell_cache)}")
+        force_cell_cache = {}
+        return out
+
+    def force_cell_work(
+        self, force_cell: int, num_lets: int, arena=None, dedupe=False, compress=False
     ) -> Self | list[Self]:
         """Try each possibility for a cell.
 
         num_lets is the number of possibilities for the cell.
         Returns a list of trees, one for each letter, or a Tree if there's no choice.
         """
+        if self.cache_key == cache_count:
+            return self.cache_value
+
         # COUNTS["force calls"] += 1
         if self.letter == CHOICE_NODE and self.cell == force_cell:
             # This is the forced cell.
@@ -218,66 +267,55 @@ class EvalNode:
                 if child:
                     # If this choice isn't a word on its own and it only has one child,
                     # then we can remove it from the tree entirely.
-                    # TODO: can this be "while" instead of "if"?
+                    # This could be applied recursively, but this is rarely helpful.
+                    # TODO: find a specific example where this applies
                     letter = child.letter
-                    if not child.points and len(child.children) == 1:
-                        child = child.children[0]
+                    if not child.points:
+                        nnc = [c for c in child.children if c]
+                        if len(nnc) == 1:
+                            child = nnc[0]
                     out[letter] = child
                     assert child.choice_mask & (1 << force_cell) == 0
+            self.cache_key = cache_count
+            self.cache_value = out
             return out
 
         if self.choice_mask & (1 << force_cell) == 0:
             # There's no relevant choice below us, so we can bottom out.
+            self.cache_key = cache_count
+            self.cache_value = self
             return self
 
         # Make the recursive calls and align the results.
         # For a choice node, take the max. For other nodes, take the sum.
         results = [
-            child.force_cell(force_cell, num_lets) if child else None
+            child.force_cell_work(force_cell, num_lets, arena, dedupe, compress)
+            if child
+            else None
             for child in self.children
         ]
 
         aligned_results = [
             r if isinstance(r, list) else [r] * num_lets for r in results
         ]
-        # Construct a new choice node for each forced letter.
+        # Construct a new sum node for each forced letter.
         out = []
         for i in range(num_lets):
-            children = [result[i] for result in aligned_results if result[i]]
+            children = [result[i] for result in aligned_results]
             node_choice_mask = 0
             if self.letter == CHOICE_NODE:
-                node_bound = max(child.bound for child in children) if children else 0
+                non_null_children = [c for c in children if c]
+                node_bound = (
+                    max(child.bound for child in non_null_children)
+                    if non_null_children
+                    else 0
+                )
+                # TODO: Why the "& self.choice_mask" here?
                 node_choice_mask = (1 << self.cell) & self.choice_mask
             else:
-                node_bound = self.points + sum(child.bound for child in children)
-                if MERGE_AFTER_SPLIT:
-                    if children and len(children) > 1:
-                        # This groups twice because almost all the time there are no collisions.
-                        by_cell = {}
-                        any_collisions = False
-                        for child in children:
-                            if by_cell.get(child.cell):
-                                any_collisions = True
-                                break
-                            by_cell[child.cell] = True
-                        if any_collisions:
-                            # COUNTS["MERGE"] += 1
-                            by_cell = defaultdict(list)
-                            for c in children:
-                                by_cell[c.cell].append(c)
-                            children = []
-                            for letter, trees in by_cell.items():
-                                if len(trees) == 1:
-                                    children.append(trees[0])
-                                else:
-                                    child = trees[0]
-                                    for c in trees[1:]:
-                                        child = merge_trees(child, c)
-                                    children.append(child)
-                            children.sort(key=lambda c: c.cell)
-                            node_bound = self.points + sum(
-                                child.bound for child in children
-                            )
+                node_bound = self.points + sum(
+                    child.bound for child in children if child
+                )
 
             if node_bound > 0:
                 node = EvalNode()
@@ -288,51 +326,123 @@ class EvalNode:
                 node.bound = node_bound
                 node.children = children
                 node.choice_mask = node_choice_mask
+                if self.letter == ROOT_NODE:
+                    # TODO: leave this as a root node if I adopt child index = choice
+                    #       this would make it clearer where the end of the choice tree is.
+                    node.letter = i
+                    node.cell = force_cell
                 for child in children:
-                    node.choice_mask |= child.choice_mask
-                # assert node.choice_mask == self.choice_mask
-                # if len(node.children) == 1 and node.letter >= 0 and node.points == 0:
-                #     node = node.children[0]
+                    if child:
+                        node.choice_mask |= child.choice_mask
+
+                if dedupe:
+                    h = node.structural_hash()
+                    prev = force_cell_cache.get(h)
+                else:
+                    prev = h = None
+                if prev:
+                    node = prev
+                    # COUNTS["cache hits"] += 1
+                else:
+                    any_changes = False
+                    if compress and node.children and node.letter != CHOICE_NODE:
+                        # try to absorb non-choice nodes
+                        # TODO: iterate on performance here.
+                        non_choice = []
+                        choice = []
+                        for c in node.children:
+                            if c:  # XXX this should not be necessary; sum nodes should prune
+                                if c.letter == CHOICE_NODE:
+                                    choice.append(c)
+                                else:
+                                    non_choice.append(c)
+                        if non_choice:
+                            # something to absorb
+                            # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
+                            any_changes = True
+                            new_children = choice
+                            for c in non_choice:
+                                node.points = (node.points or 0) + c.points
+                                new_children += c.children
+                            node.children = new_children
+                            # COUNTS["absorb"] += 1
+                    if dedupe:
+                        force_cell_cache[h] = node
+                        if any_changes:
+                            # TODO: check whether both hashes are necessary / helpful
+                            force_cell_cache[node.structural_hash()] = node
             else:
                 node = None
 
             out.append(node)
+        self.cache_key = cache_count
+        self.cache_value = out
         return out
 
     def prune(self):
+        # TODO: remove, this should always be a no-op
         if self.bound == 0 and self.letter != ROOT_NODE:
             return False  # discard
         new_children = [child for child in self.children if child and child.prune()]
         self.children = new_children
         return True  # keep
 
-    def compress(self):
-        if (
-            self.letter >= 0
-            and len(self.children) == 1
-            and self.children[0]
-            and self.children[0].letter >= 0
-            and not self.children[0].points
-        ):
-            self.children = self.children[0].children
+    def filter_below_threshold(self, min_score: int):
+        """Remove choice subtrees with bounds equal to or below min_score.
+
+        This operates in-place. It only operates on subtrees that are connected
+        to the root exclusively through choice nodes. This won't reduce any bounds,
+        but it will reduce the number of nodes.
+        """
+        # TODO: this would be more efficient to do in force_cell.
+        # this could use the caching system, but it's unlikely that the max trees are cached.
+        if self.letter != CHOICE_NODE:
+            return
+        assert self.bound > min_score
+        # any_dropped = False
+        for i, child in enumerate(self.children):
+            if not child:
+                continue
+            if child.bound <= min_score:
+                self.children[i] = None
+                # any_dropped = True
+            else:
+                child.filter_below_threshold(min_score)
+        # XXX this might be the source of my bug
+        # if any_dropped:
+        #     self.children = [child for child in self.children if child]
+
+    def compress_in_place(self, mark=None):
+        # TODO: could this be done with a post-order version of all_nodes_unique?
+        if mark is None:
+            global cache_count
+            cache_count += 1
+            mark = cache_count
+        if self.cache_key == mark:
+            return  # we've already compressed this one
+        self.cache_key = mark  # we're committed
         for child in self.children:
-            child.compress()
-        return self
+            child.compress_in_place(mark)
+        if self.letter == CHOICE_NODE or not self.children:
+            pass  # nothing to do here
+        else:
+            # absorb all of our non-choice children
+            non_choice, choice = partition(
+                self.children, lambda c: c.letter == CHOICE_NODE
+            )
+            if not non_choice:
+                return  # all choice nodes, nothing left to do
+            new_children = choice
+            for c in non_choice:
+                self.points = (self.points or 0) + c.points
+                new_children += c.children
+            self.children = new_children
 
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
 
     def unique_node_count(self):
-        nodes = set()
-        queue = [self]
-        while queue:
-            node = queue.pop()
-            if node in nodes:
-                continue  # already visited this one
-            nodes.add(node)
-            for child in node.children:
-                queue.append(child)
-        return len(nodes)
+        return sum(1 for _ in self.all_nodes_unique())
 
     def unique_node_count_by_hash(self):
         nodes = set()
@@ -347,13 +457,19 @@ class EvalNode:
                 queue.append(child)
         return len(nodes)
 
-    def __hash__(self):
+    def structural_hash(self) -> int:
         if hasattr(self, "_hash"):
             return getattr(self, "_hash")
         text = f"{self.letter} {self.cell} {self.points} "
-        if self.trie_node:
-            text += str(hash(self.trie_node)) + " "
-        text += " ".join(str(hash(c)) for c in self.children)
+        # Including the trie node is an interesting trade-off.
+        # It reduces the effectiveness of de-duping, but keeps tree merging
+        # as a possibility post-de-duping.
+        # if self.trie_node:
+        #     text += str(hash(self.trie_node)) + " "
+        # TODO: if child nodes are already de-duped, can we use hash(c) here?
+        #       evidently not, but we don't lose too much (~5% increase in nodes)
+        text += " ".join(str(c.structural_hash()) for c in self.children if c)
+        # text += " ".join(str(hash(c)) for c in self.children)
         h = hash(text)
         self._hash = h
         return h
@@ -361,7 +477,7 @@ class EvalNode:
     def _into_list(self, solver: PyBucketBoggler, lines: list[str], indent=""):
         line = ""
         if self.letter == ROOT_NODE:
-            line = f"ROOT ({self.bound}) mask={self.choice_mask}"
+            line = f"{indent}ROOT ({self.bound}) mask={self.choice_mask}"
         elif self.letter == CHOICE_NODE:
             line = f"{indent}CHOICE ({self.cell} <{self.bound}) mask={self.choice_mask}"
         else:
@@ -417,6 +533,38 @@ class EvalNode:
         for child in self.children:
             if child:
                 yield from child.all_nodes()
+
+    def all_nodes_postorder(self):
+        for child in self.children:
+            if child:
+                yield from child.all_nodes_postorder()
+        yield self
+
+    def all_nodes_unique(self, mark=None):
+        if mark is None:
+            global cache_count
+            cache_count += 1
+            mark = cache_count
+        if self.cache_key == mark:
+            return
+        self.cache_key = mark
+        yield self
+        for child in self.children:
+            if child:
+                yield from child.all_nodes_unique(mark)
+
+    def max_subtrees(self):
+        """Yield all subtrees below a choice node.
+
+        Each yielded value is a list of (cell, letter) choices leading down to the tree.
+        """
+        if self.letter != CHOICE_NODE:
+            yield [self]
+        else:
+            for i, child in enumerate(self.children):
+                if child:
+                    for seq in child.max_subtrees():
+                        yield [(self.cell, i)] + seq
 
     def all_words(self, word_table: dict[PyTrie, str]) -> list[str]:
         return [word_table[node.trie_node] for node in self.all_nodes() if node.points]
@@ -478,33 +626,74 @@ class EvalNode:
             dot.append(child_dot)
         return me, "\n".join(dot)
 
-    def to_json(self, solver: PyBucketBoggler, max_depth=100):
+    def to_json(self, solver: PyBucketBoggler, max_depth=100, lookup=None):
+        if not lookup:
+            lookup = make_lookup_table(solver.trie_)
         out = {
             "type": (
                 "ROOT"
                 if self.letter == ROOT_NODE
                 else "CHOICE"
                 if self.letter == CHOICE_NODE
-                else f"{self.letter}={solver.bd_[self.cell][self.letter]}"
+                else f"{self.cell}={solver.bd_[self.cell][self.letter]} ({self.letter})"
             ),
             "cell": self.cell,
             "bound": self.bound,
-            "mask": [i for i in range(16) if self.choice_mask & (1 << i)],
         }
+        if self.choice_mask:
+            out["mask"] = [i for i in range(16) if self.choice_mask & (1 << i)]
         if self.points:
             out["points"] = self.points
+        if self.trie_node:
+            out["word"] = lookup[self.trie_node]
         if self.children:
-            child_range = [child.bound for child in self.children]
-            child_range.sort()
-            out["child_bound_range"] = child_range
-            out["num_reps"] = num_possibilities(self.choice_letters())
+            # child_range = [child.bound for child in self.children]
+            # child_range.sort()
+            # out["child_bound_range"] = child_range
+            # out["num_reps"] = num_possibilities(self.choice_letters())
             if max_depth == 0:
                 out["children"] = self.node_count()
             else:
                 out["children"] = [
-                    child.to_json(solver, max_depth - 1) for child in self.children
+                    child.to_json(solver, max_depth - 1, lookup)
+                    for child in self.children
                 ]
         return out
+
+
+def eval_tree_from_json(d: dict) -> EvalNode:
+    node = EvalNode()
+    node.cell = d["cell"]
+    node.letter = d["letter"]
+    node.points = d.get("points")
+    node.bound = d["bound"]
+    node.children = [eval_tree_from_json(c) for c in d.get("children", [])]
+    # TODO: could also attach trie nodes
+    node.choice_mask = 0
+    if node.letter == CHOICE_NODE:
+        node.choice_mask |= 1 << node.cell
+    for child in node.children:
+        node.choice_mask |= child.choice_mask
+    return node
+
+
+def dedupe_subtrees(t: EvalNode):
+    """Replace identical subtrees with a single copy."""
+    global cache_count
+    cache_count += 1
+
+    hash_to_node = {}
+    for node in t.all_nodes_postorder():
+        if node.cache_key == cache_count:
+            continue  # already de-duped; save the cost of hashing it.
+        node.cache_key = cache_count
+        h = node.structural_hash()
+        if h not in hash_to_node:
+            hash_to_node[h] = node
+        else:
+            pass  # in C++, this would be a good place to delete the node
+        for i, n in enumerate(node.children):
+            node.children[i] = hash_to_node[n.structural_hash()]
 
 
 def num_possibilities(letters: Sequence[tuple[int, int]]) -> int:
@@ -587,7 +776,7 @@ class EvalTreeBoggler(PyBucketBoggler):
     def UpperBound(self, bailout_score):
         raise NotImplementedError()
 
-    def BuildTree(self, arena=None):
+    def BuildTree(self, arena=None, dedupe=False):
         root = EvalNode()
         self.root = root
         root.letter = ROOT_NODE
@@ -595,7 +784,10 @@ class EvalTreeBoggler(PyBucketBoggler):
         root.points = 0
         self.details_ = ScoreDetails(0, 0, -1)
         self.used_ = 0
-        self.runs_ += 1
+        self.runs_ = self.trie_.Mark() + 1
+        self.trie_.SetMark(self.runs_)
+        self.node_cache = {}
+        self.dedupe = dedupe
 
         for i in range(len(self.bd_)):
             child = EvalNode()
@@ -605,8 +797,13 @@ class EvalTreeBoggler(PyBucketBoggler):
             if score > 0:
                 self.details_.max_nomark += score
                 root.children.append(child)
+                if len(self.bd_[i]) > 1:
+                    # TODO: consolidate this with similar code in DoDFS
+                    child.choice_mask |= 1 << i
                 root.choice_mask |= child.choice_mask
         root.bound = self.details_.max_nomark
+        # print(f"build tree node cache size: {len(self.node_cache)}")
+        self.node_cache = {}
         return root
 
     def DoAllDescents(self, idx: int, length: int, t: PyTrie, node: EvalNode):
@@ -621,6 +818,7 @@ class EvalTreeBoggler(PyBucketBoggler):
                 tscore = self.DoDFS(
                     idx, length + (2 if cc == LETTER_Q else 1), t.Descend(cc), child
                 )
+                child = self.get_canonical_node(child)
                 if tscore > 0:
                     max_score = max(max_score, tscore)
                     node.children.append(child)
@@ -641,6 +839,7 @@ class EvalTreeBoggler(PyBucketBoggler):
                 if len(self.bd_[idx]) > 1:
                     neighbor.choice_mask = 1 << idx
                 tscore = self.DoAllDescents(idx, length, t, neighbor)
+                neighbor = self.get_canonical_node(neighbor)
                 if tscore > 0:
                     score += tscore
                     node.children.append(neighbor)
@@ -663,3 +862,13 @@ class EvalTreeBoggler(PyBucketBoggler):
         self.used_ ^= 1 << i
         node.bound = score
         return score
+
+    def get_canonical_node(self, node: EvalNode):
+        if not self.dedupe:
+            return node
+        h = node.structural_hash()
+        prev = self.node_cache.get(h)
+        if prev:
+            return prev
+        self.node_cache[h] = node
+        return node

@@ -10,6 +10,7 @@ from cpp_boggle import (
     create_eval_node_arena,
 )
 
+from boggle.boggler import PyBoggler
 from boggle.eval_tree import EvalNode, EvalTreeBoggler, create_eval_node_arena_py
 
 type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
@@ -150,21 +151,23 @@ def even_split[T](xs: Sequence[T], num_buckets: int) -> list[list[T]]:
 
 
 class HybridTreeBreaker:
-    """This uses force_cell at the top of the tree and score_with_forces at the bottom.
+    """This uses lift_choice at the top of the tree and score_with_forces at the bottom.
 
     This strikes a good balance of allocating memory only when it will save a lot of CPU.
     """
 
     def __init__(
         self,
-        boggler: EvalTreeBoggler,
+        etb: EvalTreeBoggler,
+        boggler: PyBoggler,
         dims: tuple[int, int],
         best_score: int,
         *,
         # TODO: ideally this should depend on the node_count of the tree.
         switchover_level: int,
     ):
-        self.etb = boggler
+        self.etb = etb
+        self.boggler = boggler
         self.best_score = best_score
         self.details_ = None
         self.elim_ = 0
@@ -196,59 +199,47 @@ class HybridTreeBreaker:
             secs_by_level=defaultdict(float),
             root_score_bailout=None,
         )
+        self.lifted_cells_ = []
         self.elim_ = 0
         self.orig_reps_ = self.etb.NumReps()
         self.details_.start_time_s = time.time()
         arena = self.create_arena()
-        tree = self.etb.BuildTree(arena)
+        tree = self.etb.BuildTree(arena, dedupe=True)
         self.details_.secs_by_level[0] += time.time() - self.details_.start_time_s
-        self.AttackTree(tree, 0, [None for _ in self.cells], arena)
+        self.AttackTree(tree, 0, arena)
         self.details_.elapsed_s = time.time() - self.details_.start_time_s
         self.details_.num_reps = self.orig_reps_
-        # TODO: debug output
         return self.details_
 
-    def PickABucket(self, tree: EvalNode) -> int:
-        pick = -1
-        choice_mask = tree.choice_mask
-        for order in self.split_order:
-            if choice_mask & (1 << order):
-                pick = order
-                break
+    def pick_cell(self, tree: EvalNode) -> int:
+        for cell in self.split_order:
+            if cell not in self.lifted_cells_:
+                return cell
+        return -1
 
-        return pick
-
-    def SplitBucket(
-        self, tree: EvalNode, level: int, choices: list[str], arena
-    ) -> None:
-        cell = self.PickABucket(tree)
+    def lift_and_filter(self, tree: EvalNode, level: int, arena) -> None:
+        cell = self.pick_cell(tree)
         if cell == -1:
-            # it's just a board
-            # TODO: evaluate this as a regular board
-            board = "".join(choices)
-            print(f"Unable to break board {board}: {tree.bound}")
-            self.details_.failures.append(board)
+            self.try_remaining_boards(tree)
             return
 
         n = len(self.cells[cell])
 
         start_s = time.time()
-        trees = tree.force_cell(cell, n, arena)
+        tree = tree.lift_choice(cell, n, arena, dedupe=True, compress=True)
         self.details_.secs_by_level[level] += time.time() - start_s
+        self.lifted_cells_.append(cell)
 
-        if isinstance(trees, EvalNode):
-            print("choice was not really a choice")
-            tagged_trees = [("*", trees)]
-        else:
-            assert len(trees) == n
-            tagged_trees = zip(self.cells[cell], trees)
+        if tree.bound >= self.best_score:
+            tree.filter_below_threshold(self.best_score)
+            # print(f"f -> {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes")
+        print(
+            f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes"
+        )
 
-        for letter, tree in tagged_trees:
-            choices[cell] = letter
-            self.AttackTree(tree, level + 1, choices, arena)
-        choices[cell] = None
+        self.AttackTree(tree, level + 1, arena)
 
-    def AttackTree(self, tree: EvalNode, level: int, choices: list[str], arena) -> None:
+    def AttackTree(self, tree: EvalNode, level: int, arena) -> None:
         self.details_.by_level[level] += 1
         ub = tree.bound
         if ub <= self.best_score:
@@ -257,19 +248,27 @@ class HybridTreeBreaker:
             self.details_.elim_level[level] += 1
         else:
             if level >= self.switchover_level:
-                score_choices = [
-                    -1 if ch is None else self.cells[i].index(ch)
-                    for i, ch in enumerate(choices)
-                ]
-                self.SplitBucketScore(tree, level, score_choices)
+                self.switch_to_score(tree, level)
             else:
-                self.SplitBucket(tree, level, choices, arena)
+                self.lift_and_filter(tree, level, arena)
+
+    def switch_to_score(self, tree: EvalNode, level: int) -> None:
+        # TODO: this could share a lot of work by calling score_with_forces on the root.
+        # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
+        for seq in tree.max_subtrees():
+            choices = [-1 for _ in self.cells]
+            for cell, letter in seq[:-1]:
+                choices[cell] = letter
+            t = seq[-1]
+            # print("remaining cells:", sum(1 for x in choices if x == -1))
+            self.AttackTreeScore(t, level, choices)
 
     # These methods come from TreeScoreBreaker
     def AttackTreeScore(self, tree: EvalNode, level: int, choices: list[int]) -> None:
         self.details_.by_level[level] += 1
         start_s = time.time()
         ub = tree.score_with_forces(choices)
+        # print(choices, ub)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
         if ub <= self.best_score:
@@ -285,8 +284,11 @@ class HybridTreeBreaker:
         if cell == -1:
             # it's just a board
             board = "".join(self.cells[cell][idx] for cell, idx in enumerate(choices))
-            print(f"Unable to break board: {board}")
-            self.details_.failures.append(board)
+            true_score = self.boggler.score(board)
+            # print(choices, board, tree.bound, "->", true_score)
+            if true_score >= self.best_score:
+                print(f"Unable to break board: {board} {true_score}")
+                self.details_.failures.append(board)
             return
 
         for idx, letter in enumerate(self.cells[cell]):
@@ -299,6 +301,22 @@ class HybridTreeBreaker:
             if choices[order] == -1:
                 return order
         return -1
+
+    def try_remaining_boards(self, tree: EvalNode):
+        """We have a fully-lifted tree that isn't broken. Try all boards explicitly."""
+        # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
+        for seq in tree.max_subtrees():
+            choices = [-1 for _ in self.cells]
+            for cell, letter in seq[:-1]:
+                assert choices[cell] == -1
+                choices[cell] = letter
+            t = seq[-1]
+            board = "".join(self.cells[cell][idx] for cell, idx in enumerate(choices))
+            true_score = self.boggler.score(board)
+            print(choices, board, t.bound, "->", true_score)
+            if true_score >= self.best_score:
+                print(f"Unable to break board: {board} {true_score}")
+                self.details_.failures.append(board)
 
 
 def print_details(d: BreakDetails):

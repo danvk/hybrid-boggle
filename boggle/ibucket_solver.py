@@ -30,6 +30,7 @@ class Timer:
 
 
 def main_old():
+    # TODO: make this take --dictionary flag
     (board,) = sys.argv[1:]
     t = Trie.CreateFromFile("boggle-words.txt")
     assert t.FindWord("qinqennia") is not None

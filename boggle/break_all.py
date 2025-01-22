@@ -10,13 +10,14 @@ from cpp_boggle import Trie
 from tqdm import tqdm
 
 from boggle.board_id import from_board_id, is_canonical_board_id
+from boggle.boggler import PyBoggler
 from boggle.breaker import (
     BreakDetails,
     HybridTreeBreaker,
     merge_details,
     print_details,
 )
-from boggle.dimensional_bogglers import TreeBuilders
+from boggle.dimensional_bogglers import Bogglers, TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
 from boggle.trie import make_py_trie
 
@@ -73,6 +74,13 @@ def main():
     #     help="Number of partitions to use when breaking a bucket.",
     # )
     parser.add_argument(
+        # TODO: figure out how to set this based on tree size
+        "--switchover_level",
+        type=int,
+        default=4,
+        help="Depth at which to switch from lifting choices to exhaustively trying them.",
+    )
+    parser.add_argument(
         "--log_per_board_stats",
         action="store_true",
         help="Log stats on every board, not just a summary at the end.",
@@ -104,14 +112,18 @@ def main():
         t = make_py_trie(args.dictionary)
         assert t
         etb = EvalTreeBoggler(t, dims)
+        boggler = PyBoggler(t, dims)
     else:
         t = Trie.CreateFromFile(args.dictionary)
         assert t
         etb = TreeBuilders[dims](t)
+        boggler = Bogglers[dims](t)
         # breaker = CppBreaker(etb, best_score)
     # breaker = TreeScoreBreaker(etb, dims, best_score)
     # breaker = TreeBreaker(etb, dims, best_score)
-    breaker = HybridTreeBreaker(etb, dims, best_score, switchover_level=4)
+    breaker = HybridTreeBreaker(
+        etb, boggler, dims, best_score, switchover_level=args.switchover_level
+    )
     break_class = None
 
     if args.board_ids:
@@ -167,6 +179,7 @@ def main():
         times[round(10 * details.elapsed_s) / 10] += 1
         all_details.append((idx, details))
         if log_per_board_stats:
+            print(idx)
             print(break_class if break_class else from_board_id(classes, dims, idx))
             print_details(details)
         combined_details = (
