@@ -14,7 +14,7 @@ from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie
 
-type Node = SumNode | PointNode
+type Node = SumNode | ChoiceNode | PointNode
 
 
 @dataclass
@@ -32,6 +32,47 @@ class PointNode:
 class ChoiceNode:
     cell: int
     children: list[Node]
+
+
+def to_dot(node: Node, cells: list[str]) -> str:
+    _root_id, dot = to_dot_help(node, cells)
+    return f"""digraph {{
+splines="false";
+node [shape="rect"];
+{dot}
+}}
+"""
+
+
+def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
+    """Returns ID of this node plus DOT for its subtree."""
+    me = prefix
+    if isinstance(node, PointNode):
+        me += "_p"
+        return me, f'{me} [label="+{node.points}" shape="oval"];'
+
+    elif isinstance(node, ChoiceNode):
+        me += f"_{node.cell}c"
+        dot = [f'{me} [label="choice #{node.cell}"];']
+        for i, child in enumerate(node.children):
+            if not child:
+                continue
+            child_id, child_dot = to_dot_help(child, cells, me + str(i))
+            letter = cells[node.cell][i]
+            dot.append(f'{me} -> {child_id} [label="{letter} ({i})"];')
+            dot.append(child_dot)
+
+    else:
+        me += "_s"
+        dot = [f'{me} [label="sum"];']
+        for i, child in enumerate(node.children):
+            if not child:
+                continue
+            child_id, child_dot = to_dot_help(child, cells, me + str(i))
+            dot.append(f"{me} -> {child_id};")
+            dot.append(child_dot)
+
+    return me, "\n".join(dot)
 
 
 class TreeBuilder:
@@ -115,6 +156,8 @@ def main():
     etb = TreeBuilder(trie, (3, 3))
     t = etb.build_tree("t i z ae z z r z z")
     print(t)
+
+    print(to_dot(t, etb.cells))
 
 
 if __name__ == "__main__":
