@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.neighbors import NEIGHBORS
-from boggle.trie import PyTrie
+from boggle.trie import PyTrie, make_py_trie
 
 type Node = SumNode | ChoiceNode | PointNode
 
@@ -85,7 +85,7 @@ class TreeBuilder:
         self.used = 0
         self.mark = self.trie.Mark() + 1
         self.trie.SetMark(self.mark)
-        self.cells = board.split(" ")
+        self.cells = [cell if cell != "." else "" for cell in board.split(" ")]
         assert len(self.cells) == self.dims[0] * self.dims[1]
         root = SumNode(children=[])
         for i, cell in enumerate(self.cells):
@@ -147,14 +147,16 @@ class TreeBuilder:
 
 
 def main():
-    trie = PyTrie()
-    trie.AddWord("tar")
-    trie.AddWord("tie")
-    trie.AddWord("tier")
-    trie.AddWord("tea")
-    trie.AddWord("the")
+    # trie = PyTrie()
+    # trie.AddWord("tar")
+    # trie.AddWord("tie")
+    # trie.AddWord("tier")
+    # trie.AddWord("tea")
+    # trie.AddWord("the")
+    trie = make_py_trie("mini-dict.txt")
     etb = TreeBuilder(trie, (3, 3))
-    t = etb.build_tree("t i z ae z z r z z")
+    board = ". . . . lnrsy aeiou aeiou aeiou ."
+    t = etb.build_tree(board)
     print(t)
 
     print(to_dot(t, etb.cells))
