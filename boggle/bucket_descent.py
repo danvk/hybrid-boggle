@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
-"""Try to find a good split of the letters into buckets."""
+"""Try to find a good split of the letters into buckets.
+
+3: aeijou bcdfgmpqvwxz hklnrsty (2689.8)
+4: aeiou bcfhpst qxyz dgjklmnrvw (849.9)
+5: aeiou bfgpst xyz djlmnrvw chkq (461.6)
+
+I've been doing most of my analysis with this bucketing (which excludes q):
+4: bdfgjvwxz aeiou lnrsy chkmpt
+
+This adds the q:
+4: bdfgjqvwxz aeiou lnrsy chkmpt
+"""
 
 import random
 
-from example import BucketBoggler33, Trie
+from cpp_boggle import BucketBoggler33, Trie
 
 
 def realize_bucket(buckets: list[int]) -> list[str]:
