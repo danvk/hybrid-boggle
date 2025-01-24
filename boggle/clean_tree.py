@@ -80,7 +80,7 @@ class ChoiceNode:
 
 def to_dot(node: Node, cells: list[str]) -> str:
     _root_id, dot = to_dot_help(node, cells)
-    return f"""digraph {{
+    return f"""graph {{
 splines="false";
 node [shape="rect"];
 {dot}
@@ -103,7 +103,7 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
                 continue
             child_id, child_dot = to_dot_help(child, cells, me + str(i))
             letter = cells[node.cell][i]
-            dot.append(f'{me} -> {child_id} [label="{letter} ({i})"];')
+            dot.append(f'{me} -- {child_id} [label="{letter} ({i})"];')
             dot.append(child_dot)
 
     else:
@@ -115,7 +115,7 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
             if not child:
                 continue
             child_id, child_dot = to_dot_help(child, cells, me + str(i))
-            dot.append(f"{me} -> {child_id};")
+            dot.append(f"{me} -- {child_id};")
             dot.append(child_dot)
 
     return me, "\n".join(dot)
