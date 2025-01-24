@@ -46,18 +46,29 @@ def main():
 
     print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
 
-    for i in range(4):
+    for i in range(9):
         print(f"lift {i}")
         t = t.lift_choice(i, len(cells[i]))
         print(f"-> {tree_stats(t)}")
         print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
         t.filter_below_threshold(cutoff)
         print(f"f -> {tree_stats(t)}")
-        print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
+        # print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
         # t.compress_in_place()
         # print(f"c -> {tree_stats(t)}")
         # dedupe_subtrees(t)
         # print(f"d -> {tree_stats(t)}")
+
+        max_bound = t.bound
+        for seq in t.max_subtrees():
+            if seq[-1].bound < max_bound:
+                continue
+            choices = [-1 for _ in cells]
+            for cell, letter in seq[:-1]:
+                choices[cell] = letter
+            board = "".join(cells[i][let] for i, let in enumerate(choices))
+            print(f"{t.bound} {board} {choices}")
+
         if dims == (2, 2):
             with open(f"/tmp/lifted{i}.json", "w") as out:
                 json.dump(t.to_json(etb), out)

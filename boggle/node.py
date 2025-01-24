@@ -23,6 +23,9 @@ class SumNode:
     def depth(self):
         return 1 + max(child.depth() for child in self.children)
 
+    def eval(self, choices: dict[int, int]) -> int:
+        return sum(child.eval(choices) for child in self.children)
+
 
 @dataclass
 class PointNode:
@@ -39,6 +42,9 @@ class PointNode:
 
     def depth(self):
         return 1
+
+    def eval(self, choices: dict[int, int]) -> int:
+        return self.points
 
 
 @dataclass
@@ -60,6 +66,14 @@ class ChoiceNode:
 
     def depth(self):
         return 1 + max(child.depth() for child in self.children if child)
+
+    def eval(self, choices: dict[int, int]) -> int:
+        choice = choices.get(self.cell)
+        if choice is None:
+            return max(child.eval(choices) for child in self.children if child)
+        else:
+            child = self.children[choice] if choice < len(self.children) else None
+            return child.eval(choices) if child else 0
 
 
 def from_json(v) -> Node:
@@ -83,6 +97,10 @@ def main():
     print(f"Loaded {node.node_count()} nodes")
     print(f"Tree depth: {node.depth()}")
     print(f"Upper bound: {node.max_bound()}")
+
+    choices = [5, 0, 4, 5, 1, 2, 3, 1, 1]
+    score = node.eval({i: v for i, v in enumerate(choices)})
+    print(f"{choices} -> {score}")
 
 
 if __name__ == "__main__":
