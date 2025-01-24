@@ -8,6 +8,8 @@ Goals:
 - Fully-squeezed tree, ala https://stackoverflow.com/q/79381817/388951
 """
 
+import json
+import sys
 from dataclasses import dataclass
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
@@ -21,17 +23,40 @@ type Node = SumNode | ChoiceNode | PointNode
 class SumNode:
     children: list[Node]
 
+    def to_json(self):
+        return {
+            "sum": [child.to_json() for child in self.children],
+        }
+
+    def node_count(self):
+        return 1 + sum(child.node_count() for child in self.children)
+
 
 @dataclass
 class PointNode:
     points: int
     trie_node: PyTrie
 
+    def to_json(self):
+        return self.points
+
+    def node_count(self):
+        return 1
+
 
 @dataclass
 class ChoiceNode:
     cell: int
     children: list[Node]
+
+    def to_json(self):
+        return {
+            "ch": self.cell,
+            "*": {i: child.to_json() for i, child in enumerate(self.children) if child},
+        }
+
+    def node_count(self):
+        return 1 + sum(child.node_count() for child in self.children if child)
 
 
 def to_dot(node: Node, cells: list[str]) -> str:
@@ -153,13 +178,18 @@ def main():
     # trie.AddWord("tier")
     # trie.AddWord("tea")
     # trie.AddWord("the")
-    trie = make_py_trie("mini-dict.txt")
+    # trie = make_py_trie("mini-dict.txt")
+    trie = make_py_trie("boggle-words.txt")
     etb = TreeBuilder(trie, (3, 3))
-    board = ". . . . lnrsy aeiou aeiou aeiou ."
+    # board = ". . . . lnrsy aeiou aeiou aeiou ."
+    (board,) = sys.argv[1:]
     t = etb.build_tree(board)
-    print(t)
+    # print(t)
 
-    print(to_dot(t, etb.cells))
+    sys.stderr.write(f"node count: {t.node_count()}\n")
+
+    # print(to_dot(t, etb.cells))
+    json.dump(t.to_json(), sys.stdout)
 
 
 if __name__ == "__main__":
