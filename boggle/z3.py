@@ -72,9 +72,10 @@ def to_cmsat(cells, best_score: int, eqs, trie: PyTrie):
             print(f"(assert (= (+ {' '.join(vars)}) 1))")
 
     # words
-    for (t, _score), paths in eqs.items():
-        word = lookup[t]
-        print(f"(declare-const {word} Bool)")
+    terms = []
+    for (t, score), paths in eqs.items():
+        # word = lookup[t]
+        # print(f"(declare-const {word} Bool)")
         and_paths = [("(and " + " ".join(path) + ")") for path in paths]
         if len(and_paths) == 1:
             term = and_paths[0]
@@ -82,68 +83,14 @@ def to_cmsat(cells, best_score: int, eqs, trie: PyTrie):
             word_ors = " ".join(and_paths)
             term = f"(or {word_ors})"
 
-        print(f"(assert (= {word} {term}))")
-
-    # Score
-    print("(declare-const W Int)")
-    terms = []
-    for (t, score), paths in eqs.items():
-        word = lookup[t]
-        if score == 1:
-            terms.append(word)
-        else:
-            terms.append(f"(* {score} {word})")
+        if score > 1:
+            term = f"(* {score} {term})"
+        terms.append(term)
 
     word_sum = " ".join(terms)
-    print(f"(assert (= W (+ {word_sum})))")
-
-    # Objective
-    print(f"(assert (> W {best_score}))")
+    print(f"(assert (> (+ {word_sum}) {best_score}))")
     print("(check-sat)")
-
-
-def to_cmsat_multi(cells, best_score: int, eqs, trie: PyTrie):
-    lookup = make_lookup_table(trie)
-    # declare variables
-    # choices
-    for i, cell in enumerate(cells):
-        vars = []
-        for letter in cell:
-            var = f"{letter}{i}"
-            vars.append(var)
-            print(f"(declare-const {var} Bool)")
-        if len(vars) > 1:
-            print(f"(assert (= (+ {' '.join(vars)}) 1))")
-
-    # words
-    for (t, _score), paths in eqs.items():
-        word = lookup[t]
-        print(f"(declare-const {word} Int)")
-        and_paths = [("(and " + " ".join(path) + ")") for path in paths]
-        if len(and_paths) == 1:
-            term = and_paths[0]
-        else:
-            word_ors = " ".join(and_paths)
-            term = f"(+ {word_ors})"
-
-        print(f"(assert (= {word} {term}))")
-
-    # Score
-    print("(declare-const W Int)")
-    terms = []
-    for (t, score), paths in eqs.items():
-        word = lookup[t]
-        if score == 1:
-            terms.append(word)
-        else:
-            terms.append(f"(* {score} {word})")
-
-    word_sum = " ".join(terms)
-    print(f"(assert (= W (+ {word_sum})))")
-
-    # Objective
-    print(f"(assert (> W {best_score}))")
-    print("(check-sat)")
+    # print("(get-model)")
 
 
 def main():
@@ -165,7 +112,7 @@ def main():
     sys.stderr.write(f"eq count: {len(eqs)}\n")
     # print(eqs)
     # print("---\n")
-    best_score = 520
+    best_score = 700
     to_cmsat(cells, best_score, eqs, trie)
 
 
