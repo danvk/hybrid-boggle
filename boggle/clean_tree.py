@@ -31,12 +31,17 @@ class SumNode:
         }
 
     def node_count(self):
-        return 1 + sum(child.node_count() for child in self.children)
+        return 1 + sum(
+            0 if isinstance(child, int) else child.node_count()
+            for child in self.children
+        )
 
     def choices_at_depth(self, depth=0, out=None):
         if out is None:
             out = {}
         for child in self.children:
+            if isinstance(child, int):
+                continue
             child.choices_at_depth(depth + 1, out)
         return out
 
@@ -53,7 +58,11 @@ class ChoiceNode:
         }
 
     def node_count(self):
-        return 1 + sum(child.node_count() for child in self.children if child)
+        return 1 + sum(
+            0 if isinstance(child, int) else child.node_count()
+            for child in self.children
+            if child
+        )
 
     def choices_at_depth(self, depth=0, out=None):
         if out is None:
@@ -64,7 +73,7 @@ class ChoiceNode:
         )  # TODO: number of non-null choices might be interesting, too
         out[k] = out.get(k, 0) + 1
         for child in self.children:
-            if child:
+            if child and not isinstance(child, int):
                 child.choices_at_depth(depth + 1, out)
         return out
 
@@ -82,9 +91,9 @@ node [shape="rect"];
 def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
     """Returns ID of this node plus DOT for its subtree."""
     me = prefix
-    if isinstance(node, SumNode) and not node.children:
+    if isinstance(node, int):
         me += "_p"
-        return me, f'{me} [label="+{node.points}" shape="oval"];'
+        return me, f'{me} [label="+{node}" shape="oval"];'
 
     elif isinstance(node, ChoiceNode):
         me += f"_{node.cell}c"
@@ -98,6 +107,7 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
             dot.append(child_dot)
 
     else:
+        assert node.children  # otherwise should have been an int
         me += "_s"
         points = f"\n{node.points}" if node.points else ""
         dot = [f'{me} [label="sum{points}"];']
@@ -154,6 +164,8 @@ class TreeBuilder:
                             child = grandchild
                             if my_points:
                                 child.points += my_points
+                    if isinstance(child, SumNode) and not child.children:
+                        child = child.points
                     node.children[j] = child
                     max_score = max(tscore, max_score)
                 else:
@@ -171,9 +183,11 @@ class TreeBuilder:
             neighbor.cell = ni
             tscore = self.make_choices(ni, length, t, neighbor)
             if tscore > 0:
-                # squeeze!
+                # squeeze! since this array is dense, this means there's no choice.
                 if len(neighbor.children) == 1:
                     neighbor = neighbor.children[0]
+                if isinstance(neighbor, SumNode) and not neighbor.children:
+                    neighbor = neighbor.points
                 node.children.append(neighbor)
                 score += tscore
 
@@ -193,10 +207,10 @@ def main():
     # trie.AddWord("tier")
     # trie.AddWord("tea")
     # trie.AddWord("the")
-    # trie = make_py_trie("mini-dict.txt")
-    trie = make_py_trie("boggle-words.txt")
+    trie = make_py_trie("mini-dict.txt")
+    # trie = make_py_trie("boggle-words.txt")
     etb = TreeBuilder(trie, (3, 3))
-    # board = ". . . . lnrsy e aeiou aeiou ."
+    board = ". . . . lnrsy e aeiou aeiou ."
     # board = "t i z ae z z r z z"
     (board,) = sys.argv[1:]
     t = etb.build_tree(board)
@@ -208,7 +222,7 @@ def main():
     #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
     # sys.stderr.write("\n")
 
-    # print(to_dot(t, etb.cells))
+    print(to_dot(t, etb.cells))
     # json.dump(t.to_json(), sys.stdout)
 
 
