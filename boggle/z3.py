@@ -58,8 +58,8 @@ class ConstraintBuilder:
         self.used ^= 1 << cell
 
 
-def to_cmsat(cells, best_score: int, eqs, trie: PyTrie):
-    lookup = make_lookup_table(trie)
+def to_cmsat(cells, best_score: int, eqs, trie: PyTrie, word_join="or"):
+    # lookup = make_lookup_table(trie)
     # declare variables
     # choices
     for i, cell in enumerate(cells):
@@ -81,7 +81,7 @@ def to_cmsat(cells, best_score: int, eqs, trie: PyTrie):
             term = and_paths[0]
         else:
             word_ors = " ".join(and_paths)
-            term = f"(or {word_ors})"
+            term = f"({word_join} {word_ors})"
 
         if score > 1:
             term = f"(* {score} {term})"
@@ -113,7 +113,7 @@ def main():
     # print(eqs)
     # print("---\n")
     best_score = 700
-    to_cmsat(cells, best_score, eqs, trie)
+    to_cmsat(cells, best_score, eqs, trie, word_join="+")
 
 
 if __name__ == "__main__":
