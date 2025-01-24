@@ -167,17 +167,17 @@ class TreeBuilder:
 
 
 def main():
-    trie = PyTrie()
-    trie.AddWord("tar")
-    trie.AddWord("tie")
-    trie.AddWord("tier")
-    trie.AddWord("tea")
-    trie.AddWord("the")
-    # trie = make_py_trie("mini-dict.txt")
+    # trie = PyTrie()
+    # trie.AddWord("tar")
+    # trie.AddWord("tie")
+    # trie.AddWord("tier")
+    # trie.AddWord("tea")
+    # trie.AddWord("the")
+    trie = make_py_trie("mini-dict.txt")
     # trie = make_py_trie("boggle-words.txt")
     etb = TreeBuilder(trie, (3, 3))
-    # board = ". . . . lnrsy aeiou aeiou aeiou ."
-    board = "t i z ae z z r z z"
+    board = ". . . . lnrsy aeiou aeiou aeiou ."
+    # board = "t i z ae z z r z z"
     # (board,) = sys.argv[1:]
     t = etb.build_tree(board)
     # print(t)
