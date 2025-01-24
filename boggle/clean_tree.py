@@ -267,26 +267,28 @@ def main():
     # trie.AddWord("tier")
     # trie.AddWord("tea")
     # trie.AddWord("the")
-    trie = make_py_trie("mini-dict.txt")
-    # trie = make_py_trie("boggle-words.txt")
-    etb = TreeBuilder(trie, (3, 3))
-    board = ". . . . lnrsy e aeiou aeiou ."
+    # trie = make_py_trie("mini-dict.txt")
+    trie = make_py_trie("boggle-words.txt")
+    etb = TreeBuilder(trie, (2, 2))
+    # board = ". . . . lnrsy e aeiou aeiou ."
     # board = "t i z ae z z r z z"
-    # (board,) = sys.argv[1:]
+    (board,) = sys.argv[1:]
     cells = board.split(" ")
     t = etb.build_tree(board)
     # print(t)
 
     sys.stderr.write(f"node count: {t.node_count()}\n")
+    print(to_dot(t.children[0], etb.cells))
+    print("---")
     # sys.stderr.write("choices at depth:\n")
     # for (cell, depth), value in sorted(t.choices_at_depth().items()):
     #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
     # sys.stderr.write("\n")
 
-    t7 = lift_choice(t, 7, len(cells[7]))
-    sys.stderr.write(f"7 -> node count: {t7.node_count()}\n")
+    t1 = lift_choice(t.children[0], 1, len(cells[1]))
+    sys.stderr.write(f"1 -> node count: {t1.node_count()}\n")
 
-    print(to_dot(t7, etb.cells))
+    print(to_dot(t1, etb.cells))
     # json.dump(t.to_json(), sys.stdout)
 
 
