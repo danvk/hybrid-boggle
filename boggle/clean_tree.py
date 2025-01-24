@@ -45,6 +45,13 @@ class SumNode:
             child.choices_at_depth(depth + 1, out)
         return out
 
+    def has_choice(self, cell: int):
+        return any(
+            child.has_choice(cell)
+            for child in self.children
+            if not isinstance(child, int)
+        )
+
 
 @dataclass
 class ChoiceNode:
@@ -76,6 +83,59 @@ class ChoiceNode:
             if child and not isinstance(child, int):
                 child.choices_at_depth(depth + 1, out)
         return out
+
+    def has_choice(self, cell: int):
+        if cell == self.cell:
+            return True
+        return any(
+            child.has_choice(cell)
+            for child in self.children
+            if child and not isinstance(child, int)
+        )
+
+
+def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
+    if isinstance(node, int):
+        return node
+
+    if isinstance(node, ChoiceNode) and node.cell == cell:
+        # TODO: eval_tree has compression here
+        return node
+
+    if not node.has_choice(cell):
+        # TODO: switch to choice_mask here
+        return node
+
+    results = [
+        lift_choice(child, cell, num_lets) if child else None for child in node.children
+    ]
+    is_choice = [
+        isinstance(result, ChoiceNode) and result.cell == cell for result in results
+    ]
+
+    # Construct a new sum node for each forced letter.
+    out = []
+    for i in range(num_lets):
+        children = [
+            result.children[i]
+            if is_choice[j]
+            else result  # <-- this is where subtree duplication happens
+            for j, result in enumerate(results)
+            if result and result.children[i]
+        ]
+
+        # TODO: prune empty trees here
+
+        points = node.points if isinstance(node, SumNode) else 0
+        node = SumNode(points=points, children=children) if children else points
+        if node == 0:
+            node = None
+
+        # TODO: compress here
+
+        out.append(node)
+
+    return ChoiceNode(cell=cell, children=out)
 
 
 def to_dot(node: Node, cells: list[str]) -> str:
@@ -212,7 +272,8 @@ def main():
     etb = TreeBuilder(trie, (3, 3))
     board = ". . . . lnrsy e aeiou aeiou ."
     # board = "t i z ae z z r z z"
-    (board,) = sys.argv[1:]
+    # (board,) = sys.argv[1:]
+    cells = board.split(" ")
     t = etb.build_tree(board)
     # print(t)
 
@@ -222,7 +283,10 @@ def main():
     #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
     # sys.stderr.write("\n")
 
-    print(to_dot(t, etb.cells))
+    t7 = lift_choice(t, 7, len(cells[7]))
+    sys.stderr.write(f"7 -> node count: {t7.node_count()}\n")
+
+    print(to_dot(t7, etb.cells))
     # json.dump(t.to_json(), sys.stdout)
 
 
