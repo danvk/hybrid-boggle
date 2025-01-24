@@ -20,6 +20,9 @@ class SumNode:
     def max_bound(self):
         return sum(child.max_bound() for child in self.children)
 
+    def depth(self):
+        return 1 + max(child.depth() for child in self.children)
+
 
 @dataclass
 class PointNode:
@@ -33,6 +36,9 @@ class PointNode:
 
     def max_bound(self):
         return self.points
+
+    def depth(self):
+        return 1
 
 
 @dataclass
@@ -51,6 +57,9 @@ class ChoiceNode:
 
     def max_bound(self):
         return max(child.max_bound() for child in self.children if child)
+
+    def depth(self):
+        return 1 + max(child.depth() for child in self.children if child)
 
 
 def from_json(v) -> Node:
@@ -72,6 +81,7 @@ def main():
 
     node = from_json(data)
     print(f"Loaded {node.node_count()} nodes")
+    print(f"Tree depth: {node.depth()}")
     print(f"Upper bound: {node.max_bound()}")
 
 
