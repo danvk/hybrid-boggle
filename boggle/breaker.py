@@ -52,6 +52,9 @@ class IBucketBreaker:
         self.split_order = SPLIT_ORDER[dims]
         self.num_splits = num_splits
 
+    def SetBoard(self, board: str):
+        return self.bb.ParseBoard(board)
+
     def Break(self) -> BreakDetails:
         self.details_ = BreakDetails(
             max_depth=0,
@@ -310,10 +313,10 @@ class HybridTreeBreaker:
             for cell, letter in seq[:-1]:
                 assert choices[cell] == -1
                 choices[cell] = letter
-            t = seq[-1]
+            # t = seq[-1]
             board = "".join(self.cells[cell][idx] for cell, idx in enumerate(choices))
             true_score = self.boggler.score(board)
-            print(choices, board, t.bound, "->", true_score)
+            # print(choices, board, t.bound, "->", true_score)
             if true_score >= self.best_score:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)

@@ -14,11 +14,13 @@ from boggle.boggler import PyBoggler
 from boggle.breaker import (
     BreakDetails,
     HybridTreeBreaker,
+    IBucketBreaker,
     merge_details,
     print_details,
 )
-from boggle.dimensional_bogglers import Bogglers, TreeBuilders
+from boggle.dimensional_bogglers import Bogglers, BucketBogglers, TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
+from boggle.ibuckets import PyBucketBoggler
 from boggle.trie import make_py_trie
 
 
@@ -66,19 +68,25 @@ def main():
         type=int,
         default=-1,
     )
-    # Only relevant to IBucketBreaker
-    # parser.add_argument(
-    #     "--num_splits",
-    #     type=int,
-    #     default=4,
-    #     help="Number of partitions to use when breaking a bucket.",
-    # )
+    parser.add_argument(
+        "--num_splits",
+        type=int,
+        default=4,
+        help="Number of partitions to use when breaking a bucket. Only relevant with --breaker=ibuckets.",
+    )
     parser.add_argument(
         # TODO: figure out how to set this based on tree size
         "--switchover_level",
         type=int,
         default=4,
-        help="Depth at which to switch from lifting choices to exhaustively trying them.",
+        help="Depth at which to switch from lifting choices to exhaustively trying them. Only relevant with --breaker=hybrid.",
+    )
+    parser.add_argument(
+        "--breaker",
+        type=str,
+        choices=("ibuckets", "hybrid"),
+        default="hybrid",
+        help="Breaking strategy to use.",
     )
     parser.add_argument(
         "--log_per_board_stats",
@@ -121,9 +129,18 @@ def main():
         # breaker = CppBreaker(etb, best_score)
     # breaker = TreeScoreBreaker(etb, dims, best_score)
     # breaker = TreeBreaker(etb, dims, best_score)
-    breaker = HybridTreeBreaker(
-        etb, boggler, dims, best_score, switchover_level=args.switchover_level
-    )
+    if args.breaker == "hybrid":
+        breaker = HybridTreeBreaker(
+            etb, boggler, dims, best_score, switchover_level=args.switchover_level
+        )
+    elif args.breaker == "ibuckets":
+        if args.python:
+            etb = PyBucketBoggler(t, dims)
+        else:
+            etb = BucketBogglers[dims](t)
+        breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
+    else:
+        raise ValueError(args.breaker)
     break_class = None
 
     if args.board_ids:
