@@ -16,31 +16,22 @@ from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie, make_py_trie
 
-type Node = SumNode | ChoiceNode | PointNode
+type Node = SumNode | ChoiceNode
 
 
 @dataclass
 class SumNode:
+    points: int
     children: list[Node]
 
     def to_json(self):
         return {
+            "points": self.points,
             "sum": [child.to_json() for child in self.children],
         }
 
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children)
-
-
-@dataclass
-class PointNode:
-    points: int
-
-    def to_json(self):
-        return self.points
-
-    def node_count(self):
-        return 1
 
 
 @dataclass
@@ -71,7 +62,7 @@ node [shape="rect"];
 def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
     """Returns ID of this node plus DOT for its subtree."""
     me = prefix
-    if isinstance(node, PointNode):
+    if isinstance(node, SumNode) and not node.children:
         me += "_p"
         return me, f'{me} [label="+{node.points}" shape="oval"];'
 
@@ -88,7 +79,8 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
 
     else:
         me += "_s"
-        dot = [f'{me} [label="sum"];']
+        points = f"\n{node.points}" if node.points else ""
+        dot = [f'{me} [label="sum{points}"];']
         for i, child in enumerate(node.children):
             if not child:
                 continue
@@ -111,7 +103,7 @@ class TreeBuilder:
         self.trie.SetMark(self.mark)
         self.cells = [cell if cell != "." else "" for cell in board.split(" ")]
         assert len(self.cells) == self.dims[0] * self.dims[1]
-        root = SumNode(children=[])
+        root = SumNode(points=0, children=[])
         for i, cell in enumerate(self.cells):
             child = ChoiceNode(cell=i, children=[None] * len(cell))
             score = self.make_choices(i, 0, self.trie, child)
@@ -129,14 +121,19 @@ class TreeBuilder:
         for j, char in enumerate(self.cells[cell]):
             cc = ord(char) - LETTER_A
             if t.StartsWord(cc):
-                child = SumNode(children=[])
+                child = SumNode(children=[], points=0)
                 tscore = self.explore_neighbors(
                     cell, length + (2 if cc == LETTER_Q else 1), t.Descend(cc), child
                 )
                 if tscore > 0:
                     # squeeze! this should have been done recursively before, so this can be shallow.
                     if isinstance(child, SumNode) and len(child.children) == 1:
-                        child = child.children[0]
+                        my_points = child.points
+                        grandchild = child.children[0]
+                        if isinstance(grandchild, SumNode) or my_points == 0:
+                            child = grandchild
+                            if my_points:
+                                child.points += my_points
                     node.children[j] = child
                     max_score = max(tscore, max_score)
                 else:
@@ -163,32 +160,32 @@ class TreeBuilder:
         if t.IsWord():
             word_score = SCORES[length]
             score += word_score
-            point_node = PointNode(points=word_score)
-            node.children.append(point_node)
+            node.points += word_score
 
         self.used ^= 1 << cell
         return score
 
 
 def main():
-    # trie = PyTrie()
-    # trie.AddWord("tar")
-    # trie.AddWord("tie")
-    # trie.AddWord("tier")
-    # trie.AddWord("tea")
-    # trie.AddWord("the")
+    trie = PyTrie()
+    trie.AddWord("tar")
+    trie.AddWord("tie")
+    trie.AddWord("tier")
+    trie.AddWord("tea")
+    trie.AddWord("the")
     # trie = make_py_trie("mini-dict.txt")
-    trie = make_py_trie("boggle-words.txt")
+    # trie = make_py_trie("boggle-words.txt")
     etb = TreeBuilder(trie, (3, 3))
     # board = ". . . . lnrsy aeiou aeiou aeiou ."
-    (board,) = sys.argv[1:]
+    board = "t i z ae z z r z z"
+    # (board,) = sys.argv[1:]
     t = etb.build_tree(board)
     # print(t)
 
     sys.stderr.write(f"node count: {t.node_count()}\n")
 
-    # print(to_dot(t, etb.cells))
-    json.dump(t.to_json(), sys.stdout)
+    print(to_dot(t, etb.cells))
+    # json.dump(t.to_json(), sys.stdout)
 
 
 if __name__ == "__main__":
