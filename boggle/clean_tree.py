@@ -33,6 +33,13 @@ class SumNode:
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children)
 
+    def choices_at_depth(self, depth=0, out=None):
+        if out is None:
+            out = {}
+        for child in self.children:
+            child.choices_at_depth(depth + 1, out)
+        return out
+
 
 @dataclass
 class ChoiceNode:
@@ -47,6 +54,19 @@ class ChoiceNode:
 
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
+
+    def choices_at_depth(self, depth=0, out=None):
+        if out is None:
+            out = {}
+        k = (
+            self.cell,
+            depth,
+        )  # TODO: number of non-null choices might be interesting, too
+        out[k] = out.get(k, 0) + 1
+        for child in self.children:
+            if child:
+                child.choices_at_depth(depth + 1, out)
+        return out
 
 
 def to_dot(node: Node, cells: list[str]) -> str:
@@ -173,18 +193,22 @@ def main():
     # trie.AddWord("tier")
     # trie.AddWord("tea")
     # trie.AddWord("the")
-    trie = make_py_trie("mini-dict.txt")
-    # trie = make_py_trie("boggle-words.txt")
+    # trie = make_py_trie("mini-dict.txt")
+    trie = make_py_trie("boggle-words.txt")
     etb = TreeBuilder(trie, (3, 3))
-    board = ". . . . lnrsy aeiou aeiou aeiou ."
+    # board = ". . . . lnrsy e aeiou aeiou ."
     # board = "t i z ae z z r z z"
-    # (board,) = sys.argv[1:]
+    (board,) = sys.argv[1:]
     t = etb.build_tree(board)
     # print(t)
 
     sys.stderr.write(f"node count: {t.node_count()}\n")
+    # sys.stderr.write("choices at depth:\n")
+    # for (cell, depth), value in sorted(t.choices_at_depth().items()):
+    #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
+    # sys.stderr.write("\n")
 
-    print(to_dot(t, etb.cells))
+    # print(to_dot(t, etb.cells))
     # json.dump(t.to_json(), sys.stdout)
 
 
