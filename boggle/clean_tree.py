@@ -35,7 +35,6 @@ class SumNode:
 @dataclass
 class PointNode:
     points: int
-    trie_node: PyTrie
 
     def to_json(self):
         return self.points
@@ -164,7 +163,7 @@ class TreeBuilder:
         if t.IsWord():
             word_score = SCORES[length]
             score += word_score
-            point_node = PointNode(points=word_score, trie_node=t)
+            point_node = PointNode(points=word_score)
             node.children.append(point_node)
 
         self.used ^= 1 << cell
