@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
+from boggle.breaker import SPLIT_ORDER
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie, make_py_trie
 
@@ -100,12 +101,22 @@ def to_json(node: Node):
         }
 
 
+def max_bound(node: Node):
+    if isinstance(node, int):
+        return node
+    elif isinstance(node, ChoiceNode):
+        children = [c for c in node.children if c]
+        # TODO: assert that ChoiceNodes have non-null children
+        return max(max_bound(child) for child in children) if children else 0
+    elif isinstance(node, SumNode):
+        return node.points + sum(max_bound(child) for child in node.children)
+
+
 def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     if isinstance(node, int):
         return node
 
     if isinstance(node, ChoiceNode) and node.cell == cell:
-        # TODO: eval_tree has compression here
         return node
 
     if not node.has_choice(cell):
@@ -408,28 +419,38 @@ def main():
     t = etb.build_tree(board)
     # print(t)
 
-    sys.stderr.write(f"node count: {t.node_count()}\n")
-    with open("tree.dot", "w") as out:
-        out.write(to_dot(t, etb.cells))
-        out.write("\n")
+    sys.stderr.write(f"node count: {t.node_count()}, bound={max_bound(t)}\n")
 
-    # sys.stderr.write("choices at depth:\n")
-    # for (cell, depth), value in sorted(t.choices_at_depth().items()):
-    #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
-    # sys.stderr.write("\n")
+    for cell in SPLIT_ORDER[dims]:
+        if len(cells[cell]) <= 1:
+            continue
+        t = lift_choice(t, cell, len(cells[cell]))
+        sys.stderr.write(
+            f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
+        )
 
-    t4 = lift_choice(t, 4, len(cells[4]))
-    sys.stderr.write(f"4 -> node count: {t4.node_count()}\n")
-    with open("lift1.dot", "w") as out:
-        out.write(to_dot(t4, etb.cells))
-        out.write("\n")
+    if False:
+        with open("tree.dot", "w") as out:
+            out.write(to_dot(t, etb.cells))
+            out.write("\n")
 
-    t6 = lift_choice(t4, 6, len(cells[6]))
-    sys.stderr.write(f"6 -> node count: {t6.node_count()}\n")
-    with open("lift2.dot", "w") as out:
-        out.write(to_dot(t6, etb.cells))
-        out.write("\n")
-    # json.dump(t.to_json(), sys.stdout)
+        # sys.stderr.write("choices at depth:\n")
+        # for (cell, depth), value in sorted(t.choices_at_depth().items()):
+        #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
+        # sys.stderr.write("\n")
+
+        t4 = lift_choice(t, 4, len(cells[4]))
+        sys.stderr.write(f"4 -> node count: {t4.node_count()}\n")
+        with open("lift1.dot", "w") as out:
+            out.write(to_dot(t4, etb.cells))
+            out.write("\n")
+
+        t6 = lift_choice(t4, 6, len(cells[6]))
+        sys.stderr.write(f"6 -> node count: {t6.node_count()}\n")
+        with open("lift2.dot", "w") as out:
+            out.write(to_dot(t6, etb.cells))
+            out.write("\n")
+        # json.dump(t.to_json(), sys.stdout)
 
 
 if __name__ == "__main__":
