@@ -132,32 +132,39 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
             n = ChoiceNode(cell=node.cell, children=children)
 
         else:
-            # Sum nodes can prune null children, but choice nodes need them for alignment.
-            # We can also collapse child sum nodes into this one.
-            new_children = []
-            points = node.points
-            for child in children:
-                if child is None:
-                    continue
-                elif isinstance(child, int):
-                    points += child
-                elif isinstance(child, ChoiceNode):
-                    new_children.append(child)
-                else:
-                    points += child.points
-                    new_children.extend(child.children)
-
-            n = (
-                SumNode(children=new_children, points=points)
-                if new_children
-                else points
-            )
-            if n == 0:
-                n = None
+            n = squeeze_sum_node(SumNode(points=node.points, children=children))
 
         out.append(n)
 
     return ChoiceNode(cell=cell, children=out)
+
+
+def squeeze_sum_node(node: SumNode) -> SumNode | int | None:
+    if not node.children:
+        return node.points or None
+    any_issues = False
+    for child in node.children:
+        if not child or isinstance(child, (int, SumNode)):
+            any_issues = True
+            break
+    if not any_issues:
+        return node
+    new_children = []
+    points = node.points
+    for child in node.children:
+        if child is None:
+            continue
+        elif isinstance(child, int):
+            points += child
+        elif isinstance(child, ChoiceNode):
+            new_children.append(child)
+        else:
+            points += child.points
+            new_children.extend(child.children)
+
+    if new_children:
+        return SumNode(children=new_children, points=points)
+    return points or None
 
 
 def eval(node: Node, choices: list[int]):
@@ -228,10 +235,15 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
             dot.append(child_dot)
 
     else:
-        assert node.children  # otherwise should have been an int
+        # assert node.children  # otherwise should have been an int
         me += "_s"
         points = f"\\n{node.points}" if node.points else ""
-        dot = [f'{me} [label="sum{points}"];']
+        flags = ""
+        if not node.children:
+            flags = ' color="red"'
+        elif any(isinstance(n, SumNode) for n in node.children):
+            flags = ' color="red"'
+        dot = [f'{me} [label="sum{points}"{flags}];']
         for i, child in enumerate(node.children):
             if not child:
                 continue
@@ -264,7 +276,7 @@ class TreeBuilder:
                 else:
                     # This isn't really a choice, so don't model it as such.
                     root.children.append(child.children[0])
-        return root
+        return squeeze_sum_node(root)
 
     def make_choices(self, cell: int, length: int, t: PyTrie, node: ChoiceNode):
         """Fill in the choice node given the choices available on this cell."""
@@ -277,17 +289,7 @@ class TreeBuilder:
                     cell, length + (2 if cc == LETTER_Q else 1), t.Descend(cc), child
                 )
                 if tscore > 0:
-                    # squeeze! this should have been done recursively before, so this can be shallow.
-                    if isinstance(child, SumNode) and len(child.children) == 1:
-                        my_points = child.points
-                        grandchild = child.children[0]
-                        if isinstance(grandchild, SumNode) or my_points == 0:
-                            child = grandchild
-                            if my_points:
-                                child.points += my_points
-                    if isinstance(child, SumNode) and not child.children:
-                        child = child.points
-                    node.children[j] = child
+                    node.children[j] = squeeze_sum_node(child)
                     max_score = max(tscore, max_score)
                 else:
                     node.children[j] = None
@@ -307,8 +309,8 @@ class TreeBuilder:
                 # squeeze! since this array is dense, this means there's no choice.
                 if len(neighbor.children) == 1:
                     neighbor = neighbor.children[0]
-                if isinstance(neighbor, SumNode) and not neighbor.children:
-                    neighbor = neighbor.points
+                if isinstance(neighbor, SumNode):
+                    neighbor = squeeze_sum_node(neighbor)
                 node.children.append(neighbor)
                 score += tscore
 

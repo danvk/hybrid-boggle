@@ -5,6 +5,7 @@ from boggle.clean_tree import (
     assert_invariants,
     eval_all,
     lift_choice,
+    squeeze_sum_node,
 )
 from boggle.trie import make_py_trie
 
@@ -44,6 +45,15 @@ def test_lift_choice():
             ChoiceNode(cell=0, children=[3, 4]),
         ],
     )
+
+
+def test_squeeze_sum_node():
+    assert squeeze_sum_node(SumNode(points=2, children=[])) == 2
+    assert squeeze_sum_node(SumNode(points=0, children=[2, 3])) == 5
+    assert squeeze_sum_node(SumNode(points=2, children=[2, 3])) == 7
+    assert squeeze_sum_node(
+        SumNode(points=2, children=[2, ChoiceNode(cell=0, children=[2, 3]), 3])
+    ) == SumNode(points=7, children=[ChoiceNode(cell=0, children=[2, 3])])
 
 
 def test_lift_invariants_22():
