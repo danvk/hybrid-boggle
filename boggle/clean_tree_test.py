@@ -100,8 +100,7 @@ def test_squeeze_sum_node():
 def test_merge_choices():
     choice_node1 = ChoiceNode(cell=0, children=[2, 3])
     choice_node2 = ChoiceNode(cell=0, children=[3, ChoiceNode(cell=1, children=[1, 2])])
-    merge_choices(choice_node1, choice_node2)
-    assert choice_node1 == ChoiceNode(
+    assert merge_choices([choice_node1, choice_node2]) == ChoiceNode(
         cell=0,
         children=[5, SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2])])],
     )

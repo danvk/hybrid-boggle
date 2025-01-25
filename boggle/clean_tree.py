@@ -13,6 +13,7 @@ import json
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Sequence
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.neighbors import NEIGHBORS
@@ -25,12 +26,6 @@ type Node = SumNode | ChoiceNode | int
 class SumNode:
     points: int
     children: list[Node]
-
-    def to_json(self):
-        return {
-            "points": self.points,
-            "sum": [child.to_json() for child in self.children],
-        }
 
     def node_count(self):
         return 1 + sum(
@@ -60,12 +55,6 @@ class ChoiceNode:
     cell: int
     children: list[Node | None]
 
-    def to_json(self):
-        return {
-            "ch": self.cell,
-            "*": {i: child.to_json() for i, child in enumerate(self.children) if child},
-        }
-
     def node_count(self):
         return 1 + sum(
             0 if isinstance(child, int) else child.node_count()
@@ -94,6 +83,21 @@ class ChoiceNode:
             for child in self.children
             if child and not isinstance(child, int)
         )
+
+
+def to_json(node: Node):
+    if isinstance(node, int):
+        return node
+    elif isinstance(node, ChoiceNode):
+        return {
+            "ch": node.cell,
+            "*": {i: to_json(child) for i, child in enumerate(node.children) if child},
+        }
+    elif isinstance(node, SumNode):
+        return {
+            "points": node.points,
+            "sum": [to_json(child) for child in node.children],
+        }
 
 
 def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
@@ -177,11 +181,16 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
         if len(nodes) == 1:
             new_children.append(nodes[0])
         else:
+            # new_children.extend(nodes)
             # We own this ChoiceNode, so we're free to mutate it.
-            merged = ChoiceNode(cell=cell, children=[*nodes[0].children])
-            for choice_node in nodes[1:]:
-                merge_choices(merged, choice_node)
+            merged = merge_choices(nodes)
             new_children.append(merged)
+            # sys.stderr.write(f"Merged {len(nodes)} children for cell {cell}:\n")
+            # if isinstance(merged, int):
+            #     sys.stderr.write(json.dumps(merged))
+            # else:
+            #     sys.stderr.write(json.dumps(to_json(merged), indent=2))
+            # sys.stderr.write("\n")
 
     if new_children:
         if len(new_children) == 1 and not points:
@@ -190,15 +199,20 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
     return points or None
 
 
-def merge_choices(a: ChoiceNode, b: ChoiceNode):
-    """Merge b into a. Must have a.cell == b.cell."""
-    assert a.cell == b.cell
-    assert len(a.children) == len(b.children)
-    for i, (ac, bc) in enumerate(zip(a.children, b.children)):
-        if ac and bc:
-            a.children[i] = squeeze_sum_node(SumNode(points=0, children=[ac, bc]))
-        else:
-            a.children[i] = ac or bc
+def merge_choices(nodes: Sequence[ChoiceNode]):
+    """Merge multiple choice nodes into a single one."""
+    out = ChoiceNode(
+        cell=nodes[0].cell,
+        children=[SumNode(points=0, children=[]) for _ in nodes[0].children],
+    )
+    for node in nodes:
+        assert node.cell == out.cell
+        assert len(node.children) == len(out.children)
+        for i, choice in enumerate(node.children):
+            out.children[i].children.append(choice)
+    for i, child in enumerate(out.children):
+        out.children[i] = squeeze_sum_node(child)
+    return out
 
 
 def eval(node: Node, choices: list[int]):
