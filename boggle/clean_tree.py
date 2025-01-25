@@ -8,6 +8,7 @@ Goals:
 - Fully-squeezed tree, ala https://stackoverflow.com/q/79381817/388951
 """
 
+import itertools
 import json
 import sys
 from dataclasses import dataclass
@@ -116,9 +117,11 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     # len(results) = len(node.children)
     # len(results[0].children) = num_lets
 
-    # Construct a new sum node for each forced letter.
+    # Construct a new choice node for each forced letter.
     out = []
     for i in range(num_lets):
+        # len(children) = indeterminate
+        # len(children[0].children) = num_lets
         children = [
             result.children[i]
             if is_choice[j]
@@ -129,25 +132,49 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
 
         # TODO: prune empty trees here
 
-        points = node.points if isinstance(node, SumNode) else 0
-        n = ChoiceNode(cell=node.cell, children=children) if children else points
-        if n == 0:
-            n = None
+        if isinstance(node, ChoiceNode):
+            n = ChoiceNode(cell=node.cell, children=children) if children else None
+        else:
+            n = (
+                SumNode(children=children, points=node.points)
+                if children
+                else node.points
+            )
+            if n == 0:
+                n = None
 
         # TODO: compress here
 
-        if n and isinstance(n, ChoiceNode) and points:
-            # TODO: should it be possible for a ChoiceNode to have points?
-            n = SumNode(points=points, children=[n])
+        # if n and isinstance(n, ChoiceNode) and points:
+        #     # TODO: should it be possible for a ChoiceNode to have points?
+        #     n = SumNode(points=points, children=[n])
 
         out.append(n)
 
     return ChoiceNode(cell=cell, children=out)
 
 
+def eval(node: Node, choices: list[int]):
+    if isinstance(node, int):
+        return node
+    elif isinstance(node, SumNode):
+        return node.points + sum(eval(child, choices) for child in node.children)
+    elif choices[node.cell] != -1:
+        choice = node.children[choices[node.cell]]
+        return eval(choice, choices) if choice else 0
+    else:
+        return max(eval(child, choices) for child in node.children if child)
+
+
+def eval_all(node: Node, cells: list[str]):
+    indices = [range(len(cell)) for cell in cells]
+    return {choices: eval(node, choices) for choices in itertools.product(*indices)}
+
+
 def to_dot(node: Node, cells: list[str]) -> str:
     _root_id, dot = to_dot_help(node, cells)
     return f"""graph {{
+rankdir=LR;
 splines="false";
 node [shape="rect"];
 {dot}
@@ -176,7 +203,7 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
     else:
         assert node.children  # otherwise should have been an int
         me += "_s"
-        points = f"\n{node.points}" if node.points else ""
+        points = f"\\n{node.points}" if node.points else ""
         dot = [f'{me} [label="sum{points}"];']
         for i, child in enumerate(node.children):
             if not child:
@@ -276,23 +303,29 @@ def main():
     # trie.AddWord("the")
     # trie = make_py_trie("mini-dict.txt")
     trie = make_py_trie("boggle-words.txt")
-    etb = TreeBuilder(trie, (2, 2))
-    # board = ". . . . lnrsy e aeiou aeiou ."
-    # board = "t i z ae z z r z z"
     (board,) = sys.argv[1:]
     cells = board.split(" ")
+    dims = {
+        4: (2, 2),
+        9: (3, 3),
+        12: (3, 4),
+        16: (4, 4),
+    }[len(cells)]
+    etb = TreeBuilder(trie, dims)
+    # board = ". . . . lnrsy e aeiou aeiou ."
+    # board = "t i z ae z z r z z"
     t = etb.build_tree(board)
     # print(t)
 
     sys.stderr.write(f"node count: {t.node_count()}\n")
-    print(to_dot(t.children[0], etb.cells))
+    print(to_dot(t, etb.cells))
     print("---")
     # sys.stderr.write("choices at depth:\n")
     # for (cell, depth), value in sorted(t.choices_at_depth().items()):
     #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
     # sys.stderr.write("\n")
 
-    t1 = lift_choice(t.children[0], 1, len(cells[1]))
+    t1 = lift_choice(t, 1, len(cells[1]))
     sys.stderr.write(f"1 -> node count: {t1.node_count()}\n")
 
     print(to_dot(t1, etb.cells))
