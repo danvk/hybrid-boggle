@@ -316,8 +316,10 @@ def main():
     # print(t)
 
     sys.stderr.write(f"node count: {t.node_count()}\n")
-    print(to_dot(t, etb.cells))
-    print("---")
+    with open("tree.dot", "w") as out:
+        out.write(to_dot(t, etb.cells))
+        out.write("\n")
+
     # sys.stderr.write("choices at depth:\n")
     # for (cell, depth), value in sorted(t.choices_at_depth().items()):
     #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
@@ -325,8 +327,9 @@ def main():
 
     t1 = lift_choice(t, 1, len(cells[1]))
     sys.stderr.write(f"1 -> node count: {t1.node_count()}\n")
-
-    print(to_dot(t1, etb.cells))
+    with open("lift1.dot", "w") as out:
+        out.write(to_dot(t1, etb.cells))
+        out.write("\n")
     # json.dump(t.to_json(), sys.stdout)
 
 
