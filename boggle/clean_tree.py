@@ -162,21 +162,29 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
             return node.children[0]
         return node
 
-    new_children = []
+    # Fold sum nodes into this one.
+    exploded = []
     points = node.points
-    choices = defaultdict(list)
     for child in node.children:
         if child is None:
             continue
         elif isinstance(child, int):
             points += child
         elif isinstance(child, ChoiceNode):
-            # hold on to these in case we need to merge them
-            choices[child.cell].append(child)
+            exploded.append(child)
         else:
             points += child.points
-            new_children.extend(child.children)
+            exploded.extend(child.children)
 
+    # Look for duplicate choice nodes that can be merged.
+    # It's important that this happens _after_ folding in grandchild nodes.
+    choices = defaultdict(list)
+    for child in exploded:
+        assert isinstance(child, ChoiceNode)
+        choices[child.cell].append(child)
+
+    # TODO: consider optimizing for common case that there are no dupes
+    new_children = []
     for cell, nodes in choices.items():
         if len(nodes) == 1:
             new_children.append(nodes[0])
@@ -199,7 +207,7 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
     return points or None
 
 
-def merge_choices(nodes: Sequence[ChoiceNode]):
+def merge_choices(nodes: Sequence[ChoiceNode]) -> ChoiceNode:
     """Merge multiple choice nodes into a single one."""
     out = ChoiceNode(
         cell=nodes[0].cell,
@@ -330,6 +338,7 @@ class TreeBuilder:
                     # This isn't really a choice, so don't model it as such.
                     root.children.append(child.children[0])
         return squeeze_sum_node(root)
+        # return root
 
     def make_choices(self, cell: int, length: int, t: PyTrie, node: ChoiceNode):
         """Fill in the choice node given the choices available on this cell."""

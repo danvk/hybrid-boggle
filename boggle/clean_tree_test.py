@@ -129,6 +129,7 @@ def test_lift_invariants_22():
 def test_lift_invariants_33():
     trie = make_py_trie("boggle-words-9.txt")
     board = ". . . . lnrsy e aeiou aeiou ."
+    # board = ". . . . rs e io au ."
     cells = board.split(" ")
     etb = TreeBuilder(trie, dims=(3, 3))
     t = etb.build_tree(board)
