@@ -20,14 +20,10 @@ def test_lift_sum():
     assert lift_choice(root, 0, 1) == root
     assert lift_choice(root, 1, 2) == ChoiceNode(
         cell=1,
-        children=[
-            # TODO: these should collapse to ints
-            SumNode(
-                points=0,
-                children=[1, 2],
-            ),
-            SumNode(points=0, children=[3, 4]),
-        ],
+        children=[3, 7],
+        # Collapsed from:
+        # SumNode(points=0, children=[1, 2]),
+        # SumNode(points=0, children=[3, 4]),
     )
 
 

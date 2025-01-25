@@ -128,24 +128,32 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
             for j, result in enumerate(results)
         ]
 
-        # Construct a new choice node for each forced letter.
         if isinstance(node, ChoiceNode):
-            n = ChoiceNode(cell=node.cell, children=children) if children else None
+            n = ChoiceNode(cell=node.cell, children=children)
 
         else:
             # Sum nodes can prune null children, but choice nodes need them for alignment.
-            children = [child for child in children if child]
-            # TODO: prune empty trees here
+            # We can also collapse child sum nodes into this one.
+            new_children = []
+            points = node.points
+            for child in children:
+                if child is None:
+                    continue
+                elif isinstance(child, int):
+                    points += child
+                elif isinstance(child, ChoiceNode):
+                    new_children.append(child)
+                else:
+                    points += child.points
+                    new_children.extend(child.children)
 
             n = (
-                SumNode(children=children, points=node.points)
-                if children
-                else node.points
+                SumNode(children=new_children, points=points)
+                if new_children
+                else points
             )
             if n == 0:
                 n = None
-
-        # TODO: compress here
 
         out.append(n)
 
