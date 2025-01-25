@@ -169,6 +169,27 @@ def eval_all(node: Node, cells: list[str]):
     return {choices: eval(node, choices) for choices in itertools.product(*indices)}
 
 
+def assert_invariants(node: Node, cells: list[str]):
+    """Check a few desirable tree invariants:
+
+    - Sum nodes do not have null children.
+    - Choice nodes have the correct number of children.
+    - Sum nodes do not have SumNode or int children.
+    """
+    if isinstance(node, int):
+        return
+    elif isinstance(node, ChoiceNode):
+        assert len(node.children) == len(cells[node.cell])
+    elif isinstance(node, SumNode):
+        for child in node.children:
+            assert child is not None
+            assert not isinstance(child, int)
+            assert not isinstance(child, SumNode)
+    for child in node.children:
+        if child:
+            assert_invariants(child, cells)
+
+
 def to_dot(node: Node, cells: list[str]) -> str:
     _root_id, dot = to_dot_help(node, cells)
     return f"""graph {{

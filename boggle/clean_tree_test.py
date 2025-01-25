@@ -1,4 +1,11 @@
-from boggle.clean_tree import ChoiceNode, SumNode, TreeBuilder, eval_all, lift_choice
+from boggle.clean_tree import (
+    ChoiceNode,
+    SumNode,
+    TreeBuilder,
+    assert_invariants,
+    eval_all,
+    lift_choice,
+)
 from boggle.trie import make_py_trie
 
 
@@ -49,6 +56,7 @@ def test_lift_invariants_22():
     cells = board.split(" ")
     etb = TreeBuilder(trie, dims=(2, 2))
     t = etb.build_tree(board)
+    assert_invariants(t, cells)
 
     scores = eval_all(t, cells)
 
@@ -59,6 +67,7 @@ def test_lift_invariants_22():
         tl = lift_choice(t, i, len(cell))
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
+        assert_invariants(t, cells)
 
 
 # TODO:
