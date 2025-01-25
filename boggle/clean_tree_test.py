@@ -70,6 +70,26 @@ def test_lift_invariants_22():
         assert_invariants(t, cells)
 
 
+def test_lift_invariants_33():
+    trie = make_py_trie("boggle-words-9.txt")
+    board = ". . . . lnrsy e aeiou aeiou ."
+    cells = board.split(" ")
+    etb = TreeBuilder(trie, dims=(3, 3))
+    t = etb.build_tree(board)
+    assert_invariants(t, cells)
+
+    scores = eval_all(t, cells)
+
+    # Try lifting each cell; this should not affect any scores.
+    for i, cell in enumerate(cells):
+        if len(cell) <= 1:
+            continue
+        tl = lift_choice(t, i, len(cell))
+        lift_scores = eval_all(tl, cells)
+        assert lift_scores == scores
+        assert_invariants(t, cells)
+
+
 # TODO:
 # - test invariant that sum nodes have no children that are sum nodes or ints
 # - test lift invariant on 3x3 board: '. . . . lnrsy e aeiou aeiou .'
