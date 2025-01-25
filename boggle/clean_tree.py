@@ -360,10 +360,16 @@ def main():
     #     sys.stderr.write(f"  {cell}@{depth}: {value}\n")
     # sys.stderr.write("\n")
 
-    t1 = lift_choice(t, 1, len(cells[1]))
-    sys.stderr.write(f"1 -> node count: {t1.node_count()}\n")
+    t4 = lift_choice(t, 4, len(cells[4]))
+    sys.stderr.write(f"4 -> node count: {t4.node_count()}\n")
     with open("lift1.dot", "w") as out:
-        out.write(to_dot(t1, etb.cells))
+        out.write(to_dot(t4, etb.cells))
+        out.write("\n")
+
+    t6 = lift_choice(t4, 6, len(cells[6]))
+    sys.stderr.write(f"6 -> node count: {t6.node_count()}\n")
+    with open("lift2.dot", "w") as out:
+        out.write(to_dot(t6, etb.cells))
         out.write("\n")
     # json.dump(t.to_json(), sys.stdout)
 
