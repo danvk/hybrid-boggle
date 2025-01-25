@@ -17,7 +17,7 @@ from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie, make_py_trie
 
-type Node = SumNode | ChoiceNode
+type Node = SumNode | ChoiceNode | int
 
 
 @dataclass
@@ -57,7 +57,7 @@ class SumNode:
 @dataclass
 class ChoiceNode:
     cell: int
-    children: list[Node]
+    children: list[Node | None]
 
     def to_json(self):
         return {
@@ -139,7 +139,7 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     return ChoiceNode(cell=cell, children=out)
 
 
-def squeeze_sum_node(node: SumNode) -> SumNode | int | None:
+def squeeze_sum_node(node: SumNode) -> Node | int | None:
     if not node.children:
         return node.points or None
     any_issues = False
@@ -148,6 +148,8 @@ def squeeze_sum_node(node: SumNode) -> SumNode | int | None:
             any_issues = True
             break
     if not any_issues:
+        if len(node.children) == 1 and not node.points:
+            return node.children[0]
         return node
     new_children = []
     points = node.points
@@ -163,6 +165,8 @@ def squeeze_sum_node(node: SumNode) -> SumNode | int | None:
             new_children.extend(child.children)
 
     if new_children:
+        if len(new_children) == 1 and not points:
+            return new_children[0]
         return SumNode(children=new_children, points=points)
     return points or None
 

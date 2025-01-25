@@ -51,9 +51,19 @@ def test_squeeze_sum_node():
     assert squeeze_sum_node(SumNode(points=2, children=[])) == 2
     assert squeeze_sum_node(SumNode(points=0, children=[2, 3])) == 5
     assert squeeze_sum_node(SumNode(points=2, children=[2, 3])) == 7
-    assert squeeze_sum_node(
-        SumNode(points=2, children=[2, ChoiceNode(cell=0, children=[2, 3]), 3])
-    ) == SumNode(points=7, children=[ChoiceNode(cell=0, children=[2, 3])])
+
+    choice_node = ChoiceNode(cell=0, children=[2, 3])
+    assert squeeze_sum_node(SumNode(points=2, children=[2, choice_node, 3])) == SumNode(
+        points=7, children=[choice_node]
+    )
+    assert squeeze_sum_node(SumNode(points=2, children=[choice_node, 3])) == SumNode(
+        points=5, children=[choice_node]
+    )
+
+    assert squeeze_sum_node(SumNode(points=0, children=[choice_node])) == choice_node
+    assert squeeze_sum_node(SumNode(points=1, children=[choice_node])) == SumNode(
+        points=1, children=[choice_node]
+    )
 
 
 def test_lift_invariants_22():
