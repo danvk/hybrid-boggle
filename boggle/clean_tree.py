@@ -117,24 +117,26 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     # len(results) = len(node.children)
     # len(results[0].children) = num_lets
 
-    # Construct a new choice node for each forced letter.
     out = []
     for i in range(num_lets):
-        # len(children) = indeterminate
+        # len(children) = len(node.children)
         # len(children[0].children) = num_lets
         children = [
             result.children[i]
             if is_choice[j]
             else result  # <-- this is where subtree duplication happens
             for j, result in enumerate(results)
-            if result and result.children[i]
         ]
 
-        # TODO: prune empty trees here
-
+        # Construct a new choice node for each forced letter.
         if isinstance(node, ChoiceNode):
             n = ChoiceNode(cell=node.cell, children=children) if children else None
+
         else:
+            # Sum nodes can prune null children, but choice nodes need them for alignment.
+            children = [child for child in children if child]
+            # TODO: prune empty trees here
+
             n = (
                 SumNode(children=children, points=node.points)
                 if children
@@ -144,10 +146,6 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
                 n = None
 
         # TODO: compress here
-
-        # if n and isinstance(n, ChoiceNode) and points:
-        #     # TODO: should it be possible for a ChoiceNode to have points?
-        #     n = SumNode(points=points, children=[n])
 
         out.append(n)
 
