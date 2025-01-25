@@ -11,6 +11,7 @@ Goals:
 import itertools
 import json
 import sys
+from collections import defaultdict
 from dataclasses import dataclass
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
@@ -142,33 +143,62 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
 def squeeze_sum_node(node: SumNode) -> Node | int | None:
     if not node.children:
         return node.points or None
+
+    # Fast-track for un-problematic nodes.
+    # TODO: test whether this is helpful.
     any_issues = False
+    choices = set[int]()
     for child in node.children:
-        if not child or isinstance(child, (int, SumNode)):
+        if not child or isinstance(child, (int, SumNode)) or child.cell in choices:
             any_issues = True
             break
+        choices.add(child.cell)
     if not any_issues:
         if len(node.children) == 1 and not node.points:
             return node.children[0]
         return node
+
     new_children = []
     points = node.points
+    choices = defaultdict(list)
     for child in node.children:
         if child is None:
             continue
         elif isinstance(child, int):
             points += child
         elif isinstance(child, ChoiceNode):
-            new_children.append(child)
+            # hold on to these in case we need to merge them
+            choices[child.cell].append(child)
         else:
             points += child.points
             new_children.extend(child.children)
+
+    for cell, nodes in choices.items():
+        if len(nodes) == 1:
+            new_children.append(nodes[0])
+        else:
+            # We own this ChoiceNode, so we're free to mutate it.
+            merged = ChoiceNode(cell=cell, children=[*nodes[0].children])
+            for choice_node in nodes[1:]:
+                merge_choices(merged, choice_node)
+            new_children.append(merged)
 
     if new_children:
         if len(new_children) == 1 and not points:
             return new_children[0]
         return SumNode(children=new_children, points=points)
     return points or None
+
+
+def merge_choices(a: ChoiceNode, b: ChoiceNode):
+    """Merge b into a. Must have a.cell == b.cell."""
+    assert a.cell == b.cell
+    assert len(a.children) == len(b.children)
+    for i, (ac, bc) in enumerate(zip(a.children, b.children)):
+        if ac and bc:
+            a.children[i] = squeeze_sum_node(SumNode(points=0, children=[ac, bc]))
+        else:
+            a.children[i] = ac or bc
 
 
 def eval(node: Node, choices: list[int]):
@@ -200,10 +230,15 @@ def assert_invariants(node: Node, cells: list[str]):
     elif isinstance(node, ChoiceNode):
         assert len(node.children) == len(cells[node.cell])
     elif isinstance(node, SumNode):
+        choices = set[int]()
         for child in node.children:
             assert child is not None
             assert not isinstance(child, int)
             assert not isinstance(child, SumNode)
+            assert isinstance(child, ChoiceNode)
+            assert child.cell not in choices
+            choices.add(child.cell)
+
     for child in node.children:
         if child:
             assert_invariants(child, cells)

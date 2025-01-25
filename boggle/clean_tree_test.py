@@ -5,6 +5,7 @@ from boggle.clean_tree import (
     assert_invariants,
     eval_all,
     lift_choice,
+    merge_choices,
     squeeze_sum_node,
 )
 from boggle.trie import make_py_trie
@@ -63,6 +64,46 @@ def test_squeeze_sum_node():
     assert squeeze_sum_node(SumNode(points=0, children=[choice_node])) == choice_node
     assert squeeze_sum_node(SumNode(points=1, children=[choice_node])) == SumNode(
         points=1, children=[choice_node]
+    )
+
+    choice_node2 = ChoiceNode(cell=0, children=[3, ChoiceNode(cell=1, children=[1, 2])])
+    assert squeeze_sum_node(
+        SumNode(points=1, children=[choice_node, choice_node2])
+    ) == SumNode(
+        points=1,
+        children=[
+            ChoiceNode(
+                cell=0,
+                children=[
+                    5,
+                    SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2])]),
+                ],
+            )
+        ],
+    )
+    assert squeeze_sum_node(
+        SumNode(points=1, children=[choice_node, 3, choice_node2])
+    ) == SumNode(
+        points=4,
+        children=[
+            ChoiceNode(
+                cell=0,
+                children=[
+                    5,
+                    SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2])]),
+                ],
+            )
+        ],
+    )
+
+
+def test_merge_choices():
+    choice_node1 = ChoiceNode(cell=0, children=[2, 3])
+    choice_node2 = ChoiceNode(cell=0, children=[3, ChoiceNode(cell=1, children=[1, 2])])
+    merge_choices(choice_node1, choice_node2)
+    assert choice_node1 == ChoiceNode(
+        cell=0,
+        children=[5, SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2])])],
     )
 
 
