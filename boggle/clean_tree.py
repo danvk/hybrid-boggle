@@ -113,6 +113,9 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
         isinstance(result, ChoiceNode) and result.cell == cell for result in results
     ]
 
+    # len(results) = len(node.children)
+    # len(results[0].children) = num_lets
+
     # Construct a new sum node for each forced letter.
     out = []
     for i in range(num_lets):
@@ -127,13 +130,17 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
         # TODO: prune empty trees here
 
         points = node.points if isinstance(node, SumNode) else 0
-        node = SumNode(points=points, children=children) if children else points
-        if node == 0:
-            node = None
+        n = ChoiceNode(cell=node.cell, children=children) if children else points
+        if n == 0:
+            n = None
 
         # TODO: compress here
 
-        out.append(node)
+        if n and isinstance(n, ChoiceNode) and points:
+            # TODO: should it be possible for a ChoiceNode to have points?
+            n = SumNode(points=points, children=[n])
+
+        out.append(n)
 
     return ChoiceNode(cell=cell, children=out)
 
