@@ -6,6 +6,7 @@ from boggle.clean_tree import (
     eval_all,
     lift_choice,
     merge_choices,
+    squeeze_choice_node,
     squeeze_sum_node,
 )
 from boggle.trie import make_py_trie
@@ -72,6 +73,7 @@ def test_lift_choice():
         children=[
             ChoiceNode(cell=1, children=[1, 3], points=2),
             ChoiceNode(cell=1, children=[2, 4], points=3),
+            None,
         ],
         points=1,
     )
@@ -80,10 +82,37 @@ def test_lift_choice():
     assert lift_choice(pointy_root, 1, 2) == ChoiceNode(
         cell=1,
         children=[
-            ChoiceNode(cell=0, children=[1, 2], points=0),
-            ChoiceNode(cell=0, children=[3, 4], points=0),
+            ChoiceNode(cell=0, children=[4, 6, None], points=0),
+            ChoiceNode(cell=0, children=[6, 8, None], points=0),
         ],
-        points=0,
+        points=1,
+    )
+
+
+def test_squeeze_choice_node():
+    pointy_root = ChoiceNode(
+        cell=0,
+        children=[
+            ChoiceNode(cell=1, children=[1, 3], points=2),
+            ChoiceNode(cell=1, children=[2, 4], points=3),
+            None,
+        ],
+        points=1,
+    )
+    assert squeeze_choice_node(pointy_root) == pointy_root
+    assert (
+        squeeze_choice_node(
+            ChoiceNode(
+                cell=0,
+                children=[
+                    ChoiceNode(cell=1, children=[1, 3], points=3),
+                    ChoiceNode(cell=1, children=[2, 4], points=4),
+                    1,
+                ],
+                points=0,
+            )
+        )
+        == pointy_root
     )
 
 

@@ -113,6 +113,20 @@ def max_bound(node: Node):
         return node.points + sum(max_bound(child) for child in node.children)
 
 
+def add_scalar(node: Node | None, scalar: int) -> Node:
+    if scalar == 0:
+        return node
+    if node is None:
+        return scalar
+    elif isinstance(node, int):
+        return node + scalar
+    elif isinstance(node, SumNode):
+        return SumNode(points=node.points + scalar, children=node.children)
+    return ChoiceNode(
+        points=node.points + scalar, cell=node.cell, children=node.children
+    )
+
+
 def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     if isinstance(node, int):
         return node
@@ -135,23 +149,27 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     # len(results[0].children) = num_lets
 
     points = 0
-    for i, result in enumerate(results):
-        if is_choice[i]:
-            points += result.points
     out = []
+    to_add = 0
+    if isinstance(node, ChoiceNode):
+        to_add = node.points
+
     for i in range(num_lets):
         # len(children) = len(node.children)
         # len(children[0].children) = num_lets
         children = [
-            result.children[i]
+            add_scalar(result.children[i], to_add + result.points)
             if is_choice[j]
-            else result  # <-- this is where subtree duplication happens
+            else add_scalar(
+                result, to_add
+            )  # <-- this is where subtree duplication happens
+            # ^^^ this makes copies unnecessarily (across range(num_lets))
             for j, result in enumerate(results)
         ]
 
         if isinstance(node, ChoiceNode):
             if any(children):
-                n = ChoiceNode(points=node.points, cell=node.cell, children=children)
+                n = ChoiceNode(points=0, cell=node.cell, children=children)
             else:
                 n = node.points or None  # can this happen?
 
@@ -159,6 +177,11 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
             n = squeeze_sum_node(SumNode(points=node.points, children=children))
 
         out.append(n)
+
+    if isinstance(node, SumNode):
+        for i, result in enumerate(results):
+            if is_choice[i]:
+                points += result.points
 
     return ChoiceNode(points=points, cell=cell, children=out)
 
@@ -239,6 +262,40 @@ def merge_choices(nodes: Sequence[ChoiceNode]) -> ChoiceNode:
     for i, child in enumerate(out.children):
         out.children[i] = squeeze_sum_node(child)
     return out
+
+
+def points_on_node(node: Node | None) -> int:
+    if node is None:
+        return 0
+    if isinstance(node, int):
+        return node
+    return node.points
+
+
+def squeeze_choice_node(node: ChoiceNode) -> ChoiceNode | int:
+    """Pull up the minimum value across the choices."""
+    if any(c is None for c in node.children):
+        return node  # no minimum to pull up
+
+    min_points = min(points_on_node(c) for c in node.children)
+    if min_points == 0:
+        return node
+    new_children = []
+    for child in node.children:
+        if isinstance(child, int):
+            child = (child - min_points) or None
+        elif isinstance(child, SumNode):
+            child = SumNode(points=child.points - min_points, children=child.children)
+        elif isinstance(child, ChoiceNode):
+            child = ChoiceNode(
+                points=child.points - min_points,
+                cell=child.cell,
+                children=child.children,
+            )
+        new_children.append(child)
+    return ChoiceNode(
+        points=node.points + min_points, cell=node.cell, children=new_children
+    )
 
 
 def eval(node: Node, choices: list[int]):
