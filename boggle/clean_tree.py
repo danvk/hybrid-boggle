@@ -148,29 +148,27 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     # len(results) = len(node.children)
     # len(results[0].children) = num_lets
 
-    points = 0
     out = []
-    to_add = 0
+    points = 0
     if isinstance(node, ChoiceNode):
-        to_add = node.points
-
-    for i in range(num_lets):
-        # len(children) = len(node.children)
-        # len(children[0].children) = num_lets
-        children = [
-            add_scalar(
-                result.children[i],
-                to_add + (result.points if isinstance(node, ChoiceNode) else 0),
-            )
-            if is_choice[j]
-            else add_scalar(
-                result, to_add
-            )  # <-- this is where subtree duplication happens
-            # ^^^ this makes copies unnecessarily (across range(num_lets))
+        # this duplicates subtrees
+        non_choice_added = [
+            add_scalar(result, node.points) if not is_choice[j] else None
             for j, result in enumerate(results)
         ]
+        for i in range(num_lets):
+            # len(children) = len(node.children)
+            # len(children[0].children) = num_lets
+            children = [
+                add_scalar(
+                    result.children[i],
+                    node.points + result.points,
+                )
+                if is_choice[j]
+                else non_choice_added[j]
+                for j, result in enumerate(results)
+            ]
 
-        if isinstance(node, ChoiceNode):
             if any(children):
                 n = squeeze_choice_node(
                     ChoiceNode(points=0, cell=node.cell, children=children)
@@ -178,12 +176,22 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
             else:
                 n = None  # can this happen?
 
-        else:
+            out.append(n)
+    else:
+        for i in range(num_lets):
+            # len(children) = len(node.children)
+            # len(children[0].children) = num_lets
+            children = [
+                result.children[i]
+                if is_choice[j]
+                else result  # <-- this is where subtree duplication happens
+                for j, result in enumerate(results)
+            ]
+
             n = squeeze_sum_node(SumNode(points=node.points, children=children))
 
-        out.append(n)
+            out.append(n)
 
-    if isinstance(node, SumNode):
         for i, result in enumerate(results):
             if is_choice[i]:
                 points += result.points
