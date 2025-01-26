@@ -25,7 +25,7 @@ type Node = SumNode | ChoiceNode | int
 
 @dataclass
 class SumNode:
-    points: int
+    points: int  # TODO: eliminate this
     children: list[Node]
 
     def node_count(self):
@@ -54,6 +54,7 @@ class SumNode:
 @dataclass
 class ChoiceNode:
     cell: int
+    points: int  # you get these points no matter what
     children: list[Node | None]
 
     def node_count(self):
@@ -92,6 +93,7 @@ def to_json(node: Node):
     elif isinstance(node, ChoiceNode):
         return {
             "ch": node.cell,
+            "points": node.points,
             "*": {i: to_json(child) for i, child in enumerate(node.children) if child},
         }
     elif isinstance(node, SumNode):
@@ -106,8 +108,7 @@ def max_bound(node: Node):
         return node
     elif isinstance(node, ChoiceNode):
         children = [c for c in node.children if c]
-        # TODO: assert that ChoiceNodes have non-null children
-        return max(max_bound(child) for child in children) if children else 0
+        return node.points + max(max_bound(child) for child in children)
     elif isinstance(node, SumNode):
         return node.points + sum(max_bound(child) for child in node.children)
 
@@ -145,17 +146,24 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
         ]
 
         if isinstance(node, ChoiceNode):
-            n = ChoiceNode(cell=node.cell, children=children)
+            if any(children):
+                n = ChoiceNode(points=0, cell=node.cell, children=children)
+            else:
+                n = node.points or None  # can this happen?
 
         else:
-            n = squeeze_sum_node(SumNode(points=node.points, children=children))
+            n = squeeze_sum_node(SumNode(points=0, children=children))
 
         out.append(n)
 
-    return ChoiceNode(cell=cell, children=out)
+    return ChoiceNode(points=node.points, cell=cell, children=out)
 
 
 def squeeze_sum_node(node: SumNode) -> Node | int | None:
+    """This normalizes the SumNode in a few ways to make it more compact.
+
+    Does not mutate node. May return the same node object.
+    """
     if not node.children:
         return node.points or None
 
@@ -196,20 +204,13 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
 
     # TODO: consider optimizing for common case that there are no dupes
     new_children = []
-    for cell, nodes in choices.items():
+    for nodes in choices.values():
         if len(nodes) == 1:
             new_children.append(nodes[0])
         else:
-            # new_children.extend(nodes)
             # We own this ChoiceNode, so we're free to mutate it.
             merged = merge_choices(nodes)
             new_children.append(merged)
-            # sys.stderr.write(f"Merged {len(nodes)} children for cell {cell}:\n")
-            # if isinstance(merged, int):
-            #     sys.stderr.write(json.dumps(merged))
-            # else:
-            #     sys.stderr.write(json.dumps(to_json(merged), indent=2))
-            # sys.stderr.write("\n")
 
     if new_children:
         if len(new_children) == 1 and not points:
@@ -221,12 +222,14 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
 def merge_choices(nodes: Sequence[ChoiceNode]) -> ChoiceNode:
     """Merge multiple choice nodes into a single one."""
     out = ChoiceNode(
+        points=nodes[0].points,
         cell=nodes[0].cell,
         children=[SumNode(points=0, children=[]) for _ in nodes[0].children],
     )
     for node in nodes:
         assert node.cell == out.cell
         assert len(node.children) == len(out.children)
+        out.points += node.points
         for i, choice in enumerate(node.children):
             out.children[i].children.append(choice)
     for i, child in enumerate(out.children):
@@ -241,9 +244,11 @@ def eval(node: Node, choices: list[int]):
         return node.points + sum(eval(child, choices) for child in node.children)
     elif choices[node.cell] != -1:
         choice = node.children[choices[node.cell]]
-        return eval(choice, choices) if choice else 0
+        return node.points + eval(choice, choices) if choice else 0
     else:
-        return max(eval(child, choices) for child in node.children if child)
+        return node.points + max(
+            eval(child, choices) for child in node.children if child
+        )
 
 
 def eval_all(node: Node, cells: list[str]):
@@ -255,15 +260,19 @@ def assert_invariants(node: Node, cells: list[str]):
     """Check a few desirable tree invariants:
 
     - Sum nodes do not have null children.
-    - Choice nodes have the correct number of children.
     - Sum nodes do not have SumNode or int children.
+    - Sum nodes do not have duplicate ChoiceNode children.
+    - Choice nodes have the correct number of children.
+    - Choice nodes have at least one choice that leads to points.
     """
     if isinstance(node, int):
         return
     elif isinstance(node, ChoiceNode):
         assert len(node.children) == len(cells[node.cell])
+        assert any(node.children)
     elif isinstance(node, SumNode):
         choices = set[int]()
+        # TODO: assert >= 2 children
         for child in node.children:
             assert child is not None
             assert not isinstance(child, int)
@@ -303,7 +312,7 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
                 continue
             child_id, child_dot = to_dot_help(child, cells, me + str(i))
             letter = cells[node.cell][i]
-            dot.append(f'{me} -- {child_id} [label="{letter} ({i})"];')
+            dot.append(f'{me} -- {child_id} [label="{letter}"];')
             dot.append(child_dot)
 
     else:
@@ -314,6 +323,8 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
         if not node.children:
             flags = ' color="red"'
         elif any(isinstance(n, SumNode) for n in node.children):
+            flags = ' color="red"'
+        elif len(node.children) < 2:
             flags = ' color="red"'
         dot = [f'{me} [label="sum{points}"{flags}];']
         for i, child in enumerate(node.children):
@@ -340,7 +351,7 @@ class TreeBuilder:
         assert len(self.cells) == self.dims[0] * self.dims[1]
         root = SumNode(points=0, children=[])
         for i, cell in enumerate(self.cells):
-            child = ChoiceNode(cell=i, children=[None] * len(cell))
+            child = ChoiceNode(cell=i, children=[None] * len(cell), points=0)
             score = self.make_choices(i, 0, self.trie, child)
             if score > 0:
                 if len(cell) > 1:
@@ -349,7 +360,6 @@ class TreeBuilder:
                     # This isn't really a choice, so don't model it as such.
                     root.children.append(child.children[0])
         return squeeze_sum_node(root)
-        # return root
 
     def make_choices(self, cell: int, length: int, t: PyTrie, node: ChoiceNode):
         """Fill in the choice node given the choices available on this cell."""
@@ -375,7 +385,9 @@ class TreeBuilder:
         for ni in self.neighbors[cell]:
             if self.used & (1 << ni):
                 continue
-            neighbor = ChoiceNode(cell=ni, children=[None] * len(self.cells[ni]))
+            neighbor = ChoiceNode(
+                cell=ni, children=[None] * len(self.cells[ni]), points=0
+            )
             neighbor.cell = ni
             tscore = self.make_choices(ni, length, t, neighbor)
             if tscore > 0:
@@ -418,18 +430,21 @@ def main():
     # board = "t i z ae z z r z z"
     t = etb.build_tree(board)
     # print(t)
+    assert_invariants(t, cells)
 
     sys.stderr.write(f"node count: {t.node_count()}, bound={max_bound(t)}\n")
 
-    for cell in SPLIT_ORDER[dims]:
-        if len(cells[cell]) <= 1:
-            continue
-        t = lift_choice(t, cell, len(cells[cell]))
-        sys.stderr.write(
-            f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
-        )
-
     if False:
+        for cell in SPLIT_ORDER[dims]:
+            if len(cells[cell]) <= 1:
+                continue
+            t = lift_choice(t, cell, len(cells[cell]))
+            assert_invariants(t, cells)
+            sys.stderr.write(
+                f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
+            )
+
+    if True:
         with open("tree.dot", "w") as out:
             out.write(to_dot(t, etb.cells))
             out.write("\n")

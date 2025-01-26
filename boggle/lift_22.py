@@ -4,6 +4,7 @@
 import json
 import sys
 
+from boggle.breaker import SPLIT_ORDER
 from boggle.eval_tree import (
     EvalNode,
     EvalTreeBoggler,
@@ -46,7 +47,8 @@ def main():
 
     print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
 
-    for i in range(9):
+    for n in range(9):
+        i = SPLIT_ORDER[(3, 3)][n]
         print(f"lift {i}")
         t = t.lift_choice(i, len(cells[i]))
         print(f"-> {tree_stats(t)}")
