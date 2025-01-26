@@ -503,7 +503,7 @@ def main():
 
     sys.stderr.write(f"node count: {t.node_count()}, bound={max_bound(t)}\n")
 
-    if False:
+    if True:
         for cell in SPLIT_ORDER[dims]:
             if len(cells[cell]) <= 1:
                 continue
@@ -513,7 +513,7 @@ def main():
                 f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
             )
 
-    if True:
+    if False:
         with open("tree.dot", "w") as out:
             out.write(to_dot(t, etb.cells))
             out.write("\n")
