@@ -134,6 +134,10 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
     # len(results) = len(node.children)
     # len(results[0].children) = num_lets
 
+    points = 0
+    for i, result in enumerate(results):
+        if is_choice[i]:
+            points += result.points
     out = []
     for i in range(num_lets):
         # len(children) = len(node.children)
@@ -147,16 +151,16 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
 
         if isinstance(node, ChoiceNode):
             if any(children):
-                n = ChoiceNode(points=0, cell=node.cell, children=children)
+                n = ChoiceNode(points=node.points, cell=node.cell, children=children)
             else:
                 n = node.points or None  # can this happen?
 
         else:
-            n = squeeze_sum_node(SumNode(points=0, children=children))
+            n = squeeze_sum_node(SumNode(points=node.points, children=children))
 
         out.append(n)
 
-    return ChoiceNode(points=node.points, cell=cell, children=out)
+    return ChoiceNode(points=points, cell=cell, children=out)
 
 
 def squeeze_sum_node(node: SumNode) -> Node | int | None:

@@ -29,6 +29,23 @@ def test_lift_sum():
         # SumNode(points=0, children=[3, 4]),
     )
 
+    pointy_root = SumNode(
+        points=1,
+        children=[
+            ChoiceNode(cell=1, children=[1, 3], points=2),
+            ChoiceNode(cell=1, children=[2, 4], points=3),
+        ],
+    )
+    assert lift_choice(pointy_root, 0, 1) == pointy_root
+    assert lift_choice(pointy_root, 1, 2) == ChoiceNode(
+        cell=1,
+        children=[4, 8],
+        points=5,
+        # Collapsed from:
+        # SumNode(points=1, children=[1, 2]),
+        # SumNode(points=1, children=[3, 4]),
+    )
+
 
 def test_lift_choice():
     root = ChoiceNode(
@@ -42,6 +59,25 @@ def test_lift_choice():
     assert lift_choice(root, 0, 2) == root
     assert lift_choice(root, 2, 1) == root
     assert lift_choice(root, 1, 2) == ChoiceNode(
+        cell=1,
+        children=[
+            ChoiceNode(cell=0, children=[1, 2], points=0),
+            ChoiceNode(cell=0, children=[3, 4], points=0),
+        ],
+        points=0,
+    )
+
+    pointy_root = ChoiceNode(
+        cell=0,
+        children=[
+            ChoiceNode(cell=1, children=[1, 3], points=2),
+            ChoiceNode(cell=1, children=[2, 4], points=3),
+        ],
+        points=1,
+    )
+    assert lift_choice(pointy_root, 0, 2) == pointy_root
+    assert lift_choice(pointy_root, 2, 1) == pointy_root
+    assert lift_choice(pointy_root, 1, 2) == ChoiceNode(
         cell=1,
         children=[
             ChoiceNode(cell=0, children=[1, 2], points=0),
