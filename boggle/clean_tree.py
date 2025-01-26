@@ -222,7 +222,7 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
 def merge_choices(nodes: Sequence[ChoiceNode]) -> ChoiceNode:
     """Merge multiple choice nodes into a single one."""
     out = ChoiceNode(
-        points=nodes[0].points,
+        points=0,
         cell=nodes[0].cell,
         children=[SumNode(points=0, children=[]) for _ in nodes[0].children],
     )

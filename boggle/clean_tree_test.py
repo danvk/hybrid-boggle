@@ -15,14 +15,15 @@ def test_lift_sum():
     root = SumNode(
         points=0,
         children=[
-            ChoiceNode(cell=1, children=[1, 3]),
-            ChoiceNode(cell=1, children=[2, 4]),
+            ChoiceNode(cell=1, children=[1, 3], points=0),
+            ChoiceNode(cell=1, children=[2, 4], points=0),
         ],
     )
     assert lift_choice(root, 0, 1) == root
     assert lift_choice(root, 1, 2) == ChoiceNode(
         cell=1,
         children=[3, 7],
+        points=0,
         # Collapsed from:
         # SumNode(points=0, children=[1, 2]),
         # SumNode(points=0, children=[3, 4]),
@@ -33,18 +34,20 @@ def test_lift_choice():
     root = ChoiceNode(
         cell=0,
         children=[
-            ChoiceNode(cell=1, children=[1, 3]),
-            ChoiceNode(cell=1, children=[2, 4]),
+            ChoiceNode(cell=1, children=[1, 3], points=0),
+            ChoiceNode(cell=1, children=[2, 4], points=0),
         ],
+        points=0,
     )
     assert lift_choice(root, 0, 2) == root
     assert lift_choice(root, 2, 1) == root
     assert lift_choice(root, 1, 2) == ChoiceNode(
         cell=1,
         children=[
-            ChoiceNode(cell=0, children=[1, 2]),
-            ChoiceNode(cell=0, children=[3, 4]),
+            ChoiceNode(cell=0, children=[1, 2], points=0),
+            ChoiceNode(cell=0, children=[3, 4], points=0),
         ],
+        points=0,
     )
 
 
@@ -53,7 +56,7 @@ def test_squeeze_sum_node():
     assert squeeze_sum_node(SumNode(points=0, children=[2, 3])) == 5
     assert squeeze_sum_node(SumNode(points=2, children=[2, 3])) == 7
 
-    choice_node = ChoiceNode(cell=0, children=[2, 3])
+    choice_node = ChoiceNode(cell=0, children=[2, 3], points=0)
     assert squeeze_sum_node(SumNode(points=2, children=[2, choice_node, 3])) == SumNode(
         points=7, children=[choice_node]
     )
@@ -66,7 +69,9 @@ def test_squeeze_sum_node():
         points=1, children=[choice_node]
     )
 
-    choice_node2 = ChoiceNode(cell=0, children=[3, ChoiceNode(cell=1, children=[1, 2])])
+    choice_node2 = ChoiceNode(
+        cell=0, children=[3, ChoiceNode(cell=1, children=[1, 2], points=0)], points=0
+    )
     assert squeeze_sum_node(
         SumNode(points=1, children=[choice_node, choice_node2])
     ) == SumNode(
@@ -76,8 +81,12 @@ def test_squeeze_sum_node():
                 cell=0,
                 children=[
                     5,
-                    SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2])]),
+                    SumNode(
+                        points=3,
+                        children=[ChoiceNode(cell=1, children=[1, 2], points=0)],
+                    ),
                 ],
+                points=0,
             )
         ],
     )
@@ -87,10 +96,14 @@ def test_squeeze_sum_node():
         points=4,
         children=[
             ChoiceNode(
+                points=0,
                 cell=0,
                 children=[
                     5,
-                    SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2])]),
+                    SumNode(
+                        points=3,
+                        children=[ChoiceNode(cell=1, children=[1, 2], points=0)],
+                    ),
                 ],
             )
         ],
@@ -98,11 +111,17 @@ def test_squeeze_sum_node():
 
 
 def test_merge_choices():
-    choice_node1 = ChoiceNode(cell=0, children=[2, 3])
-    choice_node2 = ChoiceNode(cell=0, children=[3, ChoiceNode(cell=1, children=[1, 2])])
+    choice_node1 = ChoiceNode(points=1, cell=0, children=[2, 3])
+    choice_node2 = ChoiceNode(
+        points=2, cell=0, children=[3, ChoiceNode(cell=1, children=[1, 2], points=0)]
+    )
     assert merge_choices([choice_node1, choice_node2]) == ChoiceNode(
+        points=3,
         cell=0,
-        children=[5, SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2])])],
+        children=[
+            5,
+            SumNode(points=3, children=[ChoiceNode(cell=1, children=[1, 2], points=0)]),
+        ],
     )
 
 
