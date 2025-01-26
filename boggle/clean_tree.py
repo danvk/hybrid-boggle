@@ -209,8 +209,8 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
             break
         choices.add(child.cell)
     if not any_issues:
-        if len(node.children) == 1 and not node.points:
-            return node.children[0]
+        if len(node.children) == 1:
+            return add_scalar(node.children[0], node.points)
         return node
 
     # Fold sum nodes into this one.
@@ -245,8 +245,8 @@ def squeeze_sum_node(node: SumNode) -> Node | int | None:
             new_children.append(merged)
 
     if new_children:
-        if len(new_children) == 1 and not points:
-            return new_children[0]
+        if len(new_children) == 1:
+            return add_scalar(new_children[0], points)
         return SumNode(children=new_children, points=points)
     return points or None
 
@@ -298,6 +298,8 @@ def squeeze_choice_node(node: ChoiceNode) -> ChoiceNode | int:
                 children=child.children,
             )
         new_children.append(child)
+    if all(c is None for c in new_children):
+        return node.points + min_points
     return ChoiceNode(
         points=node.points + min_points, cell=node.cell, children=new_children
     )
@@ -372,7 +374,8 @@ def to_dot_help(node: Node, cells: list[str], prefix="") -> tuple[str, str]:
 
     elif isinstance(node, ChoiceNode):
         me += f"_{node.cell}c"
-        dot = [f'{me} [label="choice #{node.cell}"];']
+        points = f"\\n{node.points}" if node.points else ""
+        dot = [f'{me} [label="choice #{node.cell}{points}"];']
         for i, child in enumerate(node.children):
             if not child:
                 continue
