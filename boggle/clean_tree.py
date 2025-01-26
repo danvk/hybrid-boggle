@@ -158,7 +158,10 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
         # len(children) = len(node.children)
         # len(children[0].children) = num_lets
         children = [
-            add_scalar(result.children[i], to_add + result.points)
+            add_scalar(
+                result.children[i],
+                to_add + (result.points if isinstance(node, ChoiceNode) else 0),
+            )
             if is_choice[j]
             else add_scalar(
                 result, to_add
@@ -169,9 +172,11 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
 
         if isinstance(node, ChoiceNode):
             if any(children):
-                n = ChoiceNode(points=0, cell=node.cell, children=children)
+                n = squeeze_choice_node(
+                    ChoiceNode(points=0, cell=node.cell, children=children)
+                )
             else:
-                n = node.points or None  # can this happen?
+                n = None  # can this happen?
 
         else:
             n = squeeze_sum_node(SumNode(points=node.points, children=children))
@@ -183,7 +188,7 @@ def lift_choice(node: Node, cell: int, num_lets: int) -> Node:
             if is_choice[i]:
                 points += result.points
 
-    return ChoiceNode(points=points, cell=cell, children=out)
+    return squeeze_choice_node(ChoiceNode(points=points, cell=cell, children=out))
 
 
 def squeeze_sum_node(node: SumNode) -> Node | int | None:
@@ -305,7 +310,7 @@ def eval(node: Node, choices: list[int]):
         return node.points + sum(eval(child, choices) for child in node.children)
     elif choices[node.cell] != -1:
         choice = node.children[choices[node.cell]]
-        return node.points + eval(choice, choices) if choice else 0
+        return node.points + (eval(choice, choices) if choice else 0)
     else:
         return node.points + max(
             eval(child, choices) for child in node.children if child
