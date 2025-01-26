@@ -332,6 +332,22 @@ def eval_all(node: Node, cells: list[str]):
     return {choices: eval(node, choices) for choices in itertools.product(*indices)}
 
 
+def filter_below_threshold(node: Node, min_score: int, points=0):
+    # TODO: do this in lift_choice to save work
+    if not isinstance(node, ChoiceNode):
+        return
+    points += node.points
+    for i, child in enumerate(node.children):
+        if not child:
+            continue
+        # TODO: this should switch to < rather than <=
+        # TODO: use choice_mask
+        if points + max_bound(child) <= min_score:
+            node.children[i] = None
+        else:
+            filter_below_threshold(child, min_score, points)
+
+
 def assert_invariants(node: Node, cells: list[str]):
     """Check a few desirable tree invariants:
 
@@ -494,7 +510,8 @@ def main():
     # trie.AddWord("the")
     # trie = make_py_trie("mini-dict.txt")
     trie = make_py_trie("boggle-words.txt")
-    (board,) = sys.argv[1:]
+    (cutoff_str, board) = sys.argv[1:]
+    cutoff = int(cutoff_str)
     cells = board.split(" ")
     dims = {
         4: (2, 2),
@@ -519,6 +536,10 @@ def main():
             assert_invariants(t, cells)
             sys.stderr.write(
                 f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
+            )
+            filter_below_threshold(t, cutoff)
+            sys.stderr.write(
+                f"f -> node count: {t.node_count()}, bound={max_bound(t)}\n"
             )
 
     if False:
