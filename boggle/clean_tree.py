@@ -332,20 +332,23 @@ def eval_all(node: Node, cells: list[str]):
     return {choices: eval(node, choices) for choices in itertools.product(*indices)}
 
 
-def filter_below_threshold(node: Node, min_score: int, points=0):
+def filter_below_threshold(node: Node, min_score: int, points=0) -> int:
     # TODO: do this in lift_choice to save work
     if not isinstance(node, ChoiceNode):
-        return
-    points += node.points
+        return max_bound(node)
+    parent_points = points + node.points
+    my_points = 0
     for i, child in enumerate(node.children):
         if not child:
             continue
+        child_points = filter_below_threshold(child, min_score, parent_points)
         # TODO: this should switch to < rather than <=
-        # TODO: use choice_mask
-        if points + max_bound(child) <= min_score:
+        if parent_points + child_points <= min_score:
+            # this doesn't actually zero out the children if node.points is non-zero.
             node.children[i] = None
-        else:
-            filter_below_threshold(child, min_score, points)
+        my_points = max(my_points, child_points)
+
+    return my_points + node.points
 
 
 def assert_invariants(node: Node, cells: list[str]):

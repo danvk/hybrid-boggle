@@ -4,7 +4,9 @@ from boggle.clean_tree import (
     TreeBuilder,
     assert_invariants,
     eval_all,
+    filter_below_threshold,
     lift_choice,
+    max_bound,
     merge_choices,
     squeeze_choice_node,
     squeeze_sum_node,
@@ -157,6 +159,36 @@ def test_merge_choices():
     )
     assert merge_choices([choice_node1, choice_node2]) == ChoiceNode(
         cell=0, points=3, children=[5, ChoiceNode(cell=1, points=3, children=[1, 2])]
+    )
+
+
+def test_filter_below_threshold():
+    minitree = ChoiceNode(cell=0, points=0, children=[5, 6])
+    assert 6 == max_bound(minitree)
+    assert 6 == filter_below_threshold(minitree, 5)
+    assert minitree == ChoiceNode(cell=0, points=0, children=[None, 6])
+
+    tree = ChoiceNode(
+        cell=0,
+        points=1,
+        children=[
+            ChoiceNode(
+                points=2,
+                cell=1,
+                children=[2, 3, 4],
+            ),
+            SumNode(points=3, children=[2, 3]),
+        ],
+    )
+    assert 9 == max_bound(tree)
+    assert 9 == filter_below_threshold(tree, 6)
+    assert tree == ChoiceNode(
+        cell=0,
+        points=1,
+        children=[
+            ChoiceNode(points=2, cell=1, children=[None, None, 4]),
+            SumNode(points=3, children=[2, 3]),
+        ],
     )
 
 
