@@ -540,7 +540,11 @@ def main():
             sys.stderr.write(
                 f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
             )
-            filter_below_threshold(t, cutoff)
+            bound = filter_below_threshold(t, cutoff)
+            # TODO: fold this check into filter_below_threshold
+            if bound <= cutoff:
+                sys.stderr.write(f"Fully broken! {bound} <= {cutoff}\n")
+                break
             sys.stderr.write(
                 f"f -> node count: {t.node_count()}, bound={max_bound(t)}\n"
             )
