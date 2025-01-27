@@ -47,12 +47,15 @@ def main():
 
     print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
 
-    for n in range(9):
-        i = SPLIT_ORDER[(3, 3)][n]
+    for n in range(len(cells)):
+        i = SPLIT_ORDER[dims][n]
         print(f"lift {i}")
         t = t.lift_choice(i, len(cells[i]))
         print(f"-> {tree_stats(t)}")
-        print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
+        if t.bound <= cutoff:
+            print(f"fully broken! {t.bound}")
+            break
+        # print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
         t.filter_below_threshold(cutoff)
         print(f"f -> {tree_stats(t)}")
         # print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
@@ -61,15 +64,15 @@ def main():
         # dedupe_subtrees(t)
         # print(f"d -> {tree_stats(t)}")
 
-        max_bound = t.bound
-        for seq in t.max_subtrees():
-            if seq[-1].bound < max_bound:
-                continue
-            choices = [-1 for _ in cells]
-            for cell, letter in seq[:-1]:
-                choices[cell] = letter
-            board = "".join(cells[i][let] for i, let in enumerate(choices))
-            print(f"{t.bound} {board} {choices}")
+        # max_bound = t.bound
+        # for seq in t.max_subtrees():
+        #     if seq[-1].bound < max_bound:
+        #         continue
+        #     choices = [-1 for _ in cells]
+        #     for cell, letter in seq[:-1]:
+        #         choices[cell] = letter
+        #     board = "".join(cells[i][let] for i, let in enumerate(choices))
+        #     print(f"{t.bound} {board} {choices}")
 
         if dims == (2, 2):
             with open(f"/tmp/lifted{i}.json", "w") as out:
