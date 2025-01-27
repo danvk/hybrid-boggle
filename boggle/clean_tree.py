@@ -251,6 +251,23 @@ def eval_all(node: Node, cells: list[str]):
     return {choices: eval(node, choices) for choices in itertools.product(*indices)}
 
 
+def filter_below_threshold(node: Node, min_score: int, points=0) -> int:
+    # TODO: do this in lift_choice to save work
+    if not isinstance(node, ChoiceNode):
+        return max_bound(node)
+    my_points = 0
+    for i, child in enumerate(node.children):
+        if not child:
+            continue
+        child_points = filter_below_threshold(child, min_score, points)
+        # TODO: this should switch to < rather than <=
+        if points + child_points <= min_score:
+            node.children[i] = None
+        my_points = max(my_points, child_points)
+
+    return my_points
+
+
 def assert_invariants(node: Node, cells: list[str]):
     """Check a few desirable tree invariants:
 
@@ -405,7 +422,9 @@ def main():
     # trie.AddWord("the")
     # trie = make_py_trie("mini-dict.txt")
     trie = make_py_trie("boggle-words.txt")
-    (board,) = sys.argv[1:]
+    (cutoff_str, board) = sys.argv[1:]
+    cutoff = int(cutoff_str)
+
     cells = board.split(" ")
     dims = {
         4: (2, 2),
@@ -417,6 +436,8 @@ def main():
     # board = ". . . . lnrsy e aeiou aeiou ."
     # board = "t i z ae z z r z z"
     t = etb.build_tree(board)
+    assert_invariants(t, cells)
+
     # print(t)
 
     sys.stderr.write(f"node count: {t.node_count()}, bound={max_bound(t)}\n")
@@ -425,9 +446,17 @@ def main():
         if len(cells[cell]) <= 1:
             continue
         t = lift_choice(t, cell, len(cells[cell]))
-        sys.stderr.write(
-            f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
-        )
+        # assert_invariants(t, cells)
+        bound = filter_below_threshold(t, cutoff)
+        # sys.stderr.write(
+        #     f"lift {cell} -> node count: {t.node_count()}, bound={bound}\n"
+        # )
+
+        # TODO: fold this check into filter_below_threshold
+        if bound <= cutoff:
+            sys.stderr.write(f"Fully broken! {bound} <= {cutoff}\n")
+            break
+        sys.stderr.write(f"{cell} -> node count: {t.node_count()}, bound={bound}\n")
 
     if False:
         with open("tree.dot", "w") as out:
