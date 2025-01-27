@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+
+import sys
+
+from boggle.eval_tree import EvalTreeBoggler
+from boggle.trie import make_py_trie
+
+
+def main():
+    trie = make_py_trie("boggle-words.txt")
+    (board, *lift_cell_strs) = sys.argv[1:]
+    lift_cells = [int(s) for s in lift_cell_strs]
+
+    cells = board.split(" ")
+    dims = {
+        4: (2, 2),
+        9: (3, 3),
+        12: (3, 4),
+        16: (4, 4),
+    }[len(cells)]
+    etb = EvalTreeBoggler(trie, dims)
+    etb.ParseBoard(board)
+    t = etb.BuildTree(dedupe=True)
+    # assert_invariants(t, cells)
+    # dedupe_subtrees(t)
+
+    sys.stderr.write(
+        f"node count: {t.node_count()}, uniq={t.unique_node_count()} bound={t.bound}\n"
+    )
+
+    with open("tree.dot", "w") as out:
+        out.write(t.to_dot(cells))
+        out.write("\n")
+
+    for i, cell in enumerate(lift_cells):
+        t = t.lift_choice(cell, len(cells[cell]), None, dedupe=True, compress=True)
+        sys.stderr.write(
+            f"lift{i}.dot {cell} -> node count: {t.node_count()}, uniq={t.unique_node_count()}\n"
+        )
+        with open(f"lift{i}.dot", "w") as out:
+            out.write(t.to_dot(cells))
+            out.write("\n")
+
+
+if __name__ == "__main__":
+    main()

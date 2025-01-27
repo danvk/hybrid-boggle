@@ -250,105 +250,6 @@ def test_equivalence():
         assert force_words == [*sorted(bb.words)]
 
 
-def test_compress():
-    trie = PyTrie()
-    bb = PyBucketBoggler(trie)
-    bb.ParseBoard("a b c d e f g h i")
-    # A tree with only sum nodes compresses to a single node.
-    # TODO: implement from_string, this is pretty verbose!
-    all_sum = {
-        "letter": ROOT_NODE,
-        "cell": 0,
-        "bound": 5,
-        "children": [
-            {
-                "letter": 0,
-                "cell": 1,
-                "points": 1,
-                "bound": 2,
-                "children": [
-                    {
-                        "letter": 0,
-                        "cell": 2,
-                        "points": 1,
-                        "bound": 1,
-                    }
-                ],
-            },
-            {
-                "letter": 0,
-                "cell": 0,
-                "points": 3,
-                "bound": 3,
-            },
-        ],
-    }
-    t = eval_tree_from_json(all_sum)
-    print(t.to_string(bb))
-    t.compress_in_place()
-    print(t.to_string(bb))
-    assert t.letter == ROOT_NODE
-    assert t.bound == 5
-    assert t.points == 5
-    assert t.children == []
-
-    # Should compress nodes below a choice node
-    choice_at_root = {
-        "letter": CHOICE_NODE,
-        "cell": 3,
-        "bound": 5,
-        "children": [
-            {
-                "cell": 3,
-                "letter": 0,
-                "bound": 5,
-                "children": [
-                    {
-                        "letter": ROOT_NODE,
-                        "cell": 0,
-                        "bound": 5,
-                        "children": [
-                            {
-                                "letter": 0,
-                                "cell": 1,
-                                "points": 1,
-                                "bound": 2,
-                                "children": [
-                                    {
-                                        "letter": 0,
-                                        "cell": 2,
-                                        "points": 1,
-                                        "bound": 1,
-                                    }
-                                ],
-                            },
-                            {
-                                "letter": 0,
-                                "cell": 0,
-                                "points": 3,
-                                "bound": 3,
-                            },
-                        ],
-                    }
-                ],
-            }
-        ],
-    }
-    t = eval_tree_from_json(choice_at_root)
-    print(t.to_string(bb))
-    t.compress_in_place()
-    print(t.to_string(bb))
-    assert t.letter == CHOICE_NODE
-    assert t.bound == 5
-    assert t.points is None
-    assert len(t.children) == 1
-    t0 = t.children[0]
-    assert t0.cell == 3
-    assert t0.letter == 0
-    assert t0.bound == 5
-    assert t0.points == 5
-
-
 def choice_node(cell: int, children):
     n = EvalNode()
     n.letter = CHOICE_NODE
@@ -693,3 +594,52 @@ def test_lift_invariants(dedupe, compress):
         t = tc3.children[i3].children[i2].children[i1].children[i0]
         assert score == (t.bound if t else 0)
         # print(t.to_string(etb))
+
+
+def test_lift_invariants_22():
+    trie = make_py_trie("boggle-words-4.txt")
+    board = "ny ae ch ."
+    cells = board.split(" ")
+    etb = EvalTreeBoggler(trie, dims=(2, 2))
+    etb.ParseBoard(board)
+    t = etb.BuildTree(dedupe=True)
+    # assert_invariants(t, cells)
+
+    scores = t.eval_all(cells)
+
+    # Try lifting each cell; this should not affect any scores.
+    for i, cell in enumerate(cells):
+        if len(cell) <= 1:
+            continue
+        tl = t.lift_choice(i, len(cell), compress=True, dedupe=True)
+        lift_scores = tl.eval_all(cells)
+        assert lift_scores == scores
+        # assert_invariants(t, cells)
+
+
+def test_lift_invariants_33():
+    trie = make_py_trie("boggle-words-9.txt")
+    board = ". . . . lnrsy e aeiou aeiou ."
+    # board = ". . . . rs e io au ."
+    cells = board.split(" ")
+    etb = EvalTreeBoggler(trie, dims=(3, 3))
+    etb.ParseBoard(board)
+    t = etb.BuildTree(dedupe=True)
+    # assert_invariants(t, cells)
+
+    scores = t.eval_all(cells)
+
+    # Try lifting each cell; this should not affect any scores.
+    for i, cell in enumerate(cells):
+        if len(cell) <= 1:
+            continue
+        tl = t.lift_choice(i, len(cell))
+        lift_scores = tl.eval_all(cells)
+        assert lift_scores == scores
+        # assert_invariants(t, cells)
+
+    # Do a second lift and check again.
+    t2 = tl.lift_choice(0, len(cell[0]))
+    lift_scores = t2.eval_all(cells)
+    assert lift_scores == scores
+    # assert_invariants(t2, cells)

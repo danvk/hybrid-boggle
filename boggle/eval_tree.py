@@ -1,5 +1,6 @@
 # Try to speed up ibuckets by explicitly constructing an evaluation tree.
 
+import itertools
 import math
 from collections import Counter, defaultdict
 from typing import Self, Sequence
@@ -143,6 +144,13 @@ class EvalNode:
         self.cache_value = v
         return v
 
+    def eval_all(self, cells: list[str]):
+        indices = [range(len(cell)) for cell in cells]
+        return {
+            choices: self.score_with_forces(choices)
+            for choices in itertools.product(*indices)
+        }
+
     def lift_choice(
         self, cell: int, num_lets: int, arena=None, dedupe=False, compress=False
     ) -> Self:
@@ -177,60 +185,6 @@ class EvalNode:
         node.children = choices
         node.choice_mask = 1 << cell
         for child in choices:
-            node.choice_mask |= child.choice_mask
-        return node
-
-        subtrees = [child.lift_choice(cell, num_lets) for child in self.children]
-        # Force the subtrees to all be choice nodes on the specified cell.
-        # At least one must be a choice node, otherwise we would have returned earlier.
-        non_choices, choices = partition(
-            subtrees, lambda t: t.letter == CHOICE_NODE and t.cell == cell
-        )
-        assert choices
-
-        # this is where copies of subtrees get made
-        # an alternative is that a choice node could have a "baseline" subtree that
-        # always contributes and does not involve the choice cell.
-        aligned_results = [non_choices for _ in range(num_lets)]
-        for choice in choices:
-            # print("-", choice.letter, choice.cell)
-            for c in choice.children:
-                # print(c.cell, c.letter)
-                assert 0 <= c.letter < num_lets
-                aligned_results[c.letter].append(c)
-
-        out_children = []
-        for i, children in enumerate(aligned_results):
-            node_choice_mask = 0
-            if self.letter == CHOICE_NODE:
-                node_bound = max(child.bound for child in children) if children else 0
-                node_choice_mask = (1 << self.cell) & self.choice_mask
-            else:
-                node_bound = self.points + sum(child.bound for child in children)
-
-            if node_bound > 0:
-                node = EvalNode()
-                node.letter = i
-                node.points = self.points
-                node.trie_node = self.trie_node  # is this right?
-                node.cell = cell
-                node.bound = node_bound
-                node.children = children
-                node.choice_mask = node_choice_mask
-                for child in children:
-                    node.choice_mask |= child.choice_mask
-                out_children.append(node)
-
-        # Produce the choice node
-        node = EvalNode()
-        node.letter = CHOICE_NODE
-        node.cell = cell
-        node.points = 0
-        node.bound = max(child.bound for child in out_children)
-        node.trie_node = None
-        node.children = out_children
-        node.choice_mask = 1 << cell
-        for child in children:
             node.choice_mask |= child.choice_mask
         return node
 
@@ -412,50 +366,11 @@ class EvalNode:
         # if any_dropped:
         #     self.children = [child for child in self.children if child]
 
-    def compress_in_place(self, mark=None):
-        # TODO: could this be done with a post-order version of all_nodes_unique?
-        if mark is None:
-            global cache_count
-            cache_count += 1
-            mark = cache_count
-        if self.cache_key == mark:
-            return  # we've already compressed this one
-        self.cache_key = mark  # we're committed
-        for child in self.children:
-            child.compress_in_place(mark)
-        if self.letter == CHOICE_NODE or not self.children:
-            pass  # nothing to do here
-        else:
-            # absorb all of our non-choice children
-            non_choice, choice = partition(
-                self.children, lambda c: c.letter == CHOICE_NODE
-            )
-            if not non_choice:
-                return  # all choice nodes, nothing left to do
-            new_children = choice
-            for c in non_choice:
-                self.points = (self.points or 0) + c.points
-                new_children += c.children
-            self.children = new_children
-
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
 
     def unique_node_count(self):
         return sum(1 for _ in self.all_nodes_unique())
-
-    def unique_node_count_by_hash(self):
-        nodes = set()
-        queue = [self]
-        while queue:
-            node = queue.pop()
-            h = hash(node)
-            if h in nodes:
-                continue  # already visited this one
-            nodes.add(h)
-            for child in node.children:
-                queue.append(child)
-        return len(nodes)
 
     def structural_hash(self) -> int:
         if hasattr(self, "_hash"):
@@ -582,27 +497,25 @@ class EvalNode:
             for child in self.children:
                 child.print_paths(word, word_table, prefix)
 
-    def assign_from(self, other: Self):
-        self.letter = other.letter
-        self.cell = other.cell
-        self.bound = other.bound
-        self.points = other.points
-        self.children = other.children
-        self.choice_mask = other.choice_mask
-
-    def to_dot(self, solver: PyBucketBoggler) -> str:
-        _root_id, dot = self.to_dot_help(solver)
-        return f"""digraph {{
+    def to_dot(self, cells: list[str]) -> str:
+        _root_id, dot = self.to_dot_help(cells, "", {}, self.letter == CHOICE_NODE)
+        return f"""graph {{
+    rankdir=LR;
     splines="false";
     node [shape="rect"];
     {dot}
 }}
 """
 
-    def to_dot_help(self, solver: PyBucketBoggler, prefix="") -> tuple[str, str]:
+    def to_dot_help(
+        self, cells: list[str], prefix, cache, is_top_max
+    ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
+        is_dupe = self in cache
         me = prefix
         attrs = ""
+        if is_dupe:
+            attrs = 'color="red"'
         if self.letter == ROOT_NODE:
             me += "r"
             label = "ROOT"
@@ -612,16 +525,30 @@ class EvalNode:
             label = f"{self.cell} CH"
             attrs += ' shape="oval"'
         else:
-            letter = solver.bd_[self.cell][self.letter]
+            letter = cells[self.cell][self.letter]
             me += f"_{self.cell}{letter}"
             label = f"{self.cell}={letter}"
             if self.points:
                 label += f" ({self.points})"
                 attrs += ' peripheries="2"'
+        cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
-        children = [child.to_dot_help(solver, me) for child in self.children if child]
-        for child_id, _ in children:
-            dot.append(f"{me} -> {child_id};")
+        children = [
+            child.to_dot_help(
+                cells, f"{me}{i}", cache, is_top_max and child.letter == CHOICE_NODE
+            )
+            for i, child in enumerate(self.children)
+            if child
+        ]
+        all_choices = len(children) == len(self.children) and all(
+            c.letter == CHOICE_NODE for c in self.children
+        )
+        for i, (child_id, _) in enumerate(children):
+            attrs = ""
+            if is_top_max and all_choices:
+                letter = cells[self.cell][i]
+                attrs = f' [label="{self.cell}={letter}"]'
+            dot.append(f"{me} -- {child_id}{attrs};")
         for _, child_dot in children:
             dot.append(child_dot)
         return me, "\n".join(dot)
@@ -756,17 +683,6 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
     raise ValueError(
         f"Cannot merge CHOICE_NODE with non-choice: {a.cell}: {a.letter}/{b.letter}"
     )
-
-
-def cells_from_mask(mask: int) -> list[int]:
-    i = 0
-    out = []
-    while mask:
-        if mask % 2:
-            out.append(i)
-        mask >>= 1
-        i += 1
-    return out
 
 
 class EvalTreeBoggler(PyBucketBoggler):
