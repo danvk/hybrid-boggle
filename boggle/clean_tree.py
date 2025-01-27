@@ -536,18 +536,17 @@ def main():
             if len(cells[cell]) <= 1:
                 continue
             t = lift_choice(t, cell, len(cells[cell]))
-            assert_invariants(t, cells)
-            sys.stderr.write(
-                f"lift {cell} -> node count: {t.node_count()}, bound={max_bound(t)}\n"
-            )
+            # assert_invariants(t, cells)
             bound = filter_below_threshold(t, cutoff)
+            # sys.stderr.write(
+            #     f"lift {cell} -> node count: {t.node_count()}, bound={bound}\n"
+            # )
+
             # TODO: fold this check into filter_below_threshold
             if bound <= cutoff:
                 sys.stderr.write(f"Fully broken! {bound} <= {cutoff}\n")
                 break
-            sys.stderr.write(
-                f"f -> node count: {t.node_count()}, bound={max_bound(t)}\n"
-            )
+            sys.stderr.write(f"{cell} -> node count: {t.node_count()}, bound={bound}\n")
 
     if False:
         with open("tree.dot", "w") as out:
