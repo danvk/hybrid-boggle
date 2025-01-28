@@ -631,6 +631,13 @@ def test_lift_invariants_33():
 
     scores = t.eval_all(cells)
 
+    bb = PyBucketBoggler(trie, dims=(3, 3))
+    for choices, score in scores.items():
+        this_board = " ".join([cells[i][choice] for i, choice in enumerate(choices)])
+        bb.ParseBoard(this_board)
+        bb.UpperBound(500_000)
+        assert score == bb.Details().max_nomark
+
     # Try lifting each cell; this should not affect any scores.
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
