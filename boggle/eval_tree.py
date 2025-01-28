@@ -151,6 +151,50 @@ class EvalNode:
             for choices in itertools.product(*indices)
         }
 
+    def assert_invariants(self, solver, is_top_max=None):
+        """Ensure the tree is well-formed. Some desirable properties:
+
+        - Choice nodes do not have points.
+        - node.bound is correct (checked shallowly)
+        - node.choice_mask is correct (checked shallowly)
+        - choice node children are mutually-exclusive
+        - choice node children are sorted
+        """
+        if is_top_max is None:
+            is_top_max = self.letter == CHOICE_NODE
+        if self.letter == CHOICE_NODE:
+            assert not hasattr(self, "points") or self.points == 0
+            if is_top_max and all(c and c.letter == CHOICE_NODE for c in self.children):
+                pass
+            else:
+                # choice nodes _may_ have non-null children, but the rest must be sorted.
+                nnc = [c for c in self.children if c]
+                for a, b in zip(nnc, nnc[1:]):
+                    assert a.letter < b.letter
+            bound = 0
+            choice_mask = 1 << self.cell if len(solver.bd_[self.cell]) > 1 else 0
+            for child in self.children:
+                if child:
+                    bound = max(bound, child.bound)
+                    choice_mask |= child.choice_mask
+        else:
+            bound = self.points
+            choice_mask = 0
+            for child in self.children:
+                if child:
+                    bound += child.bound
+                    choice_mask |= child.choice_mask
+                # TODO: sum nodes should not have null children
+                #       (this does happen after lifting)
+        assert bound == self.bound
+        assert choice_mask == self.choice_mask
+
+        for child in self.children:
+            if child:
+                child.assert_invariants(
+                    solver, is_top_max and child.letter == CHOICE_NODE
+                )
+
     def lift_choice(
         self, cell: int, num_lets: int, arena=None, dedupe=False, compress=False
     ) -> Self:
@@ -353,18 +397,13 @@ class EvalNode:
         if self.letter != CHOICE_NODE:
             return
         assert self.bound > min_score
-        # any_dropped = False
         for i, child in enumerate(self.children):
             if not child:
                 continue
             if child.bound <= min_score:
                 self.children[i] = None
-                # any_dropped = True
             else:
                 child.filter_below_threshold(min_score)
-        # XXX this might be the source of my bug
-        # if any_dropped:
-        #     self.children = [child for child in self.children if child]
 
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)

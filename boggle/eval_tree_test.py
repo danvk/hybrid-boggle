@@ -603,7 +603,7 @@ def test_lift_invariants_22():
     etb = EvalTreeBoggler(trie, dims=(2, 2))
     etb.ParseBoard(board)
     t = etb.BuildTree(dedupe=True)
-    # assert_invariants(t, cells)
+    t.assert_invariants(etb)
 
     scores = t.eval_all(cells)
 
@@ -612,9 +612,11 @@ def test_lift_invariants_22():
         if len(cell) <= 1:
             continue
         tl = t.lift_choice(i, len(cell), compress=True, dedupe=True)
+        print(tl.to_string(etb))
+        print("---")
         lift_scores = tl.eval_all(cells)
         assert lift_scores == scores
-        # assert_invariants(t, cells)
+        tl.assert_invariants(etb)
 
 
 def test_lift_invariants_33():
@@ -625,7 +627,7 @@ def test_lift_invariants_33():
     etb = EvalTreeBoggler(trie, dims=(3, 3))
     etb.ParseBoard(board)
     t = etb.BuildTree(dedupe=True)
-    # assert_invariants(t, cells)
+    t.assert_invariants(etb)
 
     scores = t.eval_all(cells)
 
@@ -636,10 +638,10 @@ def test_lift_invariants_33():
         tl = t.lift_choice(i, len(cell))
         lift_scores = tl.eval_all(cells)
         assert lift_scores == scores
-        # assert_invariants(t, cells)
+        tl.assert_invariants(etb)
 
     # Do a second lift and check again.
     t2 = tl.lift_choice(0, len(cell[0]))
     lift_scores = t2.eval_all(cells)
     assert lift_scores == scores
-    # assert_invariants(t2, cells)
+    t2.assert_invariants(etb)
