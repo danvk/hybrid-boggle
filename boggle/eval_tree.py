@@ -171,6 +171,12 @@ class EvalNode:
                 nnc = [c for c in self.children if c]
                 for a, b in zip(nnc, nnc[1:]):
                     assert a.letter < b.letter
+            if len(self.children) == len(solver.bd_[self.cell]) and all(
+                c for c in self.children
+            ):
+                for i, c in enumerate(self.children):
+                    if c.letter != CHOICE_NODE:
+                        assert c.letter == i
             bound = 0
             choice_mask = 1 << self.cell if len(solver.bd_[self.cell]) > 1 else 0
             for child in self.children:
@@ -293,6 +299,10 @@ class EvalNode:
             for child in self.children
         ]
 
+        # aligned_results is dense.
+        # len(aligned_results) = len(self.children)
+        # len(aligned_results[0]) = num_lets
+        # TODO: transpose this to simplify the next loop
         aligned_results = [
             r if isinstance(r, list) else [r] * num_lets for r in results
         ]
@@ -308,7 +318,7 @@ class EvalNode:
                     if non_null_children
                     else 0
                 )
-                # TODO: Why the "& self.choice_mask" here?
+                # TODO: Why the "& self.choice_mask" here? It _is_ needed.
                 node_choice_mask = (1 << self.cell) & self.choice_mask
             else:
                 node_bound = self.points + sum(
@@ -325,8 +335,8 @@ class EvalNode:
                 node.children = children
                 node.choice_mask = node_choice_mask
                 if self.letter == ROOT_NODE:
-                    # TODO: leave this as a root node if I adopt child index = choice
-                    #       this would make it clearer where the end of the choice tree is.
+                    # It would be nice to leave this as a ROOT_NODE to simplify finding the
+                    # edge of the max root tree vs. the eval tree.
                     node.letter = i
                     node.cell = force_cell
                 for child in children:
