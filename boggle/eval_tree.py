@@ -88,9 +88,10 @@ class EvalNode:
         self, forces: dict[int, int], num_cells: int, cells: list[str]
     ) -> int:
         forces_list = [forces.get(i, -1) for i in range(num_cells)]
-        return self.score_with_forces(forces_list, cells)
+        num_letters = [len(c) for c in cells]
+        return self.score_with_forces(forces_list, num_letters)
 
-    def score_with_forces(self, forces: list[int], cells: list[str]) -> int:
+    def score_with_forces(self, forces: list[int], num_letters: list[int]) -> int:
         global cache_count
         cache_count += 1
 
@@ -98,8 +99,9 @@ class EvalNode:
         for cell, letter in enumerate(forces):
             if letter >= 0:
                 choice_mask |= 1 << cell
-        num_cells = [len(c) for c in cells]
-        return self.score_with_forces_mask(forces, choice_mask, cache_count, num_cells)
+        return self.score_with_forces_mask(
+            forces, choice_mask, cache_count, num_letters
+        )
 
     def score_with_forces_mask(
         self,
@@ -289,15 +291,9 @@ class EvalNode:
             out = [None] * num_lets
             for child in self.children:
                 if child:
-                    # If this choice isn't a word on its own and it only has one child,
-                    # then we can remove it from the tree entirely.
-                    # This could be applied recursively, but this is rarely helpful.
-                    # TODO: find a specific example where this applies
                     letter = child.letter
-                    if not child.points:
-                        nnc = [c for c in child.children if c]
-                        if len(nnc) == 1:
-                            child = nnc[0]
+                    if compress:
+                        child = squeeze_choice_child(child)
                     out[letter] = child
                     assert child.choice_mask & (1 << force_cell) == 0
             self.cache_key = cache_count
@@ -373,27 +369,9 @@ class EvalNode:
                     # COUNTS["cache hits"] += 1
                 else:
                     any_changes = False
-                    if compress and node.children and node.letter != CHOICE_NODE:
-                        # try to absorb non-choice nodes
-                        # TODO: iterate on performance here.
-                        non_choice = []
-                        choice = []
-                        for c in node.children:
-                            if c:  # XXX this should not be necessary; sum nodes should prune
-                                if c.letter == CHOICE_NODE:
-                                    choice.append(c)
-                                else:
-                                    non_choice.append(c)
-                        if non_choice:
-                            # something to absorb
-                            # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
-                            any_changes = True
-                            new_children = choice
-                            for c in non_choice:
-                                node.points = (node.points or 0) + c.points
-                                new_children += c.children
-                            node.children = new_children
-                            # COUNTS["absorb"] += 1
+                    if compress and node.letter != CHOICE_NODE:
+                        any_changes = squeeze_sum_node_in_place(node)
+
                     if dedupe:
                         force_cell_cache[h] = node
                         if any_changes:
@@ -648,6 +626,52 @@ class EvalNode:
         return out
 
 
+def squeeze_choice_child(child: EvalNode):
+    """Collapse sum nodes where possible."""
+    # If this choice isn't a word on its own and it only has one child,
+    # then we can remove it from the tree entirely.
+    # This could be applied recursively, but this is rarely helpful.
+    # TODO: find a specific example where this applies
+    # TODO: this could be much more aggressive.
+    if child.points:
+        return child
+    nnc = [c for c in child.children if c]
+    if len(nnc) == 1:
+        child = nnc[0]
+    return child
+
+
+def squeeze_sum_node_in_place(node: EvalNode):
+    """Absorb non-choice nodes into this sum node. Operates in-place.
+
+    Returns a boolean indicating whether any changes were made.
+    """
+    if not node.children:
+        return False
+    # TODO: iterate on performance here -- is an initial check for any sum children faster?
+    non_choice = []
+    choice = []
+    for c in node.children:
+        if c:  # XXX this should not be necessary; sum nodes should prune
+            if c.letter == CHOICE_NODE:
+                choice.append(c)
+            else:
+                non_choice.append(c)
+
+    if not non_choice:
+        return False
+
+    # There's something to absorb.
+    # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
+    new_children = choice
+    for c in non_choice:
+        node.points = (node.points or 0) + c.points
+        new_children += c.children
+    node.children = new_children
+    # COUNTS["absorb"] += 1
+    return True
+
+
 def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
     line = ""
     if node.letter == ROOT_NODE:
@@ -674,9 +698,10 @@ def eval_all(node: EvalNode, cells: list[str]):
 
     This is defined externally to EvalNode so that it can be used with C++, too.
     """
-    indices = [range(len(cell)) for cell in cells]
+    num_letters = [len(cell) for cell in cells]
+    indices = [range(n) for n in num_letters]
     return {
-        choices: node.score_with_forces(choices, cells)
+        choices: node.score_with_forces(choices, num_letters)
         for choices in itertools.product(*indices)
     }
 

@@ -38,7 +38,7 @@ class Breaker {
   }
 
   int PickABucket(const EvalNode* tree) {
-    auto choice_mask = tree->choice_mask;
+    auto choice_mask = tree->choice_mask_;
     for (auto order : SPLIT_ORDER) {
       if (choice_mask & (1 << order)) {
         return order;
@@ -87,7 +87,7 @@ class Breaker {
 
   void AttackTree(const EvalNode* tree, int level, string& choices) {
     by_level_[level] += 1;
-    auto ub = tree->bound;
+    auto ub = tree->bound_;
     if (ub <= best_score_) {
       elim_level_[level] += 1;
     } else {

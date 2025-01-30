@@ -35,7 +35,13 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
     // TODO: do I care about buffer_protocol() here?
     py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
         .def(py::init<Trie*>())
-        .def("BuildTree", &BB::BuildTree, py::return_value_policy::reference)
+        .def(
+            "BuildTree",
+            &BB::BuildTree,
+            py::return_value_policy::reference,
+            py::arg("arena"),
+            py::arg("dedupe")=false
+        )
         .def("ParseBoard", &BB::ParseBoard)
         .def("as_string",  &BB::as_string)
         .def("Cell",    &BB::Cell)
@@ -99,19 +105,28 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
 
     py::class_<EvalNode>(m, "EvalNode")
-        .def_readonly("letter", &EvalNode::letter)
-        .def_readonly("cell", &EvalNode::cell)
-        .def_readonly("bound", &EvalNode::bound)
-        .def_readonly("choice_mask", &EvalNode::choice_mask)
-        // TODO: check whether this affects ser/de performance
-        .def_readonly("children", &EvalNode::children)
-        .def_readonly("points", &EvalNode::points)
+        .def_readonly("letter", &EvalNode::letter_)
+        .def_readonly("cell", &EvalNode::cell_)
+        .def_readonly("bound", &EvalNode::bound_)
+        .def_readonly("choice_mask", &EvalNode::choice_mask_)
+        .def_readonly("children", &EvalNode::children_)
+        .def_readonly("points", &EvalNode::points_)
         .def("score_with_forces", &EvalNode::ScoreWithForces)
         .def("recompute_score", &EvalNode::RecomputeScore)
         .def("node_count", &EvalNode::NodeCount)
         .def("unique_node_count", &EvalNode::UniqueNodeCount)
         // TODO: remove this
-        .def("force_cell", &EvalNode::ForceCell, py::return_value_policy::reference)
+        .def(
+            "force_cell",
+            &EvalNode::ForceCell,
+            py::return_value_policy::reference,
+            py::arg("cell"),
+            py::arg("num_lets"),
+            py::arg("arena"),
+            py::arg("vector_arena"),
+            py::arg("dedupe") = false,
+            py::arg("compress") = false
+        )
         .def(
             "lift_choice",
             &EvalNode::LiftChoice,
@@ -122,7 +137,8 @@ PYBIND11_MODULE(cpp_boggle, m)
             py::arg("dedupe"),
             py::arg("compress")
         )
-        .def("max_subtrees", &EvalNode::MaxSubtrees)
+        .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
+        .def("structural_hash", &EvalNode::StructuralHash)
         .def("filter_below_threshold", &EvalNode::FilterBelowThreshold);
 
     m.def("create_eval_node_arena", &create_eval_node_arena);

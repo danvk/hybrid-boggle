@@ -462,6 +462,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     #  r . .
     board = "t i z ae z z r z z"
     cells = board.split(" ")
+    num_letters = [len(c) for c in cells]
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
@@ -492,11 +493,11 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     # t3[1].check_consistency()
 
     forces = [-1 for _ in range(9)]
-    assert t.score_with_forces(forces, cells) == 3  # no force
+    assert t.score_with_forces(forces, num_letters) == 3  # no force
     forces[3] = 0
-    assert t.score_with_forces(forces, cells) == 1
+    assert t.score_with_forces(forces, num_letters) == 1
     forces[3] = 1
-    assert t.score_with_forces(forces, cells) == 2
+    assert t.score_with_forces(forces, num_letters) == 2
 
 
 # Invariants:
@@ -642,6 +643,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
     trie = make_trie("boggle-words-4.txt")
     board = "ny ae ch ."
     cells = board.split(" ")
+    num_letters = [len(c) for c in cells]
     etb = get_tree_builder(trie, (2, 2))
     etb.ParseBoard(board)
     arena = create_arena()
@@ -650,7 +652,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
         t.assert_invariants(etb)
 
     # scores = eval_all(t, cells)
-    score = t.score_with_forces([0, 1, 0, 0], cells)
+    score = t.score_with_forces([0, 1, 0, 0], num_letters)
 
     # TODO: assert that these scores are the sames one you get in Python.
     # TODO: port to_string() to C++ and assert that the trees are identical.
@@ -661,7 +663,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
         tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True)
         # print(eval_node_to_string(tl, cells))
         # print("now", flush=True)
-        lift_score = tl.score_with_forces([0, 1, 0, 0], cells)
+        lift_score = tl.score_with_forces([0, 1, 0, 0], num_letters)
         assert score == lift_score
         # lift_scores = eval_all(tl, cells)
         # assert lift_scores == scores

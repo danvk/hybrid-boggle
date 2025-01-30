@@ -20,31 +20,31 @@ class Arena {
 
   void FreeTheChildren() {
     // cout << "Freeing " << owned_nodes.size() << " nodes" << endl;
-    for (auto node : owned_nodes) {
+    for (auto node : owned_nodes_) {
       // cout << "Freeing " << node << endl;
       delete node;
       // cout << "(done)" << endl;
     }
-    owned_nodes.clear();
+    owned_nodes_.clear();
   }
 
   int NumNodes() {
-    return owned_nodes.size();
+    return owned_nodes_.size();
   }
 
   void AddNode(T* node) {
-    // for (auto n : owned_nodes) {
+    // for (auto n : owned_nodes_) {
     //   if (n == node) {
     //     cout << "Double add!" << endl;
     //   }
     // }
-    owned_nodes.push_back(node);
+    owned_nodes_.push_back(node);
   }
 
   // friend EvalNode;
 
  private:
-  vector<T*> owned_nodes;
+  vector<T*> owned_nodes_;
 };
 
 typedef Arena<EvalNode> EvalNodeArena;
@@ -55,44 +55,48 @@ unique_ptr<VectorArena> create_vector_arena();
 
 class EvalNode {
  public:
-  EvalNode() {}
+  EvalNode() : hash_(0) {}
   virtual ~EvalNode() {}
 
   const EvalNode*
   LiftChoice(int cell, int num_lets, EvalNodeArena& arena, bool dedupe=false, bool compress=false) const;
 
   variant<const EvalNode*, vector<const EvalNode*>*>
-  ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena) const;
+  ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe=false, bool compress=false) const;
 
   variant<const EvalNode*, vector<const EvalNode*>*>
-  ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena) const;
+  ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe, bool compress) const;
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
-  unsigned int ScoreWithForces(const vector<int>& forces, const vector<string>& cells) const;
+  unsigned int ScoreWithForces(const vector<int>& forces, const vector<int>& num_letters) const;
 
   void FilterBelowThreshold(int min_score);
   unsigned int UniqueNodeCount() const;
 
   vector<pair<const EvalNode*, vector<pair<int, int>>>> MaxSubtrees() const;
 
-  int8_t letter;
-  int8_t cell;
+  uint64_t StructuralHash() const;
+
+  int8_t letter_;
+  int8_t cell_;
   static const int8_t ROOT_NODE = -2;
   static const int8_t CHOICE_NODE = -1;
 
   // These might be the various options on a cell or the various directions.
-  vector<const EvalNode*> children;
+  vector<const EvalNode*> children_;
 
   // cached computation across all children
-  unsigned int bound;
+  unsigned int bound_;
 
   // points contributed by _this_ node.
-  unsigned int points;
+  unsigned int points_;
 
-  uint16_t choice_mask;
+  uint16_t choice_mask_;
 
-  mutable uint32_t cache_key;
-  mutable uintptr_t cache_value;
+  mutable uint32_t cache_key_;
+  mutable uintptr_t cache_value_;
+
+  mutable uint64_t hash_;
 
   int RecomputeScore() const;
   int NodeCount() const;

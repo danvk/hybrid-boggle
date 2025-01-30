@@ -191,6 +191,7 @@ class HybridTreeBreaker:
     def Break(self) -> BreakDetails:
         # TODO: this is kind of roundabout
         self.cells = self.etb.as_string().split(" ")
+        self.num_letters = [len(c) for c in self.cells]
         self.details_ = BreakDetails(
             max_depth=0,
             num_reps=0,
@@ -236,9 +237,9 @@ class HybridTreeBreaker:
         if tree.bound >= self.best_score:
             tree.filter_below_threshold(self.best_score)
             # print(f"f -> {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes")
-        print(
-            f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes"
-        )
+        # print(
+        #     f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes"
+        # )
 
         self.AttackTree(tree, level + 1, arena)
 
@@ -269,7 +270,7 @@ class HybridTreeBreaker:
     def AttackTreeScore(self, tree: EvalNode, level: int, choices: list[int]) -> None:
         self.details_.by_level[level] += 1
         start_s = time.time()
-        ub = tree.score_with_forces(choices)
+        ub = tree.score_with_forces(choices, self.num_letters)
         # print(choices, ub)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
@@ -306,6 +307,7 @@ class HybridTreeBreaker:
 
     def try_remaining_boards(self, tree: EvalNode):
         """We have a fully-lifted tree that isn't broken. Try all boards explicitly."""
+        # TODO: this doesn't seem to work, at least for 3x4 / C++.
         # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
         for t, seq in tree.max_subtrees():
             choices = [-1 for _ in self.cells]
@@ -408,6 +410,7 @@ assert len(SPLIT_ORDER_44) == 16
 assert len(set(SPLIT_ORDER_44)) == 16
 
 SPLIT_ORDER = {
+    (2, 2): (0, 1, 2, 3),
     (3, 3): SPLIT_ORDER_33,
     (3, 4): SPLIT_ORDER_34,
     (4, 4): SPLIT_ORDER_44,

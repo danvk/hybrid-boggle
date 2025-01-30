@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Break a 2x2 board class via successive lifting."""
 
+import argparse
 import json
 import sys
 
@@ -19,18 +20,41 @@ from boggle.trie import make_py_trie
 
 def tree_stats(t: EvalNode) -> str:
     return f"{t.bound=}, {t.unique_node_count()} unique nodes"
+    # h = t.structural_hash()
+    # return f"{t.bound=}, {t.unique_node_count()} unique nodes, hash={h}"
     # return f"{t.bound=}, {t.node_count()} nodes, {t.unique_node_count()} unique"
     # , {t.unique_node_count_by_hash()} structurally unique"
 
 
 def main():
-    (
-        cutoff_str,
-        board,
-    ) = sys.argv[1:]
-    # trie = make_py_trie("boggle-words.txt")
-    trie = Trie.CreateFromFile("boggle-words.txt")
-    cutoff = int(cutoff_str)
+    parser = argparse.ArgumentParser(description="Lift all the way to breaking")
+    parser.add_argument(
+        "--dictionary",
+        type=str,
+        default="boggle-words.txt",
+        help="Path to dictionary file with one word per line. Words must be "
+        '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
+    )
+    parser.add_argument(
+        "--python",
+        action="store_true",
+        help="Use Python implementation of ibuckets instead of C++.",
+    )
+    parser.add_argument(
+        "--compress", action="store_true", help="Compress EvalTree while lifting"
+    )
+    parser.add_argument(
+        "--dedupe",
+        action="store_true",
+        help="De-dupe EvalTree initially and while lifting",
+    )
+    parser.add_argument("cutoff", type=int, help="Best known score for filtering.")
+    parser.add_argument("board", type=str, help="Board class to lift.")
+    args = parser.parse_args()
+
+    cutoff = args.cutoff
+    board = args.board
+
     cells = board.split(" ")
     dims = {
         4: (2, 2),
@@ -39,13 +63,16 @@ def main():
         16: (4, 4),
     }[len(cells)]
 
-    # etb = EvalTreeBoggler(trie, dims)
-    etb = cpp_tree_builder(trie, dims)
+    if args.python:
+        trie = make_py_trie("boggle-words.txt")
+        etb = EvalTreeBoggler(trie, dims)
+    else:
+        trie = Trie.CreateFromFile("boggle-words.txt")
+        etb = cpp_tree_builder(trie, dims)
+
     arena = create_eval_node_arena()
     etb.ParseBoard(board)
-    cells = board.split(" ")
-    # t = etb.BuildTree(arena, dedupe=True)
-    t = etb.BuildTree(arena)  # , dedupe=True)
+    t = etb.BuildTree(arena, dedupe=args.dedupe)
     print(tree_stats(t))
     # t.compress_in_place()
     # print(f"c -> {tree_stats(t)}")
@@ -57,7 +84,9 @@ def main():
     for k in range(len(cells)):
         i = SPLIT_ORDER[dims][k]
         print(f"lift {i}")
-        t = t.lift_choice(i, len(cells[i]), arena, dedupe=True, compress=True)
+        t = t.lift_choice(
+            i, len(cells[i]), arena, dedupe=args.dedupe, compress=args.compress
+        )
         if t.bound <= cutoff:
             print(f"Fully broken! {t.bound} <= {cutoff} {tree_stats(t)}")
             break
@@ -81,9 +110,9 @@ def main():
         #     board = "".join(cells[i][let] for i, let in enumerate(choices))
         #     print(f"{t.bound} {board} {choices}")
 
-        if dims == (2, 2):
-            with open(f"/tmp/lifted{i}.json", "w") as out:
-                json.dump(t.to_json(etb), out)
+        # if dims == (2, 2):
+        #     with open(f"/tmp/lifted{i}.json", "w") as out:
+        #         json.dump(t.to_json(etb), out)
 
     PrintEvalTreeCounts()
 
