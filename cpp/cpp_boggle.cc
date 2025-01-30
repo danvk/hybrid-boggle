@@ -88,6 +88,7 @@ PYBIND11_MODULE(cpp_boggle, m)
     declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
     declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
 
+    declare_tree_builder<2, 2>(m, "TreeBuilder22");
     declare_tree_builder<3, 3>(m, "TreeBuilder33");
     declare_tree_builder<3, 4>(m, "TreeBuilder34");
     declare_tree_builder<4, 4>(m, "TreeBuilder44");
@@ -102,17 +103,40 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def_readonly("cell", &EvalNode::cell)
         .def_readonly("bound", &EvalNode::bound)
         .def_readonly("choice_mask", &EvalNode::choice_mask)
+        // TODO: check whether this affects ser/de performance
+        .def_readonly("children", &EvalNode::children)
+        .def_readonly("points", &EvalNode::points)
         .def("score_with_forces", &EvalNode::ScoreWithForces)
         .def("recompute_score", &EvalNode::RecomputeScore)
         .def("node_count", &EvalNode::NodeCount)
-        .def("force_cell", &EvalNode::ForceCell, py::return_value_policy::reference);
+        .def("unique_node_count", &EvalNode::UniqueNodeCount)
+        // TODO: remove this
+        .def("force_cell", &EvalNode::ForceCell, py::return_value_policy::reference)
+        .def(
+            "lift_choice",
+            &EvalNode::LiftChoice,
+            py::return_value_policy::reference,
+            py::arg("cell"),
+            py::arg("num_lets"),
+            py::arg("arena"),
+            py::arg("dedupe"),
+            py::arg("compress")
+        )
+        .def("max_subtrees", &EvalNode::MaxSubtrees)
+        .def("filter_below_threshold", &EvalNode::FilterBelowThreshold);
 
     m.def("create_eval_node_arena", &create_eval_node_arena);
-
     py::class_<EvalNodeArena>(m, "EvalNodeArena")
         .def(py::init())
         .def("free_the_children", &EvalNodeArena::FreeTheChildren)
         .def("num_nodes", &EvalNodeArena::NumNodes);
+
+    // TODO: remove this once it's not part of a public API.
+    m.def("create_vector_arena", &create_vector_arena);
+    py::class_<VectorArena>(m, "VectorArena")
+        .def(py::init())
+        .def("free_the_children", &VectorArena::FreeTheChildren)
+        .def("num_nodes", &VectorArena::NumNodes);
 
     // py::class_<Breaker>(m, "Breaker")
     //     .def(py::init<TreeBuilder<3,4>*, unsigned int>())

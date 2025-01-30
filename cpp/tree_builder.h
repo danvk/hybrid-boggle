@@ -55,6 +55,9 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
       details_.max_nomark += score;
       root_->children.push_back(child);
       arena.AddNode(child);
+      if (strlen(bd_[i]) > 1) {
+        child->choice_mask |= 1 << i;
+      }
       root_->choice_mask |= child->choice_mask;
     } else {
       delete child;

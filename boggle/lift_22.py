@@ -4,7 +4,10 @@
 import json
 import sys
 
+from cpp_boggle import Trie, create_eval_node_arena
+
 from boggle.breaker import SPLIT_ORDER
+from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
     EvalNode,
     EvalTreeBoggler,
@@ -25,7 +28,8 @@ def main():
         cutoff_str,
         board,
     ) = sys.argv[1:]
-    trie = make_py_trie("boggle-words.txt")
+    # trie = make_py_trie("boggle-words.txt")
+    trie = Trie.CreateFromFile("boggle-words.txt")
     cutoff = int(cutoff_str)
     cells = board.split(" ")
     dims = {
@@ -35,10 +39,13 @@ def main():
         16: (4, 4),
     }[len(cells)]
 
-    etb = EvalTreeBoggler(trie, dims)
+    # etb = EvalTreeBoggler(trie, dims)
+    etb = cpp_tree_builder(trie, dims)
+    arena = create_eval_node_arena()
     etb.ParseBoard(board)
     cells = board.split(" ")
-    t = etb.BuildTree(dedupe=True)
+    # t = etb.BuildTree(arena, dedupe=True)
+    t = etb.BuildTree(arena)  # , dedupe=True)
     print(tree_stats(t))
     # t.compress_in_place()
     # print(f"c -> {tree_stats(t)}")
@@ -50,7 +57,7 @@ def main():
     for k in range(len(cells)):
         i = SPLIT_ORDER[dims][k]
         print(f"lift {i}")
-        t = t.lift_choice(i, len(cells[i]), dedupe=True, compress=True)
+        t = t.lift_choice(i, len(cells[i]), arena, dedupe=True, compress=True)
         if t.bound <= cutoff:
             print(f"Fully broken! {t.bound} <= {cutoff} {tree_stats(t)}")
             break

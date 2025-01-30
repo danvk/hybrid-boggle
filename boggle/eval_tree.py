@@ -84,11 +84,13 @@ class EvalNode:
                 child.recompute_score() if child else 0 for child in self.children
             )
 
-    def score_with_forces_dict(self, forces: dict[int, int], num_cells: int) -> int:
+    def score_with_forces_dict(
+        self, forces: dict[int, int], num_cells: int, cells: list[str]
+    ) -> int:
         forces_list = [forces.get(i, -1) for i in range(num_cells)]
-        return self.score_with_forces(forces_list)
+        return self.score_with_forces(forces_list, cells)
 
-    def score_with_forces(self, forces: list[int]) -> int:
+    def score_with_forces(self, forces: list[int], cells: list[str]) -> int:
         global cache_count
         cache_count += 1
 
@@ -96,10 +98,15 @@ class EvalNode:
         for cell, letter in enumerate(forces):
             if letter >= 0:
                 choice_mask |= 1 << cell
-        return self.score_with_forces_mask(forces, choice_mask, cache_count)
+        num_cells = [len(c) for c in cells]
+        return self.score_with_forces_mask(forces, choice_mask, cache_count, num_cells)
 
     def score_with_forces_mask(
-        self, forces: list[int], choice_mask: int, cache_key: int
+        self,
+        forces: list[int],
+        choice_mask: int,
+        cache_key: int,
+        num_letters: list[int],
     ) -> int:
         if self.cache_key == cache_key:
             return self.cache_value
@@ -107,15 +114,27 @@ class EvalNode:
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
-                for child in self.children:
-                    if child and child.letter == force:
-                        v = child.score_with_forces_mask(forces, choice_mask, cache_key)
-                        self.cache_key = cache_key
-                        self.cache_value = v
-                        return v
+                v = 0
+                if len(self.children) == num_letters[self.cell]:
+                    # dense
+                    child = self.children[force]
+                    if child:
+                        if child.letter != CHOICE_NODE:
+                            assert child.letter == force
+                        v = child.score_with_forces_mask(
+                            forces, choice_mask, cache_key, num_letters
+                        )
+                else:
+                    # sparse
+                    for child in self.children:
+                        if child and child.letter == force:
+                            v = child.score_with_forces_mask(
+                                forces, choice_mask, cache_key, num_letters
+                            )
+                            break
                 self.cache_key = cache_key
-                self.cache_value = 0
-                return 0
+                self.cache_value = v
+                return v
 
         if not (self.choice_mask & choice_mask):
             # The force is irrelevant to this subtree, so we don't need to traverse it.
@@ -125,7 +144,9 @@ class EvalNode:
         if self.letter == CHOICE_NODE:
             v = (
                 max(
-                    child.score_with_forces_mask(forces, choice_mask, cache_key)
+                    child.score_with_forces_mask(
+                        forces, choice_mask, cache_key, num_letters
+                    )
                     if child
                     else 0
                     for child in self.children
@@ -135,7 +156,9 @@ class EvalNode:
             )
         else:
             v = self.points + sum(
-                child.score_with_forces_mask(forces, choice_mask, cache_key)
+                child.score_with_forces_mask(
+                    forces, choice_mask, cache_key, num_letters
+                )
                 if child
                 else 0
                 for child in self.children
@@ -143,13 +166,6 @@ class EvalNode:
         self.cache_key = cache_key
         self.cache_value = v
         return v
-
-    def eval_all(self, cells: list[str]):
-        indices = [range(len(cell)) for cell in cells]
-        return {
-            choices: self.score_with_forces(choices)
-            for choices in itertools.product(*indices)
-        }
 
     def assert_invariants(self, solver, is_top_max=None):
         """Ensure the tree is well-formed. Some desirable properties:
@@ -221,10 +237,8 @@ class EvalNode:
             # There's no relevant choice below us, so we can bottom out.
             return self
 
-        # TODO: make the code for constructing this directly (below) work.
-        #       (or don't if this is more efficient!)
         choices = self.force_cell(
-            cell, num_lets, arena, dedupe=dedupe, compress=compress
+            cell, num_lets, arena, vector_arena=None, dedupe=dedupe, compress=compress
         )
         node = EvalNode()
         node.letter = CHOICE_NODE
@@ -239,7 +253,13 @@ class EvalNode:
         return node
 
     def force_cell(
-        self, force_cell: int, num_lets: int, arena=None, dedupe=False, compress=False
+        self,
+        force_cell: int,
+        num_lets: int,
+        arena=None,
+        vector_arena=None,
+        dedupe=False,
+        compress=False,
     ) -> Self | list[Self]:
         global cache_count, force_cell_cache
         cache_count += 1
@@ -438,24 +458,8 @@ class EvalNode:
         self._hash = h
         return h
 
-    def _into_list(self, solver: PyBucketBoggler, lines: list[str], indent=""):
-        line = ""
-        if self.letter == ROOT_NODE:
-            line = f"{indent}ROOT ({self.bound}) mask={self.choice_mask}"
-        elif self.letter == CHOICE_NODE:
-            line = f"{indent}CHOICE ({self.cell} <{self.bound}) mask={self.choice_mask}"
-        else:
-            cell = solver.bd_[self.cell][self.letter]
-            line = f"{indent}{cell} ({self.cell}={self.letter} {self.points}/{self.bound}) mask={self.choice_mask}"
-        lines.append(line)
-        for child in self.children:
-            if child:
-                child._into_list(solver, lines, " " + indent)
-
-    def to_string(self, solver: PyBucketBoggler):
-        lines = []
-        self._into_list(solver, lines)
-        return "\n".join(lines)
+    def to_string(self, cells: list[str]):
+        return eval_node_to_string(self, cells)
 
     def check_consistency(self):
         assert self.bound == self.recompute_score()
@@ -517,18 +521,25 @@ class EvalNode:
             if child:
                 yield from child.all_nodes_unique(mark)
 
-    def max_subtrees(self):
+    def max_subtrees(
+        self, out=None, path=None
+    ) -> list[tuple[list[tuple[int, int]], Self]]:
         """Yield all subtrees below a choice node.
 
         Each yielded value is a list of (cell, letter) choices leading down to the tree.
         """
+        if out is None:
+            out = []
+        if path is None:
+            path = []
+
         if self.letter != CHOICE_NODE:
-            yield [self]
+            out.append((self, path))
         else:
             for i, child in enumerate(self.children):
                 if child:
-                    for seq in child.max_subtrees():
-                        yield [(self.cell, i)] + seq
+                    child.max_subtrees(out, path + [(self.cell, i)])
+        return out
 
     def all_words(self, word_table: dict[PyTrie, str]) -> list[str]:
         return [word_table[node.trie_node] for node in self.all_nodes() if node.points]
@@ -635,6 +646,39 @@ class EvalNode:
                     for child in self.children
                 ]
         return out
+
+
+def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
+    line = ""
+    if node.letter == ROOT_NODE:
+        line = f"{indent}ROOT ({node.bound}) mask={node.choice_mask}"
+    elif node.letter == CHOICE_NODE:
+        line = f"{indent}CHOICE ({node.cell} <{node.bound}) mask={node.choice_mask}"
+    else:
+        cell = cells[node.cell][node.letter]
+        line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound}) mask={node.choice_mask}"
+    lines.append(line)
+    for child in node.children:
+        if child:
+            _into_list(child, cells, lines, " " + indent)
+
+
+def eval_node_to_string(node: EvalNode, cells: list[str]):
+    lines = []
+    _into_list(node, cells, lines)
+    return "\n".join(lines)
+
+
+def eval_all(node: EvalNode, cells: list[str]):
+    """Evaluate all possible boards.
+
+    This is defined externally to EvalNode so that it can be used with C++, too.
+    """
+    indices = [range(len(cell)) for cell in cells]
+    return {
+        choices: node.score_with_forces(choices, cells)
+        for choices in itertools.product(*indices)
+    }
 
 
 def eval_tree_from_json(d: dict) -> EvalNode:

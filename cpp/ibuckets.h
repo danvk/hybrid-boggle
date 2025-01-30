@@ -359,6 +359,15 @@ unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
 // poetry run python -m boggle.neighbors
 // First entry is the number of neighbors in the list.
 
+// 2x2
+template<>
+const int BucketBoggler<2, 2>::NEIGHBORS[2*2][9] = {
+  {3, 1, 2, 3},
+  {3, 0, 2, 3},
+  {3, 0, 1, 3},
+  {3, 0, 1, 2},
+};
+
 // 3x3
 template<>
 const int BucketBoggler<3, 3>::NEIGHBORS[3*3][9] = {

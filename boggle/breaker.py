@@ -258,11 +258,10 @@ class HybridTreeBreaker:
     def switch_to_score(self, tree: EvalNode, level: int) -> None:
         # TODO: this could share a lot of work by calling score_with_forces on the root.
         # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
-        for seq in tree.max_subtrees():
+        for t, seq in tree.max_subtrees():
             choices = [-1 for _ in self.cells]
-            for cell, letter in seq[:-1]:
+            for cell, letter in seq:
                 choices[cell] = letter
-            t = seq[-1]
             # print("remaining cells:", sum(1 for x in choices if x == -1))
             self.AttackTreeScore(t, level, choices)
 
@@ -308,12 +307,11 @@ class HybridTreeBreaker:
     def try_remaining_boards(self, tree: EvalNode):
         """We have a fully-lifted tree that isn't broken. Try all boards explicitly."""
         # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
-        for seq in tree.max_subtrees():
+        for t, seq in tree.max_subtrees():
             choices = [-1 for _ in self.cells]
-            for cell, letter in seq[:-1]:
+            for cell, letter in seq:
                 assert choices[cell] == -1
                 choices[cell] = letter
-            # t = seq[-1]
             board = "".join(self.cells[cell][idx] for cell, idx in enumerate(choices))
             true_score = self.boggler.score(board)
             # print(choices, board, t.bound, "->", true_score)

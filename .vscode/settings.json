@@ -80,5 +80,10 @@
         "list": "cpp",
         "set": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "python.testing.pytestArgs": [
+        "boggle"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }

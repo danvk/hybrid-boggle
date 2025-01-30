@@ -3,14 +3,23 @@ import math
 
 import pytest
 from cpp_boggle import EvalNode as CppEvalNode
-from cpp_boggle import TreeBuilder33, Trie, create_eval_node_arena
+from cpp_boggle import (
+    TreeBuilder22,
+    TreeBuilder33,
+    Trie,
+    create_eval_node_arena,
+    create_vector_arena,
+)
 
+from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
     CHOICE_NODE,
     ROOT_NODE,
     EvalNode,
     EvalTreeBoggler,
     create_eval_node_arena_py,
+    eval_all,
+    eval_node_to_string,
     eval_tree_from_json,
     merge_trees,
 )
@@ -184,6 +193,7 @@ def test_equivalence():
     for w in MINI_DICT:
         t.AddWord(w)
     board = ". . . . lnrsy aeiou aeiou aeiou . . . ."
+    cells = board.split(" ")
     bb = PyBucketBoggler(t, (3, 4))
     bb.ParseBoard(board)
     bb.collect_words = True
@@ -241,7 +251,7 @@ def test_equivalence():
         # Some combinations may have been ruled out by subtree merging.
         # The word lists will be the same, however.
         assert fives[i].bound <= bb.Details().max_nomark
-        assert bb.Details().max_nomark == root.score_with_forces_dict({5: i}, 9)
+        assert bb.Details().max_nomark == root.score_with_forces_dict({5: i}, 9, cells)
         fives[i].check_consistency()
         # Some choices may have been pruned out
         assert fives[i].choice_cells().issubset({4, 6, 7})
@@ -368,13 +378,13 @@ def test_merge_eval_trees():
 
 
 PARAMS = [
-    (PyTrie, EvalTreeBoggler, create_eval_node_arena_py),
-    (Trie, TreeBuilder33, create_eval_node_arena),
+    (PyTrie, EvalTreeBoggler, create_eval_node_arena_py, create_eval_node_arena_py),
+    (Trie, TreeBuilder33, create_eval_node_arena, create_vector_arena),
 ]
 
 
-@pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena", PARAMS)
-def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena):
+@pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena, create_vec_arena", PARAMS)
+def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     t = TrieT()
     t.AddWord("sea")
     t.AddWord("seat")
@@ -434,8 +444,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena):
     assert 20 == tree.node_count()
 
 
-@pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena", PARAMS)
-def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena):
+@pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena, create_vec_arena", PARAMS)
+def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     t = TrieT()
     t.AddWord("tar")
     t.AddWord("tie")
@@ -444,11 +454,14 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena):
     t.AddWord("the")
 
     arena = create_arena()
+    vec_arena = create_vec_arena()
     bb = TreeBuilderT(t)
 
     #  t i .
     # ae . .
     #  r . .
+    board = "t i z ae z z r z z"
+    cells = board.split(" ")
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
@@ -462,7 +475,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena):
     # print(t.to_string(bb))
 
     # A force on an irrelevant cell has no effect
-    t0 = t.force_cell(0, 1, arena)
+    t0 = t.force_cell(0, 1, arena, vec_arena)
     # assert len(t0) == 1
     # assert t0[0].bound == 3
     # t0[0].check_consistency()
@@ -471,21 +484,19 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena):
     # t0.check_consistency()
 
     # A force on the choice cell reduces the bound.
-    t3 = t.force_cell(3, 2, arena)
+    t3 = t.force_cell(3, 2, arena, vec_arena)
     assert len(t3) == 2
     assert t3[0].bound == 1
     assert t3[1].bound == 2
     # t3[0].check_consistency()
     # t3[1].check_consistency()
 
-    print("checked all bounds")
-
     forces = [-1 for _ in range(9)]
-    assert t.score_with_forces(forces) == 3  # no force
+    assert t.score_with_forces(forces, cells) == 3  # no force
     forces[3] = 0
-    assert t.score_with_forces(forces) == 1
+    assert t.score_with_forces(forces, cells) == 1
     forces[3] = 1
-    assert t.score_with_forces(forces) == 2
+    assert t.score_with_forces(forces, cells) == 2
 
 
 # Invariants:
@@ -513,7 +524,7 @@ def test_lift_invariants(dedupe, compress):
     assert 29 == ibb.UpperBound(bailout_score=123)
     max_trees = [*t.max_subtrees()]
     assert len(max_trees) == 1
-    assert max_trees == [[t]]
+    assert max_trees == [(t, [])]
 
     # Lifting a choice reduces the bound.
     # The bounds on the child cells should match what you get from ibuckets.
@@ -528,7 +539,7 @@ def test_lift_invariants(dedupe, compress):
         assert ibb.UpperBound(123) == tc0.children[i].bound
     max_trees = [*tc0.max_subtrees()]
     assert len(max_trees) == len(cells[0])
-    assert max_trees == [[(0, i), child] for i, child in enumerate(tc0.children)]
+    assert max_trees == [(child, [(0, i)]) for i, child in enumerate(tc0.children)]
 
     # Lifting a second time reduces the bound again.
     tc1 = tc0.lift_choice(1, len(cells[1]), arena, dedupe=dedupe, compress=compress)
@@ -539,7 +550,7 @@ def test_lift_invariants(dedupe, compress):
     max_trees = [*tc1.max_subtrees()]
     assert len(max_trees) == len(cells[0]) * len(cells[1])
     assert max_trees == [
-        [(1, i), (0, j), child0]
+        (child0, [(1, i), (0, j)])
         for i, child1 in enumerate(tc1.children)
         for j, child0 in enumerate(child1.children)
     ]
@@ -604,32 +615,83 @@ def test_lift_invariants_22():
     etb.ParseBoard(board)
     t = etb.BuildTree(dedupe=True)
     t.assert_invariants(etb)
+    # print(t.to_string(cells))
 
-    scores = t.eval_all(cells)
+    scores = eval_all(t, cells)
 
     # Try lifting each cell; this should not affect any scores.
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
         tl = t.lift_choice(i, len(cell), compress=True, dedupe=True)
-        print(tl.to_string(etb))
-        print("---")
-        lift_scores = tl.eval_all(cells)
+        # print(tl.to_string(cells))
+        # print("---")
+        lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         tl.assert_invariants(etb)
 
 
-def test_lift_invariants_33():
-    trie = make_py_trie("boggle-words-9.txt")
+INVARIANT_PARAMS = [
+    (make_py_trie, EvalTreeBoggler, create_eval_node_arena_py),
+    (Trie.CreateFromFile, cpp_tree_builder, create_eval_node_arena),
+]
+
+
+@pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
+def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena):
+    trie = make_trie("boggle-words-4.txt")
+    board = "ny ae ch ."
+    cells = board.split(" ")
+    etb = get_tree_builder(trie, (2, 2))
+    etb.ParseBoard(board)
+    arena = create_arena()
+    t = etb.BuildTree(arena)
+    if isinstance(t, EvalNode):
+        t.assert_invariants(etb)
+
+    # scores = eval_all(t, cells)
+    score = t.score_with_forces([0, 1, 0, 0], cells)
+
+    # TODO: assert that these scores are the sames one you get in Python.
+    # TODO: port to_string() to C++ and assert that the trees are identical.
+    # Try lifting each cell; this should not affect any scores.
+    for i, cell in enumerate(cells):
+        if len(cell) <= 1:
+            continue
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True)
+        # print(eval_node_to_string(tl, cells))
+        # print("now", flush=True)
+        lift_score = tl.score_with_forces([0, 1, 0, 0], cells)
+        assert score == lift_score
+        # lift_scores = eval_all(tl, cells)
+        # assert lift_scores == scores
+        # tl.assert_invariants(etb)
+        if isinstance(tl, EvalNode):
+            tl.assert_invariants(etb)
+
+
+@pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
+def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
+    trie = make_trie("boggle-words-9.txt")
     board = ". . . . lnrsy e aeiou aeiou ."
     # board = ". . . . rs e io au ."
     cells = board.split(" ")
-    etb = EvalTreeBoggler(trie, dims=(3, 3))
+    etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
-    t = etb.BuildTree(dedupe=True)
-    t.assert_invariants(etb)
+    arena = create_arena()
+    # t = etb.BuildTree(arena, dedupe=True)
+    t = etb.BuildTree(arena)
+    if isinstance(t, EvalNode):
+        t.assert_invariants(etb)
 
-    scores = t.eval_all(cells)
+    scores = eval_all(t, cells)
+
+    bb = PyBucketBoggler(trie, dims=(3, 3))
+    for choices, score in scores.items():
+        this_board = " ".join([cells[i][choice] for i, choice in enumerate(choices)])
+        bb.ParseBoard(this_board)
+        bb.UpperBound(500_000)
+        assert score == bb.Details().max_nomark
 
     bb = PyBucketBoggler(trie, dims=(3, 3))
     for choices, score in scores.items():
@@ -642,13 +704,15 @@ def test_lift_invariants_33():
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
-        tl = t.lift_choice(i, len(cell))
-        lift_scores = tl.eval_all(cells)
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True)
+        lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
-        tl.assert_invariants(etb)
+        if isinstance(tl, EvalNode):
+            tl.assert_invariants(etb)
 
     # Do a second lift and check again.
-    t2 = tl.lift_choice(0, len(cell[0]))
-    lift_scores = t2.eval_all(cells)
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True)
+    lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
-    t2.assert_invariants(etb)
+    if isinstance(t2, EvalNode):
+        t2.assert_invariants(etb)
