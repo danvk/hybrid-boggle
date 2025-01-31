@@ -19,10 +19,10 @@ from boggle.trie import make_py_trie
 
 
 def tree_stats(t: EvalNode) -> str:
-    return f"{t.bound=}, {t.unique_node_count()} unique nodes"
+    # return f"{t.bound=}, {t.unique_node_count()} unique nodes"
     # h = t.structural_hash()
     # return f"{t.bound=}, {t.unique_node_count()} unique nodes, hash={h}"
-    # return f"{t.bound=}, {t.node_count()} nodes, {t.unique_node_count()} unique"
+    return f"{t.bound=}, {t.node_count()} nodes, {t.unique_node_count()} unique"
     # , {t.unique_node_count_by_hash()} structurally unique"
 
 

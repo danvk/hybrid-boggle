@@ -50,6 +50,7 @@ def create_eval_node_arena_py():
 
 cache_count = 1
 force_cell_cache = {}
+hash_collisions = 0
 
 
 class EvalNode:
@@ -227,8 +228,9 @@ class EvalNode:
         Will return either a choice node for the cell, or another type of node
         if there is the tree is independent of that cell.
         """
-        global cache_count
+        global cache_count, hash_collisions
         cache_count += 1
+        hash_collisions = 0
 
         if self.letter == CHOICE_NODE and self.cell == cell:
             # This is already in the right form. Nothing more to do!
@@ -252,6 +254,8 @@ class EvalNode:
         node.choice_mask = 1 << cell
         for child in choices:
             node.choice_mask |= child.choice_mask
+
+        print(f"{hash_collisions=}")
         return node
 
     def force_cell(
@@ -359,9 +363,20 @@ class EvalNode:
                     if child:
                         node.choice_mask |= child.choice_mask
 
+                prev = None
                 if dedupe:
                     h = node.structural_hash()
-                    prev = force_cell_cache.get(h)
+                    match = force_cell_cache.get(h)
+                    if match:
+                        if (
+                            match.letter == node.letter
+                            and match.cell == node.cell
+                            and match.points == node.points
+                        ):
+                            prev = match
+                        else:
+                            global hash_collisions
+                            hash_collisions += 1
                 else:
                     prev = h = None
                 if prev:
@@ -624,6 +639,71 @@ class EvalNode:
                     for child in self.children
                 ]
         return out
+
+    def bound_remaining_boards(
+        self, cells: Sequence[str], cutoff: int, split_order: Sequence[int]
+    ):
+        """Try all remaining boards to determine which ones might have a score >= cutoff."""
+        num_letters = [len(c) for c in cells]
+        results = []
+
+        # TODO: this could share a lot of work by calling score_with_forces on the root.
+        for t, seq in self.max_subtrees():
+            choices = [-1 for _ in cells]
+            for cell, letter in seq:
+                choices[cell] = letter
+            remaining_split_order = []
+            for order in split_order:
+                if choices[order] == -1:
+                    remaining_split_order.append(order)
+            # print("remaining cells:", sum(1 for x in choices if x == -1))
+            bound_remaining_boards_help(
+                t,
+                cells,
+                num_letters,
+                choices,
+                cutoff,
+                remaining_split_order,
+                0,
+                results,
+            )
+        return results
+
+
+def bound_remaining_boards_help(
+    t: EvalNode,
+    cells: Sequence[str],
+    num_letters: Sequence[int],
+    choices: list[int],
+    cutoff: int,
+    split_order: Sequence[int],
+    split_order_index: int,
+    results: list[str],
+):
+    cell = (
+        split_order[split_order_index] if split_order_index < len(split_order) else -1
+    )
+
+    if cell == -1:
+        board = "".join(cells[cell][idx] for cell, idx in enumerate(choices))
+        results.append(board)
+        return
+
+    for idx, letter in enumerate(cells[cell]):
+        choices[cell] = idx
+        ub = t.score_with_forces(choices, num_letters)
+        if ub > cutoff:
+            bound_remaining_boards_help(
+                t,
+                cells,
+                num_letters,
+                choices,
+                cutoff,
+                split_order,
+                1 + split_order_index,
+                results,
+            )
+    choices[cell] = -1
 
 
 def squeeze_choice_child(child: EvalNode):

@@ -9,9 +9,19 @@ using namespace std;
 
 uint32_t cache_count = 1;
 unordered_map<uint64_t, const EvalNode*> force_cell_cache;
+uint64_t hash_collisions = 0;
 
 const EvalNode* SqueezeChoiceChild(const EvalNode* child);
 bool SqueezeSumNodeInPlace(EvalNode* node);
+
+inline void IncrementCacheCount() {
+  cache_count += 1;
+  if (cache_count == 0) {
+    // TODO: reset the marks in the eval tree here
+    cout << "Overflow!" << endl;
+    exit(1);
+  }
+}
 
 int EvalNode::NodeCount() const {
   int count = 1;
@@ -22,7 +32,7 @@ int EvalNode::NodeCount() const {
 }
 
 unsigned int EvalNode::UniqueNodeCount() const {
-  cache_count += 1;
+  IncrementCacheCount();
   return UniqueNodeCountHelp(cache_count);
 }
 
@@ -64,17 +74,18 @@ int EvalNode::RecomputeScore() const {
 
 const EvalNode*
 EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, bool dedupe, bool compress) const {
-  cache_count += 1;
+  IncrementCacheCount();
   if (letter_ == CHOICE_NODE && cell_ == cell) {
     // This is already in the right form. Nothing more to do!
     return this;
   }
 
-  if ((this->choice_mask_ & (1 << cell)) == 0) {
+  if ((choice_mask_ & (1 << cell)) == 0) {
     // There's no relevant choice below us, so we can bottom out.
     return this;
   }
 
+  hash_collisions = 0;
   VectorArena vector_arena;  // goes out of scope at end of function
   auto one_or_choices = ForceCell(cell, num_lets, arena, vector_arena, dedupe, compress);
   vector<const EvalNode*> choices;
@@ -92,20 +103,20 @@ EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, bool dedupe, 
   node->letter_ = CHOICE_NODE;
   node->cell_ = cell;
   node->points_ = 0;
-  node->children_.swap(choices);
+  node->bound_ = 0;
   node->choice_mask_ = 1 << cell;
-  for (auto child : node->children_) {
-    if (child) {
-      node->choice_mask_ |= child->choice_mask_;
-      node->bound_ = max(node->bound_, child->bound_);
-    }
+  for (auto child : choices) {
+    node->bound_ = max(node->bound_, child->bound_);
+    node->choice_mask_ |= child->choice_mask_;
   }
+  node->children_.swap(choices);
+  // cout << "Prevented " << hash_collisions << " hash collisions" << endl;
   return node;
 }
 
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe, bool compress) const {
-  cache_count += 1;
+  IncrementCacheCount();
   force_cell_cache.clear();
   auto out = ForceCellWork(cell, num_lets, arena, vector_arena, dedupe, compress);
   force_cell_cache.clear();
@@ -128,8 +139,7 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
   if (letter_ == EvalNode::CHOICE_NODE && cell_ == cell) {
     // This is the forced cell.
     // We've already tried each possibility, but they may not be aligned.
-    auto out = new vector<const EvalNode*>;
-    out->resize(num_lets, NULL);
+    auto out = new vector<const EvalNode*>(num_lets, NULL);
     for (auto child : children_) {
       if (child) {
         auto letter = child->letter_;
@@ -160,11 +170,12 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
     if (child) {
       results.push_back(child->ForceCellWork(cell, num_lets, arena, vector_arena, dedupe, compress));
     } else {
-      // TODO: can this happen?
+      // TODO: can this happen? (evidently not)
       results.push_back({(EvalNode*)NULL});
     }
   }
 
+  // TODO: is it necessary to construct this matrix explicitly?
   vector<vector<const EvalNode*>> aligned_results;
   aligned_results.reserve(results.size());
   for (int i = 0; i < results.size(); i++) {
@@ -187,23 +198,25 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
   vector_arena.AddNode(out);
   out->reserve(num_lets);
   for (int i = 0; i < num_lets; i++) {
-    vector<const EvalNode*> node_children;
+    vector<const EvalNode*> children;
     for (auto &result : aligned_results) {
-      if (result[i]) {
-        node_children.push_back(result[i]);
-      }
+      children.push_back(result[i]);
     }
     uint16_t node_choice_mask = 0;
     unsigned int node_bound = 0;
     if (letter_ == CHOICE_NODE) {
-      for (auto child : node_children) {
-        node_bound = std::max(node_bound, child->bound_);
+      for (auto &child : children) {
+        if (child) {
+          node_bound = std::max(node_bound, child->bound_);
+        }
       }
       node_choice_mask = (1 << cell_) & choice_mask_;
     } else {
       node_bound = points_;
-      for (auto child : node_children) {
-        node_bound += child->bound_;
+      for (auto child : children) {
+        if (child) {
+          node_bound += child->bound_;
+        }
       }
     }
     const EvalNode* out_node = NULL;
@@ -213,7 +226,7 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
       node->points_ = points_;
       node->cell_ = cell_;
       node->bound_ = node_bound;
-      node->children_.swap(node_children);
+      node->children_.swap(children);
       node->choice_mask_ = node_choice_mask;
       if (letter_ == ROOT_NODE) {
         // It would be nice to leave this as a ROOT_NODE to simplify finding the
@@ -232,8 +245,14 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
         h = node->StructuralHash();
         auto r = force_cell_cache.find(h);
         if (r != force_cell_cache.end()) {
-          out_node = r->second;
-          delete node;
+          auto& match = r->second;
+          if (match->cell_ == node->cell_ && match->letter_ == node->letter_ && match->points_ == node->points_) {
+            out_node = r->second;
+            delete node;
+          } else {
+            // cerr << "Prevented hash collision!" << endl;
+            hash_collisions++;
+          }
         }
       }
 
@@ -283,7 +302,7 @@ unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces, uint16_t c
           v = child->ScoreWithForcesMask(forces, choice_mask, num_letters);
         }
       } else {
-        // sparse
+        // sparse -- this array is sorted but typically quite small.
         for (const auto& child : children_) {
           if (child && child->letter_ == force) {
             v = child->ScoreWithForcesMask(forces, choice_mask, num_letters);
@@ -484,4 +503,75 @@ unique_ptr<EvalNodeArena> create_eval_node_arena() {
 
 unique_ptr<VectorArena> create_vector_arena() {
   return unique_ptr<VectorArena>(new VectorArena);
+}
+
+void BoundRemainingBoardsHelp(
+  const EvalNode* t,
+  const vector<string>& cells,
+  const vector<int>& num_letters,
+  vector<int>& choices,
+  int cutoff,
+  vector<int> split_order,
+  int split_order_index,
+  vector<string>& results
+) {
+  int cell = -1;
+  for (auto order : split_order) {
+    if (choices[order] == -1) {
+      cell = order;
+      break;
+    }
+  }
+  if (cell == -1) {
+    string board(cells.size(), '.');
+    for (int cell = 0; cell < choices.size(); cell++) {
+      auto idx = choices[cell];
+      board[cell] = cells[cell][idx];
+    }
+    results.push_back(board);
+    return;
+  }
+
+  int n = cells[cell].size();
+  for (int idx = 0; idx < n; idx++) {
+    choices[cell] = idx;
+    auto ub = t->ScoreWithForces(choices, num_letters);
+    if (ub > cutoff) {
+      BoundRemainingBoardsHelp(t, cells, num_letters, choices, cutoff, split_order, split_order_index, results);
+    }
+  }
+  choices[cell] = -1;
+}
+
+vector<string> EvalNode::BoundRemainingBoards(
+  vector<string> cells,
+  int cutoff,
+  vector<int> split_order
+) {
+  // TODO: maybe this can be in Python and this function just takes num_letters
+  vector<int> num_letters;
+  for (auto cell : cells) {
+    num_letters.push_back(cell.size());
+  }
+  vector<string> results;
+  vector<int> choices(cells.size(), -1);
+  vector<int> remaining_split_order;
+  for (auto& mt : MaxSubtrees()) {
+    auto& t = mt.first;
+    auto& seq = mt.second;
+    for (auto& choice : choices) choice = -1;
+    for (const auto& s : seq) {
+      auto cell = s.first;
+      auto letter = s.second;
+      choices[cell] = letter;
+    }
+    remaining_split_order.clear();
+    for (auto order : split_order) {
+      if (choices[order] == -1) {
+        remaining_split_order.push_back(order);
+      }
+    }
+    BoundRemainingBoardsHelp(t, cells, num_letters, choices, cutoff, remaining_split_order, 0, results);
+  }
+  return results;
 }

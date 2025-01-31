@@ -11,7 +11,11 @@ from cpp_boggle import (
 )
 
 from boggle.boggler import PyBoggler
-from boggle.eval_tree import EvalNode, EvalTreeBoggler, create_eval_node_arena_py
+from boggle.eval_tree import (
+    EvalNode,
+    EvalTreeBoggler,
+    create_eval_node_arena_py,
+)
 
 type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
 
@@ -209,8 +213,10 @@ class HybridTreeBreaker:
         self.details_.start_time_s = time.time()
         arena = self.create_arena()
         tree = self.etb.BuildTree(arena, dedupe=True)
-        self.details_.secs_by_level[0] += time.time() - self.details_.start_time_s
-        self.AttackTree(tree, 0, arena)
+        self.details_.secs_by_level[f"{0:02}build"] += (
+            time.time() - self.details_.start_time_s
+        )
+        self.AttackTree(tree, 1, arena)
         self.details_.elapsed_s = time.time() - self.details_.start_time_s
         self.details_.num_reps = self.orig_reps_
         return self.details_
@@ -231,8 +237,19 @@ class HybridTreeBreaker:
 
         start_s = time.time()
         tree = tree.lift_choice(cell, n, arena, dedupe=True, compress=True)
-        self.details_.secs_by_level[level] += time.time() - start_s
+        self.details_.secs_by_level[f"{level:02}lift"] += time.time() - start_s
         self.lifted_cells_.append(cell)
+        # with open(f"/tmp/subtrees-{level}.txt", "w") as out:
+        #     for t, seq in tree.max_subtrees():
+        #         choices = ["." for _ in self.cells]
+        #         for cell, letter in seq:
+        #             choices[cell] = self.cells[cell][letter]
+        #         board = "".join(choices)
+        #         out.write(f"{board}\n")
+        # print(f"{level} num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
+        # assert includes_board(
+        #     tree.max_subtrees(), self.cells, "perslatesind"
+        # ), f"Missed on {level}"
 
         if tree.bound >= self.best_score:
             tree.filter_below_threshold(self.best_score)
@@ -257,58 +274,36 @@ class HybridTreeBreaker:
                 self.lift_and_filter(tree, level, arena)
 
     def switch_to_score(self, tree: EvalNode, level: int) -> None:
-        # TODO: this could share a lot of work by calling score_with_forces on the root.
-        # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
-        for t, seq in tree.max_subtrees():
-            choices = [-1 for _ in self.cells]
-            for cell, letter in seq:
-                choices[cell] = letter
-            # print("remaining cells:", sum(1 for x in choices if x == -1))
-            self.AttackTreeScore(t, level, choices)
-
-    # These methods come from TreeScoreBreaker
-    def AttackTreeScore(self, tree: EvalNode, level: int, choices: list[int]) -> None:
-        self.details_.by_level[level] += 1
         start_s = time.time()
-        ub = tree.score_with_forces(choices, self.num_letters)
-        # print(choices, ub)
+        boards_to_test = tree.bound_remaining_boards(
+            self.cells, self.best_score, self.split_order
+        )
         elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[level] += elapsed_s
-        if ub <= self.best_score:
-            # self.elim_ += self.bb.NumReps()
-            self.details_.max_depth = max(self.details_.max_depth, level)
-            self.details_.elim_level[level] += 1
-        else:
-            self.SplitBucketScore(tree, level, choices)
+        self.details_.secs_by_level[f"{level:02}bound_remaining"] += elapsed_s
 
-    def SplitBucketScore(self, tree: EvalNode, level: int, choices: list[int]) -> None:
-        cell = self.PickABucketScore(choices)
+        if not boards_to_test:
+            return
 
-        if cell == -1:
-            # it's just a board
-            board = "".join(self.cells[cell][idx] for cell, idx in enumerate(choices))
+        print(f"{len(boards_to_test)=}")
+        with open("/tmp/boards-to-test.txt", "w") as out:
+            for board in boards_to_test:
+                out.write(f"{board}\n")
+
+        start_s = time.time()
+        for board in boards_to_test:
             true_score = self.boggler.score(board)
             # print(choices, board, tree.bound, "->", true_score)
             if true_score >= self.best_score:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)
-            return
-
-        for idx, letter in enumerate(self.cells[cell]):
-            choices[cell] = idx
-            self.AttackTreeScore(tree, level + 1, choices)
-        choices[cell] = -1
-
-    def PickABucketScore(self, choices: list[int]) -> int:
-        for order in self.split_order:
-            if choices[order] == -1:
-                return order
-        return -1
+        elapsed_s = time.time() - start_s
+        self.details_.secs_by_level[f"{level:02}check"] += elapsed_s
 
     def try_remaining_boards(self, tree: EvalNode):
         """We have a fully-lifted tree that isn't broken. Try all boards explicitly."""
         # TODO: this doesn't seem to work, at least for 3x4 / C++.
         # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
+        # assert includes_board(tree.max_subtrees(), self.cells, "perslatesind")
         for t, seq in tree.max_subtrees():
             choices = [-1 for _ in self.cells]
             for cell, letter in seq:
@@ -320,6 +315,20 @@ class HybridTreeBreaker:
             if true_score >= self.best_score:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)
+
+
+# Do the max_subtrees include a particular board?
+# Helpful for tracking down incorrect omissions.
+def includes_board(max_subtrees, cells: list[str], board: str):
+    for t, seq in max_subtrees:
+        all_match = True
+        for cell, letter in seq:
+            if cells[cell][letter] != board[cell]:
+                all_match = False
+                break
+        if all_match:
+            return True
+    return False
 
 
 def print_details(d: BreakDetails):
@@ -336,7 +345,8 @@ def print_details(d: BreakDetails):
     print("secs_by_level:")
     total_s = sum(d.secs_by_level.values())
     for k, v in sorted(d.secs_by_level.items()):
-        print(f"  {k:2d}: {v:.4f} / {v / total_s:.2%}")
+        print(f"  {k}: {v:.4f} / {v / total_s:.2%}")
+        # print(f"  {k:2d}: {v:.4f} / {v / total_s:.2%}")
 
 
 def merge_details(a: BreakDetails, b: BreakDetails) -> BreakDetails:

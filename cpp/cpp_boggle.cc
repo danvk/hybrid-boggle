@@ -139,7 +139,8 @@ PYBIND11_MODULE(cpp_boggle, m)
         )
         .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
         .def("structural_hash", &EvalNode::StructuralHash)
-        .def("filter_below_threshold", &EvalNode::FilterBelowThreshold);
+        .def("filter_below_threshold", &EvalNode::FilterBelowThreshold)
+        .def("bound_remaining_boards", &EvalNode::BoundRemainingBoards);
 
     m.def("create_eval_node_arena", &create_eval_node_arena);
     py::class_<EvalNodeArena>(m, "EvalNodeArena")

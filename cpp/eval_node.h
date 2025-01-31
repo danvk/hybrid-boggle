@@ -55,7 +55,7 @@ unique_ptr<VectorArena> create_vector_arena();
 
 class EvalNode {
  public:
-  EvalNode() : hash_(0) {}
+  EvalNode() : choice_mask_(0), hash_(0) {}
   virtual ~EvalNode() {}
 
   const EvalNode*
@@ -101,11 +101,16 @@ class EvalNode {
   int RecomputeScore() const;
   int NodeCount() const;
 
+  vector<string> BoundRemainingBoards(
+    vector<string> cells,
+    int cutoff,
+    vector<int> split_order
+  );
+
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask, const vector<int>& num_letters) const;
   void MaxSubtreesHelp(vector<pair<const EvalNode*, vector<pair<int, int>>>>& out, vector<pair<int, int>> path) const;
   unsigned int UniqueNodeCountHelp(uint32_t mark) const;
 };
-
 
 #endif  // EVAL_NODE_H

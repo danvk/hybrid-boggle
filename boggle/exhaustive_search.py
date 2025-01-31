@@ -46,8 +46,8 @@ def main_class():
             worst_score, _ = heapq.heappushpop(top100, (score, board))
             threshold = worst_score
         if score > best_score:
-            print(f"New best board: {board} {best_score}")
             best_score = score
+            print(f"New best board: {board} {best_score}")
 
     for i, (score, bd) in enumerate(sorted(top100, reverse=True)):
         print(f"{i:3d} {score}: {bd}")

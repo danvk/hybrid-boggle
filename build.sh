@@ -8,3 +8,9 @@ c++ -Wall -shared -std=c++20 -fPIC \
     cpp_boggle.cc trie.cc eval_node.cc \
     -o ../cpp_boggle$(python3-config --extension-suffix) \
     -undefined dynamic_lookup
+
+# For sampling profiling:
+#     -g
+
+# For instrumented profiling (instruction counts):
+# -fprofile-instr-generate -fcoverage-mapping
