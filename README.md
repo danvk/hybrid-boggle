@@ -16,5 +16,17 @@ poetry install
 poetry run pytest
 ```
 
+To find a high-scoring board or prove that one does not exist, run, for example:
+
+```
+poetry run python -m boggle.break_all 'bdfgjvwxz aeiou lnrsy chkmpt' 1600 --size 34 --board_id 2520743 --switchover_level 20 --breaker=hybrid
+```
+
+To find all the high-scoring 3x3 boards, run:
+
+```
+poetry run python -m boggle.break_all 'bdfgjqvwxz aeiou lnrsy chkmpt' 500 --size 33 --switchover_level 5 --breaker=hybrid
+```
+
 [complete]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
 [danvk/performance-boggle]: https://github.com/danvk/performance-boggle
