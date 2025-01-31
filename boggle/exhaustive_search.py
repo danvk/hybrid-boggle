@@ -10,15 +10,50 @@ For 2x2, the best board is:
 with 18 points on it.
 """
 
+import heapq
 import itertools
+import math
+import sys
 
+from cpp_boggle import Boggler34, Trie
 from tqdm import tqdm
 
 from boggle.boggler import PyBoggler
 from boggle.trie import make_py_trie
 
 
-def main():
+def main_class():
+    t = Trie.CreateFromFile("boggle-words.txt")
+    (board,) = sys.argv[1:]
+    cells = board.split(" ")
+    assert len(cells) == 3 * 4
+    b = Boggler34(t)
+
+    best_score = 0
+    total = math.prod(len(c) for c in cells)
+    top100 = []
+    threshold = 0
+
+    for letters in tqdm(itertools.product(*cells), total=total):
+        board = "".join(letters)
+        score = b.score(board)
+        if score < threshold:
+            continue
+
+        if len(top100) < 100:
+            heapq.heappush(top100, (score, board))
+        else:
+            worst_score, _ = heapq.heappushpop(top100, (score, board))
+            threshold = worst_score
+        if score > best_score:
+            print(f"New best board: {board} {best_score}")
+            best_score = score
+
+    for i, (score, bd) in enumerate(sorted(top100, reverse=True)):
+        print(f"{i:3d} {score}: {bd}")
+
+
+def main22():
     t = make_py_trie("boggle-words.txt")
     boggler = PyBoggler(t, (2, 2))
 
@@ -37,4 +72,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main22()
+    main_class()
