@@ -284,10 +284,10 @@ class HybridTreeBreaker:
         if not boards_to_test:
             return
 
-        print(f"{len(boards_to_test)=}")
-        with open("/tmp/boards-to-test.txt", "w") as out:
-            for board in boards_to_test:
-                out.write(f"{board}\n")
+        # print(f"{len(boards_to_test)=}")
+        # with open("/tmp/boards-to-test.txt", "w") as out:
+        #     for board in boards_to_test:
+        #         out.write(f"{board}\n")
 
         start_s = time.time()
         for board in boards_to_test:
