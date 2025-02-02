@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Module",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "boggle.break_all",
+            "args": [
+                "bdfgjvwxz aeiou lnrsy chkmpt",
+                "520",
+                "--size=33",
+                "--board_id=27127",
+                "--switchover_level=6",
+                "--breaker=hybrid",
+                "--log_per_board_stats",
+                "--python"
+            ]
+        }
+    ]
+}

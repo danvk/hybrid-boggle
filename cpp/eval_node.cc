@@ -1,5 +1,6 @@
 #include "eval_node.h"
 
+#include <bit>
 #include <functional>
 #include <limits>
 #include <variant>
@@ -49,6 +50,21 @@ unsigned int EvalNode::UniqueNodeCountHelp(uint32_t mark) const {
     }
   }
   return count;
+}
+
+uint32_t EvalNode::MarkAll() {
+  IncrementCacheCount();
+  MarkAllWith(cache_count);
+  return cache_count;
+}
+
+void EvalNode::MarkAllWith(uint32_t mark) {
+  cache_key_ = mark;
+  for (auto c : children_) {
+    if (c) {
+      ((EvalNode*)c)->MarkAllWith(mark);
+    }
+  }
 }
 
 int EvalNode::RecomputeScore() const {
@@ -246,11 +262,12 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
         auto r = force_cell_cache.find(h);
         if (r != force_cell_cache.end()) {
           auto& match = r->second;
-          if (match->cell_ == node->cell_ && match->letter_ == node->letter_ && match->points_ == node->points_) {
+          // We don't compare points here because that could be changed by SqueezeSumNodeInPlace().
+          // We want _equivalent_ nodes, not identical nodes.
+          if (match->cell_ == node->cell_ && match->letter_ == node->letter_) {
             out_node = r->second;
             delete node;
           } else {
-            // cerr << "Prevented hash collision!" << endl;
             hash_collisions++;
           }
         }
@@ -280,37 +297,29 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
   return out;
 }
 
-unsigned int EvalNode::ScoreWithForces(const vector<int>& forces, const vector<int>& num_letters) const {
+unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   uint16_t choice_mask = 0;
   for (int i = 0; i < forces.size(); i++) {
     if (forces[i] >= 0) {
       choice_mask |= (1 << i);
     }
   }
-  return ScoreWithForcesMask(forces, choice_mask, num_letters);
+  return ScoreWithForcesMask(forces, choice_mask);
 }
 
-unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask, const vector<int>& num_letters) const {
+unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const {
   if (letter_ == CHOICE_NODE) {
     auto force = forces[cell_];
     if (force >= 0) {
-      int v = 0;
-      if (children_.size() == num_letters[cell_]) {
-        // dense
-        auto child = children_[force];
+      if (points_ & (1 << force)) {
+        unsigned int mask = points_ & ((1 << force) - 1);
+        unsigned int idx = std::popcount(mask);
+        auto child = children_[idx];
         if (child) {
-          v = child->ScoreWithForcesMask(forces, choice_mask, num_letters);
-        }
-      } else {
-        // sparse -- this array is sorted but typically quite small.
-        for (const auto& child : children_) {
-          if (child && child->letter_ == force) {
-            v = child->ScoreWithForcesMask(forces, choice_mask, num_letters);
-            break;
-          }
+          return child->ScoreWithForcesMask(forces, choice_mask);
         }
       }
-      return v;
+      return 0;
     }
   }
 
@@ -324,7 +333,7 @@ unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces, uint16_t c
     unsigned int score = 0;
     for (const auto& child : children_) {
       if (child) {
-        score = std::max(score, child->ScoreWithForcesMask(forces, choice_mask, num_letters));
+        score = std::max(score, child->ScoreWithForcesMask(forces, choice_mask));
       }
     }
     return score;
@@ -332,7 +341,7 @@ unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces, uint16_t c
     unsigned int score = points_;
     for (const auto& child : children_) {
       if (child) {
-        score += child->ScoreWithForcesMask(forces, choice_mask, num_letters);
+        score += child->ScoreWithForcesMask(forces, choice_mask);
       }
     }
     return score;
@@ -460,14 +469,24 @@ bool SqueezeSumNodeInPlace(EvalNode* node) {
     return false;
   }
 
-  bool any_sum_children = false;
+  bool any_sum_children = false, any_null = false;
   for (auto c : node->children_) {
-    if (c && c->letter_ != EvalNode::CHOICE_NODE) {
-      any_sum_children = true;
-      break;
+    if (c) {
+      if (c->letter_ != EvalNode::CHOICE_NODE) {
+        any_sum_children = true;
+        break;
+      }
+    } else {
+      any_null = true;
     }
   }
   if (!any_sum_children) {
+    if (any_null) {
+      auto& children = node->children_;
+      auto new_end = std::remove(children.begin(), children.end(), nullptr);
+      children.erase(new_end, children.end());
+      return true;
+    }
     return false;
   }
 
@@ -508,7 +527,6 @@ unique_ptr<VectorArena> create_vector_arena() {
 void BoundRemainingBoardsHelp(
   const EvalNode* t,
   const vector<string>& cells,
-  const vector<int>& num_letters,
   vector<int>& choices,
   int cutoff,
   vector<int> split_order,
@@ -535,9 +553,9 @@ void BoundRemainingBoardsHelp(
   int n = cells[cell].size();
   for (int idx = 0; idx < n; idx++) {
     choices[cell] = idx;
-    auto ub = t->ScoreWithForces(choices, num_letters);
+    auto ub = t->ScoreWithForces(choices);
     if (ub > cutoff) {
-      BoundRemainingBoardsHelp(t, cells, num_letters, choices, cutoff, split_order, split_order_index, results);
+      BoundRemainingBoardsHelp(t, cells, choices, cutoff, split_order, split_order_index, results);
     }
   }
   choices[cell] = -1;
@@ -571,7 +589,65 @@ vector<string> EvalNode::BoundRemainingBoards(
         remaining_split_order.push_back(order);
       }
     }
-    BoundRemainingBoardsHelp(t, cells, num_letters, choices, cutoff, remaining_split_order, 0, results);
+    BoundRemainingBoardsHelp(t, cells, choices, cutoff, remaining_split_order, 0, results);
   }
   return results;
+}
+
+void EvalNode::SetChoicePointMask(const vector<int>& num_letters) {
+  if (letter_ == CHOICE_NODE) {
+    if (points_ == 0) {
+      int n = num_letters[cell_];
+      if (children_.size() == n) {
+        // dense -- the children are all set, but may be null.
+        points_ = (1 << n) - 1;
+      } else {
+        // sparse
+        int last_letter = -1;
+        for (const auto& child : children_) {
+          if (child) {
+            points_ += (1 << child->letter_);
+            last_letter = child->letter_;
+          } else {
+            last_letter++;
+            points_ += (1 << last_letter);
+          }
+        }
+      }
+    } else {
+      return;  // we've already visited this node (DAG optimization)
+    }
+  }
+
+  for (auto c : children_) {
+    if (c) {
+      ((EvalNode*)c)->SetChoicePointMask(num_letters);
+    }
+  }
+}
+
+template<typename T>
+void Arena<T>::MarkAndSweep(T* root) {
+  cerr << "MarkAndSweep not implemented" << endl;
+  exit(1);
+}
+
+template <>
+void Arena<EvalNode>::MarkAndSweep(EvalNode* root) {
+  uint32_t mark = root->MarkAll();
+  // int num_deleted = 0;
+  for (auto& node : owned_nodes_) {
+    if (node->cache_key_ != mark) {
+      delete node;
+      node = NULL;
+      // num_deleted++;
+    }
+  }
+
+  // auto old_size = owned_nodes_.size();
+  // TODO: this could be done in one pass by folding this into the for loop above.
+  auto new_end = std::remove(owned_nodes_.begin(), owned_nodes_.end(), nullptr);
+  owned_nodes_.erase(new_end, owned_nodes_.end());
+
+  // cout << "Deleted " << num_deleted << " nodes, " << old_size << " -> " << owned_nodes_.size() << endl;
 }

@@ -139,6 +139,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         )
         .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
         .def("structural_hash", &EvalNode::StructuralHash)
+        .def("set_choice_point_mask", &EvalNode::SetChoicePointMask)
         .def("filter_below_threshold", &EvalNode::FilterBelowThreshold)
         .def("bound_remaining_boards", &EvalNode::BoundRemainingBoards);
 
@@ -146,6 +147,7 @@ PYBIND11_MODULE(cpp_boggle, m)
     py::class_<EvalNodeArena>(m, "EvalNodeArena")
         .def(py::init())
         .def("free_the_children", &EvalNodeArena::FreeTheChildren)
+        .def("mark_and_sweep", &EvalNodeArena::MarkAndSweep)
         .def("num_nodes", &EvalNodeArena::NumNodes);
 
     // TODO: remove this once it's not part of a public API.

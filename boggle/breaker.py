@@ -269,11 +269,21 @@ class HybridTreeBreaker:
             self.details_.elim_level[level] += 1
         else:
             if level >= self.switchover_level:
-                self.switch_to_score(tree, level)
+                self.switch_to_score(tree, level, arena)
             else:
                 self.lift_and_filter(tree, level, arena)
 
-    def switch_to_score(self, tree: EvalNode, level: int) -> None:
+    def switch_to_score(self, tree: EvalNode, level: int, arena) -> None:
+        # This reduces the amount of time we use max memory, but it's a ~5% perf hit.
+        # start_s = time.time()
+        # arena.mark_and_sweep(tree)
+        # elapsed_s = time.time() - start_s
+        # self.details_.secs_by_level[f"{level:02}mark_and_sweep"] += elapsed_s
+        start_s = time.time()
+        # TODO: move this call into bound_remaining_boards()
+        tree.set_choice_point_mask(self.num_letters)
+        elapsed_s = time.time() - start_s
+        self.details_.secs_by_level[f"{level:02}set_point_choice_mask"] += elapsed_s
         start_s = time.time()
         boards_to_test = tree.bound_remaining_boards(
             self.cells, self.best_score, self.split_order

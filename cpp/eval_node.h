@@ -41,6 +41,8 @@ class Arena {
     owned_nodes_.push_back(node);
   }
 
+  void MarkAndSweep(T* root);
+
   // friend EvalNode;
 
  private:
@@ -55,7 +57,7 @@ unique_ptr<VectorArena> create_vector_arena();
 
 class EvalNode {
  public:
-  EvalNode() : choice_mask_(0), hash_(0) {}
+  EvalNode() : points_(0), choice_mask_(0), hash_(0) {}
   virtual ~EvalNode() {}
 
   const EvalNode*
@@ -68,7 +70,7 @@ class EvalNode {
   ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe, bool compress) const;
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
-  unsigned int ScoreWithForces(const vector<int>& forces, const vector<int>& num_letters) const;
+  unsigned int ScoreWithForces(const vector<int>& forces) const;
 
   void FilterBelowThreshold(int min_score);
   unsigned int UniqueNodeCount() const;
@@ -76,6 +78,10 @@ class EvalNode {
   vector<pair<const EvalNode*, vector<pair<int, int>>>> MaxSubtrees() const;
 
   uint64_t StructuralHash() const;
+
+  uint32_t MarkAll();
+
+  void SetChoicePointMask(const vector<int>& num_letters);
 
   int8_t letter_;
   int8_t cell_;
@@ -86,10 +92,10 @@ class EvalNode {
   vector<const EvalNode*> children_;
 
   // cached computation across all children
-  unsigned int bound_;
+  uint32_t bound_;
 
   // points contributed by _this_ node.
-  unsigned int points_;
+  uint32_t points_;
 
   uint16_t choice_mask_;
 
@@ -108,9 +114,10 @@ class EvalNode {
   );
 
  private:
-  unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask, const vector<int>& num_letters) const;
+  unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const;
   void MaxSubtreesHelp(vector<pair<const EvalNode*, vector<pair<int, int>>>>& out, vector<pair<int, int>> path) const;
   unsigned int UniqueNodeCountHelp(uint32_t mark) const;
+  void MarkAllWith(uint32_t mark);
 };
 
 #endif  // EVAL_NODE_H

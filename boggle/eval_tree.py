@@ -8,7 +8,7 @@ from typing import Self, Sequence
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.trie import PyTrie, make_lookup_table
-from boggle.util import group_by, partition
+from boggle.util import group_by
 
 ROOT_NODE = -2
 CHOICE_NODE = -1
@@ -43,6 +43,9 @@ class PyArena:
     def num_nodes(self):
         return "n/a"
 
+    def mark_and_sweep(self, root):
+        pass
+
 
 def create_eval_node_arena_py():
     return PyArena()
@@ -67,6 +70,7 @@ class EvalNode:
 
     def __init__(self):
         self.children = []
+        self.points = 0
         self.choice_mask = 0
         self.trie_node = None
         self.cache_key = None
@@ -89,10 +93,9 @@ class EvalNode:
         self, forces: dict[int, int], num_cells: int, cells: list[str]
     ) -> int:
         forces_list = [forces.get(i, -1) for i in range(num_cells)]
-        num_letters = [len(c) for c in cells]
-        return self.score_with_forces(forces_list, num_letters)
+        return self.score_with_forces(forces_list)
 
-    def score_with_forces(self, forces: list[int], num_letters: list[int]) -> int:
+    def score_with_forces(self, forces: list[int]) -> int:
         global cache_count
         cache_count += 1
 
@@ -100,16 +103,13 @@ class EvalNode:
         for cell, letter in enumerate(forces):
             if letter >= 0:
                 choice_mask |= 1 << cell
-        return self.score_with_forces_mask(
-            forces, choice_mask, cache_count, num_letters
-        )
+        return self.score_with_forces_mask(forces, choice_mask, cache_count)
 
     def score_with_forces_mask(
         self,
         forces: list[int],
         choice_mask: int,
         cache_key: int,
-        num_letters: list[int],
     ) -> int:
         if self.cache_key == cache_key:
             return self.cache_value
@@ -118,23 +118,12 @@ class EvalNode:
             force = forces[self.cell]
             if force >= 0:
                 v = 0
-                if len(self.children) == num_letters[self.cell]:
-                    # dense
-                    child = self.children[force]
+                if self.points & (1 << force):
+                    mask = self.points & ((1 << force) - 1)
+                    idx = mask.bit_count()
+                    child = self.children[idx]
                     if child:
-                        if child.letter != CHOICE_NODE:
-                            assert child.letter == force
-                        v = child.score_with_forces_mask(
-                            forces, choice_mask, cache_key, num_letters
-                        )
-                else:
-                    # sparse
-                    for child in self.children:
-                        if child and child.letter == force:
-                            v = child.score_with_forces_mask(
-                                forces, choice_mask, cache_key, num_letters
-                            )
-                            break
+                        v = child.score_with_forces_mask(forces, choice_mask, cache_key)
                 self.cache_key = cache_key
                 self.cache_value = v
                 return v
@@ -147,9 +136,7 @@ class EvalNode:
         if self.letter == CHOICE_NODE:
             v = (
                 max(
-                    child.score_with_forces_mask(
-                        forces, choice_mask, cache_key, num_letters
-                    )
+                    child.score_with_forces_mask(forces, choice_mask, cache_key)
                     if child
                     else 0
                     for child in self.children
@@ -159,9 +146,7 @@ class EvalNode:
             )
         else:
             v = self.points + sum(
-                child.score_with_forces_mask(
-                    forces, choice_mask, cache_key, num_letters
-                )
+                child.score_with_forces_mask(forces, choice_mask, cache_key)
                 if child
                 else 0
                 for child in self.children
@@ -369,9 +354,8 @@ class EvalNode:
                     match = force_cell_cache.get(h)
                     if match:
                         if (
-                            match.letter == node.letter
-                            and match.cell == node.cell
-                            and match.points == node.points
+                            match.letter == node.letter and match.cell == node.cell
+                            # and match.points == node.points
                         ):
                             prev = match
                         else:
@@ -390,7 +374,7 @@ class EvalNode:
                     if dedupe:
                         force_cell_cache[h] = node
                         if any_changes:
-                            # TODO: check whether both hashes are necessary / helpful
+                            # This lets us cache both lifting _and_ squeezing.
                             force_cell_cache[node.structural_hash()] = node
             else:
                 node = None
@@ -445,11 +429,35 @@ class EvalNode:
         #     text += str(hash(self.trie_node)) + " "
         # TODO: if child nodes are already de-duped, can we use hash(c) here?
         #       evidently not, but we don't lose too much (~5% increase in nodes)
-        text += " ".join(str(c.structural_hash()) for c in self.children if c)
+        # text += " ".join(str(c.structural_hash()) for c in self.children if c)
+        text += " ".join((str(c.structural_hash()) if c else "") for c in self.children)
         # text += " ".join(str(hash(c)) for c in self.children)
         h = hash(text)
         self._hash = h
         return h
+
+    def set_choice_point_mask(self, num_letters):
+        if self.letter == CHOICE_NODE and self.points == 0:
+            n = num_letters[self.cell]
+            if len(self.children) == n:
+                # dense -- the children are all set, but may be null.
+                self.points = (1 << n) - 1
+            else:
+                # sparse
+                last_letter = -1
+                for child in self.children:
+                    if child:
+                        self.points += 1 << child.letter
+                        assert child.letter != last_letter
+                        last_letter = child.letter
+                    else:
+                        # null children still affect the index in the children list.
+                        last_letter += 1
+                        self.points += 1 << last_letter
+
+        for c in self.children:
+            if c:
+                c.set_choice_point_mask(num_letters)
 
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
@@ -644,7 +652,6 @@ class EvalNode:
         self, cells: Sequence[str], cutoff: int, split_order: Sequence[int]
     ):
         """Try all remaining boards to determine which ones might have a score >= cutoff."""
-        num_letters = [len(c) for c in cells]
         results = []
 
         # TODO: this could share a lot of work by calling score_with_forces on the root.
@@ -660,7 +667,6 @@ class EvalNode:
             bound_remaining_boards_help(
                 t,
                 cells,
-                num_letters,
                 choices,
                 cutoff,
                 remaining_split_order,
@@ -673,7 +679,6 @@ class EvalNode:
 def bound_remaining_boards_help(
     t: EvalNode,
     cells: Sequence[str],
-    num_letters: Sequence[int],
     choices: list[int],
     cutoff: int,
     split_order: Sequence[int],
@@ -691,12 +696,11 @@ def bound_remaining_boards_help(
 
     for idx, letter in enumerate(cells[cell]):
         choices[cell] = idx
-        ub = t.score_with_forces(choices, num_letters)
+        ub = t.score_with_forces(choices)
         if ub > cutoff:
             bound_remaining_boards_help(
                 t,
                 cells,
-                num_letters,
                 choices,
                 cutoff,
                 split_order,
@@ -721,6 +725,29 @@ def squeeze_choice_child(child: EvalNode):
     return child
 
 
+def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
+    by_cell = set[int]()
+    for child in choices:
+        if child:
+            if by_cell.get(child.cell):
+                return True
+            by_cell.add(child.cell)
+    return False
+
+
+def merge_choice_collisions(choices: Sequence[EvalNode]) -> list[EvalNode]:
+    choices_copy = [*choices]
+    choices_copy.sort(key=lambda c: c.cell)
+    children = []
+    for c in choices_copy:
+        if not children or c.cell != children[-1].cell:
+            children.append(c)
+            continue
+        assert children[-1].cell == c.cell
+        children[-1] = merge_trees(children[-1], c)
+    return children
+
+
 def squeeze_sum_node_in_place(node: EvalNode):
     """Absorb non-choice nodes into this sum node. Operates in-place.
 
@@ -731,14 +758,25 @@ def squeeze_sum_node_in_place(node: EvalNode):
     # TODO: iterate on performance here -- is an initial check for any sum children faster?
     non_choice = []
     choice = []
+    any_null = False
     for c in node.children:
         if c:  # XXX this should not be necessary; sum nodes should prune
             if c.letter == CHOICE_NODE:
                 choice.append(c)
             else:
                 non_choice.append(c)
+        else:
+            any_null = True
 
+    # look for repeated choice cells
+    # if any_choice_collisions(choice):
+    #     pass
+
+    # TODO: prune NULLs here, too
     if not non_choice:
+        if any_null:
+            node.children = choice
+            return True
         return False
 
     # There's something to absorb.
