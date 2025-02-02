@@ -12,8 +12,10 @@ uint32_t cache_count = 1;
 unordered_map<uint64_t, const EvalNode*> force_cell_cache;
 uint64_t hash_collisions = 0;
 
+static const bool MERGE_TREES = true;
+
 const EvalNode* SqueezeChoiceChild(const EvalNode* child);
-bool SqueezeSumNodeInPlace(EvalNode* node);
+bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_merge);
 
 inline void IncrementCacheCount() {
   cache_count += 1;
@@ -191,33 +193,19 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
     }
   }
 
-  // TODO: is it necessary to construct this matrix explicitly?
-  vector<vector<const EvalNode*>> aligned_results;
-  aligned_results.reserve(results.size());
-  for (int i = 0; i < results.size(); i++) {
-    auto &r = results[i];
-    if (holds_alternative<const EvalNode*>(r)) {
-      auto r1 = std::get<const EvalNode*>(r);
-      vector<const EvalNode*> me;
-      me.reserve(num_lets);
-      for (int j = 0; j < num_lets; j++) {
-        me.push_back(r1);
-      }
-      aligned_results.push_back(std::move(me));
-    } else {
-      auto rn = std::get<vector<const EvalNode*>*>(r);
-      aligned_results.push_back(*rn);
-    }
-  }
-
   auto out = new vector<const EvalNode*>;
   vector_arena.AddNode(out);
   out->reserve(num_lets);
   for (int i = 0; i < num_lets; i++) {
     vector<const EvalNode*> children;
-    for (auto &result : aligned_results) {
-      children.push_back(result[i]);
+    for (auto &result : results) {
+      if (holds_alternative<const EvalNode*>(result)) {
+        children.push_back(std::get<const EvalNode*>(result));
+      } else {
+        children.push_back(std::get<vector<const EvalNode*>*>(result)->at(i));
+      }
     }
+
     uint16_t node_choice_mask = 0;
     unsigned int node_bound = 0;
     if (letter_ == CHOICE_NODE) {
@@ -278,12 +266,11 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
         out_node = node;
         bool any_changes = false;
         if (compress && node->letter_ != CHOICE_NODE) {
-          any_changes = SqueezeSumNodeInPlace(node);
+          any_changes = SqueezeSumNodeInPlace(node, arena, MERGE_TREES);
         }
         if (dedupe) {
           force_cell_cache[h] = node;
           if (any_changes) {
-            // TODO: check whether both hashes are necessary / helpful
             force_cell_cache[node->StructuralHash()] = node;
           }
         }
@@ -462,9 +449,26 @@ const EvalNode* SqueezeChoiceChild(const EvalNode* child) {
   return non_null_child ? non_null_child : child;
 }
 
+EvalNode* merge_trees(EvalNode* a, EvalNode* b, EvalNodeArena& arena);
+void merge_choice_collisions_in_place(vector<const EvalNode*>& choices, EvalNodeArena& arena);
+
+bool any_choice_collisions(const vector<const EvalNode*>& choices) {
+  uint32_t cell_mask = 0;
+  for (auto child : choices) {
+    if (child && child->letter_ == EvalNode::CHOICE_NODE) {
+      uint32_t cell_bit = 1 << child->cell_;
+      if (cell_mask & cell_bit) {
+        return true;
+      }
+      cell_mask |= cell_bit;
+    }
+  }
+  return false;
+}
+
 // Absorb non-choice nodes into this sum node. Operates in-place.
 // Returns a boolean indicating whether any changes were made.
-bool SqueezeSumNodeInPlace(EvalNode* node) {
+bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_merge) {
   if (node->children_.empty()) {
     return false;
   }
@@ -480,7 +484,10 @@ bool SqueezeSumNodeInPlace(EvalNode* node) {
       any_null = true;
     }
   }
-  if (!any_sum_children) {
+
+  bool any_collisions = any_choice_collisions(node->children_);
+
+  if (!any_sum_children && !any_collisions) {
     if (any_null) {
       auto& children = node->children_;
       auto new_end = std::remove(children.begin(), children.end(), nullptr);
@@ -502,15 +509,16 @@ bool SqueezeSumNodeInPlace(EvalNode* node) {
     }
   }
 
+  if (should_merge && any_collisions) {
+    merge_choice_collisions_in_place(choice, arena);
+  }
+
   // There's something to absorb.
   // TODO: pre-reserve the right number of slots for new_children
   auto& new_children = choice;
   for (auto c : non_choice) {
     node->points_ += c->points_;
-    // TODO: find vector method for appending one vector to another
-    for (auto cc : c->children_) {
-      new_children.push_back(cc);
-    }
+    new_children.insert(new_children.end(), c->children_.begin(), c->children_.end());
   }
   node->children_.swap(new_children);
   return true;
@@ -650,4 +658,118 @@ void Arena<EvalNode>::MarkAndSweep(EvalNode* root) {
   owned_nodes_.erase(new_end, owned_nodes_.end());
 
   // cout << "Deleted " << num_deleted << " nodes, " << old_size << " -> " << owned_nodes_.size() << endl;
+}
+
+const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena);
+
+// This relies on a and b being sorted by letter_.
+void merge_choice_children(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena, vector<const EvalNode*>& out) {
+  auto it_a = a->children_.begin();
+  auto it_b = b->children_.begin();
+  const auto& a_end = a->children_.end();
+  const auto& b_end = b->children_.end();
+  while (it_a != a_end && it_b != b_end) {
+    const auto& a = *it_a;
+    if (!a) {
+      ++it_a;
+      continue;
+    }
+    const auto& b = *it_b;
+    if (!b) {
+      ++it_b;
+      continue;
+    }
+    if (a->letter_ < b->letter_) {
+      out.push_back(*it_a);
+      ++it_a;
+    } else if (b->letter_ < a->letter_) {
+      out.push_back(b);
+      ++it_b;
+    } else {
+      out.push_back(merge_trees(a, b, arena));
+      ++it_a;
+      ++it_b;
+    }
+  }
+  while (it_a != a_end) {
+    if (*it_a) {
+      out.push_back(*it_a);
+    }
+    ++it_a;
+  }
+  while (it_b != b_end) {
+    if (*it_b) {
+      out.push_back(*it_b);
+    }
+    ++it_b;
+  }
+}
+
+// TODO: make this operate in-place so that it doesn't need to allocate memory.
+const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena) {
+  assert(a->cell_ == b->cell_);
+
+  if (a->letter_ == EvalNode::CHOICE_NODE && b->letter_ == EvalNode::CHOICE_NODE) {
+    vector<const EvalNode*> children;
+    merge_choice_children(a, b, arena, children);
+
+    EvalNode* n = new EvalNode();
+    arena.AddNode(n);
+    n->letter_ = EvalNode::CHOICE_NODE;
+    n->cell_ = a->cell_;
+    n->children_ = children;
+    n->points_ = 0;
+    n->bound_ = 0;
+    for (auto child : children) {
+      if (child) {
+        n->bound_ = max(n->bound_, child->bound_);
+      }
+    }
+    n->choice_mask_ = a->choice_mask_ | b->choice_mask_;
+    return n;
+  } else if (a->letter_ == b->letter_) {
+    // two sum nodes
+    vector<const EvalNode*> children = a->children_;
+    children.insert(children.end(), b->children_.begin(), b->children_.end());
+    sort(children.begin(), children.end(), [](const EvalNode* a, const EvalNode* b) {
+      return a->cell_ < b->cell_;
+    });
+
+    EvalNode* n = new EvalNode();
+    arena.AddNode(n);
+    n->letter_ = a->letter_;
+    n->cell_ = a->cell_;
+    n->children_ = children;
+    n->points_ = a->points_ + b->points_;
+    n->bound_ = n->points_;
+    for (auto child : children) {
+      if (child) {
+        n->bound_ += child->bound_;
+      }
+    }
+    n->choice_mask_ = a->choice_mask_ | b->choice_mask_;
+    SqueezeSumNodeInPlace(n, arena, true);
+    return n;
+  }
+  throw runtime_error("Cannot merge CHOICE_NODE with non-choice");
+}
+
+
+void merge_choice_collisions_in_place(
+  vector<const EvalNode*>& choices,
+  EvalNodeArena& arena
+) {
+  sort(choices.begin(), choices.end(), [](const EvalNode* a, const EvalNode* b) {
+    return a->cell_ < b->cell_;
+  });
+
+  auto it = choices.begin();
+  while (it != choices.end()) {
+    auto next_it = std::next(it);
+    while (next_it != choices.end() && (*it)->cell_ == (*next_it)->cell_) {
+      *it = merge_trees(*it, *next_it, arena);
+      next_it = choices.erase(next_it);
+    }
+    ++it;
+  }
 }

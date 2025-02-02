@@ -2,7 +2,7 @@
 
 import itertools
 import math
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Self, Sequence
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
@@ -16,7 +16,7 @@ CHOICE_NODE = -1
 
 # This produces more compact, efficient trees, but this adds complexity and
 # seems not to be worth the effort except for the most complex of trees.
-MERGE_AFTER_SPLIT = False
+MERGE_TREES = True
 
 
 COUNTS = Counter[str]()
@@ -369,7 +369,7 @@ class EvalNode:
                 else:
                     any_changes = False
                     if compress and node.letter != CHOICE_NODE:
-                        any_changes = squeeze_sum_node_in_place(node)
+                        any_changes = squeeze_sum_node_in_place(node, MERGE_TREES)
 
                     if dedupe:
                         force_cell_cache[h] = node
@@ -729,36 +729,40 @@ def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
     by_cell = set[int]()
     for child in choices:
         if child:
-            if by_cell.get(child.cell):
+            if child.cell in by_cell:
                 return True
             by_cell.add(child.cell)
     return False
 
 
-def merge_choice_collisions(choices: Sequence[EvalNode]) -> list[EvalNode]:
-    choices_copy = [*choices]
-    choices_copy.sort(key=lambda c: c.cell)
+def merge_choice_collisions_in_place(choices: Sequence[EvalNode]):
+    choices.sort(key=lambda c: c.cell)
     children = []
-    for c in choices_copy:
+    for c in choices:
         if not children or c.cell != children[-1].cell:
             children.append(c)
             continue
         assert children[-1].cell == c.cell
         children[-1] = merge_trees(children[-1], c)
+
+    # TODO: do this in-place on choices
+    # for i, c in enumerate(children):
+    #     choices[i] = children[i]
+    # del children[len(choices) :]
     return children
 
 
-def squeeze_sum_node_in_place(node: EvalNode):
+def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     """Absorb non-choice nodes into this sum node. Operates in-place.
 
     Returns a boolean indicating whether any changes were made.
     """
     if not node.children:
         return False
-    # TODO: iterate on performance here -- is an initial check for any sum children faster?
+
     non_choice = []
     choice = []
-    any_null = False
+    any_choice_changes = False
     for c in node.children:
         if c:  # XXX this should not be necessary; sum nodes should prune
             if c.letter == CHOICE_NODE:
@@ -766,15 +770,16 @@ def squeeze_sum_node_in_place(node: EvalNode):
             else:
                 non_choice.append(c)
         else:
-            any_null = True
+            any_choice_changes = True
 
     # look for repeated choice cells
-    # if any_choice_collisions(choice):
-    #     pass
+    if should_merge and any_choice_collisions(choice):
+        choice = merge_choice_collisions_in_place(choice)
+        any_choice_changes = True
 
     # TODO: prune NULLs here, too
     if not non_choice:
-        if any_null:
+        if any_choice_changes:
             node.children = choice
             return True
         return False
@@ -872,14 +877,16 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
         # merge equivalent choices
         choices = {}
         for child in a.children:
-            choices[child.letter] = child
-        for child in b.children:
-            # choices[child.letter] = child
-            existing = choices.get(child.letter)
-            if existing:
-                choices[child.letter] = merge_trees(existing, child)
-            else:
+            if child:
                 choices[child.letter] = child
+        for child in b.children:
+            if child:
+                # choices[child.letter] = child
+                existing = choices.get(child.letter)
+                if existing:
+                    choices[child.letter] = merge_trees(existing, child)
+                else:
+                    choices[child.letter] = child
         children = [*choices.values()]
         children.sort(key=lambda c: c.letter)
         n = EvalNode()
@@ -887,34 +894,23 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
         n.cell = a.cell
         n.children = children
         n.points = 0
-        n.bound = max(child.bound for child in children) if children else 0
+        n.bound = max(child.bound for child in children if child) if children else 0
         n.choice_mask = a.choice_mask | b.choice_mask  # TODO: recalculate
         return n
     elif a.letter == b.letter:
-        # two sum nodes; merge equivalent children.
-        # merge equivalent choices
-        choices = {}
-        for child in a.children:
-            choices[child.cell] = child
-        for child in b.children:
-            # choices[child.letter] = child
-            existing = choices.get(child.cell)
-            if existing:
-                choices[child.cell] = merge_trees(existing, child)
-            else:
-                choices[child.cell] = child
-        children = [*choices.values()]
+        # two sum nodes.
+        # Stick the children together and let squeeze_sum_node sort it all out.
+        children = [*a.children, *b.children]
         children.sort(key=lambda c: c.cell)
 
         n = EvalNode()
         n.letter = a.letter
         n.cell = a.cell
         n.children = children
-        # assert a.points == b.points, f"{a.cell}/{a.letter}: {a.points} != {b.points}"
-        n.points = max(a.points, b.points)  # TODO: why would these ever not match?
-        n.trie_node = a.trie_node or b.trie_node  # TODO: check for match
-        n.bound = n.points + sum(child.bound for child in children)
+        n.points = a.points + b.points
+        n.bound = n.points + sum(child.bound for child in children if child)
         n.choice_mask = a.choice_mask | b.choice_mask  # TODO: recalculate?
+        squeeze_sum_node_in_place(n, True)
         return n
     raise ValueError(
         f"Cannot merge CHOICE_NODE with non-choice: {a.cell}: {a.letter}/{b.letter}"
