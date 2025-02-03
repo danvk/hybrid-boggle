@@ -40,8 +40,8 @@ class IBucketBreakDetails:
 
 @dataclass
 class HybridBreakDetails(IBucketBreakDetails):
-    root_bound: int
     sum_union: int
+    bounds: dict[int, int]
 
 
 class IBucketBreaker:
@@ -213,7 +213,7 @@ class HybridTreeBreaker:
             by_level=Counter(),
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
-            root_bound=0,
+            bounds={},
             sum_union=0,
         )
         self.mark = 1  # New mark for a fresh EvalTree
@@ -224,7 +224,7 @@ class HybridTreeBreaker:
         arena = self.create_arena()
         tree = self.etb.BuildTree(arena, dedupe=True)
         self.details_.secs_by_level[0] += time.time() - start_time_s
-        self.details_.root_bound = tree.bound
+        self.details_.bounds[0] = tree.bound
         self.details_.sum_union = self.etb.Details().sum_union
 
         self.AttackTree(tree, 1, arena)
@@ -251,6 +251,7 @@ class HybridTreeBreaker:
             cell, num_lets, arena, self.mark, dedupe=True, compress=True
         )
         self.details_.secs_by_level[level] += time.time() - start_s
+        self.details_.bounds[level] = tree.bound
         self.lifted_cells_.append(cell)
         # with open(f"/tmp/subtrees-{level}.txt", "w") as out:
         #     for t, seq in tree.max_subtrees():
