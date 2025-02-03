@@ -52,7 +52,6 @@ def create_eval_node_arena_py():
 
 
 cache_count = 1
-force_cell_cache = {}
 hash_collisions = 0
 
 
@@ -206,15 +205,23 @@ class EvalNode:
                 )
 
     def lift_choice(
-        self, cell: int, num_lets: int, arena=None, dedupe=False, compress=False
+        self,
+        cell: int,
+        num_lets: int,
+        arena=None,
+        mark=None,
+        dedupe=False,
+        compress=False,
     ) -> Self:
         """Return a version of this tree with a choice on the cell at the root.
 
         Will return either a choice node for the cell, or another type of node
         if there is the tree is independent of that cell.
+
+        mark must be some value that's never been used as a mark in this EvalTree before.
         """
-        global cache_count, hash_collisions
-        cache_count += 1
+        global hash_collisions
+        assert mark
         hash_collisions = 0
 
         if self.letter == CHOICE_NODE and self.cell == cell:
@@ -227,7 +234,13 @@ class EvalNode:
             return self
 
         choices = self.force_cell(
-            cell, num_lets, arena, vector_arena=None, dedupe=dedupe, compress=compress
+            cell,
+            num_lets,
+            arena,
+            vector_arena=None,
+            mark=mark,
+            dedupe=dedupe,
+            compress=compress,
         )
         node = EvalNode()
         node.letter = CHOICE_NODE
@@ -249,28 +262,41 @@ class EvalNode:
         num_lets: int,
         arena=None,
         vector_arena=None,
+        mark=None,
         dedupe=False,
         compress=False,
     ) -> Self | list[Self]:
-        global cache_count, force_cell_cache
-        cache_count += 1
+        assert mark
         force_cell_cache = {}
         out = self.force_cell_work(
-            force_cell, num_lets, arena, dedupe=dedupe, compress=compress
+            force_cell,
+            num_lets,
+            force_cell_cache,
+            arena,
+            mark,
+            dedupe=dedupe,
+            compress=compress,
         )
         # print(f"cache size: {len(force_cell_cache)}")
-        force_cell_cache = {}
         return out
 
     def force_cell_work(
-        self, force_cell: int, num_lets: int, arena=None, dedupe=False, compress=False
+        self,
+        force_cell: int,
+        num_lets: int,
+        force_cell_cache,
+        arena=None,
+        mark=None,
+        dedupe=False,
+        compress=False,
     ) -> Self | list[Self]:
         """Try each possibility for a cell.
 
         num_lets is the number of possibilities for the cell.
         Returns a list of trees, one for each letter, or a Tree if there's no choice.
         """
-        if self.cache_key == cache_count:
+        assert mark
+        if self.cache_key == mark:
             return self.cache_value
 
         # COUNTS["force calls"] += 1
@@ -285,20 +311,22 @@ class EvalNode:
                         child = squeeze_choice_child(child)
                     out[letter] = child
                     assert child.choice_mask & (1 << force_cell) == 0
-            self.cache_key = cache_count
+            self.cache_key = mark
             self.cache_value = out
             return out
 
         if self.choice_mask & (1 << force_cell) == 0:
             # There's no relevant choice below us, so we can bottom out.
-            self.cache_key = cache_count
+            self.cache_key = mark
             self.cache_value = self
             return self
 
         # Make the recursive calls and align the results.
         # For a choice node, take the max. For other nodes, take the sum.
         results = [
-            child.force_cell_work(force_cell, num_lets, arena, dedupe, compress)
+            child.force_cell_work(
+                force_cell, num_lets, force_cell_cache, arena, mark, dedupe, compress
+            )
             if child
             else None
             for child in self.children
@@ -380,7 +408,7 @@ class EvalNode:
                 node = None
 
             out.append(node)
-        self.cache_key = cache_count
+        self.cache_key = mark
         self.cache_value = out
         return out
 
@@ -415,8 +443,8 @@ class EvalNode:
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
 
-    def unique_node_count(self):
-        return sum(1 for _ in self.all_nodes_unique())
+    def unique_node_count(self, mark):
+        return sum(1 for _ in self.all_nodes_unique(mark))
 
     def structural_hash(self) -> int:
         if hasattr(self, "_hash"):

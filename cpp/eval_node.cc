@@ -8,23 +8,12 @@
 
 using namespace std;
 
-uint32_t cache_count = 1;
-unordered_map<uint64_t, const EvalNode*> force_cell_cache;
-uint64_t hash_collisions = 0;
+// uint64_t hash_collisions = 0;
 
 static const bool MERGE_TREES = true;
 
 const EvalNode* SqueezeChoiceChild(const EvalNode* child);
 bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_merge);
-
-inline void IncrementCacheCount() {
-  cache_count += 1;
-  if (cache_count == 0) {
-    // TODO: reset the marks in the eval tree here
-    cout << "Overflow!" << endl;
-    exit(1);
-  }
-}
 
 int EvalNode::NodeCount() const {
   int count = 1;
@@ -34,30 +23,19 @@ int EvalNode::NodeCount() const {
   return count;
 }
 
-unsigned int EvalNode::UniqueNodeCount() const {
-  IncrementCacheCount();
-  return UniqueNodeCountHelp(cache_count);
-}
-
-unsigned int EvalNode::UniqueNodeCountHelp(uint32_t mark) const {
-  if (cache_key_ == cache_count) {
+unsigned int EvalNode::UniqueNodeCount(uint32_t mark) const {
+  if (cache_key_ == mark) {
     return 0;
   }
 
-  cache_key_ = cache_count;
+  cache_key_ = mark;
   unsigned int count = 1;
   for (auto child : children_) {
     if (child) {
-      count += child->UniqueNodeCountHelp(mark);
+      count += child->UniqueNodeCount(mark);
     }
   }
   return count;
-}
-
-uint32_t EvalNode::MarkAll() {
-  IncrementCacheCount();
-  MarkAllWith(cache_count);
-  return cache_count;
 }
 
 void EvalNode::MarkAllWith(uint32_t mark) {
@@ -91,8 +69,7 @@ int EvalNode::RecomputeScore() const {
 }
 
 const EvalNode*
-EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, bool dedupe, bool compress) const {
-  IncrementCacheCount();
+EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe, bool compress) const {
   if (letter_ == CHOICE_NODE && cell_ == cell) {
     // This is already in the right form. Nothing more to do!
     return this;
@@ -103,9 +80,9 @@ EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, bool dedupe, 
     return this;
   }
 
-  hash_collisions = 0;
+  // hash_collisions = 0;
   VectorArena vector_arena;  // goes out of scope at end of function
-  auto one_or_choices = ForceCell(cell, num_lets, arena, vector_arena, dedupe, compress);
+  auto one_or_choices = ForceCell(cell, num_lets, arena, vector_arena, mark, dedupe, compress);
   vector<const EvalNode*> choices;
   if (holds_alternative<vector<const EvalNode*>*> (one_or_choices)) {
     auto rv = std::get<vector<const EvalNode*>*>(one_or_choices);
@@ -133,17 +110,17 @@ EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, bool dedupe, 
 }
 
 variant<const EvalNode*, vector<const EvalNode*>*>
-EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe, bool compress) const {
-  IncrementCacheCount();
-  force_cell_cache.clear();
-  auto out = ForceCellWork(cell, num_lets, arena, vector_arena, dedupe, compress);
-  force_cell_cache.clear();
+EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress) const {
+  unordered_map<uint64_t, const EvalNode*> force_cell_cache;
+  force_cell_cache.reserve(2'000'000);  // this is a ~5% speedup vs. not reserving.
+  auto out = ForceCellWork(cell, num_lets, arena, vector_arena, mark, dedupe, compress, force_cell_cache);
+  // cout << "force_cell_cache.size = " << force_cell_cache.size() << endl;
   return out;
 }
 
 variant<const EvalNode*, vector<const EvalNode*>*>
-EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe, bool compress) const {
-  if (cache_key_ == cache_count) {
+EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const {
+  if (cache_key_ == mark) {
     uintptr_t v = cache_value_;
     if (v & 1) {
       // it's a vector
@@ -170,14 +147,14 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
       }
     }
     vector_arena.AddNode(out);
-    cache_key_ = cache_count;
+    cache_key_ = mark;
     cache_value_ = ((uintptr_t)out) + 1;
     return {out};
   }
 
   if ((choice_mask_ & (1 << cell)) == 0) {
     // There's no relevant choice below us, so we can bottom out.
-    cache_key_ = cache_count;
+    cache_key_ = mark;
     cache_value_ = (uintptr_t)this;
     return {this};
   }
@@ -186,7 +163,7 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
   results.reserve(children_.size());
   for (auto child : children_) {
     if (child) {
-      results.push_back(child->ForceCellWork(cell, num_lets, arena, vector_arena, dedupe, compress));
+      results.push_back(child->ForceCellWork(cell, num_lets, arena, vector_arena, mark, dedupe, compress, force_cell_cache));
     } else {
       // TODO: can this happen? (evidently not)
       results.push_back({(EvalNode*)NULL});
@@ -256,7 +233,7 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
             out_node = r->second;
             delete node;
           } else {
-            hash_collisions++;
+            // hash_collisions++;
           }
         }
       }
@@ -279,7 +256,7 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
     out->push_back(out_node);
   }
 
-  cache_key_ = cache_count;
+  cache_key_ = mark;
   cache_value_ = ((uintptr_t)out) + 1;
   return out;
 }
@@ -635,14 +612,14 @@ void EvalNode::SetChoicePointMask(const vector<int>& num_letters) {
 }
 
 template<typename T>
-void Arena<T>::MarkAndSweep(T* root) {
+void Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
   cerr << "MarkAndSweep not implemented" << endl;
   exit(1);
 }
 
 template <>
-void Arena<EvalNode>::MarkAndSweep(EvalNode* root) {
-  uint32_t mark = root->MarkAll();
+void Arena<EvalNode>::MarkAndSweep(EvalNode* root, uint32_t mark) {
+  // Doing this after each LiftChoice() call is a ~10% slowdown.
   // int num_deleted = 0;
   for (auto& node : owned_nodes_) {
     if (node->cache_key_ != mark) {

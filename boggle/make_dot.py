@@ -25,8 +25,11 @@ def main():
     # assert_invariants(t, cells)
     # dedupe_subtrees(t)
 
+    mark = 1
+
+    mark += 1
     sys.stderr.write(
-        f"node count: {t.node_count()}, uniq={t.unique_node_count()} bound={t.bound}\n"
+        f"node count: {t.node_count()}, uniq={t.unique_node_count(mark)} bound={t.bound}\n"
     )
 
     with open("tree.dot", "w") as out:
@@ -34,9 +37,13 @@ def main():
         out.write("\n")
 
     for i, cell in enumerate(lift_cells):
-        t = t.lift_choice(cell, len(cells[cell]), None, dedupe=True, compress=True)
+        mark += 1
+        t = t.lift_choice(
+            cell, len(cells[cell]), None, mark, dedupe=True, compress=True
+        )
+        mark += 1
         sys.stderr.write(
-            f"lift{i}.dot {cell} -> node count: {t.node_count()}, uniq={t.unique_node_count()}\n"
+            f"lift{i}.dot {cell} -> node count: {t.node_count()}, uniq={t.unique_node_count(mark)}\n"
         )
         with open(f"lift{i}.dot", "w") as out:
             out.write(t.to_dot(cells))

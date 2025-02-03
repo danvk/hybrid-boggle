@@ -124,6 +124,7 @@ PYBIND11_MODULE(cpp_boggle, m)
             py::arg("num_lets"),
             py::arg("arena"),
             py::arg("vector_arena"),
+            py::arg("mark"),
             py::arg("dedupe") = false,
             py::arg("compress") = false
         )
@@ -134,6 +135,7 @@ PYBIND11_MODULE(cpp_boggle, m)
             py::arg("cell"),
             py::arg("num_lets"),
             py::arg("arena"),
+            py::arg("mark"),
             py::arg("dedupe"),
             py::arg("compress")
         )

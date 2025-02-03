@@ -17,12 +17,16 @@ from boggle.eval_tree import (
 )
 from boggle.trie import make_py_trie
 
+mark = 1
+
 
 def tree_stats(t: EvalNode) -> str:
+    global mark
+    mark += 1
     # return f"{t.bound=}, {t.unique_node_count()} unique nodes"
     # h = t.structural_hash()
     # return f"{t.bound=}, {t.unique_node_count()} unique nodes, hash={h}"
-    return f"{t.bound=}, {t.node_count()} nodes, {t.unique_node_count()} unique"
+    return f"{t.bound=}, {t.node_count()} nodes, {t.unique_node_count(mark)} unique"
     # , {t.unique_node_count_by_hash()} structurally unique"
 
 
@@ -81,11 +85,14 @@ def main():
 
     print("num max_subtrees:", sum(1 for _ in t.max_subtrees()))
 
+    global mark
+
     for k in range(len(cells)):
         i = SPLIT_ORDER[dims][k]
         print(f"lift {i}")
+        mark += 1
         t = t.lift_choice(
-            i, len(cells[i]), arena, dedupe=args.dedupe, compress=args.compress
+            i, len(cells[i]), arena, mark, dedupe=args.dedupe, compress=args.compress
         )
         if t.bound <= cutoff:
             print(f"Fully broken! {t.bound} <= {cutoff} {tree_stats(t)}")

@@ -207,6 +207,7 @@ class HybridTreeBreaker:
             secs_by_level=defaultdict(float),
             root_score_bailout=None,
         )
+        self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
         self.elim_ = 0
         self.orig_reps_ = self.etb.NumReps()
@@ -233,10 +234,13 @@ class HybridTreeBreaker:
             self.try_remaining_boards(tree)
             return
 
-        n = len(self.cells[cell])
+        num_lets = len(self.cells[cell])
 
         start_s = time.time()
-        tree = tree.lift_choice(cell, n, arena, dedupe=True, compress=True)
+        self.mark += 1
+        tree = tree.lift_choice(
+            cell, num_lets, arena, self.mark, dedupe=True, compress=True
+        )
         self.details_.secs_by_level[f"{level:02}lift"] += time.time() - start_s
         self.lifted_cells_.append(cell)
         # with open(f"/tmp/subtrees-{level}.txt", "w") as out:

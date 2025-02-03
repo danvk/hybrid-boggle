@@ -41,7 +41,7 @@ class Arena {
     owned_nodes_.push_back(node);
   }
 
-  void MarkAndSweep(T* root);
+  void MarkAndSweep(T* root, uint32_t mark);
 
   // friend EvalNode;
 
@@ -61,25 +61,22 @@ class EvalNode {
   virtual ~EvalNode() {}
 
   const EvalNode*
-  LiftChoice(int cell, int num_lets, EvalNodeArena& arena, bool dedupe=false, bool compress=false) const;
+  LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe=false, bool compress=false) const;
 
   variant<const EvalNode*, vector<const EvalNode*>*>
-  ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe=false, bool compress=false) const;
+  ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe=false, bool compress=false) const;
 
   variant<const EvalNode*, vector<const EvalNode*>*>
-  ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, bool dedupe, bool compress) const;
+  ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const;
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
   void FilterBelowThreshold(int min_score);
-  unsigned int UniqueNodeCount() const;
 
   vector<pair<const EvalNode*, vector<pair<int, int>>>> MaxSubtrees() const;
 
   uint64_t StructuralHash() const;
-
-  uint32_t MarkAll();
 
   void SetChoicePointMask(const vector<int>& num_letters);
 
@@ -106,6 +103,7 @@ class EvalNode {
 
   int RecomputeScore() const;
   int NodeCount() const;
+  unsigned int UniqueNodeCount(uint32_t mark) const;
 
   vector<string> BoundRemainingBoards(
     vector<string> cells,
@@ -116,7 +114,6 @@ class EvalNode {
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const;
   void MaxSubtreesHelp(vector<pair<const EvalNode*, vector<pair<int, int>>>>& out, vector<pair<int, int>> path) const;
-  unsigned int UniqueNodeCountHelp(uint32_t mark) const;
   void MarkAllWith(uint32_t mark);
 };
 
