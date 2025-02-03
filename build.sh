@@ -2,7 +2,7 @@
 set -o errexit
 
 cd cpp
-c++ -Wall -shared -std=c++20 -fPIC \
+c++ -Wall -shared -std=c++20 -fPIC -march=native \
     -O3 \
     $(poetry run python -m pybind11 --includes) \
     cpp_boggle.cc trie.cc eval_node.cc \
