@@ -116,31 +116,37 @@ def main():
     assert 3 <= h <= 4
     max_index = num_classes ** (w * h)
 
-    if args.python:
-        t = make_py_trie(args.dictionary)
-        assert t
-        etb = EvalTreeBoggler(t, dims)
-        boggler = PyBoggler(t, dims)
-    else:
-        t = Trie.CreateFromFile(args.dictionary)
-        assert t
-        etb = TreeBuilders[dims](t)
-        boggler = Bogglers[dims](t)
-        # breaker = CppBreaker(etb, best_score)
-    # breaker = TreeScoreBreaker(etb, dims, best_score)
-    # breaker = TreeBreaker(etb, dims, best_score)
-    if args.breaker == "hybrid":
-        breaker = HybridTreeBreaker(
-            etb, boggler, dims, best_score, switchover_level=args.switchover_level
-        )
-    elif args.breaker == "ibuckets":
+    def get_breaker():
+        """Each thread needs its own Trie, tree builder, boggler and breaker."""
         if args.python:
-            etb = PyBucketBoggler(t, dims)
+            t = make_py_trie(args.dictionary)
+            assert t
+            etb = EvalTreeBoggler(t, dims)
+            boggler = PyBoggler(t, dims)
         else:
-            etb = BucketBogglers[dims](t)
-        breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
-    else:
-        raise ValueError(args.breaker)
+            t = Trie.CreateFromFile(args.dictionary)
+            assert t
+            etb = TreeBuilders[dims](t)
+            boggler = Bogglers[dims](t)
+            # breaker = CppBreaker(etb, best_score)
+        # breaker = TreeScoreBreaker(etb, dims, best_score)
+        # breaker = TreeBreaker(etb, dims, best_score)
+        if args.breaker == "hybrid":
+            breaker = HybridTreeBreaker(
+                etb, boggler, dims, best_score, switchover_level=args.switchover_level
+            )
+        elif args.breaker == "ibuckets":
+            if args.python:
+                etb = PyBucketBoggler(t, dims)
+            else:
+                etb = BucketBogglers[dims](t)
+            breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
+        else:
+            raise ValueError(args.breaker)
+        return breaker
+
+    breaker = get_breaker()
+    print(breaker)
     break_class = None
 
     if args.board_ids:
