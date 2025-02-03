@@ -5,6 +5,7 @@ import itertools
 import random
 import time
 from collections import Counter
+from dataclasses import dataclass
 
 from cpp_boggle import Trie
 from tqdm import tqdm
@@ -21,7 +22,17 @@ from boggle.breaker import (
 from boggle.dimensional_bogglers import Bogglers, BucketBogglers, TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
 from boggle.ibuckets import PyBucketBoggler
-from boggle.trie import make_py_trie
+from boggle.trie import PyTrie, make_py_trie
+
+
+@dataclass
+class BreakingBundle:
+    """Only the breaker is needed, but this helps keep its deps from being GC'd."""
+
+    trie: PyTrie
+    boggler: PyBoggler
+    etb: EvalTreeBoggler
+    breaker: IBucketBreaker | HybridTreeBreaker
 
 
 def main():
@@ -143,9 +154,10 @@ def main():
             breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
         else:
             raise ValueError(args.breaker)
-        return (t, etb, boggler, breaker)
+        return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
 
-    t, etb, boggler, breaker = get_breaker()
+    bundle = get_breaker()
+    breaker = bundle.breaker
     break_class = None
 
     if args.board_ids:
