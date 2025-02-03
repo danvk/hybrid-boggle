@@ -7,19 +7,35 @@ import time
 from tqdm import tqdm
 
 
-def f(x: int):
+def init(args, fn):
     (me,) = multiprocessing.current_process()._identity
+    fn.bias = args.bias + me
+
+
+def f(x: int):
+    bias = f.bias
+    # (me,) = multiprocessing.current_process()._identity
+    # print(f"{me=} {bias=}")
     # print(f"{me} Start {x=}")
     if x == 2:
         # print(f"{me} waiting long time")
         time.sleep(5)
     time.sleep(random.random())
     # print(f"{me} Finish {x=}")
-    return x
+    return x + bias
 
 
 def main():
-    p = multiprocessing.Pool(3)
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="Pool toy",
+        description="Playing around with multiprocessing.Pool",
+    )
+    parser.add_argument("--bias", type=int, default=0)
+    args = parser.parse_args()
+
+    p = multiprocessing.Pool(3, init, (args, f))
     it = p.imap_unordered(f, range(10))
 
     total = 0
