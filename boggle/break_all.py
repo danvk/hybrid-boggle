@@ -139,9 +139,7 @@ def main():
             assert t
             etb = TreeBuilders[dims](t)
             boggler = Bogglers[dims](t)
-            # breaker = CppBreaker(etb, best_score)
-        # breaker = TreeScoreBreaker(etb, dims, best_score)
-        # breaker = TreeBreaker(etb, dims, best_score)
+
         if args.breaker == "hybrid":
             breaker = HybridTreeBreaker(
                 etb, boggler, dims, best_score, switchover_level=args.switchover_level
