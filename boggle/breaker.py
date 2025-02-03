@@ -52,6 +52,7 @@ class HybridBreakDetails(BreakDetails):
     bounds: dict[int, int]
     boards_to_test: int
     init_nodes: int
+    total_nodes: int
     num_filtered: dict[int, int]
 
 
@@ -227,6 +228,7 @@ class HybridTreeBreaker:
             sum_union=0,
             boards_to_test=0,
             init_nodes=0,
+            total_nodes=0,
             num_filtered={},
         )
         self.mark = 1  # New mark for a fresh EvalTree
@@ -243,6 +245,7 @@ class HybridTreeBreaker:
 
         self.AttackTree(tree, 1, arena)
         self.details_.elapsed_s = time.time() - start_time_s
+        self.details_.total_nodes = arena.num_nodes()
         return self.details_
 
     def pick_cell(self, tree: EvalNode) -> int:
