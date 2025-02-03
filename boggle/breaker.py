@@ -22,14 +22,13 @@ type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
 
 
 @dataclass
-class BreakDetails:
+class IBucketBreakDetails:
     num_reps: int
     elapsed_s: float
     failures: list[str]
     elim_level: Counter[int]
     by_level: Counter[int]
     secs_by_level: defaultdict[int, float]
-    root_bound: int
 
     def asdict(self):
         d = dataclasses.asdict(self)
@@ -37,6 +36,12 @@ class BreakDetails:
         d["by_level"] = dict(self.by_level.items())
         d["secs_by_level"] = dict(self.secs_by_level.items())
         return d
+
+
+@dataclass
+class HybridBreakDetails(IBucketBreakDetails):
+    root_bound: int
+    sum_union: int
 
 
 class IBucketBreaker:
@@ -65,15 +70,14 @@ class IBucketBreaker:
     def SetBoard(self, board: str):
         return self.bb.ParseBoard(board)
 
-    def Break(self) -> BreakDetails:
-        self.details_ = BreakDetails(
+    def Break(self) -> IBucketBreakDetails:
+        self.details_ = IBucketBreakDetails(
             num_reps=0,
             elapsed_s=0.0,
             failures=[],
             by_level=Counter(),
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
-            root_bound=None,
             # root_score_bailout=None,
         )
         self.elim_ = 0
@@ -198,11 +202,11 @@ class HybridTreeBreaker:
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
 
-    def Break(self) -> BreakDetails:
+    def Break(self) -> HybridBreakDetails:
         # TODO: this is kind of roundabout
         self.cells = self.etb.as_string().split(" ")
         self.num_letters = [len(c) for c in self.cells]
-        self.details_ = BreakDetails(
+        self.details_ = HybridBreakDetails(
             num_reps=0,
             elapsed_s=0.0,
             failures=[],
@@ -210,7 +214,7 @@ class HybridTreeBreaker:
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
             root_bound=0,
-            # root_score_bailout=None,
+            sum_union=0,
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
@@ -221,6 +225,7 @@ class HybridTreeBreaker:
         tree = self.etb.BuildTree(arena, dedupe=True)
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.root_bound = tree.bound
+        self.details_.sum_union = self.etb.Details().sum_union
 
         self.AttackTree(tree, 1, arena)
         self.details_.elapsed_s = time.time() - start_time_s
@@ -348,7 +353,7 @@ def includes_board(max_subtrees, cells: list[str], board: str):
     return False
 
 
-def print_details(d: BreakDetails):
+def print_details(d: IBucketBreakDetails):
     # print(f"max_depth: {d.max_depth}")
     print(f"num_reps: {d.num_reps}")
     print(f"elapsed_s: {d.elapsed_s}")
@@ -366,8 +371,10 @@ def print_details(d: BreakDetails):
         # print(f"  {k:2d}: {v:.4f} / {v / total_s:.2%}")
 
 
-def merge_details(a: BreakDetails, b: BreakDetails) -> BreakDetails:
-    return BreakDetails(
+def merge_details(
+    a: IBucketBreakDetails, b: IBucketBreakDetails
+) -> IBucketBreakDetails:
+    return IBucketBreakDetails(
         # max_depth=max(a.max_depth, b.max_depth),
         num_reps=a.num_reps + b.num_reps,
         start_time_s=a.start_time_s,
