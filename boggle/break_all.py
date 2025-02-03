@@ -33,11 +33,12 @@ class BreakingBundle:
     breaker: IBucketBreaker | HybridTreeBreaker
 
 
-def break_init(args):
+def break_init(args, needs_canonical_filter):
     bundle = get_breaker(args)
     # See https://stackoverflow.com/a/30816116/388951 for this trick to avoid a global
     break_worker.bundle = bundle
     break_worker.args = args
+    break_worker.needs_canonical_filter = needs_canonical_filter
     (me,) = multiprocessing.current_process()._identity
     with open(f"tasks-{me}.ndjson", "w"):
         pass
@@ -47,6 +48,7 @@ def break_worker(task: str | int):
     bundle: BreakingBundle = break_worker.bundle
     breaker = bundle.breaker
     args = break_worker.args
+    needs_canonical_filter = break_worker.needs_canonical_filter
     (me,) = multiprocessing.current_process()._identity
 
     best_score = args.best_score
@@ -55,6 +57,10 @@ def break_worker(task: str | int):
     dims = args.size // 10, args.size % 10
 
     if isinstance(task, int):
+        if needs_canonical_filter and not is_canonical_board_id(
+            len(classes), dims, task
+        ):
+            return []
         board = from_board_id(classes, dims, task)
         assert breaker.SetBoard(board)
     else:
@@ -203,6 +209,7 @@ def main():
     max_index = num_classes ** (w * h)
 
     indices: list[int | str]
+    needs_canonical_filter = False
     if args.board_ids:
         indices = [int(x) for x in args.board_ids.split(",")]
     elif args.break_class:
@@ -226,17 +233,22 @@ def main():
             indices = [
                 idx
                 for idx in range(0, max_index)
-                if is_canonical_board_id(num_classes, dims, idx)
+                # if is_canonical_board_id(num_classes, dims, idx)
             ]
             random.shuffle(indices)
+            # Filtering on the workers results in faster startup.
+            needs_canonical_filter = True
+        boards_type = "total" if needs_canonical_filter else "canonical"
         print(
-            f"Found {len(indices)} canonical boards in {time.time() - start_s:.02f}s."
+            f"Found {len(indices)} {boards_type} boards in {time.time() - start_s:.02f}s."
         )
 
     start_s = time.time()
     good_boards = []
 
-    pool = multiprocessing.Pool(args.num_threads, break_init, (args,))
+    pool = multiprocessing.Pool(
+        args.num_threads, break_init, (args, needs_canonical_filter)
+    )
     it = pool.imap_unordered(break_worker, indices)
 
     good_boards = []
