@@ -1,3 +1,4 @@
+import dataclasses
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -30,7 +31,14 @@ class BreakDetails:
     elim_level: Counter[int]
     by_level: Counter[int]
     secs_by_level: defaultdict[int, float]
-    root_score_bailout: tuple[int, int]
+    # root_score_bailout: tuple[int, int]
+
+    def asdict(self):
+        d = dataclasses.asdict(self)
+        d["elim_level"] = dict(self.elim_level.items())
+        d["by_level"] = dict(self.by_level.items())
+        d["secs_by_level"] = dict(self.secs_by_level.items())
+        return d
 
 
 class IBucketBreaker:
@@ -69,7 +77,7 @@ class IBucketBreaker:
             by_level=Counter(),
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
-            root_score_bailout=None,
+            # root_score_bailout=None,
         )
         self.elim_ = 0
         self.orig_reps_ = self.bb.NumReps()
@@ -136,7 +144,8 @@ class IBucketBreaker:
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
         if level == 0:
-            self.details_.root_score_bailout = (ub, self.bb.Details().bailout_cell)
+            # self.details_.root_score_bailout = (ub, self.bb.Details().bailout_cell)
+            pass
         if ub <= self.best_score:
             self.elim_ += self.bb.NumReps()
             self.details_.max_depth = max(self.details_.max_depth, level)
@@ -205,7 +214,7 @@ class HybridTreeBreaker:
             by_level=Counter(),
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
-            root_score_bailout=None,
+            # root_score_bailout=None,
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
@@ -379,7 +388,7 @@ def merge_details(a: BreakDetails, b: BreakDetails) -> BreakDetails:
                 for k in set(a.secs_by_level) | set(b.secs_by_level)
             },
         ),
-        root_score_bailout=None,
+        # root_score_bailout=None,
     )
 
 

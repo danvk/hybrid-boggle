@@ -36,7 +36,7 @@ def main():
     args = parser.parse_args()
 
     p = multiprocessing.Pool(3, init, (args, f))
-    it = p.imap_unordered(f, range(10))
+    it = p.imap_unordered(f, [*range(10)])
 
     total = 0
     for x in tqdm(it, total=10):

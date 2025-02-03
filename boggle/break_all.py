@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import argparse
+import dataclasses
 import itertools
+import json
+import multiprocessing
 import random
 import time
 from collections import Counter
@@ -33,6 +36,84 @@ class BreakingBundle:
     boggler: PyBoggler
     etb: EvalTreeBoggler
     breaker: IBucketBreaker | HybridTreeBreaker
+
+
+def break_init(args):
+    bundle = get_breaker(args)
+    # See https://stackoverflow.com/a/30816116/388951 for this trick to avoid a global
+    break_worker.bundle = bundle
+    break_worker.args = args
+    (me,) = multiprocessing.current_process()._identity
+    with open(f"tasks-{me}.ndjson", "w"):
+        pass
+
+    print(f"Started worker #{me}")
+
+
+def break_worker(task: str | int):
+    bundle: BreakingBundle = break_worker.bundle
+    breaker = bundle.breaker
+    args = break_worker.args
+    (me,) = multiprocessing.current_process()._identity
+
+    best_score = args.best_score
+    assert best_score > 0
+    classes = args.classes.split(" ")
+    dims = args.size // 10, args.size % 10
+
+    if isinstance(task, int):
+        board = from_board_id(classes, dims, task)
+        assert breaker.SetBoard(board)
+    else:
+        break_class = task
+        assert breaker.SetBoard(break_class)
+
+    details = breaker.Break()
+    if details.failures:
+        for failure in details.failures:
+            print(f"Found unbreakable board for {task}: {failure}")
+        # good_boards += details.failures
+    # depths[details.max_depth] += 1
+    # times[round(10 * details.elapsed_s) / 10] += 1
+    # all_details.append((task, details))
+    with open(f"tasks-{me}.ndjson", "a") as out:
+        summary = details.asdict()
+        summary["id"] = task
+        out.write(json.dumps(summary))
+        out.write("\n")
+
+    return details.failures
+
+
+def get_breaker(args) -> BreakingBundle:
+    """Each thread needs its own Trie, tree builder, boggler and breaker."""
+    dims = args.size // 10, args.size % 10
+    best_score = args.best_score
+
+    if args.python:
+        t = make_py_trie(args.dictionary)
+        assert t
+        etb = EvalTreeBoggler(t, dims)
+        boggler = PyBoggler(t, dims)
+    else:
+        t = Trie.CreateFromFile(args.dictionary)
+        assert t
+        etb = TreeBuilders[dims](t)
+        boggler = Bogglers[dims](t)
+
+    if args.breaker == "hybrid":
+        breaker = HybridTreeBreaker(
+            etb, boggler, dims, best_score, switchover_level=args.switchover_level
+        )
+    elif args.breaker == "ibuckets":
+        if args.python:
+            etb = PyBucketBoggler(t, dims)
+        else:
+            etb = BucketBogglers[dims](t)
+        breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
+    else:
+        raise ValueError(args.breaker)
+    return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
 
 
 def main():
@@ -110,6 +191,12 @@ def main():
         help="Set to a board class to override --random_ids, --max_boards, etc.",
     )
     parser.add_argument(
+        "--num_threads",
+        type=int,
+        default=1,
+        help="Number of concurrent breakers to run.",
+    )
+    parser.add_argument(
         "--python",
         action="store_true",
         help="Use Python implementation of ibuckets instead of C++. This is ~50x slower!",
@@ -127,43 +214,13 @@ def main():
     assert 3 <= h <= 4
     max_index = num_classes ** (w * h)
 
-    def get_breaker():
-        """Each thread needs its own Trie, tree builder, boggler and breaker."""
-        if args.python:
-            t = make_py_trie(args.dictionary)
-            assert t
-            etb = EvalTreeBoggler(t, dims)
-            boggler = PyBoggler(t, dims)
-        else:
-            t = Trie.CreateFromFile(args.dictionary)
-            assert t
-            etb = TreeBuilders[dims](t)
-            boggler = Bogglers[dims](t)
-
-        if args.breaker == "hybrid":
-            breaker = HybridTreeBreaker(
-                etb, boggler, dims, best_score, switchover_level=args.switchover_level
-            )
-        elif args.breaker == "ibuckets":
-            if args.python:
-                etb = PyBucketBoggler(t, dims)
-            else:
-                etb = BucketBogglers[dims](t)
-            breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
-        else:
-            raise ValueError(args.breaker)
-        return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
-
-    bundle = get_breaker()
-    breaker = bundle.breaker
-    break_class = None
-
+    indices: list[int | str]
     if args.board_ids:
         indices = [int(x) for x in args.board_ids.split(",")]
     elif args.break_class:
         break_class = args.break_class
         assert len(break_class.split(" ")) == w * h
-        indices = [0]
+        indices = [break_class]
     else:
         # This gets a more useful, accurate error bar than going in order
         # and filtering inside the main loop.
@@ -188,56 +245,22 @@ def main():
             f"Found {len(indices)} canonical boards in {time.time() - start_s:.02f}s."
         )
 
-    combined_details = None
     start_s = time.time()
     good_boards = []
-    depths = Counter()
-    times = Counter()
-    log_per_board_stats = args.log_per_board_stats
-    all_details: list[tuple[int, BreakDetails]] = []
+
+    pool = multiprocessing.Pool(args.num_threads, break_init, (args,))
+    it = pool.imap_unordered(break_worker, indices)
+
+    good_boards = []
     # smoothing=0 means to show the average pace so far, which is the best estimator.
-    for idx in tqdm(indices, smoothing=0):
-        if not break_class:
-            board = from_board_id(classes, dims, idx)
-            assert breaker.SetBoard(board)
-        else:
-            assert breaker.SetBoard(break_class)
-        details = breaker.Break()
-        if details.failures:
-            for failure in details.failures:
-                print(f"Found unbreakable board for {idx}: {failure}")
-            good_boards += details.failures
-        depths[details.max_depth] += 1
-        times[round(10 * details.elapsed_s) / 10] += 1
-        all_details.append((idx, details))
-        if log_per_board_stats:
-            print(idx)
-            print(break_class if break_class else from_board_id(classes, dims, idx))
-            print_details(details)
-        combined_details = (
-            details
-            if combined_details is None
-            else merge_details(combined_details, details)
-        )
-        if break_class:
-            break
+    for winners in tqdm(it, smoothing=0, total=len(indices)):
+        good_boards.extend(winners)
+
     end_s = time.time()
 
     print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
     print("All failures:")
     print("\n".join(good_boards))
-    print(f"Depths: {depths.most_common()}")
-    print(f"Times (s): {times.most_common()}")
-
-    if len(all_details) > 1:
-        print_details(combined_details)
-
-    with open("/tmp/details.txt", "w") as out:
-        for idx, d in all_details:
-            rsb = d.root_score_bailout
-            out.write(
-                f"{idx}\t{d.num_reps}\t{d.max_depth}\t{len(d.failures)}\t{rsb}\t{d.elapsed_s}\n"
-            )
 
 
 if __name__ == "__main__":
