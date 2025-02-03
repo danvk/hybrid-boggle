@@ -4,7 +4,7 @@
 import fileinput
 import math
 
-from symmetry import canonicalize
+from boggle.symmetry import canonicalize
 
 
 def list_to_matrix(letters):
