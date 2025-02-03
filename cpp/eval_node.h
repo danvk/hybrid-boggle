@@ -4,6 +4,9 @@
 #include <limits.h>
 #include <iostream>
 #include <map>
+#include <memory>
+#include <unordered_map>
+#include <variant>
 #include <vector>
 #include <cassert>
 
