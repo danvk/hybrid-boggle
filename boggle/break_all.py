@@ -143,10 +143,9 @@ def main():
             breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
         else:
             raise ValueError(args.breaker)
-        return breaker
+        return (t, etb, boggler, breaker)
 
-    breaker = get_breaker()
-    print(breaker)
+    t, etb, boggler, breaker = get_breaker()
     break_class = None
 
     if args.board_ids:
