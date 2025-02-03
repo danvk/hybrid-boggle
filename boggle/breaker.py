@@ -42,6 +42,7 @@ class IBucketBreakDetails:
 class HybridBreakDetails(IBucketBreakDetails):
     sum_union: int
     bounds: dict[int, int]
+    boards_to_test: int
 
 
 class IBucketBreaker:
@@ -215,6 +216,7 @@ class HybridTreeBreaker:
             secs_by_level=defaultdict(float),
             bounds={},
             sum_union=0,
+            boards_to_test=0,
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
@@ -313,6 +315,7 @@ class HybridTreeBreaker:
         #     for board in boards_to_test:
         #         out.write(f"{board}\n")
 
+        self.details_.boards_to_test = len(boards_to_test)
         start_s = time.time()
         for board in boards_to_test:
             true_score = self.boggler.score(board)
