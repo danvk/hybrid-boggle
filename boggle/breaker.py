@@ -43,6 +43,7 @@ class HybridBreakDetails(IBucketBreakDetails):
     sum_union: int
     bounds: dict[int, int]
     boards_to_test: int
+    init_nodes: int
 
 
 class IBucketBreaker:
@@ -217,6 +218,7 @@ class HybridTreeBreaker:
             bounds={},
             sum_union=0,
             boards_to_test=0,
+            init_nodes=0,
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
@@ -228,6 +230,7 @@ class HybridTreeBreaker:
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.sum_union = self.etb.Details().sum_union
+        self.details_.init_nodes = arena.num_nodes()
 
         self.AttackTree(tree, 1, arena)
         self.details_.elapsed_s = time.time() - start_time_s
@@ -313,7 +316,7 @@ class HybridTreeBreaker:
         # print(f"{len(boards_to_test)=}")
         # with open("/tmp/boards-to-test.txt", "w") as out:
         #     for board in boards_to_test:
-        #         out.write(f"{board}\n")
+        #         out.write(f"{board}\n")x
 
         self.details_.boards_to_test = len(boards_to_test)
         start_s = time.time()
