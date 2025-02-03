@@ -22,24 +22,32 @@ type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
 
 
 @dataclass
-class IBucketBreakDetails:
+class BreakDetails:
     num_reps: int
     elapsed_s: float
     failures: list[str]
     elim_level: Counter[int]
-    by_level: Counter[int]
     secs_by_level: defaultdict[int, float]
 
     def asdict(self):
         d = dataclasses.asdict(self)
         d["elim_level"] = dict(self.elim_level.items())
-        d["by_level"] = dict(self.by_level.items())
         d["secs_by_level"] = dict(self.secs_by_level.items())
         return d
 
 
 @dataclass
-class HybridBreakDetails(IBucketBreakDetails):
+class IBucketBreakDetails(BreakDetails):
+    by_level: Counter[int]
+
+    def asdict(self):
+        d = super().asdict()
+        d["by_level"] = dict(self.by_level.items())
+        return d
+
+
+@dataclass
+class HybridBreakDetails(BreakDetails):
     sum_union: int
     bounds: dict[int, int]
     boards_to_test: int
@@ -213,7 +221,6 @@ class HybridTreeBreaker:
             num_reps=0,
             elapsed_s=0.0,
             failures=[],
-            by_level=Counter(),
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
             bounds={},
@@ -284,7 +291,6 @@ class HybridTreeBreaker:
         self.AttackTree(tree, level + 1, arena)
 
     def AttackTree(self, tree: EvalNode, level: int, arena) -> None:
-        self.details_.by_level[level] += 1
         ub = tree.bound
         if ub <= self.best_score:
             # self.elim_ += self.ebb.NumReps()
