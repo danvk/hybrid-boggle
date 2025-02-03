@@ -23,22 +23,37 @@ type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
 
 @dataclass
 class BreakDetails:
-    max_depth: int
     num_reps: int
-    start_time_s: float
     elapsed_s: float
     failures: list[str]
     elim_level: Counter[int]
-    by_level: Counter[int]
     secs_by_level: defaultdict[int, float]
-    # root_score_bailout: tuple[int, int]
 
     def asdict(self):
         d = dataclasses.asdict(self)
         d["elim_level"] = dict(self.elim_level.items())
-        d["by_level"] = dict(self.by_level.items())
         d["secs_by_level"] = dict(self.secs_by_level.items())
         return d
+
+
+@dataclass
+class IBucketBreakDetails(BreakDetails):
+    by_level: Counter[int]
+
+    def asdict(self):
+        d = super().asdict()
+        d["by_level"] = dict(self.by_level.items())
+        return d
+
+
+@dataclass
+class HybridBreakDetails(BreakDetails):
+    sum_union: int
+    bounds: dict[int, int]
+    boards_to_test: int
+    init_nodes: int
+    total_nodes: int
+    num_filtered: dict[int, int]
 
 
 class IBucketBreaker:
@@ -67,12 +82,10 @@ class IBucketBreaker:
     def SetBoard(self, board: str):
         return self.bb.ParseBoard(board)
 
-    def Break(self) -> BreakDetails:
-        self.details_ = BreakDetails(
-            max_depth=0,
+    def Break(self) -> IBucketBreakDetails:
+        self.details_ = IBucketBreakDetails(
             num_reps=0,
             elapsed_s=0.0,
-            start_time_s=0.0,
             failures=[],
             by_level=Counter(),
             elim_level=Counter(),
@@ -81,10 +94,10 @@ class IBucketBreaker:
         )
         self.elim_ = 0
         self.orig_reps_ = self.bb.NumReps()
-        self.details_.start_time_s = time.time()
+        start_time_s = time.time()
         self.AttackBoard()
 
-        self.details_.elapsed_s = time.time() - self.details_.start_time_s
+        self.details_.elapsed_s = time.time() - start_time_s
         self.details_.num_reps = self.orig_reps_
         # TODO: debug output
         return self.details_
@@ -145,10 +158,10 @@ class IBucketBreaker:
         self.details_.secs_by_level[level] += elapsed_s
         if level == 0:
             # self.details_.root_score_bailout = (ub, self.bb.Details().bailout_cell)
-            pass
+            self.details_.root_bound = ub
         if ub <= self.best_score:
             self.elim_ += self.bb.NumReps()
-            self.details_.max_depth = max(self.details_.max_depth, level)
+            # self.details_.max_depth = max(self.details_.max_depth, level)
             self.details_.elim_level[level] += 1
         else:
             self.SplitBucket(level)
@@ -201,34 +214,38 @@ class HybridTreeBreaker:
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
 
-    def Break(self) -> BreakDetails:
+    def Break(self) -> HybridBreakDetails:
         # TODO: this is kind of roundabout
         self.cells = self.etb.as_string().split(" ")
         self.num_letters = [len(c) for c in self.cells]
-        self.details_ = BreakDetails(
-            max_depth=0,
+        self.details_ = HybridBreakDetails(
             num_reps=0,
             elapsed_s=0.0,
-            start_time_s=0.0,
             failures=[],
-            by_level=Counter(),
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
-            # root_score_bailout=None,
+            bounds={},
+            sum_union=0,
+            boards_to_test=0,
+            init_nodes=0,
+            total_nodes=0,
+            num_filtered={},
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
         self.elim_ = 0
-        self.orig_reps_ = self.etb.NumReps()
-        self.details_.start_time_s = time.time()
+        self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
+        start_time_s = time.time()
         arena = self.create_arena()
         tree = self.etb.BuildTree(arena, dedupe=True)
-        self.details_.secs_by_level[f"{0:02}build"] += (
-            time.time() - self.details_.start_time_s
-        )
+        self.details_.secs_by_level[0] += time.time() - start_time_s
+        self.details_.bounds[0] = tree.bound
+        self.details_.sum_union = self.etb.Details().sum_union
+        self.details_.init_nodes = arena.num_nodes()
+
         self.AttackTree(tree, 1, arena)
-        self.details_.elapsed_s = time.time() - self.details_.start_time_s
-        self.details_.num_reps = self.orig_reps_
+        self.details_.elapsed_s = time.time() - start_time_s
+        self.details_.total_nodes = arena.num_nodes()
         return self.details_
 
     def pick_cell(self, tree: EvalNode) -> int:
@@ -250,7 +267,8 @@ class HybridTreeBreaker:
         tree = tree.lift_choice(
             cell, num_lets, arena, self.mark, dedupe=True, compress=True
         )
-        self.details_.secs_by_level[f"{level:02}lift"] += time.time() - start_s
+        self.details_.secs_by_level[level] += time.time() - start_s
+        self.details_.bounds[level] = tree.bound
         self.lifted_cells_.append(cell)
         # with open(f"/tmp/subtrees-{level}.txt", "w") as out:
         #     for t, seq in tree.max_subtrees():
@@ -265,7 +283,9 @@ class HybridTreeBreaker:
         # ), f"Missed on {level}"
 
         if tree.bound >= self.best_score:
-            tree.filter_below_threshold(self.best_score)
+            n_filtered = tree.filter_below_threshold(self.best_score)
+            if n_filtered:
+                self.details_.num_filtered[level] = n_filtered
             # print(f"f -> {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes")
         # print(
         #     f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes"
@@ -274,11 +294,10 @@ class HybridTreeBreaker:
         self.AttackTree(tree, level + 1, arena)
 
     def AttackTree(self, tree: EvalNode, level: int, arena) -> None:
-        self.details_.by_level[level] += 1
         ub = tree.bound
         if ub <= self.best_score:
             # self.elim_ += self.ebb.NumReps()
-            self.details_.max_depth = max(self.details_.max_depth, level)
+            # self.details_.max_depth = max(self.details_.max_depth, level)
             self.details_.elim_level[level] += 1
         else:
             if level >= self.switchover_level:
@@ -296,13 +315,13 @@ class HybridTreeBreaker:
         # TODO: move this call into bound_remaining_boards()
         tree.set_choice_point_mask(self.num_letters)
         elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[f"{level:02}set_point_choice_mask"] += elapsed_s
+        # self.details_.secs_by_level[f"{level:02}set_point_choice_mask"] += elapsed_s
         start_s = time.time()
         boards_to_test = tree.bound_remaining_boards(
             self.cells, self.best_score, self.split_order
         )
         elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[f"{level:02}bound_remaining"] += elapsed_s
+        self.details_.secs_by_level[level] += elapsed_s
 
         if not boards_to_test:
             return
@@ -310,8 +329,9 @@ class HybridTreeBreaker:
         # print(f"{len(boards_to_test)=}")
         # with open("/tmp/boards-to-test.txt", "w") as out:
         #     for board in boards_to_test:
-        #         out.write(f"{board}\n")
+        #         out.write(f"{board}\n")x
 
+        self.details_.boards_to_test = len(boards_to_test)
         start_s = time.time()
         for board in boards_to_test:
             true_score = self.boggler.score(board)
@@ -320,11 +340,10 @@ class HybridTreeBreaker:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)
         elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[f"{level:02}check"] += elapsed_s
+        self.details_.secs_by_level[level + 1] += elapsed_s
 
     def try_remaining_boards(self, tree: EvalNode):
         """We have a fully-lifted tree that isn't broken. Try all boards explicitly."""
-        # TODO: this doesn't seem to work, at least for 3x4 / C++.
         # print("num max_subtrees:", sum(1 for _ in tree.max_subtrees()))
         # assert includes_board(tree.max_subtrees(), self.cells, "perslatesind")
         for t, seq in tree.max_subtrees():
@@ -354,8 +373,8 @@ def includes_board(max_subtrees, cells: list[str], board: str):
     return False
 
 
-def print_details(d: BreakDetails):
-    print(f"max_depth: {d.max_depth}")
+def print_details(d: IBucketBreakDetails):
+    # print(f"max_depth: {d.max_depth}")
     print(f"num_reps: {d.num_reps}")
     print(f"elapsed_s: {d.elapsed_s}")
     print(f"root score: {d.root_score_bailout}")
@@ -372,9 +391,11 @@ def print_details(d: BreakDetails):
         # print(f"  {k:2d}: {v:.4f} / {v / total_s:.2%}")
 
 
-def merge_details(a: BreakDetails, b: BreakDetails) -> BreakDetails:
-    return BreakDetails(
-        max_depth=max(a.max_depth, b.max_depth),
+def merge_details(
+    a: IBucketBreakDetails, b: IBucketBreakDetails
+) -> IBucketBreakDetails:
+    return IBucketBreakDetails(
+        # max_depth=max(a.max_depth, b.max_depth),
         num_reps=a.num_reps + b.num_reps,
         start_time_s=a.start_time_s,
         elapsed_s=a.elapsed_s + b.elapsed_s,

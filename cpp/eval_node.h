@@ -72,7 +72,7 @@ class EvalNode {
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
-  void FilterBelowThreshold(int min_score);
+  int FilterBelowThreshold(int min_score);
 
   vector<pair<const EvalNode*, vector<pair<int, int>>>> MaxSubtrees() const;
 

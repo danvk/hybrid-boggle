@@ -312,10 +312,11 @@ unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces, uint16_t c
   }
 }
 
-void EvalNode::FilterBelowThreshold(int min_score) {
+int EvalNode::FilterBelowThreshold(int min_score) {
   if (letter_ != CHOICE_NODE) {
-    return;
+    return 0;
   }
+  int num_filtered = 0;
   for (int i = 0; i < children_.size(); i++) {
     auto child = children_[i];
     if (!child) {
@@ -323,11 +324,13 @@ void EvalNode::FilterBelowThreshold(int min_score) {
     }
     if (child->bound_ <= min_score) {
       children_[i] = NULL;
+      num_filtered++;
     } else {
       // This casts away the const-ness.
-      ((EvalNode*)child)->FilterBelowThreshold(min_score);
+      num_filtered += ((EvalNode*)child)->FilterBelowThreshold(min_score);
     }
   }
+  return num_filtered;
 }
 
 vector<pair<const EvalNode*, vector<pair<int, int>>>> EvalNode::MaxSubtrees() const {

@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
 import argparse
-import dataclasses
 import itertools
 import json
 import multiprocessing
 import random
 import time
-from collections import Counter
 from dataclasses import dataclass
 
 from cpp_boggle import Trie
@@ -16,11 +14,8 @@ from tqdm import tqdm
 from boggle.board_id import from_board_id, is_canonical_board_id
 from boggle.boggler import PyBoggler
 from boggle.breaker import (
-    BreakDetails,
     HybridTreeBreaker,
     IBucketBreaker,
-    merge_details,
-    print_details,
 )
 from boggle.dimensional_bogglers import Bogglers, BucketBogglers, TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
@@ -46,8 +41,6 @@ def break_init(args):
     (me,) = multiprocessing.current_process()._identity
     with open(f"tasks-{me}.ndjson", "w"):
         pass
-
-    print(f"Started worker #{me}")
 
 
 def break_worker(task: str | int):
@@ -181,11 +174,6 @@ def main():
         help="Breaking strategy to use.",
     )
     parser.add_argument(
-        "--log_per_board_stats",
-        action="store_true",
-        help="Log stats on every board, not just a summary at the end.",
-    )
-    parser.add_argument(
         "--break_class",
         type=str,
         help="Set to a board class to override --random_ids, --max_boards, etc.",
@@ -259,7 +247,7 @@ def main():
     end_s = time.time()
 
     print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
-    print("All failures:")
+    print(f"Found {len(good_boards)} breaking failure(s):")
     print("\n".join(good_boards))
 
 
