@@ -120,16 +120,16 @@ EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& v
 
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const {
-  if (cache_key_ == mark) {
-    uintptr_t v = cache_value_;
-    if (v & 1) {
-      // it's a vector
-      v -= 1;
-      return {(vector<const EvalNode*>*)v};
-    } else {
-      return {(const EvalNode*)v};
-    }
-  }
+  // if (cache_key_ == mark) {
+  //   uintptr_t v = cache_value_;
+  //   if (v & 1) {
+  //     // it's a vector
+  //     v -= 1;
+  //     return {(vector<const EvalNode*>*)v};
+  //   } else {
+  //     return {(const EvalNode*)v};
+  //   }
+  // }
 
   if (letter_ == EvalNode::CHOICE_NODE && cell_ == cell) {
     // This is the forced cell.
