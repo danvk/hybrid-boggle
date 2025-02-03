@@ -44,6 +44,7 @@ class HybridBreakDetails(IBucketBreakDetails):
     bounds: dict[int, int]
     boards_to_test: int
     init_nodes: int
+    num_filtered: dict[int, int]
 
 
 class IBucketBreaker:
@@ -219,6 +220,7 @@ class HybridTreeBreaker:
             sum_union=0,
             boards_to_test=0,
             init_nodes=0,
+            num_filtered={},
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
@@ -271,7 +273,9 @@ class HybridTreeBreaker:
         # ), f"Missed on {level}"
 
         if tree.bound >= self.best_score:
-            tree.filter_below_threshold(self.best_score)
+            n_filtered = tree.filter_below_threshold(self.best_score)
+            if n_filtered:
+                self.details_.num_filtered[level] = n_filtered
             # print(f"f -> {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes")
         # print(
         #     f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes"
