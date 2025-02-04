@@ -24,10 +24,10 @@ def main():
 
     # TODO: set up --size, --python args
     if True:
-        t = make_py_trie("boggle-words.txt")
+        t = make_py_trie("wordlists/enable2k.txt")
         boggler = PyBoggler(t, dims)
     else:
-        t = Trie.CreateFromFile("boggle-words.txt")
+        t = Trie.CreateFromFile("wordlists/enable2k.txt")
         boggler = cpp_boggler(t, dims)
 
     random.seed(0xB0881E)

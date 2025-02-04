@@ -80,7 +80,7 @@ def class_to_buckets(classes: str) -> list[int]:
 
 def main():
     random.seed(2025)
-    t = Trie.CreateFromFile("boggle-words.txt")
+    t = Trie.CreateFromFile("wordlists/enable2k.txt")
     assert t
     num_classes = 5
     w, h = 3, 3

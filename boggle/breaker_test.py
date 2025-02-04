@@ -11,7 +11,7 @@ def test_even_split():
 
 
 def test_bucket_boggle34():
-    t = Trie.CreateFromFile("boggle-words.txt")
+    t = Trie.CreateFromFile("wordlists/enable2k.txt")
     bb = BucketBoggler34(t)
     # s l p i a e n t r d e s
     assert bb.ParseBoard(

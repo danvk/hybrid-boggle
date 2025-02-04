@@ -23,7 +23,7 @@ from boggle.trie import make_py_trie
 
 
 def main_class():
-    t = Trie.CreateFromFile("boggle-words.txt")
+    t = Trie.CreateFromFile("wordlists/enable2k.txt")
     (board,) = sys.argv[1:]
     cells = board.split(" ")
     assert len(cells) == 3 * 4
@@ -54,7 +54,7 @@ def main_class():
 
 
 def main22():
-    t = make_py_trie("boggle-words.txt")
+    t = make_py_trie("wordlists/enable2k.txt")
     boggler = PyBoggler(t, (2, 2))
 
     atoz = "".join(chr(x) for x in range(ord("a"), ord("z") + 1))

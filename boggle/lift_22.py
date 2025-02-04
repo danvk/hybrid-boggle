@@ -35,7 +35,7 @@ def main():
     parser.add_argument(
         "--dictionary",
         type=str,
-        default="boggle-words.txt",
+        default="wordlists/enable2k.txt",
         help="Path to dictionary file with one word per line. Words must be "
         '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
     )
@@ -68,10 +68,10 @@ def main():
     }[len(cells)]
 
     if args.python:
-        trie = make_py_trie("boggle-words.txt")
+        trie = make_py_trie("wordlists/enable2k.txt")
         etb = EvalTreeBoggler(trie, dims)
     else:
-        trie = Trie.CreateFromFile("boggle-words.txt")
+        trie = Trie.CreateFromFile("wordlists/enable2k.txt")
         etb = cpp_tree_builder(trie, dims)
 
     arena = create_eval_node_arena()
