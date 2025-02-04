@@ -8,4 +8,3 @@ RUN git clone https://github.com/danvk/hybrid-boggle.git && \
     pip install poetry && \
     poetry install && \
     ./build.sh
-
