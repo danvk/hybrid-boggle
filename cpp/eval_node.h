@@ -100,7 +100,7 @@ class EvalNode {
   uint16_t choice_mask_;
 
   mutable uint32_t cache_key_;
-  mutable uintptr_t cache_value_;
+  mutable variant<const EvalNode*, vector<const EvalNode*>*> cache_value_;
 
   mutable uint64_t hash_;
 
