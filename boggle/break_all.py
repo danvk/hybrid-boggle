@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import glob
 import itertools
 import json
 import multiprocessing
@@ -191,6 +192,11 @@ def main():
         help="Number of concurrent breakers to run.",
     )
     parser.add_argument(
+        "--resume_from",
+        type=str,
+        help="Glob pattern of ndjson output files from a previous run.",
+    )
+    parser.add_argument(
         "--python",
         action="store_true",
         help="Use Python implementation of ibuckets instead of C++. This is ~50x slower!",
@@ -207,6 +213,17 @@ def main():
     assert 3 <= w <= 4
     assert 3 <= h <= 4
     max_index = num_classes ** (w * h)
+
+    completed_ids = set()
+    if args.resume_from:
+        n_files = 0
+        for filename in glob.glob(args.resume_from):
+            n_files += 1
+            with open(filename) as input:
+                for line in input:
+                    task = json.loads(line)
+                    completed_ids.add(task["id"])
+        print(f"Recovered {len(completed_ids)} completed IDs from {n_files} files.")
 
     indices: list[int | str]
     needs_canonical_filter = False
@@ -238,6 +255,7 @@ def main():
             random.shuffle(indices)
             # Filtering on the workers results in faster startup.
             needs_canonical_filter = True
+        indices = [idx for idx in indices if idx not in completed_ids]
         boards_type = "total" if needs_canonical_filter else "canonical"
         print(
             f"Found {len(indices)} {boards_type} boards in {time.time() - start_s:.02f}s."
