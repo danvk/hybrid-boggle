@@ -1,6 +1,4 @@
 #!/bin/bash
-set -o errexit
-set -x
 
 c++ --version | grep Apple > /dev/null
 if [[ $? == 0 ]]; then
@@ -9,6 +7,7 @@ else
     EXTRA_FLAGS=""
 fi
 
+set -o errexit
 cd cpp
 c++ -Wall -shared -std=c++20 -fPIC -march=native \
     -Wno-sign-compare \
