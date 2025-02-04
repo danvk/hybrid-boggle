@@ -23,6 +23,11 @@ def flip_y[T](mat: list[list[T]]):
     return [row[::-1] for row in mat]
 
 
+def transpose[T](mat: list[list[T]]):
+    """Transpose an NxM matrix."""
+    return [[mat[i][j] for i in range(len(mat))] for j in range(len(mat[0]))]
+
+
 def all_symmetries[T](mat: list[list[T]], no_rotations=False):
     """Return all symmetries of a 2D matrix."""
     fy = flip_y(mat)

@@ -9,7 +9,7 @@ from boggle.trie import make_py_trie
 
 def main():
     (_, board) = sys.argv
-    t = make_py_trie("boggle-words.txt")
+    t = make_py_trie("wordlists/enable2k.txt")
     dims = {
         4: (2, 2),
         9: (3, 3),

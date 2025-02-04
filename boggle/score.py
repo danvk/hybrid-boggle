@@ -25,7 +25,7 @@ def main():
     parser.add_argument(
         "--dictionary",
         type=str,
-        default="boggle-words.txt",
+        default="wordlists/enable2k.txt",
         help="Path to dictionary file with one word per line. Words must be "
         '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
     )

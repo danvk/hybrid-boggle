@@ -10,8 +10,8 @@ from cpp_boggle import Trie as CppTrie
 
 
 def main():
-    t = CppTrie.CreateFromFile("boggle-words.txt")
-    # t = make_py_trie("boggle-words.txt")
+    t = CppTrie.CreateFromFile("wordlists/enable2k.txt")
+    # t = make_py_trie("wordlists/enable2k.txt")
 
     b = CppBoggler(t)
     print(f"Loaded {t.Size()} words")

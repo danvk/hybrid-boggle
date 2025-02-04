@@ -8,7 +8,7 @@ from boggle.trie import make_py_trie
 
 
 def main():
-    trie = make_py_trie("boggle-words.txt")
+    trie = make_py_trie("wordlists/enable2k.txt")
     (board, *lift_cell_strs) = sys.argv[1:]
     lift_cells = [int(s) for s in lift_cell_strs]
 

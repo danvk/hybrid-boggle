@@ -52,7 +52,7 @@ def try_all2(bb: PyBucketBoggler, cell1: int, cell2: int):
 
 def main_viz():
     (board,) = sys.argv[1:]
-    pyt = make_py_trie("boggle-words.txt")
+    pyt = make_py_trie("wordlists/enable2k.txt")
     etb = EvalTreeBoggler(pyt, (3, 4))
     etb.ParseBoard(board)
     tree = etb.BuildTree()
@@ -61,7 +61,7 @@ def main_viz():
 
 def main():
     (board,) = sys.argv[1:]
-    pyt = make_py_trie("boggle-words.txt")
+    pyt = make_py_trie("wordlists/enable2k.txt")
     pbb = PyBucketBoggler(pyt, (3, 4))
     pbb.ParseBoard(board)
 

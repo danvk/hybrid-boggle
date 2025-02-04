@@ -10,12 +10,12 @@ from boggle.trie import make_py_trie
 
 @functools.cache
 def get_py_trie():
-    return make_py_trie("boggle-words.txt")
+    return make_py_trie("wordlists/enable2k.txt")
 
 
 @functools.cache
 def get_cpp_trie():
-    return Trie.CreateFromFile("boggle-words.txt")
+    return Trie.CreateFromFile("wordlists/enable2k.txt")
 
 
 PARAMS = [

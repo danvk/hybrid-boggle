@@ -32,7 +32,7 @@ class Timer:
 def main_old():
     # TODO: make this take --dictionary flag
     (board,) = sys.argv[1:]
-    t = Trie.CreateFromFile("boggle-words.txt")
+    t = Trie.CreateFromFile("wordlists/enable2k.txt")
     assert t.FindWord("qinqennia") is not None
     if " " not in board:
         board = " ".join([*board])
@@ -53,7 +53,7 @@ def main_old():
     d = bb.Details()
     print(d.max_nomark, d.sum_union)
 
-    pyt = make_py_trie("boggle-words.txt")
+    pyt = make_py_trie("wordlists/enable2k.txt")
     assert pyt.FindWord("qinqennia") is not None
     assert pyt.StartsWord(ord("q") - ord("a"))
     qt = pyt.Descend(ord("q") - ord("a"))
@@ -168,7 +168,7 @@ def print_counter(c: Counter[str]):
 
 def main():
     (board,) = sys.argv[1:]
-    t = Trie.CreateFromFile("boggle-words.txt")
+    t = Trie.CreateFromFile("wordlists/enable2k.txt")
     bb = BucketBoggler34(t)
     bb.ParseBoard(board)
     cell = 5
@@ -181,7 +181,7 @@ def main():
 
     print("---")
 
-    pyt = make_py_trie("boggle-words.txt")
+    pyt = make_py_trie("wordlists/enable2k.txt")
     pbb = PyBucketBoggler(pyt, (3, 4))
     pbb.ParseBoard(board)
     print("Python")
@@ -260,7 +260,7 @@ def main():
 
 
 def main_profile():
-    pyt = make_py_trie("boggle-words.txt")
+    pyt = make_py_trie("wordlists/enable2k.txt")
     tbb = TreeBucketBoggler(pyt)
     board = "aeiou chkmpt lnrsy lnrsy lnrsy aeiou aeiou aeiou bdfgjvwxz"
     tbb.ParseBoard(board)

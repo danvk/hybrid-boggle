@@ -16,7 +16,7 @@ def main():
     (base_board,) = sys.argv[1:]
     assert len(base_board) == 16
 
-    t1 = Trie.CreateFromFile("boggle-words.txt")
+    t1 = Trie.CreateFromFile("wordlists/enable2k.txt")
     assert t1
     boggler = Boggler44(t1)
     bb = BucketBoggler44(t1)
