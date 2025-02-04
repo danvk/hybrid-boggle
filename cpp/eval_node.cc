@@ -608,20 +608,21 @@ void EvalNode::SetChoicePointMask(const vector<int>& num_letters) {
 }
 
 template<typename T>
-void Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
+int Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
   cerr << "MarkAndSweep not implemented" << endl;
   exit(1);
 }
 
 template <>
-void Arena<EvalNode>::MarkAndSweep(EvalNode* root, uint32_t mark) {
+int Arena<EvalNode>::MarkAndSweep(EvalNode* root, uint32_t mark) {
   // Doing this after each LiftChoice() call is a ~10% slowdown.
-  // int num_deleted = 0;
+  root->MarkAllWith(mark);
+  int num_deleted = 0;
   for (auto& node : owned_nodes_) {
     if (node->cache_key_ != mark) {
       delete node;
       node = NULL;
-      // num_deleted++;
+      num_deleted++;
     }
   }
 
@@ -631,6 +632,7 @@ void Arena<EvalNode>::MarkAndSweep(EvalNode* root, uint32_t mark) {
   owned_nodes_.erase(new_end, owned_nodes_.end());
 
   // cout << "Deleted " << num_deleted << " nodes, " << old_size << " -> " << owned_nodes_.size() << endl;
+  return num_deleted;
 }
 
 const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena);

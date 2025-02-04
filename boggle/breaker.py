@@ -53,6 +53,8 @@ class HybridBreakDetails(BreakDetails):
     boards_to_test: int
     init_nodes: int
     total_nodes: int
+    freed_nodes: int
+    free_time_s: float
     num_filtered: dict[int, int]
 
 
@@ -194,6 +196,7 @@ class HybridTreeBreaker:
         *,
         # TODO: ideally this should depend on the node_count of the tree.
         switchover_level: int,
+        free_after_score: bool,
     ):
         self.etb = etb
         self.boggler = boggler
@@ -204,6 +207,7 @@ class HybridTreeBreaker:
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
         self.switchover_level = switchover_level
+        self.free_after_score = free_after_score
         # TODO: EvalTreeBoggler could have a method to produce an arena.
         self.create_arena = (
             create_eval_node_arena_py
@@ -230,6 +234,8 @@ class HybridTreeBreaker:
             init_nodes=0,
             total_nodes=0,
             num_filtered={},
+            freed_nodes=0,
+            free_time_s=0.0,
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.lifted_cells_ = []
@@ -308,7 +314,11 @@ class HybridTreeBreaker:
     def switch_to_score(self, tree: EvalNode, level: int, arena) -> None:
         # This reduces the amount of time we use max memory, but it's a ~5% perf hit.
         # start_s = time.time()
-        # arena.mark_and_sweep(tree)
+        if not self.free_after_score:
+            self.mark += 1
+            start_s = time.time()
+            self.details_.freed_nodes = arena.mark_and_sweep(tree, self.mark)
+            self.details_.free_time_s = time.time() - start_s
         # elapsed_s = time.time() - start_s
         # self.details_.secs_by_level[f"{level:02}mark_and_sweep"] += elapsed_s
         start_s = time.time()

@@ -44,7 +44,8 @@ class Arena {
     owned_nodes_.push_back(node);
   }
 
-  void MarkAndSweep(T* root, uint32_t mark);
+  // Returns the number of nodes deleted
+  int MarkAndSweep(T* root, uint32_t mark);
 
   // friend EvalNode;
 
@@ -107,6 +108,7 @@ class EvalNode {
   int RecomputeScore() const;
   int NodeCount() const;
   unsigned int UniqueNodeCount(uint32_t mark) const;
+  void MarkAllWith(uint32_t mark);
 
   vector<string> BoundRemainingBoards(
     vector<string> cells,
@@ -117,7 +119,6 @@ class EvalNode {
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const;
   void MaxSubtreesHelp(vector<pair<const EvalNode*, vector<pair<int, int>>>>& out, vector<pair<int, int>> path) const;
-  void MarkAllWith(uint32_t mark);
 };
 
 #endif  // EVAL_NODE_H

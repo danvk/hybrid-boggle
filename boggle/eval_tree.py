@@ -43,8 +43,8 @@ class PyArena:
     def num_nodes(self):
         return "n/a"
 
-    def mark_and_sweep(self, root):
-        pass
+    def mark_and_sweep(self, root, mark):
+        return 0
 
 
 def create_eval_node_arena_py():

@@ -81,6 +81,8 @@ def break_worker(task: str | int):
         summary["id"] = task
         out.write(json.dumps(summary))
         out.write("\n")
+        if args.log_per_board_stats:
+            print(json.dumps(summary, indent=2))
 
     return details.failures
 
@@ -103,7 +105,12 @@ def get_breaker(args) -> BreakingBundle:
 
     if args.breaker == "hybrid":
         breaker = HybridTreeBreaker(
-            etb, boggler, dims, best_score, switchover_level=args.switchover_level
+            etb,
+            boggler,
+            dims,
+            best_score,
+            switchover_level=args.switchover_level,
+            free_after_score=args.free_after_score,
         )
     elif args.breaker == "ibuckets":
         if args.python:
@@ -195,6 +202,17 @@ def main():
         "--resume_from",
         type=str,
         help="Glob pattern of ndjson output files from a previous run.",
+    )
+    parser.add_argument(
+        "--free_after_score",
+        action="store_true",
+        help="Wait to free memory until after score_with_forces in HybridBreaker. "
+        "This is a ~5%% performance hit but significantly reduces the time that memory is held.",
+    )
+    parser.add_argument(
+        "--log_per_board_stats",
+        action="store_true",
+        help="Log stats on every board to stdout, rather just to an ndjson file.",
     )
     parser.add_argument(
         "--python",
