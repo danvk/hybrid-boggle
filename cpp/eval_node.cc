@@ -120,16 +120,9 @@ EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& v
 
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const {
-  // if (cache_key_ == mark) {
-  //   uintptr_t v = cache_value_;
-  //   if (v & 1) {
-  //     // it's a vector
-  //     v -= 1;
-  //     return {(vector<const EvalNode*>*)v};
-  //   } else {
-  //     return {(const EvalNode*)v};
-  //   }
-  // }
+  if (cache_key_ == mark) {
+    return cache_value_;
+  }
 
   if (letter_ == EvalNode::CHOICE_NODE && cell_ == cell) {
     // This is the forced cell.
@@ -148,15 +141,15 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
     }
     vector_arena.AddNode(out);
     cache_key_ = mark;
-    cache_value_ = ((uintptr_t)out) + 1;
-    return {out};
+    cache_value_ = {out};
+    return cache_value_;
   }
 
   if ((choice_mask_ & (1 << cell)) == 0) {
     // There's no relevant choice below us, so we can bottom out.
     cache_key_ = mark;
-    cache_value_ = (uintptr_t)this;
-    return {this};
+    cache_value_ = {this};
+    return cache_value_;
   }
 
   vector<variant<const EvalNode*, vector<const EvalNode*>*>> results;
@@ -257,8 +250,8 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
   }
 
   cache_key_ = mark;
-  cache_value_ = ((uintptr_t)out) + 1;
-  return out;
+  cache_value_ = {out};
+  return cache_value_;
 }
 
 unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
