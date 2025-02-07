@@ -9,8 +9,13 @@ from boggle.eval_tree import CHOICE_NODE, EvalNode, EvalTreeBoggler
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
 
+MARK = 2
+
 
 def collect_equations(t: EvalNode, cells, eqs: list):
+    if t.cache_key == MARK:
+        return t.cache_value
+
     # TODO: could use trie nodes to get word labels for pointy sum nodes
     # TODO: could do a form of DAG optimization here to reduce # of equations
     if t.letter == CHOICE_NODE:
@@ -21,6 +26,8 @@ def collect_equations(t: EvalNode, cells, eqs: list):
                 child_id = collect_equations(c, cells, eqs)
                 choices.append((letter_id, child_id))
         if len(choices) == 1 and choices[0][1] == 1:
+            t.cache_key = MARK
+            t.cache_value = choices[0][0]
             return choices[0][0]
         me_id = f"n_{len(eqs)}"
         eqs.append((me_id, "choice", choices))
@@ -35,8 +42,12 @@ def collect_equations(t: EvalNode, cells, eqs: list):
             me_id = f"n_{len(eqs)}"
             eqs.append((me_id, "sum", terms))
         else:
+            t.cache_key = MARK
+            t.cache_value = terms[0]
             return terms[0]
 
+    t.cache_key = MARK
+    t.cache_value = me_id
     return me_id
 
 
@@ -97,7 +108,7 @@ def main():
     }[len(cells)]
     etb = EvalTreeBoggler(trie, dims)
     assert etb.ParseBoard(board)
-    tree = etb.BuildTree(None, dedupe=False)
+    tree = etb.BuildTree(None, dedupe=True)
     eqs = []
     root_id = collect_equations(tree, cells, eqs)
     sys.stderr.write(f"eq count: {len(eqs)}\n")
