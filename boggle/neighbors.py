@@ -26,12 +26,14 @@ def init_neighbors(w: int, h: int):
 
 
 NEIGHBORS22 = init_neighbors(2, 2)
+NEIGHBORS23 = init_neighbors(2, 3)
 NEIGHBORS33 = init_neighbors(3, 3)
 NEIGHBORS34 = init_neighbors(3, 4)
 NEIGHBORS44 = init_neighbors(4, 4)
 
 NEIGHBORS = {
     (2, 2): NEIGHBORS22,
+    (2, 3): NEIGHBORS23,
     (3, 3): NEIGHBORS33,
     (3, 4): NEIGHBORS34,
     (4, 4): NEIGHBORS44,

@@ -80,6 +80,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def_static("ReverseLookup", py::overload_cast<const Trie*, const Trie*>(&Trie::ReverseLookup))
         .def_static("CreateFromFile", &Trie::CreateFromFile);
 
+    declare_boggler<2, 3>(m, "Boggler23");
     declare_boggler<3, 3>(m, "Boggler33");
     declare_boggler<3, 4>(m, "Boggler34");
     declare_boggler<4, 4>(m, "Boggler44");

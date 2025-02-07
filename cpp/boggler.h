@@ -87,6 +87,50 @@ unsigned int Boggler<M, N>::InternalScore() {
   return score_;
 }
 
+// 2x3 Boggle
+
+template <>
+void Boggler<2, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  int c = bd_[i];
+
+  used_ ^= (1 << i);
+  len += (c==kQ ? 2 : 1);
+  if (t->IsWord()) {
+    if (t->Mark() != runs_) {
+      t->Mark(runs_);
+      score_ += kWordScores[len];
+    }
+  }
+
+  int cc, idx;
+
+#define HIT(x,y) do { idx = (x) * 3 + y; \
+                      if ((used_ & (1 << idx)) == 0) { \
+                        cc = bd_[idx]; \
+                        if (t->StartsWord(cc)) { \
+                          DoDFS(idx, len, t->Descend(cc)); \
+                        } \
+                      } \
+		 } while(0)
+#define HIT3y(x,y) HIT(x,y); HIT(x,y+1); HIT(x,y+2)
+
+  // x*3 + y, 0<=x<=1, 0<=y<=2
+  switch (i) {
+    case 0*3 + 0: HIT(0, 1); HIT(1, 0); HIT(1, 1); break;
+    case 0*3 + 1: HIT(0, 0); HIT3y(1, 0); HIT(0, 2); break;
+    case 0*3 + 2: HIT(0, 1); HIT(1, 1); HIT(1, 2); break;
+
+    case 1*3 + 0: HIT(1, 1); HIT(0, 0); HIT(0, 1); break;
+    case 1*3 + 1: HIT(1, 0); HIT3y(0, 0); HIT(1, 2); break;
+    case 1*3 + 2: HIT(1, 1); HIT(0, 1); HIT(0, 2); break;
+  }
+
+  used_ ^= (1 << i);
+
+#undef HIT
+#undef HIT3y
+}
+
 // 3x3 Boggle
 
 template <>

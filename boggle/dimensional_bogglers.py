@@ -1,4 +1,5 @@
 from cpp_boggle import (
+    Boggler23,
     Boggler33,
     Boggler34,
     Boggler44,
@@ -10,9 +11,10 @@ from cpp_boggle import (
     TreeBuilder44,
 )
 
+from boggle.boggler import PyBoggler
 from boggle.ibuckets import PyBucketBoggler22
 
-Bogglers = {(3, 3): Boggler33, (3, 4): Boggler34, (4, 4): Boggler44}
+Bogglers = {(2, 3): Boggler23, (3, 3): Boggler33, (3, 4): Boggler34, (4, 4): Boggler44}
 
 BucketBogglers = {
     (2, 2): PyBucketBoggler22,
@@ -30,4 +32,6 @@ TreeBuilders = {
 
 # Matches PyBoggler constructor
 def cpp_boggler(t, dims):
+    if dims == (2, 2):
+        return PyBoggler(t, dims)
     return Bogglers[dims](t)
