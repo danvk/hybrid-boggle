@@ -244,8 +244,8 @@ def main():
     # print(eqs)
     # print("---\n")
     # to_cmsat(cells, cutoff, root_id, eqs)
-    to_py(cells, cutoff, root_id, eqs)
-    # to_ortools(cells, cutoff, root_id, eqs, eq_id_to_node)
+    # to_py(cells, cutoff, root_id, eqs)
+    to_ortools(cells, cutoff, root_id, eqs, eq_id_to_node)
 
 
 if __name__ == "__main__":
