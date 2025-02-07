@@ -5,60 +5,36 @@ import sys
 from collections import defaultdict
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
+from boggle.eval_tree import CHOICE_NODE, EvalNode, EvalTreeBoggler
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
 
 
-class ConstraintBuilder:
-    def __init__(self, trie: PyTrie, dims=(3, 3)):
-        self.trie = trie
-        self.dims = dims
-        self.neighbors = NEIGHBORS[dims]
+def collect_equations(t: EvalNode, eqs: list):
+    # TODO: could use trie nodes to get word labels for pointy sum nodes
+    # TODO: could do a form of DAG optimization here to reduce # of equations
+    if t.letter == CHOICE_NODE:
+        choices = []
+        for c in t.children:
+            if c:
+                child_id = collect_equations(c, eqs)
+                choices.append((c.cell, c.letter, child_id))
+        me_id = f"n{len(eqs)}"
+        eqs.append((me_id, "choice", choices))
+    else:
+        # sum node
+        terms = [t.points]
+        for c in t.children:
+            if c:
+                child_id = collect_equations(c, eqs)
+                terms.append(child_id)
+        me_id = f"n{len(eqs)}"
+        eqs.append((me_id, "sum", terms))
 
-    def build(self, board: str):
-        self.used = 0
-        self.choices = []
-        self.mark = self.trie.Mark() + 1
-        self.trie.SetMark(self.mark)
-        self.cells = [cell if cell != "." else "" for cell in board.split(" ")]
-        assert len(self.cells) == self.dims[0] * self.dims[1]
-        self.words = defaultdict[tuple[PyTrie, int], set[str]](set)
-        # self.vars = dict[str, list[str]]()
-        for i in range(len(self.cells)):
-            self.make_choices(i, 0, self.trie)
-        return self.words
-
-    def make_choices(self, cell: int, length: int, t: PyTrie):
-        """Fill in the choice node given the choices available on this cell."""
-        for char in self.cells[cell]:
-            cc = ord(char) - LETTER_A
-            if t.StartsWord(cc):
-                self.choices.append((cell, char))
-                self.explore_neighbors(
-                    cell, length + (2 if cc == LETTER_Q else 1), t.Descend(cc)
-                )
-                self.choices.pop()
-
-    def explore_neighbors(self, cell: int, length: int, t: PyTrie):
-        self.used ^= 1 << cell
-
-        for ni in self.neighbors[cell]:
-            if self.used & (1 << ni):
-                continue
-            self.make_choices(ni, length, t)
-
-        if t.IsWord():
-            word_score = SCORES[length]
-            var_seq = tuple(f"{char}{cell}" for cell, char in sorted(self.choices))
-            # var = "".join(var_seq)
-            # self.vars[var] = var_seq
-            k = (t, word_score)
-            self.words[k].add(var_seq)
-
-        self.used ^= 1 << cell
+    return me_id
 
 
-def to_cmsat(cells, best_score: int, eqs, trie: PyTrie, word_join="or"):
+def to_cmsat(cells, best_score: int, root_id, eqs):
     # lookup = make_lookup_table(trie)
     # declare variables
     # choices
@@ -73,22 +49,15 @@ def to_cmsat(cells, best_score: int, eqs, trie: PyTrie, word_join="or"):
 
     # words
     terms = []
-    for (t, score), paths in eqs.items():
-        # word = lookup[t]
-        # print(f"(declare-const {word} Bool)")
-        and_paths = [("(and " + " ".join(path) + ")") for path in paths]
-        if len(and_paths) == 1:
-            term = and_paths[0]
+    for eq_id, eq_type, terms in eqs:
+        print(f"(declare-const {eq_id} Int)")
+        if eq_type == "sum":
+            print(f"(assert (= {eq_id} (+ {' '.join(str(t) for t in terms)})))")
         else:
-            word_ors = " ".join(and_paths)
-            term = f"({word_join} {word_ors})"
+            products = [f"(* {let}{cell} {term_id})" for (cell, let, term_id) in terms]
+            print(f"(assert (= {eq_id} (+ {' '.join(products)})))")
 
-        if score > 1:
-            term = f"(* {score} {term})"
-        terms.append(term)
-
-    word_sum = " ".join(terms)
-    print(f"(assert (> (+ {word_sum}) {best_score}))")
+    print(f"(assert (> {root_id} {best_score}))")
     print("(check-sat)")
     # print("(get-model)")
 
@@ -101,19 +70,28 @@ def main():
     # trie.AddWord("tea")
     # trie.AddWord("the")
     # trie = make_py_trie("mini-dict.txt")
+    (
+        cutoff_str,
+        board,
+    ) = sys.argv[1:]
     trie = make_py_trie("boggle-words.txt")
-    b = ConstraintBuilder(trie, (3, 3))
-    # board = ". . . . lnrsy aeiou aeiou aeiou ."
-    (board,) = sys.argv[1:]
-    # board = "t i z ae z z r z z"
+    cutoff = int(cutoff_str)
     cells = board.split(" ")
-    eqs = b.build(board)
-
+    dims = {
+        4: (2, 2),
+        9: (3, 3),
+        12: (3, 4),
+        16: (4, 4),
+    }[len(cells)]
+    etb = EvalTreeBoggler(trie, dims)
+    assert etb.ParseBoard(board)
+    tree = etb.BuildTree(None, dedupe=False)
+    eqs = []
+    root_id = collect_equations(tree, eqs)
     sys.stderr.write(f"eq count: {len(eqs)}\n")
     # print(eqs)
     # print("---\n")
-    best_score = 700
-    to_cmsat(cells, best_score, eqs, trie, word_join="+")
+    to_cmsat(cells, cutoff, root_id, eqs)
 
 
 if __name__ == "__main__":
