@@ -117,24 +117,29 @@ def to_ortools(cells, best_score: int, root_id, eqs, eq_id_to_node):
                 if term_id == 1:
                     products.append(letter_id)
                 else:
-                    key = (
-                        (letter_id, term_id)
-                        if letter_id < term_id
-                        else (term_id, letter_id)
-                    )
-                    prod_id = product_eqs.get(key)
-                    if prod_id is None:
-                        prod_id = f"p_{len(product_eqs)}"
-                        product_eqs[key] = prod_id
-                        term_node = eq_id_to_node.get(term_id)
-                        if term_node:
-                            bound = term_node.bound
-                        else:
-                            bound = 1
-                        print(f"{prod_id} = model.new_int_var(0, {bound}, '{prod_id}')")
-                        print(
-                            f"model.add_multiplication_equality({prod_id}, ({letter_id}, {term_id}))"
+                    if isinstance(term_id, int):
+                        prod_id = f"({letter_id} * {term_id})"
+                    else:
+                        key = (
+                            (letter_id, term_id)
+                            if letter_id < term_id
+                            else (term_id, letter_id)
                         )
+                        prod_id = product_eqs.get(key)
+                        if prod_id is None:
+                            prod_id = f"p_{len(product_eqs)}"
+                            product_eqs[key] = prod_id
+                            term_node = eq_id_to_node.get(term_id)
+                            if term_node:
+                                bound = term_node.bound
+                            else:
+                                bound = 1
+                            print(
+                                f"{prod_id} = model.new_int_var(0, {bound}, '{prod_id}')"
+                            )
+                            print(
+                                f"model.add_multiplication_equality({prod_id}, ({letter_id}, {term_id}))"
+                            )
                     # TODO: if len(products) == 1, can simplify
                     products.append(prod_id)
             eq = "+".join(products)
