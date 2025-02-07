@@ -67,9 +67,8 @@ def to_cmsat(cells, best_score: int, root_id, eqs):
     # words
     terms = []
     for eq_id, eq_type, terms in eqs:
-        print(f"(declare-const {eq_id} Int)")
         if eq_type == "sum":
-            print(f"(assert (= {eq_id} (+ {' '.join(str(t) for t in terms)})))")
+            impl = f"(+ {' '.join(str(t) for t in terms)})"
         else:
             products = []
             for letter_id, term_id in terms:
@@ -78,11 +77,12 @@ def to_cmsat(cells, best_score: int, root_id, eqs):
                 else:
                     products.append(f"(* {letter_id} {term_id})")
 
-            print(f"(assert (= {eq_id} (+ {' '.join(products)})))")
+            impl = f"(+ {' '.join(products)})"
+        print(f"(define-fun {eq_id} () Int {impl})")
 
     print(f"(assert (> {root_id} {best_score}))")
     print("(check-sat)")
-    print("(get-model)")
+    # print("(get-model)")
 
 
 def to_py(cells, root_id, eqs):
@@ -126,6 +126,7 @@ def main():
     cells = board.split(" ")
     dims = {
         4: (2, 2),
+        6: (2, 3),
         9: (3, 3),
         12: (3, 4),
         16: (4, 4),
@@ -138,8 +139,8 @@ def main():
     sys.stderr.write(f"eq count: {len(eqs)}\n")
     # print(eqs)
     # print("---\n")
-    # to_cmsat(cells, cutoff, root_id, eqs)
-    to_py(cells, root_id, eqs)
+    to_cmsat(cells, cutoff, root_id, eqs)
+    # to_py(cells, root_id, eqs)
 
 
 if __name__ == "__main__":
