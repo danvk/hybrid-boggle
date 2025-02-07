@@ -169,7 +169,8 @@ print(" ".join(letters))
     )
 
 
-def to_py(cells, root_id, eqs):
+def to_py(cells: list[str], cutoff, root_id, eqs):
+    print("import itertools\n")
     print("def w(" + ", ".join(f"c{i}" for i in range(len(cells))) + "):")
     for i, cell in enumerate(cells):
         vars = []
@@ -191,6 +192,24 @@ def to_py(cells, root_id, eqs):
                     products.append(f"({letter_id}*{term_id})")
             print("+".join(products))
     print(f"    return {root_id}")
+
+    counts = ", ".join(str(len(c)) for c in cells)
+    print(f"counts = ({counts})")
+    print("""
+c = [[False] * n for n in counts]
+
+best_score = 0
+
+for idxs in itertools.product(*(range(n) for n in counts)):
+    for i, idx in enumerate(idxs):
+        c[i][idx] = True
+    score = w(*c)
+    best_score = max(score, best_score)
+    for i, idx in enumerate(idxs):
+        c[i][idx] = False
+
+print(best_score)
+""")
 
 
 def main():
@@ -225,8 +244,8 @@ def main():
     # print(eqs)
     # print("---\n")
     # to_cmsat(cells, cutoff, root_id, eqs)
-    # to_py(cells, root_id, eqs)
-    to_ortools(cells, cutoff, root_id, eqs, eq_id_to_node)
+    to_py(cells, cutoff, root_id, eqs)
+    # to_ortools(cells, cutoff, root_id, eqs, eq_id_to_node)
 
 
 if __name__ == "__main__":
