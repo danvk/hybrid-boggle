@@ -131,3 +131,8 @@ class PyBucketBoggler:
 class PyBucketBoggler22(PyBucketBoggler):
     def __init__(self, trie: PyTrie):
         super().__init__(trie, (2, 2))
+
+
+class PyBucketBoggler23(PyBucketBoggler):
+    def __init__(self, trie: PyTrie):
+        super().__init__(trie, (2, 3))

@@ -12,12 +12,13 @@ from cpp_boggle import (
 )
 
 from boggle.boggler import PyBoggler
-from boggle.ibuckets import PyBucketBoggler22
+from boggle.ibuckets import PyBucketBoggler22, PyBucketBoggler23
 
 Bogglers = {(2, 3): Boggler23, (3, 3): Boggler33, (3, 4): Boggler34, (4, 4): Boggler44}
 
 BucketBogglers = {
     (2, 2): PyBucketBoggler22,
+    (2, 3): PyBucketBoggler23,
     (3, 3): BucketBoggler33,
     (3, 4): BucketBoggler34,
     (4, 4): BucketBoggler44,
