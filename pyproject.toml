@@ -7,7 +7,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.12"
 pybind11 = "^2.13.6"
 pytest = "^8.3.4"
 tqdm = "^4.67.1"
@@ -15,6 +15,7 @@ ruff = "^0.8.4"
 gprof2dot = "^2024.6.6"
 numpy = "^2.2.1"
 z3-solver = "^4.13.4.0"
+ortools = "^9.11.4210"
 
 
 [build-system]
