@@ -19,7 +19,7 @@ def collect_equations(t: EvalNode, eqs: list):
             if c:
                 child_id = collect_equations(c, eqs)
                 choices.append((c.cell, c.letter, child_id))
-        me_id = f"n{len(eqs)}"
+        me_id = f"n_{len(eqs)}"
         eqs.append((me_id, "choice", choices))
     else:
         # sum node
@@ -28,7 +28,7 @@ def collect_equations(t: EvalNode, eqs: list):
             if c:
                 child_id = collect_equations(c, eqs)
                 terms.append(child_id)
-        me_id = f"n{len(eqs)}"
+        me_id = f"n_{len(eqs)}"
         eqs.append((me_id, "sum", terms))
 
     return me_id
@@ -54,12 +54,15 @@ def to_cmsat(cells, best_score: int, root_id, eqs):
         if eq_type == "sum":
             print(f"(assert (= {eq_id} (+ {' '.join(str(t) for t in terms)})))")
         else:
-            products = [f"(* {let}{cell} {term_id})" for (cell, let, term_id) in terms]
+            products = [
+                f"(* {cells[cell][let]}{cell} {term_id})"
+                for (cell, let, term_id) in terms
+            ]
             print(f"(assert (= {eq_id} (+ {' '.join(products)})))")
 
     print(f"(assert (> {root_id} {best_score}))")
     print("(check-sat)")
-    # print("(get-model)")
+    print("(get-model)")
 
 
 def main():
