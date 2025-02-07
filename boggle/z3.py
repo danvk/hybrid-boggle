@@ -23,13 +23,16 @@ def collect_equations(t: EvalNode, eqs: list):
         eqs.append((me_id, "choice", choices))
     else:
         # sum node
-        terms = [t.points]
+        terms = [t.points] if t.points else []
         for c in t.children:
             if c:
                 child_id = collect_equations(c, eqs)
                 terms.append(child_id)
-        me_id = f"n_{len(eqs)}"
-        eqs.append((me_id, "sum", terms))
+        if len(terms) > 1:
+            me_id = f"n_{len(eqs)}"
+            eqs.append((me_id, "sum", terms))
+        else:
+            return terms[0]
 
     return me_id
 
