@@ -10,15 +10,18 @@ from boggle.neighbors import NEIGHBORS
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
 
 
-def collect_equations(t: EvalNode, eqs: list):
+def collect_equations(t: EvalNode, cells, eqs: list):
     # TODO: could use trie nodes to get word labels for pointy sum nodes
     # TODO: could do a form of DAG optimization here to reduce # of equations
     if t.letter == CHOICE_NODE:
         choices = []
         for c in t.children:
             if c:
-                child_id = collect_equations(c, eqs)
-                choices.append((c.cell, c.letter, child_id))
+                letter_id = f"{cells[c.cell][c.letter]}{c.cell}"
+                child_id = collect_equations(c, cells, eqs)
+                choices.append((letter_id, child_id))
+        if len(choices) == 1 and choices[0][1] == 1:
+            return choices[0][0]
         me_id = f"n_{len(eqs)}"
         eqs.append((me_id, "choice", choices))
     else:
@@ -26,7 +29,7 @@ def collect_equations(t: EvalNode, eqs: list):
         terms = [t.points] if t.points else []
         for c in t.children:
             if c:
-                child_id = collect_equations(c, eqs)
+                child_id = collect_equations(c, cells, eqs)
                 terms.append(child_id)
         if len(terms) > 1:
             me_id = f"n_{len(eqs)}"
@@ -57,10 +60,13 @@ def to_cmsat(cells, best_score: int, root_id, eqs):
         if eq_type == "sum":
             print(f"(assert (= {eq_id} (+ {' '.join(str(t) for t in terms)})))")
         else:
-            products = [
-                f"(* {cells[cell][let]}{cell} {term_id})"
-                for (cell, let, term_id) in terms
-            ]
+            products = []
+            for letter_id, term_id in terms:
+                if term_id == 1:
+                    products.append(letter_id)
+                else:
+                    products.append(f"(* {letter_id} {term_id})")
+
             print(f"(assert (= {eq_id} (+ {' '.join(products)})))")
 
     print(f"(assert (> {root_id} {best_score}))")
@@ -93,7 +99,7 @@ def main():
     assert etb.ParseBoard(board)
     tree = etb.BuildTree(None, dedupe=False)
     eqs = []
-    root_id = collect_equations(tree, eqs)
+    root_id = collect_equations(tree, cells, eqs)
     sys.stderr.write(f"eq count: {len(eqs)}\n")
     # print(eqs)
     # print("---\n")
