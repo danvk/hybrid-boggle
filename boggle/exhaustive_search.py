@@ -8,6 +8,14 @@ For 2x2, the best board is:
   E T
 
 with 18 points on it.
+
+For 2x3, the best board is laspet:
+
+  L P
+  A E
+  S T
+
+with 129 points on it.
 """
 
 import itertools

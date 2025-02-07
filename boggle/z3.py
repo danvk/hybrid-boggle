@@ -85,6 +85,30 @@ def to_cmsat(cells, best_score: int, root_id, eqs):
     print("(get-model)")
 
 
+def to_py(cells, root_id, eqs):
+    print("def w(" + ", ".join(f"c{i}" for i in range(len(cells))) + "):")
+    for i, cell in enumerate(cells):
+        vars = []
+        for letter in cell:
+            var = f"{letter}{i}"
+            vars.append(var)
+        if len(vars) > 1:
+            print(f'    {",".join(vars)} = c{i}')
+    for eq_id, eq_type, terms in eqs:
+        print(f"    {eq_id}=", end="")
+        if eq_type == "sum":
+            print("+".join(str(t) for t in terms))
+        else:
+            products = []
+            for letter_id, term_id in terms:
+                if term_id == 1:
+                    products.append(letter_id)
+                else:
+                    products.append(f"({letter_id}*{term_id})")
+            print("+".join(products))
+    print(f"    return {root_id}")
+
+
 def main():
     # trie = PyTrie()
     # trie.AddWord("tar")
@@ -114,7 +138,8 @@ def main():
     sys.stderr.write(f"eq count: {len(eqs)}\n")
     # print(eqs)
     # print("---\n")
-    to_cmsat(cells, cutoff, root_id, eqs)
+    # to_cmsat(cells, cutoff, root_id, eqs)
+    to_py(cells, root_id, eqs)
 
 
 if __name__ == "__main__":
