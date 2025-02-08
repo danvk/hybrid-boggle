@@ -606,12 +606,11 @@ class EvalNode:
         is_dupe = self in cache
         me = prefix
         attrs = ""
-        if is_dupe:
-            attrs = 'color="red"'
+        # if is_dupe:
+        #     attrs = 'color="red"'
         if self.letter == ROOT_NODE:
             me += "r"
             label = "ROOT"
-            attrs += ' shape="oval"'
         elif self.letter == CHOICE_NODE:
             me += f"_{self.cell}c"
             label = f"{self.cell} CH"
