@@ -31,6 +31,8 @@ class Timer:
 
 def main_old():
     # TODO: make this take --dictionary flag
+    # TODO: make this take a --python flag
+    # TODO: make this take a --print_words flag
     (board,) = sys.argv[1:]
     t = Trie.CreateFromFile("wordlists/enable2k.txt")
     assert t.FindWord("qinqennia") is not None
@@ -39,6 +41,7 @@ def main_old():
     cells = board.split(" ")
     dims = {
         4: (2, 2),
+        6: (2, 3),
         9: (3, 3),
         12: (3, 4),
         16: (4, 4),
@@ -61,11 +64,13 @@ def main_old():
     assert qt.StartsWord(ord("i") - ord("a"))
     pbb = PyBucketBoggler(pyt, dims=dims)
     pbb.ParseBoard(board)
+    pbb.collect_words = True
     print(pbb.as_string())
     with Timer("py"):
         print(pbb.UpperBound(500_000))
     d = pbb.details_
     print(d.max_nomark, d.sum_union)
+    print("\n".join(sorted(pbb.words)))
 
 
 def try_all(bb, force_cell=-1):
