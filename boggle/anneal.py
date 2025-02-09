@@ -99,6 +99,12 @@ def main():
         help="Number of high-scoring boards to find before quitting.",
     )
     parser.add_argument(
+        "--swap_ratio",
+        type=float,
+        default=1.0,
+        help="Ratio of swaps to letter changes. 1.0=50/50, 0.0=no swaps.",
+    )
+    parser.add_argument(
         "--max_stall",
         type=int,
         default=2000,
@@ -110,6 +116,7 @@ def main():
     args = parser.parse_args()
     options = Options()
     options.max_stall = args.max_stall
+    options.swap_ratio = args.swap_ratio
 
     if args.random_seed >= 0:
         random.seed(args.random_seed)
