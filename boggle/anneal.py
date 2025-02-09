@@ -35,7 +35,7 @@ def mutate(board: list[int], opts: Options):
                 b = random.randint(0, num_cells - 1)
                 if a != b:
                     break
-            board[a] = board[b]
+            board[a], board[b] = board[b], board[a]
         else:
             # change a cell
             while True:
