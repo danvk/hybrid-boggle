@@ -27,6 +27,7 @@ There are five word lists in this repo:
 - [OSPD]: the Official Scrabble Players Dictionary, this is intended for casual Scrabble play and omits many obscure words. It contains 109,928 words raw and 109,762 processed. This file comes from the [scrabblewords] repo.
 - [YAWL]: Yet Another Word List. Compiled by Mendel Leo Cooper (a.k.a. thegrendel), this is a superset of ENABLE2K and OSW (Official Scrabble Words). It contains 264,097 words raw and 261,995 processed. This files comes from the yawl repo. Last updated 2008.
 - [SOWPODS]: aka CSW (Collins Scrabble Words). This is the union of OSPD and OSW. It includes both American and British spellings of words. It contains 279,078 words raw and 278,846 processed. This file comes from the [scrabblewords] repo (`British/CSW21.txt`).
+- [TWL06]: ...
 
 [scrabblewords]: https://github.com/scrabblewords/scrabblewords/tree/main/words/North-American
 [ENABLE2K]: https://everything2.com/title/ENABLE+word+list
@@ -35,3 +36,4 @@ There are five word lists in this repo:
 [OSPD]: https://en.wikipedia.org/wiki/Official_Scrabble_Players_Dictionary
 [YAWL]: https://github.com/elasticdog/yawl
 [SOWPODS]: https://en.wikipedia.org/wiki/Collins_Scrabble_Words
+[TWL06]: https://www.freescrabbledictionary.com/twl06/

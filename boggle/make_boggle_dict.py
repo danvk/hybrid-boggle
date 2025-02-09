@@ -6,7 +6,7 @@ import fileinput
 
 def is_boggle_word(word: str):
     size = len(word)
-    if size < 3 or size > 17:
+    if size < 3:
         return False
     for i, let in enumerate(word):
         if let < "a" or let > "z":
