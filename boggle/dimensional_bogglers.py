@@ -2,6 +2,7 @@ from cpp_boggle import (
     Boggler33,
     Boggler34,
     Boggler44,
+    Boggler55,
     BucketBoggler33,
     BucketBoggler34,
     BucketBoggler44,
@@ -12,7 +13,7 @@ from cpp_boggle import (
 
 from boggle.ibuckets import PyBucketBoggler22, PyBucketBoggler23
 
-Bogglers = {(3, 3): Boggler33, (3, 4): Boggler34, (4, 4): Boggler44}
+Bogglers = {(3, 3): Boggler33, (3, 4): Boggler34, (4, 4): Boggler44, (5, 5): Boggler55}
 
 BucketBogglers = {
     (2, 2): PyBucketBoggler22,
