@@ -4,6 +4,7 @@ from boggle.trie import make_lookup_table
 SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
 LETTER_A = ord("a")
 LETTER_Q = ord("q") - LETTER_A
+LETTER_Z = ord("z")
 
 
 class PyBoggler:

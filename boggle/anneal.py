@@ -1,0 +1,133 @@
+import argparse
+import math
+import random
+from dataclasses import dataclass
+
+from cpp_boggle import Trie
+
+from boggle.args import add_standard_args
+from boggle.boggler import LETTER_A, LETTER_Z, PyBoggler
+from boggle.dimensional_bogglers import Bogglers
+from boggle.trie import make_py_trie
+
+
+@dataclass
+class Options:
+    cool_t0: float = 100.0
+    cool_k: float = 0.05
+    swap_ratio: float = 1.0
+    mutation_p: float = 0.75
+    max_stall: int = 2000
+
+
+def initial_board(num_lets: int) -> list[int]:
+    return [random.randint(LETTER_A, LETTER_Z) for _ in range(num_lets)]
+
+
+def mutate(board: list[int], opts: Options):
+    num_cells = len(board)
+    while True:
+        if (1 + opts.swap_ratio) * random.random() > 1.0:
+            # swap two cells
+            while True:
+                a = random.randint(0, num_cells - 1)
+                b = random.randint(0, num_cells - 1)
+                if a != b:
+                    break
+            board[a] = board[b]
+        else:
+            # change a cell
+            while True:
+                cell = random.randint(0, num_cells - 1)
+                letter = random.randint(LETTER_A, LETTER_Z)
+                if board[cell] != letter:
+                    break
+            board[cell] = letter
+
+        if random.random() < opts.mutation_p:
+            break
+
+
+def accept_transition(cur_score: int, new_score: int, T: float) -> bool:
+    """Should we transition between boards with these two scores?"""
+    if new_score > cur_score:
+        return True
+    if T < 1e-20:
+        return False
+    p = math.exp((new_score - cur_score) / T)
+    return random.random() < p
+
+
+def temperature(n: int, opts: Options) -> float:
+    """The "temperature" after n iterations"""
+    return opts.cool_t0 * math.exp(-opts.cool_k * n)
+
+
+def anneal(boggler: PyBoggler, num_lets: int, opts: Options):
+    last_board = initial_board(num_lets)
+    best_score = 0
+    last_accept = 0
+
+    n = 0
+    while n < last_accept + opts.max_stall:
+        n += 1
+        board = [*last_board]
+        mutate(board, opts)
+        # TODO: could just pass the list; or mutate the boggler
+        board_str = "".join(chr(x) for x in board)
+        score = boggler.score(board_str)
+        T = temperature(n, opts)
+        if accept_transition(best_score, score, T):
+            last_accept = n
+            best_score = score
+            last_board = board
+
+    board_str = "".join(chr(x) for x in last_board)
+    return (best_score, board_str, n)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="Simulated annealing",
+        description="Find high-scoring Boggle boards using simulated annealing",
+    )
+    parser.add_argument(
+        "num_boards",
+        type=int,
+        default=100,
+        help="Number of high-scoring boards to find before quitting.",
+    )
+    parser.add_argument(
+        "--max_stall",
+        type=int,
+        default=2000,
+        help="Reset after this many iterations without improvement.",
+    )
+    # TODO: character list
+    add_standard_args(parser, random_seed=True, python=True)
+
+    args = parser.parse_args()
+    options = Options()
+    options.max_stall = args.max_stall
+
+    if args.random_seed >= 0:
+        random.seed(args.random_seed)
+
+    w, h = dims = args.size // 10, args.size % 10
+
+    if args.python:
+        t = make_py_trie(args.dictionary)
+        assert t
+        boggler = PyBoggler(t, dims)
+    else:
+        t = Trie.CreateFromFile(args.dictionary)
+        assert t
+        boggler = Bogglers[dims](t)
+
+    for run in range(args.num_boards):
+        score, board, n = anneal(boggler, w * h, options)
+        print(f"{score} {board} ({n} iterations)")
+
+
+if __name__ == "__main__":
+    main()

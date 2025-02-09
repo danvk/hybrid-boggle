@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from cpp_boggle import Trie
 from tqdm import tqdm
 
+from boggle.args import add_standard_args
 from boggle.board_id import from_board_id, is_canonical_board_id
 from boggle.boggler import PyBoggler
 from boggle.breaker import (
@@ -136,20 +137,7 @@ def main():
         help="Print boards with a score >= to this. Filter boards below this. "
         "A higher number will result in a faster run.",
     )
-    parser.add_argument(
-        "--size",
-        type=int,
-        choices=(33, 34, 44),
-        default=33,
-        help="Size of the boggle board.",
-    )
-    parser.add_argument(
-        "--dictionary",
-        type=str,
-        default="wordlists/enable2k.txt",
-        help="Path to dictionary file with one word per line. Words must be "
-        '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
-    )
+    add_standard_args(parser, random_seed=True, python=True)
     parser.add_argument(
         "--board_ids",
         help="Comma-separated list of board IDs. Omit to consider all "
@@ -213,11 +201,6 @@ def main():
         "--log_per_board_stats",
         action="store_true",
         help="Log stats on every board to stdout, rather just to an ndjson file.",
-    )
-    parser.add_argument(
-        "--python",
-        action="store_true",
-        help="Use Python implementation of ibuckets instead of C++. This is ~50x slower!",
     )
     args = parser.parse_args()
     if args.random_seed >= 0:
