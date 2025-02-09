@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 int w(int* cell) {
     int a0 = (cell[0] >> 0) & 1;
     int e0 = (cell[0] >> 1) & 1;
@@ -3336,19 +3335,9 @@ int w(int* cell) {
     return n_3295;
 }
 
-int overall_best = 0;
-
 int find_max(int i, int n, int* num_cells, int* cell) {
     if (i == n) {
         return w(cell);
-        // int score = w(cell);
-        // if (score > overall_best) {
-        //     printf("%d:", score);
-        //     for (int j = 0; j < n; j++) {
-        //         print(" %d", cell[j]);
-        //     }
-        // }
-        // return score;
     }
     int count = num_cells[i];
     int best = 0;
@@ -3362,10 +3351,10 @@ int find_max(int i, int n, int* num_cells, int* cell) {
     return best;
 }
 
-// aeiou chkmpt aeiou lnrsy bdfgjvwxz chkmpt
 int main() {
     int num_cells[] = {5, 6, 5, 5, 9, 6};
     int cell[] = {0, 0, 0, 0, 0, 0};
-    int best = find_max(0, 2*3, num_cells, cell);
+    int best = find_max(0, sizeof(cell)/sizeof(int), num_cells, cell);
     printf("%d\n", best);
 }
+

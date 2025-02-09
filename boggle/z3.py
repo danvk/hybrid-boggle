@@ -213,7 +213,9 @@ print(best_score)
 
 
 def to_c(cells: list[str], cutoff, root_id, eqs):
-    print("int w(" + ", ".join(f"int cell{i}" for i in range(len(cells))) + ") {")
+    print("#include <stdio.h>")
+    print("int w(int* cell) {")
+    # print("int w(" + ", ".join(f"int cell{i}" for i in range(len(cells))) + ") {")
     for i, cell in enumerate(cells):
         vars = []
         for letter in cell:
@@ -221,7 +223,7 @@ def to_c(cells: list[str], cutoff, root_id, eqs):
             vars.append(var)
         if len(vars) > 1:
             for j, var in enumerate(vars):
-                print(f"    int {var} = (cell{i} >> {j}) & 1;")
+                print(f"    int {var} = (cell[{i}] >> {j}) & 1;")
     for eq_id, eq_type, terms in eqs:
         print(f"    int {eq_id}=", end="")
         if eq_type == "sum":
@@ -236,6 +238,36 @@ def to_c(cells: list[str], cutoff, root_id, eqs):
             print("+".join(products) + ";")
     print(f"    return {root_id};")
     print("}")
+
+    num_cells_comma = ", ".join(str(len(cell)) for cell in cells)
+    zeros_comma = ", ".join("0" for _ in cells)
+    print(
+        """
+int find_max(int i, int n, int* num_cells, int* cell) {
+    if (i == n) {
+        return w(cell);
+    }
+    int count = num_cells[i];
+    int best = 0;
+    for (int let = 0; let < count; let++) {
+        cell[i] = 1 << let;
+        int score = find_max(i + 1, n, num_cells, cell);
+        if (score > best) {
+            best = score;
+        }
+    }
+    return best;
+}
+
+int main() {
+    int num_cells[] = {%s};
+    int cell[] = {%s};
+    int best = find_max(0, sizeof(cell)/sizeof(int), num_cells, cell);
+    printf("%%d\\n", best);
+}
+"""
+        % (num_cells_comma, zeros_comma)
+    )
 
 
 def main():
@@ -270,9 +302,9 @@ def main():
     # print(eqs)
     # print("---\n")
     # to_cmsat(cells, cutoff, root_id, eqs)
-    to_py(cells, cutoff, root_id, eqs)
+    # to_py(cells, cutoff, root_id, eqs)
     # to_ortools(cells, cutoff, root_id, eqs, eq_id_to_node)
-    # to_c(cells, cutoff, root_id, eqs)
+    to_c(cells, cutoff, root_id, eqs)
 
 
 if __name__ == "__main__":
