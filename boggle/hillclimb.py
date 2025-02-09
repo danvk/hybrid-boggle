@@ -44,24 +44,32 @@ def neighbors(board: str):
     return out
 
 
-def hillclimb(boggler: PyBoggler, num_lets: int):
+def hillclimb(boggler: PyBoggler, num_lets: int, args):
     best_bd = "".join(chr(x) for x in initial_board(num_lets))
     best_score = boggler.score(best_bd)
     print(f"{best_bd} {best_score}")
+
+    score_cache = {best_bd: best_score}
 
     num_iter = 0
     while True:
         ns = {best_bd}
         new_bd = None
-        for radius in range(1, 3):
+        for radius in range(1, args.max_radius + 1):
             num_iter += 1
-            new_ns = {n for p in ns for n in neighbors(p)}
-            for n in ns:
+            seeds = [(score_cache[n], n) for n in ns]
+            seeds.sort(reverse=True)
+            seeds = seeds[: args.pool_size]
+            seeds = [bd for _, bd in seeds]
+
+            new_ns = {n for seed in seeds for n in neighbors(seed)}
+            for n in seeds:
                 new_ns.remove(n)
             ns = new_ns
             print(f"r={radius}, n={len(ns)} candidates")
             for n in ns:
-                score = boggler.score(n)
+                score = score_cache.get(n) or boggler.score(n)
+                score_cache[n] = score
                 if score > best_score:
                     best_score = score
                     new_bd = n
@@ -87,10 +95,16 @@ def main():
         help="Number of high-scoring boards to find before quitting.",
     )
     parser.add_argument(
-        "--stall_radius",
+        "--max_radius",
         type=int,
         default=3,
         help="Stop if there are no improvements within this radius.",
+    )
+    parser.add_argument(
+        "--pool_size",
+        type=int,
+        default=100,
+        help="Keep this many candidates as seeds for the next round.",
     )
     # TODO: character list
     add_standard_args(parser, random_seed=True, python=True)
@@ -113,7 +127,7 @@ def main():
 
     best = Counter[str]()
     for run in range(args.num_boards):
-        score, board, n = hillclimb(boggler, w * h)
+        score, board, n = hillclimb(boggler, w * h, args)
         print(f"{score} {board} ({n} iterations)")
         best[board] = score
 
