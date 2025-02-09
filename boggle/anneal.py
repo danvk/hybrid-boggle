@@ -1,6 +1,7 @@
 import argparse
 import math
 import random
+from collections import Counter
 from dataclasses import dataclass
 
 from cpp_boggle import Trie
@@ -124,9 +125,17 @@ def main():
         assert t
         boggler = Bogglers[dims](t)
 
+    best = Counter[str]()
     for run in range(args.num_boards):
         score, board, n = anneal(boggler, w * h, options)
         print(f"{score} {board} ({n} iterations)")
+        best[board] = score
+
+    if args.num_boards > 10:
+        print("---")
+        print("Top ten boards:")
+        for score, board in best.most_common(10):
+            print(f"{score} {board}")
 
 
 if __name__ == "__main__":
