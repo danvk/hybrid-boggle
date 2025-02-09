@@ -589,8 +589,10 @@ class EvalNode:
             for child in self.children:
                 child.print_paths(word, word_table, prefix)
 
-    def to_dot(self, cells: list[str]) -> str:
-        _root_id, dot = self.to_dot_help(cells, "", {}, self.letter == CHOICE_NODE)
+    def to_dot(self, cells: list[str], max_depth=100) -> str:
+        _root_id, dot = self.to_dot_help(
+            cells, "", {}, self.letter == CHOICE_NODE, max_depth
+        )
         return f"""graph {{
     rankdir=LR;
     splines="false";
@@ -600,11 +602,12 @@ class EvalNode:
 """
 
     def to_dot_help(
-        self, cells: list[str], prefix, cache, is_top_max
+        self, cells: list[str], prefix, cache, is_top_max, remaining_depth
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
         is_dupe = self in cache
         me = prefix
+
         attrs = ""
         # if is_dupe:
         #     attrs = 'color="red"'
@@ -624,9 +627,17 @@ class EvalNode:
                 attrs += ' peripheries="2"'
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
+
+        if remaining_depth == 0:
+            return me, dot[0]
+
         children = [
             child.to_dot_help(
-                cells, f"{me}{i}", cache, is_top_max and child.letter == CHOICE_NODE
+                cells,
+                f"{me}{i}",
+                cache,
+                is_top_max and child.letter == CHOICE_NODE,
+                remaining_depth - 1,
             )
             for i, child in enumerate(self.children)
             if child
@@ -634,6 +645,7 @@ class EvalNode:
         all_choices = len(children) == len(self.children) and all(
             c.letter == CHOICE_NODE for c in self.children
         )
+        print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
             if is_top_max and all_choices:

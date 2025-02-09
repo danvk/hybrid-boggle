@@ -32,22 +32,30 @@ def main():
     sys.stderr.write(
         f"node count: {t.node_count()}, uniq={t.unique_node_count(mark)} bound={t.bound}\n"
     )
+    # t0 = t.children[0]
+    # t0t = t0.children[0]
+    # t = t0t
+
+    mark += 1
+    sys.stderr.write(
+        f"node count: {t.node_count()}, uniq={t.unique_node_count(mark)} bound={t.bound}\n"
+    )
 
     with open("tree.dot", "w") as out:
-        out.write(t.to_dot(cells))
+        out.write(t.to_dot(cells, max_depth=2))
         out.write("\n")
 
     for i, cell in enumerate(lift_cells):
         mark += 1
         t = t.lift_choice(
-            cell, len(cells[cell]), None, mark, dedupe=True, compress=True
+            cell, len(cells[cell]), None, mark, dedupe=True, compress=False
         )
         mark += 1
         sys.stderr.write(
-            f"lift{i}.dot {cell} -> node count: {t.node_count()}, uniq={t.unique_node_count(mark)}\n"
+            f"lift{i}.dot {cell} -> bound={t.bound} node count: {t.node_count()}, uniq={t.unique_node_count(mark)}\n"
         )
         with open(f"lift{i}.dot", "w") as out:
-            out.write(t.to_dot(cells))
+            out.write(t.to_dot(cells, max_depth=1 + i))
             out.write("\n")
 
 
