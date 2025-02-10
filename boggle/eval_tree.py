@@ -95,26 +95,17 @@ class EvalNode:
         return self.score_with_forces(forces_list)
 
     def score_with_forces(self, forces: list[int]) -> int:
-        global cache_count
-        cache_count += 1
-
         choice_mask = 0
         for cell, letter in enumerate(forces):
             if letter >= 0:
                 choice_mask |= 1 << cell
-        return self.score_with_forces_mask(forces, choice_mask, cache_count)
+        return self.score_with_forces_mask(forces, choice_mask)
 
     def score_with_forces_mask(
         self,
         forces: list[int],
         choice_mask: int,
-        cache_key: int,
     ) -> int:
-        if self.cache_key == cache_key:
-            if isinstance(self.cache_value, EvalNode):
-                print("going to blow up! 0")
-            return self.cache_value
-
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
@@ -124,11 +115,7 @@ class EvalNode:
                     idx = mask.bit_count()
                     child = self.children[idx]
                     if child:
-                        v = child.score_with_forces_mask(forces, choice_mask, cache_key)
-                self.cache_key = cache_key
-                self.cache_value = v
-                if isinstance(self.cache_value, EvalNode):
-                    print("going to blow up! 1")
+                        v = child.score_with_forces_mask(forces, choice_mask)
                 return v
 
         if not (self.choice_mask & choice_mask):
@@ -139,27 +126,17 @@ class EvalNode:
         if self.letter == CHOICE_NODE:
             v = (
                 max(
-                    child.score_with_forces_mask(forces, choice_mask, cache_key)
-                    if child
-                    else 0
+                    child.score_with_forces_mask(forces, choice_mask) if child else 0
                     for child in self.children
                 )
                 if self.children
                 else 0
             )
-            if isinstance(v, EvalNode):
-                print("going to blow up! 2")
         else:
             v = self.points + sum(
-                child.score_with_forces_mask(forces, choice_mask, cache_key)
-                if child
-                else 0
+                child.score_with_forces_mask(forces, choice_mask) if child else 0
                 for child in self.children
             )
-            if isinstance(v, EvalNode):
-                print("going to blow up! 3")
-        self.cache_key = cache_key
-        self.cache_value = v
         return v
 
     def assert_invariants(self, solver, is_top_max=None):
