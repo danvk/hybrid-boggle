@@ -2,12 +2,9 @@
 
 import argparse
 
-from cpp_boggle import Trie
-
-from boggle.args import add_standard_args
+from boggle.args import add_standard_args, get_trie_from_args
 from boggle.dimensional_bogglers import LEN_TO_DIMS, BucketBogglers
 from boggle.ibuckets import PyBucketBoggler
-from boggle.trie import make_py_trie
 
 
 def main():
@@ -28,13 +25,7 @@ def main():
     )
     add_standard_args(parser, python=True)
     args = parser.parse_args()
-
-    if args.python:
-        t = make_py_trie(args.dictionary)
-        assert t
-    else:
-        t = Trie.CreateFromFile(args.dictionary)
-        assert t
+    t = get_trie_from_args(args)
 
     board = args.board
     if " " not in board:
