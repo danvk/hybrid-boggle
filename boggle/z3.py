@@ -1,4 +1,9 @@
-"""Encode bucket boggle as a constraint problem."""
+"""Encode bucket boggle as a constraint problem or brute-force search.
+
+This performs very poorly compared to ibuckets and the hybrid breaker.
+
+See https://stackoverflow.com/q/79422270/388951
+"""
 
 import json
 import sys
