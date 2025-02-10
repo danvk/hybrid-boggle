@@ -6,58 +6,36 @@ import fileinput
 import sys
 import time
 
-from cpp_boggle import Trie
-
-from boggle.boggler import PyBoggler
-from boggle.dimensional_bogglers import Bogglers
-from boggle.trie import make_py_trie
+from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 
 
 def main():
     parser = argparse.ArgumentParser(description="Lift all the way to breaking")
-    parser.add_argument(
-        "--size",
-        type=int,
-        choices=(22, 33, 34, 44, 55),
-        default=33,
-        help="Size of the boggle board.",
-    )
-    parser.add_argument(
-        "--dictionary",
-        type=str,
-        default="wordlists/enable2k.txt",
-        help="Path to dictionary file with one word per line. Words must be "
-        '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
-    )
-    parser.add_argument(
-        "--python",
-        action="store_true",
-        help="Use Python implementation of ibuckets instead of C++.",
-    )
+    add_standard_args(parser, python=True)
     parser.add_argument(
         "files", metavar="FILE", nargs="*", help="Files containing boards, or stdin"
     )
+    parser.add_argument(
+        "--print_words",
+        action="store_true",
+        help="Print all the words that can be found on each board.",
+    )
 
     args = parser.parse_args()
-    w, h = dims = args.size // 10, args.size % 10
+    _, boggler = get_trie_and_boggler_from_args(args)
 
-    if args.python:
-        t = make_py_trie(args.dictionary)
-        assert t
-        boggler = PyBoggler(t, dims)
-    else:
-        t = Trie.CreateFromFile(args.dictionary)
-        assert t
-        boggler = Bogglers[dims](t)
+    if args.print_words:
+        assert args.python, "--print_words only supported with --python"
+        boggler.collect_words = True
 
     start_s = time.time()
     n = 0
     for line in fileinput.input(files=args.files):
         board = line.strip()
-        # b.set_board(board)
-        # print(f"{board}: {b.score()}")
         score = boggler.score(board)
         print(f"{board}: {score}")
+        if args.print_words:
+            print("\n".join(sorted(boggler.words)))
         n += 1
     end_s = time.time()
     elapsed_s = end_s - start_s

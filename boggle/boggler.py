@@ -18,7 +18,8 @@ class PyBoggler:
         self._cells = [0] * self._n
         self._used = [False] * self._n
         self._score = 0
-        self.print_words = False
+        self.collect_words = False
+        self.words = None
         self._neighbors = NEIGHBORS[dims]
         self.lookup_table = None
         assert not self._trie.IsWord()
@@ -41,8 +42,10 @@ class PyBoggler:
         self._runs = 1 + self._trie.Mark()
         self._trie.SetMark(self._runs)
         self._score = 0
-        if self.print_words and not self.lookup_table:
-            self.lookup_table = make_lookup_table(self._trie)
+        if self.collect_words:
+            self.words = []
+            if not self.lookup_table:
+                self.lookup_table = make_lookup_table(self._trie)
         t = self._trie
         for i in range(0, self._n):
             c = self._cells[i]
@@ -61,8 +64,8 @@ class PyBoggler:
             if t.Mark() != self._runs:
                 t.SetMark(self._runs)
                 self._score += SCORES[length]
-                if self.print_words:
-                    print(self.lookup_table[t])
+                if self.collect_words:
+                    self.words.append(self.lookup_table[t])
 
         for idx in self._neighbors[i]:
             if not self._used[idx]:

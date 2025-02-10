@@ -2,6 +2,12 @@
 
 import argparse
 
+from cpp_boggle import Trie
+
+from boggle.boggler import PyBoggler
+from boggle.dimensional_bogglers import Bogglers
+from boggle.trie import make_py_trie
+
 
 def add_standard_args(
     parser: argparse.ArgumentParser, *, random_seed=False, python=False
@@ -36,5 +42,15 @@ def add_standard_args(
         )
 
 
-def get_trie_from_args(args: argparse.Namespace):
-    pass
+def get_trie_and_boggler_from_args(args: argparse.Namespace):
+    dims = args.size // 10, args.size % 10
+
+    if args.python:
+        t = make_py_trie(args.dictionary)
+        assert t
+        boggler = PyBoggler(t, dims)
+    else:
+        t = Trie.CreateFromFile(args.dictionary)
+        assert t
+        boggler = Bogglers[dims](t)
+    return t, boggler
