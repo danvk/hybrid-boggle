@@ -9,20 +9,19 @@ import random
 import time
 from dataclasses import dataclass
 
-from cpp_boggle import Trie
 from tqdm import tqdm
 
-from boggle.args import add_standard_args
+from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.board_id import from_board_id, is_canonical_board_id
 from boggle.boggler import PyBoggler
 from boggle.breaker import (
     HybridTreeBreaker,
     IBucketBreaker,
 )
-from boggle.dimensional_bogglers import Bogglers, BucketBogglers, TreeBuilders
+from boggle.dimensional_bogglers import BucketBogglers, TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
 from boggle.ibuckets import PyBucketBoggler
-from boggle.trie import PyTrie, make_py_trie
+from boggle.trie import PyTrie
 
 
 @dataclass
@@ -93,16 +92,12 @@ def get_breaker(args) -> BreakingBundle:
     dims = args.size // 10, args.size % 10
     best_score = args.best_score
 
+    t, boggler = get_trie_and_boggler_from_args(args)
+
     if args.python:
-        t = make_py_trie(args.dictionary)
-        assert t
         etb = EvalTreeBoggler(t, dims)
-        boggler = PyBoggler(t, dims)
     else:
-        t = Trie.CreateFromFile(args.dictionary)
-        assert t
         etb = TreeBuilders[dims](t)
-        boggler = Bogglers[dims](t)
 
     if args.breaker == "hybrid":
         breaker = HybridTreeBreaker(

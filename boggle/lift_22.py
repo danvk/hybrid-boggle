@@ -2,20 +2,15 @@
 """Break a 2x2 board class via successive lifting."""
 
 import argparse
-import json
-import sys
 
-from cpp_boggle import Trie, create_eval_node_arena
-
+from boggle.args import add_standard_args, get_trie_from_args
 from boggle.breaker import SPLIT_ORDER
-from boggle.dimensional_bogglers import cpp_tree_builder
+from boggle.dimensional_bogglers import LEN_TO_DIMS, cpp_tree_builder
 from boggle.eval_tree import (
     EvalNode,
     EvalTreeBoggler,
     PrintEvalTreeCounts,
-    dedupe_subtrees,
 )
-from boggle.trie import make_py_trie
 
 mark = 1
 
@@ -32,18 +27,7 @@ def tree_stats(t: EvalNode) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="Lift all the way to breaking")
-    parser.add_argument(
-        "--dictionary",
-        type=str,
-        default="wordlists/enable2k.txt",
-        help="Path to dictionary file with one word per line. Words must be "
-        '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
-    )
-    parser.add_argument(
-        "--python",
-        action="store_true",
-        help="Use Python implementation of ibuckets instead of C++.",
-    )
+    add_standard_args(parser, python=True)
     parser.add_argument(
         "--compress", action="store_true", help="Compress EvalTree while lifting"
     )
@@ -60,21 +44,15 @@ def main():
     board = args.board
 
     cells = board.split(" ")
-    dims = {
-        4: (2, 2),
-        9: (3, 3),
-        12: (3, 4),
-        16: (4, 4),
-    }[len(cells)]
+    dims = LEN_TO_DIMS[len(cells)]
+    trie = get_trie_from_args(args)
 
     if args.python:
-        trie = make_py_trie("wordlists/enable2k.txt")
         etb = EvalTreeBoggler(trie, dims)
     else:
-        trie = Trie.CreateFromFile("wordlists/enable2k.txt")
         etb = cpp_tree_builder(trie, dims)
 
-    arena = create_eval_node_arena()
+    arena = etb.create_arena()
     etb.ParseBoard(board)
     t = etb.BuildTree(arena, dedupe=args.dedupe)
     print(tree_stats(t))
