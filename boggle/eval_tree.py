@@ -111,6 +111,8 @@ class EvalNode:
         cache_key: int,
     ) -> int:
         if self.cache_key == cache_key:
+            if isinstance(self.cache_value, EvalNode):
+                print("going to blow up! 0")
             return self.cache_value
 
         if self.letter == CHOICE_NODE:
@@ -125,6 +127,8 @@ class EvalNode:
                         v = child.score_with_forces_mask(forces, choice_mask, cache_key)
                 self.cache_key = cache_key
                 self.cache_value = v
+                if isinstance(self.cache_value, EvalNode):
+                    print("going to blow up! 1")
                 return v
 
         if not (self.choice_mask & choice_mask):
@@ -143,6 +147,8 @@ class EvalNode:
                 if self.children
                 else 0
             )
+            if isinstance(v, EvalNode):
+                print("going to blow up! 2")
         else:
             v = self.points + sum(
                 child.score_with_forces_mask(forces, choice_mask, cache_key)
@@ -150,6 +156,8 @@ class EvalNode:
                 else 0
                 for child in self.children
             )
+            if isinstance(v, EvalNode):
+                print("going to blow up! 3")
         self.cache_key = cache_key
         self.cache_value = v
         return v
@@ -1062,3 +1070,6 @@ class EvalTreeBoggler(PyBucketBoggler):
             return prev
         self.node_cache[h] = node
         return node
+
+    def create_arena(self):
+        return create_eval_node_arena_py()

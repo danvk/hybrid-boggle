@@ -150,12 +150,6 @@ def main():
         default=0,
     )
     parser.add_argument(
-        "--random_seed",
-        help="Explicitly set the random seed.",
-        type=int,
-        default=-1,
-    )
-    parser.add_argument(
         "--num_splits",
         type=int,
         default=4,
@@ -265,6 +259,7 @@ def main():
     start_s = time.time()
     good_boards = []
 
+    # TODO: with --num_threads=1, skip the pool to keep stack traces simpler.
     pool = multiprocessing.Pool(
         args.num_threads, break_init, (args, needs_canonical_filter)
     )

@@ -24,6 +24,10 @@ class TreeBuilder : public BucketBoggler<M, N> {
   /** Build an EvalTree for the current board. */
   const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe=false);
 
+  unique_ptr<EvalNodeArena> CreateArena() {
+    return create_eval_node_arena();
+  }
+
  private:
   EvalNode* root_;
   bool dedupe_;

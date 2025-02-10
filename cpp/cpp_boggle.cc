@@ -47,7 +47,8 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
         .def("Cell",    &BB::Cell)
         .def("SetCell", &BB::SetCell)
         .def("Details", &BB::Details)
-        .def("NumReps", &BB::NumReps);
+        .def("NumReps", &BB::NumReps)
+        .def("create_arena", &BB::CreateArena);
 }
 
 template<int M, int N>
