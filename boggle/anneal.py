@@ -1,3 +1,8 @@
+"""Find high-scoring Boggle boards via simulated annealing.
+
+Ported fromhttps://github.com/danvk/performance-boggle/blob/master/anneal.cc
+"""
+
 import argparse
 import math
 import random

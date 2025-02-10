@@ -1,3 +1,16 @@
+"""Find high-scoring Boggle boards via pure hill climbing.
+
+This maintains a pool of boards (randomly chosen at first) and evaluates
+all the boards within an edit distance of 1. It then chooses the highest
+scoring of these boards plus the current pool as the pool for the next round.
+
+Larger pool sizes will increase the odds of making it over to the next peak
+at the cost of more computation per iteratin.
+
+This might be an implementation of this algorithm:
+https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
+"""
+
 import argparse
 import random
 from collections import Counter
