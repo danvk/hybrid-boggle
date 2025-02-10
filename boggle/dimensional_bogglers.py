@@ -40,3 +40,13 @@ def cpp_boggler(t, dims):
 # Matches EvalTreeBoggler
 def cpp_tree_builder(t, dims):
     return TreeBuilders[dims](t)
+
+
+LEN_TO_DIMS = {
+    4: (2, 2),
+    6: (2, 3),
+    9: (3, 3),
+    12: (3, 4),
+    16: (4, 4),
+    25: (5, 5),
+}
