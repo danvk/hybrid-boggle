@@ -5,24 +5,20 @@ This performs very poorly compared to ibuckets and the hybrid breaker.
 See https://stackoverflow.com/q/79422270/388951
 """
 
-import json
 import sys
-from collections import defaultdict
 
-from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.eval_tree import CHOICE_NODE, EvalNode, EvalTreeBoggler
-from boggle.neighbors import NEIGHBORS
-from boggle.trie import PyTrie, make_lookup_table, make_py_trie
+from boggle.trie import make_py_trie
 
 MARK = 2
 
 
 def collect_equations(t: EvalNode, cells, eqs: list, id_to_node):
     if t.cache_key == MARK:
+        # DAG optimization
         return t.cache_value
 
     # TODO: could use trie nodes to get word labels for pointy sum nodes
-    # TODO: could do a form of DAG optimization here to reduce # of equations
     if t.letter == CHOICE_NODE:
         choices = []
         for c in t.children:

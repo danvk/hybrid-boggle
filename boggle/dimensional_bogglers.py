@@ -6,6 +6,7 @@ from cpp_boggle import (
     BucketBoggler33,
     BucketBoggler34,
     BucketBoggler44,
+    TreeBuilder22,
     TreeBuilder33,
     TreeBuilder34,
     TreeBuilder44,
@@ -24,7 +25,7 @@ BucketBogglers = {
 }
 
 TreeBuilders = {
-    # (2, 2): TreeBuilder22,
+    (2, 2): TreeBuilder22,
     (3, 3): TreeBuilder33,
     (3, 4): TreeBuilder34,
     (4, 4): TreeBuilder44,
