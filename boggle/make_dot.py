@@ -3,6 +3,7 @@
 
 import sys
 
+from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.eval_tree import EvalTreeBoggler
 from boggle.trie import make_py_trie
 
@@ -13,13 +14,7 @@ def main():
     lift_cells = [int(s) for s in lift_cell_strs]
 
     cells = board.split(" ")
-    dims = {
-        4: (2, 2),
-        6: (2, 3),
-        9: (3, 3),
-        12: (3, 4),
-        16: (4, 4),
-    }[len(cells)]
+    dims = LEN_TO_DIMS[len(cells)]
     etb = EvalTreeBoggler(trie, dims)
     etb.ParseBoard(board)
     t = etb.BuildTree(dedupe=True)

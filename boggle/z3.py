@@ -7,6 +7,7 @@ See https://stackoverflow.com/q/79422270/388951
 
 import sys
 
+from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.eval_tree import CHOICE_NODE, EvalNode, EvalTreeBoggler
 from boggle.trie import make_py_trie
 
@@ -286,13 +287,7 @@ def main():
     trie = make_py_trie("wordlists/enable2k.txt")
     cutoff = int(cutoff_str)
     cells = board.split(" ")
-    dims = {
-        4: (2, 2),
-        6: (2, 3),
-        9: (3, 3),
-        12: (3, 4),
-        16: (4, 4),
-    }[len(cells)]
+    dims = LEN_TO_DIMS[len(cells)]
     etb = EvalTreeBoggler(trie, dims)
     assert etb.ParseBoard(board)
     tree = etb.BuildTree(None, dedupe=True)

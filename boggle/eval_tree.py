@@ -891,11 +891,6 @@ def dedupe_subtrees(t: EvalNode):
             node.children[i] = hash_to_node[n.structural_hash()]
 
 
-def num_possibilities(letters: Sequence[tuple[int, int]]) -> int:
-    by_cell = group_by(letters, lambda x: x[0])
-    return math.prod(len(v) for v in by_cell.values())
-
-
 def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
     assert a.cell == b.cell, f"{a.cell} != {b.cell}"
     COUNTS["merge"] += 1
