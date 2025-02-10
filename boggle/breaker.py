@@ -208,12 +208,6 @@ class HybridTreeBreaker:
         self.split_order = SPLIT_ORDER[dims]
         self.switchover_level = switchover_level
         self.free_after_score = free_after_score
-        # TODO: EvalTreeBoggler could have a method to produce an arena.
-        self.create_arena = (
-            create_eval_node_arena_py
-            if isinstance(boggler, EvalTreeBoggler)
-            else create_eval_node_arena
-        )
 
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
@@ -242,8 +236,10 @@ class HybridTreeBreaker:
         self.elim_ = 0
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
-        arena = self.create_arena()
+        arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena, dedupe=True)
+        self.mark += 1
+        # print(f"root {tree.bound=}, {tree.unique_node_count(self.mark)} unique nodes")
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.sum_union = self.etb.Details().sum_union
@@ -293,8 +289,9 @@ class HybridTreeBreaker:
             if n_filtered:
                 self.details_.num_filtered[level] = n_filtered
             # print(f"f -> {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes")
+        # self.mark += 1
         # print(
-        #     f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes"
+        #     f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count(self.mark)} unique nodes"
         # )
 
         self.AttackTree(tree, level + 1, arena)

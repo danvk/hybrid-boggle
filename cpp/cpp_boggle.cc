@@ -47,7 +47,8 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
         .def("Cell",    &BB::Cell)
         .def("SetCell", &BB::SetCell)
         .def("Details", &BB::Details)
-        .def("NumReps", &BB::NumReps);
+        .def("NumReps", &BB::NumReps)
+        .def("create_arena", &BB::CreateArena);
 }
 
 template<int M, int N>
@@ -89,6 +90,7 @@ PYBIND11_MODULE(cpp_boggle, m)
     declare_boggler<3, 3>(m, "Boggler33");
     declare_boggler<3, 4>(m, "Boggler34");
     declare_boggler<4, 4>(m, "Boggler44");
+    declare_boggler<5, 5>(m, "Boggler55");
 
     declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
     declare_bucket_boggler<3, 4>(m, "BucketBoggler34");

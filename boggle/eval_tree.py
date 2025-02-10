@@ -95,24 +95,17 @@ class EvalNode:
         return self.score_with_forces(forces_list)
 
     def score_with_forces(self, forces: list[int]) -> int:
-        global cache_count
-        cache_count += 1
-
         choice_mask = 0
         for cell, letter in enumerate(forces):
             if letter >= 0:
                 choice_mask |= 1 << cell
-        return self.score_with_forces_mask(forces, choice_mask, cache_count)
+        return self.score_with_forces_mask(forces, choice_mask)
 
     def score_with_forces_mask(
         self,
         forces: list[int],
         choice_mask: int,
-        cache_key: int,
     ) -> int:
-        if self.cache_key == cache_key:
-            return self.cache_value
-
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
@@ -122,9 +115,7 @@ class EvalNode:
                     idx = mask.bit_count()
                     child = self.children[idx]
                     if child:
-                        v = child.score_with_forces_mask(forces, choice_mask, cache_key)
-                self.cache_key = cache_key
-                self.cache_value = v
+                        v = child.score_with_forces_mask(forces, choice_mask)
                 return v
 
         if not (self.choice_mask & choice_mask):
@@ -135,9 +126,7 @@ class EvalNode:
         if self.letter == CHOICE_NODE:
             v = (
                 max(
-                    child.score_with_forces_mask(forces, choice_mask, cache_key)
-                    if child
-                    else 0
+                    child.score_with_forces_mask(forces, choice_mask) if child else 0
                     for child in self.children
                 )
                 if self.children
@@ -145,13 +134,9 @@ class EvalNode:
             )
         else:
             v = self.points + sum(
-                child.score_with_forces_mask(forces, choice_mask, cache_key)
-                if child
-                else 0
+                child.score_with_forces_mask(forces, choice_mask) if child else 0
                 for child in self.children
             )
-        self.cache_key = cache_key
-        self.cache_value = v
         return v
 
     def assert_invariants(self, solver, is_top_max=None):
@@ -589,8 +574,10 @@ class EvalNode:
             for child in self.children:
                 child.print_paths(word, word_table, prefix)
 
-    def to_dot(self, cells: list[str]) -> str:
-        _root_id, dot = self.to_dot_help(cells, "", {}, self.letter == CHOICE_NODE)
+    def to_dot(self, cells: list[str], max_depth=100) -> str:
+        _root_id, dot = self.to_dot_help(
+            cells, "", {}, self.letter == CHOICE_NODE, max_depth
+        )
         return f"""graph {{
     rankdir=LR;
     splines="false";
@@ -600,18 +587,18 @@ class EvalNode:
 """
 
     def to_dot_help(
-        self, cells: list[str], prefix, cache, is_top_max
+        self, cells: list[str], prefix, cache, is_top_max, remaining_depth
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
         is_dupe = self in cache
         me = prefix
+
         attrs = ""
-        if is_dupe:
-            attrs = 'color="red"'
+        # if is_dupe:
+        #     attrs = 'color="red"'
         if self.letter == ROOT_NODE:
             me += "r"
             label = "ROOT"
-            attrs += ' shape="oval"'
         elif self.letter == CHOICE_NODE:
             me += f"_{self.cell}c"
             label = f"{self.cell} CH"
@@ -625,9 +612,17 @@ class EvalNode:
                 attrs += ' peripheries="2"'
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
+
+        if remaining_depth == 0:
+            return me, dot[0]
+
         children = [
             child.to_dot_help(
-                cells, f"{me}{i}", cache, is_top_max and child.letter == CHOICE_NODE
+                cells,
+                f"{me}{i}",
+                cache,
+                is_top_max and child.letter == CHOICE_NODE,
+                remaining_depth - 1,
             )
             for i, child in enumerate(self.children)
             if child
@@ -635,6 +630,7 @@ class EvalNode:
         all_choices = len(children) == len(self.children) and all(
             c.letter == CHOICE_NODE for c in self.children
         )
+        print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
             if is_top_max and all_choices:
@@ -895,11 +891,6 @@ def dedupe_subtrees(t: EvalNode):
             node.children[i] = hash_to_node[n.structural_hash()]
 
 
-def num_possibilities(letters: Sequence[tuple[int, int]]) -> int:
-    by_cell = group_by(letters, lambda x: x[0])
-    return math.prod(len(v) for v in by_cell.values())
-
-
 def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
     assert a.cell == b.cell, f"{a.cell} != {b.cell}"
     COUNTS["merge"] += 1
@@ -1051,3 +1042,6 @@ class EvalTreeBoggler(PyBucketBoggler):
             return prev
         self.node_cache[h] = node
         return node
+
+    def create_arena(self):
+        return create_eval_node_arena_py()

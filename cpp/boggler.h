@@ -251,4 +251,62 @@ void Boggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
 #undef HIT8
 }
 
+// 5x5 Boggle
+
+static int NEIGHBORS55[5*5][9] = {
+  {3, 1, 5, 6},
+  {5, 0, 2, 5, 6, 7},
+  {5, 1, 3, 6, 7, 8},
+  {5, 2, 4, 7, 8, 9},
+  {3, 3, 8, 9},
+  {5, 0, 1, 6, 10, 11},
+  {8, 0, 1, 2, 5, 7, 10, 11, 12},
+  {8, 1, 2, 3, 6, 8, 11, 12, 13},
+  {8, 2, 3, 4, 7, 9, 12, 13, 14},
+  {5, 3, 4, 8, 13, 14},
+  {5, 5, 6, 11, 15, 16},
+  {8, 5, 6, 7, 10, 12, 15, 16, 17},
+  {8, 6, 7, 8, 11, 13, 16, 17, 18},
+  {8, 7, 8, 9, 12, 14, 17, 18, 19},
+  {5, 8, 9, 13, 18, 19},
+  {5, 10, 11, 16, 20, 21},
+  {8, 10, 11, 12, 15, 17, 20, 21, 22},
+  {8, 11, 12, 13, 16, 18, 21, 22, 23},
+  {8, 12, 13, 14, 17, 19, 22, 23, 24},
+  {5, 13, 14, 18, 23, 24},
+  {3, 15, 16, 21},
+  {5, 15, 16, 17, 20, 22},
+  {5, 16, 17, 18, 21, 23},
+  {5, 17, 18, 19, 22, 24},
+  {3, 18, 19, 23},
+};
+
+template <>
+void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  int c = bd_[i];
+
+  used_ ^= (1 << i);
+  len += (c==kQ ? 2 : 1);
+  if (t->IsWord()) {
+    if (t->Mark() != runs_) {
+      t->Mark(runs_);
+      score_ += kWordScores[len];
+    }
+  }
+
+  int* neighbors = NEIGHBORS55[i];
+  int num_neighbors = neighbors[0];
+  for (int j = 1; j <= num_neighbors; j++) {
+    int idx = neighbors[j];
+    if ((used_ & (1 << idx)) == 0) {
+      int cc = bd_[idx];
+      if (t->StartsWord(cc)) {
+        DoDFS(idx, len, t->Descend(cc));
+      }
+    }
+  }
+
+  used_ ^= (1 << i);
+}
+
 #endif

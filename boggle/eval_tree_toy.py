@@ -1,12 +1,26 @@
 import json
 import sys
+import time
 
 from boggle.eval_tree import EvalTreeBoggler, PrintEvalTreeCounts, ResetEvalTreeCount
-from boggle.ibucket_solver import Timer
 from boggle.ibuckets import PyBucketBoggler
 from boggle.trie import make_py_trie
 
 BIGINT = 1_000_000
+
+
+class Timer:
+    def __init__(self, label: str):
+        self.label = label
+
+    def __enter__(self):
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.time = (time.perf_counter() - self.start) * 1e3
+        self.readout = f"{self.label}: {self.time:.3f} ms"
+        print(self.readout)
 
 
 def try_all(bb, force_cell=-1):

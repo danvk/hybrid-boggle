@@ -9,19 +9,19 @@ import random
 import time
 from dataclasses import dataclass
 
-from cpp_boggle import Trie
 from tqdm import tqdm
 
+from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.board_id import from_board_id, is_canonical_board_id
 from boggle.boggler import PyBoggler
 from boggle.breaker import (
     HybridTreeBreaker,
     IBucketBreaker,
 )
-from boggle.dimensional_bogglers import Bogglers, BucketBogglers, TreeBuilders
+from boggle.dimensional_bogglers import BucketBogglers, TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
 from boggle.ibuckets import PyBucketBoggler
-from boggle.trie import PyTrie, make_py_trie
+from boggle.trie import PyTrie
 
 
 @dataclass
@@ -92,16 +92,12 @@ def get_breaker(args) -> BreakingBundle:
     dims = args.size // 10, args.size % 10
     best_score = args.best_score
 
+    t, boggler = get_trie_and_boggler_from_args(args)
+
     if args.python:
-        t = make_py_trie(args.dictionary)
-        assert t
         etb = EvalTreeBoggler(t, dims)
-        boggler = PyBoggler(t, dims)
     else:
-        t = Trie.CreateFromFile(args.dictionary)
-        assert t
         etb = TreeBuilders[dims](t)
-        boggler = Bogglers[dims](t)
 
     if args.breaker == "hybrid":
         breaker = HybridTreeBreaker(
@@ -136,20 +132,7 @@ def main():
         help="Print boards with a score >= to this. Filter boards below this. "
         "A higher number will result in a faster run.",
     )
-    parser.add_argument(
-        "--size",
-        type=int,
-        choices=(33, 34, 44),
-        default=33,
-        help="Size of the boggle board.",
-    )
-    parser.add_argument(
-        "--dictionary",
-        type=str,
-        default="wordlists/enable2k.txt",
-        help="Path to dictionary file with one word per line. Words must be "
-        '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
-    )
+    add_standard_args(parser, random_seed=True, python=True)
     parser.add_argument(
         "--board_ids",
         help="Comma-separated list of board IDs. Omit to consider all "
@@ -160,12 +143,6 @@ def main():
         help="Limit the number of boards to consider.",
         type=int,
         default=0,
-    )
-    parser.add_argument(
-        "--random_seed",
-        help="Explicitly set the random seed.",
-        type=int,
-        default=-1,
     )
     parser.add_argument(
         "--num_splits",
@@ -213,11 +190,6 @@ def main():
         "--log_per_board_stats",
         action="store_true",
         help="Log stats on every board to stdout, rather just to an ndjson file.",
-    )
-    parser.add_argument(
-        "--python",
-        action="store_true",
-        help="Use Python implementation of ibuckets instead of C++. This is ~50x slower!",
     )
     args = parser.parse_args()
     if args.random_seed >= 0:
@@ -282,6 +254,7 @@ def main():
     start_s = time.time()
     good_boards = []
 
+    # TODO: with --num_threads=1, skip the pool to keep stack traces simpler.
     pool = multiprocessing.Pool(
         args.num_threads, break_init, (args, needs_canonical_filter)
     )
