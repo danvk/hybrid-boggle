@@ -45,41 +45,33 @@ def neighbors(board: str):
 
 
 def hillclimb(boggler: PyBoggler, num_lets: int, args):
-    best_bd = "".join(chr(x) for x in initial_board(num_lets))
-    best_score = boggler.score(best_bd)
-    print(f"{best_bd} {best_score}")
+    pool = [
+        "".join(chr(x) for x in initial_board(num_lets)) for _ in range(args.pool_size)
+    ]
+    score_cache = dict[str, int]()
+    for bd in pool:
+        score_cache[bd] = boggler.score(bd)
 
-    score_cache = {best_bd: best_score}
+    best_score = max(score_cache.values())
 
     num_iter = 0
     while True:
-        ns = {best_bd}
-        new_bd = None
-        for radius in range(1, args.max_radius + 1):
-            num_iter += 1
-            seeds = [(score_cache[n], n) for n in ns]
-            seeds.sort(reverse=True)
-            seeds = seeds[: args.pool_size]
-            seeds = [bd for _, bd in seeds]
-
-            new_ns = {n for seed in seeds for n in neighbors(seed)}
-            for n in seeds:
-                new_ns.remove(n)
-            ns = new_ns
-            print(f"r={radius}, n={len(ns)} candidates")
-            for n in ns:
-                score = score_cache.get(n) or boggler.score(n)
-                score_cache[n] = score
-                if score > best_score:
-                    best_score = score
-                    new_bd = n
-
-            if new_bd:
-                print(f"{radius} {best_bd} -> {new_bd} {best_score}")
-                best_bd = new_bd
-                break
-        if not new_bd:
+        num_iter += 1
+        ns = {n for seed in pool for n in neighbors(seed)}
+        scores = []
+        for n in ns:
+            score = score_cache.get(n) or boggler.score(n)
+            score_cache[n] = score
+            scores.append((score, n))
+        scores.sort(reverse=True)
+        scores = scores[: args.pool_size]
+        print(f"{num_iter=}: {max(scores)=} {min(scores)=}")
+        new_pool = [bd for _, bd in scores]
+        if new_pool == pool:
             break
+        pool = new_pool
+
+    best_score, best_bd = max(scores)
     return best_score, best_bd, num_iter
 
 
@@ -128,7 +120,7 @@ def main():
     best = Counter[str]()
     for run in range(args.num_boards):
         score, board, n = hillclimb(boggler, w * h, args)
-        print(f"{score} {board} ({n} iterations)")
+        print(f"{run=} {score} {board} ({n} iterations)")
         best[board] = score
 
     if args.num_boards > 10:
@@ -136,11 +128,6 @@ def main():
         print("Top ten boards:")
         for score, board in best.most_common(10):
             print(f"{score} {board}")
-
-    # print("---")
-    # ns = neighbors(bd)
-    # print("\n".join(ns))
-    # print(len(ns))
 
 
 if __name__ == "__main__":
