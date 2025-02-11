@@ -737,7 +737,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
+        tl = t.lift_choice(i, len(cell), arena, compress=False, dedupe=True, mark=mark)
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         if isinstance(tl, EvalNode):
@@ -745,8 +745,11 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
 
     # Do a second lift and check again.
     mark += 1
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=False, dedupe=True, mark=mark)
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb)
+
+    # TODO: do another round of tests with compress=True
+    # This is trickier since tree merging can affect scores.
