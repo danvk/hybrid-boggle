@@ -90,7 +90,7 @@ def make_lookup_table(t: PyTrie, prefix="", out=None) -> dict[PyTrie, str]:
     return out
 
 
-def make_py_trie(dict_input: str, letter_grouping: str):
+def make_py_trie(dict_input: str, letter_grouping: str = ""):
     t = PyTrie()
 
     if not letter_grouping:

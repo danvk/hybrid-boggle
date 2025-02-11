@@ -89,10 +89,12 @@ class EvalNode:
     def score_with_forces_dict(
         self, forces: dict[int, int], num_cells: int, cells: list[str]
     ) -> int:
+        """Requires that set_choice_point_mask() has been called on this tree."""
         forces_list = [forces.get(i, -1) for i in range(num_cells)]
         return self.score_with_forces(forces_list)
 
     def score_with_forces(self, forces: list[int]) -> int:
+        """Requires that set_choice_point_mask() has been called on this tree."""
         choice_mask = 0
         for cell, letter in enumerate(forces):
             if letter >= 0:
@@ -104,6 +106,7 @@ class EvalNode:
         forces: list[int],
         choice_mask: int,
     ) -> int:
+        """Requires that set_choice_point_mask() has been called on this tree."""
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
@@ -149,7 +152,10 @@ class EvalNode:
         if is_top_max is None:
             is_top_max = self.letter == CHOICE_NODE
         if self.letter == CHOICE_NODE:
-            assert not hasattr(self, "points") or self.points == 0
+            if not hasattr(self, "points") or self.points == 0:
+                pass
+            else:
+                pass  # TODO: assert that child mask is set properly.
             if is_top_max and all(c and c.letter == CHOICE_NODE for c in self.children):
                 pass
             else:
@@ -249,6 +255,7 @@ class EvalNode:
         dedupe=False,
         compress=False,
     ) -> Self | list[Self]:
+        """Helper for lift_choice"""
         assert mark
         force_cell_cache = {}
         out = self.force_cell_work(
@@ -450,7 +457,7 @@ class EvalNode:
         self._hash = h
         return h
 
-    def set_choice_point_mask(self, num_letters):
+    def set_choice_point_mask(self, num_letters: Sequence[int]):
         if self.letter == CHOICE_NODE and self.points == 0:
             n = num_letters[self.cell]
             if len(self.children) == n:
@@ -557,7 +564,9 @@ class EvalNode:
         return out
 
     def all_words(self, word_table: dict[PyTrie, str]) -> list[str]:
-        return [word_table[node.trie_node] for node in self.all_nodes() if node.points]
+        return [
+            word_table[node.trie_node] for node in self.all_nodes() if node.trie_node
+        ]
 
     def print_paths(self, word: str, word_table: dict[PyTrie, str], prefix=""):
         if self.letter == ROOT_NODE:
@@ -628,7 +637,7 @@ class EvalNode:
         all_choices = len(children) == len(self.children) and all(
             c.letter == CHOICE_NODE for c in self.children
         )
-        print(f"{is_top_max=}, {all_choices=}")
+        # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
             if is_top_max and all_choices:
@@ -844,12 +853,13 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
 def eval_all(node: EvalNode, cells: list[str]):
     """Evaluate all possible boards.
 
-    This is defined externally to EvalNode so that it can be used with C++, too.
+    This is defined externally to EvalNode so that it can be used with C++ EvalNode, too.
     """
     num_letters = [len(cell) for cell in cells]
+    node.set_choice_point_mask(num_letters)
     indices = [range(n) for n in num_letters]
     return {
-        choices: node.score_with_forces(choices, num_letters)
+        choices: node.score_with_forces(choices)
         for choices in itertools.product(*indices)
     }
 

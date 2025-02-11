@@ -4,7 +4,6 @@ import math
 import pytest
 from cpp_boggle import EvalNode as CppEvalNode
 from cpp_boggle import (
-    TreeBuilder22,
     TreeBuilder33,
     Trie,
     create_eval_node_arena,
@@ -14,13 +13,10 @@ from cpp_boggle import (
 from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
     CHOICE_NODE,
-    ROOT_NODE,
     EvalNode,
     EvalTreeBoggler,
     create_eval_node_arena_py,
     eval_all,
-    eval_node_to_string,
-    eval_tree_from_json,
     merge_trees,
 )
 from boggle.ibuckets import PyBucketBoggler
@@ -113,8 +109,10 @@ def test_eval_tree_force():
     t.check_consistency()
     # print(t.to_string(bb))
 
+    mark = 0
+    mark += 1
     # A force on an irrelevant cell has no effect
-    t0 = t.force_cell(0, num_lets=1)
+    t0 = t.force_cell(0, num_lets=1, mark=mark)
     # assert len(t0) == 1
     # assert t0[0].bound == 3
     # t0[0].check_consistency()
@@ -122,7 +120,8 @@ def test_eval_tree_force():
     assert t0[0].bound == 3
     t0[0].check_consistency()
 
-    t0 = t.lift_choice(0, num_lets=1)
+    mark += 1
+    t0 = t.lift_choice(0, num_lets=1, mark=mark)
     assert t0.bound == 3
     t0.check_consistency()
     # print("lift 0")
@@ -131,7 +130,8 @@ def test_eval_tree_force():
     assert t0.cell == 0
 
     # A force on the choice cell reduces the bound.
-    t3 = t.force_cell(3, 2)
+    mark += 1
+    t3 = t.force_cell(3, num_lets=2, mark=mark)
     # print("lift 3")
     # print(t3.to_string(bb))
     assert len(t3) == 2
@@ -140,7 +140,8 @@ def test_eval_tree_force():
     t3[0].check_consistency()
     t3[1].check_consistency()
 
-    t3 = t.lift_choice(3, 2)
+    mark += 1
+    t3 = t.lift_choice(3, num_lets=2, mark=mark)
     # print(t3.to_string(bb))
     assert t3.bound == 2
     assert t3.letter == CHOICE_NODE
@@ -216,7 +217,9 @@ def test_equivalence():
     # print(dot)
     # assert False
 
-    fives = root.force_cell(5, len("aeiou"))
+    mark = 0
+    mark += 1
+    fives = root.force_cell(5, num_lets=len("aeiou"), mark=mark)
     assert len(fives) == 5
 
     # print(fives[1].bound)
@@ -239,6 +242,7 @@ def test_equivalence():
     # print(fives[1].recompute_score())
 
     t.ResetMarks()
+    root.set_choice_point_mask(num_letters=[len(cell) for cell in cells])
     for i, vowel in enumerate("aeiou"):
         subboard = f". . . . lnrsy {vowel} aeiou aeiou . . . ."
         bb.ParseBoard(subboard)
@@ -466,7 +470,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
-    t = bb.BuildTree(arena)
+    t: EvalNode = bb.BuildTree(arena)
     assert 3 == bb.Details().sum_union
     assert 3 == bb.Details().max_nomark
     assert 2 == bb.NumReps()
@@ -476,7 +480,9 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     # print(t.to_string(bb))
 
     # A force on an irrelevant cell has no effect
-    t0 = t.force_cell(0, 1, arena, vec_arena)
+    mark = 0
+    mark += 1
+    t0 = t.force_cell(0, 1, arena, vec_arena, mark=mark)
     # assert len(t0) == 1
     # assert t0[0].bound == 3
     # t0[0].check_consistency()
@@ -485,19 +491,21 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     # t0.check_consistency()
 
     # A force on the choice cell reduces the bound.
-    t3 = t.force_cell(3, 2, arena, vec_arena)
+    mark += 1
+    t3 = t.force_cell(3, 2, arena, vec_arena, mark=mark)
     assert len(t3) == 2
     assert t3[0].bound == 1
     assert t3[1].bound == 2
     # t3[0].check_consistency()
     # t3[1].check_consistency()
 
+    t.set_choice_point_mask(num_letters)
     forces = [-1 for _ in range(9)]
-    assert t.score_with_forces(forces, num_letters) == 3  # no force
+    assert t.score_with_forces(forces) == 3  # no force
     forces[3] = 0
-    assert t.score_with_forces(forces, num_letters) == 1
+    assert t.score_with_forces(forces) == 1
     forces[3] = 1
-    assert t.score_with_forces(forces, num_letters) == 2
+    assert t.score_with_forces(forces) == 2
 
 
 # Invariants:
@@ -529,7 +537,11 @@ def test_lift_invariants(dedupe, compress):
 
     # Lifting a choice reduces the bound.
     # The bounds on the child cells should match what you get from ibuckets.
-    tc0 = t.lift_choice(0, len(cells[0]), arena, dedupe=dedupe, compress=compress)
+    mark = 0
+    mark += 1
+    tc0 = t.lift_choice(
+        0, len(cells[0]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc0.letter == CHOICE_NODE
     assert tc0.cell == 0
     assert len(tc0.children) == len(cells[0])
@@ -543,7 +555,10 @@ def test_lift_invariants(dedupe, compress):
     assert max_trees == [(child, [(0, i)]) for i, child in enumerate(tc0.children)]
 
     # Lifting a second time reduces the bound again.
-    tc1 = tc0.lift_choice(1, len(cells[1]), arena, dedupe=dedupe, compress=compress)
+    mark += 1
+    tc1 = tc0.lift_choice(
+        1, len(cells[1]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc1.letter == CHOICE_NODE
     assert tc1.cell == 1
     assert len(tc1.children) == len(cells[1])
@@ -564,13 +579,19 @@ def test_lift_invariants(dedupe, compress):
             assert ibb.ParseBoard(bd)
             assert ibb.UpperBound(123) == tc1.children[j].children[i].bound
 
-    tc2 = tc1.lift_choice(2, len(cells[2]), arena, dedupe=dedupe, compress=compress)
+    mark += 1
+    tc2 = tc1.lift_choice(
+        2, len(cells[2]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc2.letter == CHOICE_NODE
     assert tc2.cell == 2
     assert len(tc2.children) == len(cells[2])
     assert tc2.bound == 14
 
-    tc3 = tc2.lift_choice(3, len(cells[3]), arena, dedupe=dedupe, compress=compress)
+    mark += 1
+    tc3 = tc2.lift_choice(
+        3, len(cells[3]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc3.letter == CHOICE_NODE
     assert tc3.cell == 3
     assert len(tc3.children) == len(cells[3])
@@ -618,15 +639,20 @@ def test_lift_invariants_22():
     t.assert_invariants(etb)
     # print(t.to_string(cells))
 
+    num_letters = [len(c) for c in cells]
+    t.set_choice_point_mask(num_letters)
     scores = eval_all(t, cells)
 
+    mark = 0
     # Try lifting each cell; this should not affect any scores.
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
-        tl = t.lift_choice(i, len(cell), compress=True, dedupe=True)
+        mark += 1
+        tl = t.lift_choice(i, len(cell), compress=True, dedupe=True, mark=mark)
         # print(tl.to_string(cells))
         # print("---")
+        tl.set_choice_point_mask(num_letters)
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         tl.assert_invariants(etb)
@@ -652,18 +678,21 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
         t.assert_invariants(etb)
 
     # scores = eval_all(t, cells)
-    score = t.score_with_forces([0, 1, 0, 0], num_letters)
+    t.set_choice_point_mask(num_letters)
+    score = t.score_with_forces([0, 1, 0, 0])
 
     # TODO: assert that these scores are the sames one you get in Python.
     # TODO: port to_string() to C++ and assert that the trees are identical.
     # Try lifting each cell; this should not affect any scores.
+    mark = 0
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True)
+        mark += 1
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         # print(eval_node_to_string(tl, cells))
         # print("now", flush=True)
-        lift_score = tl.score_with_forces([0, 1, 0, 0], num_letters)
+        lift_score = tl.score_with_forces([0, 1, 0, 0])
         assert score == lift_score
         # lift_scores = eval_all(tl, cells)
         # assert lift_scores == scores
@@ -703,17 +732,20 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         assert score == bb.Details().max_nomark
 
     # Try lifting each cell; this should not affect any scores.
+    mark = 0
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True)
+        mark += 1
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         if isinstance(tl, EvalNode):
             tl.assert_invariants(etb)
 
     # Do a second lift and check again.
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True)
+    mark += 1
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
