@@ -639,15 +639,20 @@ def test_lift_invariants_22():
     t.assert_invariants(etb)
     # print(t.to_string(cells))
 
+    num_letters = [len(c) for c in cells]
+    t.set_choice_point_mask(num_letters)
     scores = eval_all(t, cells)
 
+    mark = 0
     # Try lifting each cell; this should not affect any scores.
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
-        tl = t.lift_choice(i, len(cell), compress=True, dedupe=True)
+        mark += 1
+        tl = t.lift_choice(i, len(cell), compress=True, dedupe=True, mark=mark)
         # print(tl.to_string(cells))
         # print("---")
+        tl.set_choice_point_mask(num_letters)
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         tl.assert_invariants(etb)

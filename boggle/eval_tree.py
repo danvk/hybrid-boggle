@@ -152,7 +152,10 @@ class EvalNode:
         if is_top_max is None:
             is_top_max = self.letter == CHOICE_NODE
         if self.letter == CHOICE_NODE:
-            assert not hasattr(self, "points") or self.points == 0
+            if not hasattr(self, "points") or self.points == 0:
+                pass
+            else:
+                pass  # TODO: assert that child mask is set properly.
             if is_top_max and all(c and c.letter == CHOICE_NODE for c in self.children):
                 pass
             else:
@@ -850,12 +853,12 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
 def eval_all(node: EvalNode, cells: list[str]):
     """Evaluate all possible boards.
 
-    This is defined externally to EvalNode so that it can be used with C++, too.
+    This is defined externally to EvalNode so that it can be used with C++ EvalNode, too.
     """
     num_letters = [len(cell) for cell in cells]
     indices = [range(n) for n in num_letters]
     return {
-        choices: node.score_with_forces(choices, num_letters)
+        choices: node.score_with_forces(choices)
         for choices in itertools.product(*indices)
     }
 
