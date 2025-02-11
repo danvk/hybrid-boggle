@@ -799,6 +799,50 @@ def test_lift_sum():
     assert lift0.children[1].letter == 1
     assert lift0.children[1].bound == 6  # 2 + 4
 
+    lift0c = root.lift_choice(cell=0, num_lets=2, mark=2, compress=True)
+    print(lift0c.to_dot(cells))
+    assert lift0c.bound == 6
+
+
+def test_lift_choice():
+    cells = ["ab", "xy"]
+    root = choice_node(
+        cell=0,
+        children=[
+            letter_node(
+                0,
+                0,
+                children=[
+                    choice_node(
+                        cell=1, children=[letter_node(1, 0, 1), letter_node(1, 1, 3)]
+                    ),
+                ],
+            ),
+            letter_node(
+                0,
+                1,
+                children=[
+                    choice_node(
+                        cell=1, children=[letter_node(1, 0, 2), letter_node(1, 1, 4)]
+                    ),
+                ],
+            ),
+        ],
+    )
+    root.set_computed_fields_for_testing(cells)
+    print(root.to_dot(cells))
+    assert root.bound == 4
+
+    lift0 = root.lift_choice(1, 2, mark=1)
+    print(lift0.to_dot(cells))
+    assert lift0.bound == 4
+
+    lift0c = root.lift_choice(1, 2, mark=2, compress=True)
+    print(lift0c.to_dot(cells))
+    assert lift0c.bound == 4
+
+    assert False
+
 
 """
 These are the tests from the clean-tree branch:
