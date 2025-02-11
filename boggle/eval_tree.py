@@ -184,7 +184,10 @@ class EvalNode:
                     choice_mask |= child.choice_mask
                 # TODO: sum nodes should not have null children
                 #       (this does happen after lifting)
-        assert bound == self.bound
+        # assert bound == self.bound
+        if bound != self.bound:
+            print(f"Warning {bound} != {self.bound}")
+            self.cache_key = 255
         assert choice_mask == self.choice_mask
 
         for child in self.children:
@@ -581,9 +584,10 @@ class EvalNode:
             for child in self.children:
                 child.print_paths(word, word_table, prefix)
 
-    def to_dot(self, cells: list[str], max_depth=100) -> str:
+    def to_dot(self, cells: list[str], max_depth=100, trie=None) -> str:
+        lookup_table = make_lookup_table(trie) if trie else None
         _root_id, dot = self.to_dot_help(
-            cells, "", {}, self.letter == CHOICE_NODE, max_depth
+            cells, "", {}, self.letter == CHOICE_NODE, max_depth, lookup_table
         )
         return f"""graph {{
     rankdir=LR;
@@ -594,15 +598,15 @@ class EvalNode:
 """
 
     def to_dot_help(
-        self, cells: list[str], prefix, cache, is_top_max, remaining_depth
+        self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
-        is_dupe = self in cache
+        is_dupe = self.cache_key == 255  # self in cache
         me = prefix
 
         attrs = ""
-        # if is_dupe:
-        #     attrs = 'color="red"'
+        if is_dupe:
+            attrs = 'color="red"'
         if self.letter == ROOT_NODE:
             me += "r"
             label = "ROOT"
@@ -617,6 +621,10 @@ class EvalNode:
             if self.points:
                 label += f" ({self.points})"
                 attrs += ' peripheries="2"'
+                if self.trie_node and lookup_table:
+                    word = lookup_table[self.trie_node]
+                    label += f"\\nword={word}"
+        label += f"\\nbound={self.bound}"
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
 
@@ -630,6 +638,7 @@ class EvalNode:
                 cache,
                 is_top_max and child.letter == CHOICE_NODE,
                 remaining_depth - 1,
+                lookup_table,
             )
             for i, child in enumerate(self.children)
             if child

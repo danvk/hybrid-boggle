@@ -737,11 +737,17 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
+        print(f"lift {i}")
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=False, mark=mark)
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         if isinstance(tl, EvalNode):
-            tl.assert_invariants(etb)
+            tl.assert_invariants(etb, is_top_max=True)
+            with open("t.dot", "w") as out:
+                out.write(t.to_dot(cells, trie=trie))
+            with open("tl.dot", "w") as out:
+                out.write(tl.to_dot(cells, trie=trie))
+        # assert False
 
     # Do a second lift and check again.
     mark += 1
@@ -749,4 +755,4 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
-        t2.assert_invariants(etb)
+        t2.assert_invariants(etb, is_top_max=True)
