@@ -104,3 +104,23 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
 
   return t;
 }
+
+unique_ptr<Trie> Trie::CreateFromFileWithGrouping(const char* filename, unordered_map<char, char> letter_grouping) {
+  char line[80];
+  FILE* f = fopen(filename, "r");
+  if (!f) {
+    fprintf(stderr, "Couldn't open %s\n", filename);
+    return NULL;
+  }
+
+  unique_ptr<Trie> t(new Trie);
+  while (!feof(f) && fscanf(f, "%s", line)) {
+    for (int i = 0; line[i]; i++) {
+      line[i] = letter_grouping[line[i]];
+    }
+    t->AddWord(line);
+  }
+  fclose(f);
+
+  return t;
+}
