@@ -113,8 +113,10 @@ def test_eval_tree_force():
     t.check_consistency()
     # print(t.to_string(bb))
 
+    mark = 0
+    mark += 1
     # A force on an irrelevant cell has no effect
-    t0 = t.force_cell(0, num_lets=1)
+    t0 = t.force_cell(0, num_lets=1, mark=mark)
     # assert len(t0) == 1
     # assert t0[0].bound == 3
     # t0[0].check_consistency()
@@ -122,7 +124,8 @@ def test_eval_tree_force():
     assert t0[0].bound == 3
     t0[0].check_consistency()
 
-    t0 = t.lift_choice(0, num_lets=1)
+    mark += 1
+    t0 = t.lift_choice(0, num_lets=1, mark=mark)
     assert t0.bound == 3
     t0.check_consistency()
     # print("lift 0")
@@ -131,7 +134,8 @@ def test_eval_tree_force():
     assert t0.cell == 0
 
     # A force on the choice cell reduces the bound.
-    t3 = t.force_cell(3, 2)
+    mark += 1
+    t3 = t.force_cell(3, num_lets=2, mark=mark)
     # print("lift 3")
     # print(t3.to_string(bb))
     assert len(t3) == 2
@@ -140,7 +144,8 @@ def test_eval_tree_force():
     t3[0].check_consistency()
     t3[1].check_consistency()
 
-    t3 = t.lift_choice(3, 2)
+    mark += 1
+    t3 = t.lift_choice(3, num_lets=2, mark=mark)
     # print(t3.to_string(bb))
     assert t3.bound == 2
     assert t3.letter == CHOICE_NODE
