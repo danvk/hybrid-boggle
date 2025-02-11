@@ -4,7 +4,6 @@ import math
 import pytest
 from cpp_boggle import EvalNode as CppEvalNode
 from cpp_boggle import (
-    TreeBuilder22,
     TreeBuilder33,
     Trie,
     create_eval_node_arena,
@@ -14,13 +13,10 @@ from cpp_boggle import (
 from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
     CHOICE_NODE,
-    ROOT_NODE,
     EvalNode,
     EvalTreeBoggler,
     create_eval_node_arena_py,
     eval_all,
-    eval_node_to_string,
-    eval_tree_from_json,
     merge_trees,
 )
 from boggle.ibuckets import PyBucketBoggler
@@ -682,18 +678,21 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
         t.assert_invariants(etb)
 
     # scores = eval_all(t, cells)
-    score = t.score_with_forces([0, 1, 0, 0], num_letters)
+    t.set_choice_point_mask(num_letters)
+    score = t.score_with_forces([0, 1, 0, 0])
 
     # TODO: assert that these scores are the sames one you get in Python.
     # TODO: port to_string() to C++ and assert that the trees are identical.
     # Try lifting each cell; this should not affect any scores.
+    mark = 0
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True)
+        mark += 1
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         # print(eval_node_to_string(tl, cells))
         # print("now", flush=True)
-        lift_score = tl.score_with_forces([0, 1, 0, 0], num_letters)
+        lift_score = tl.score_with_forces([0, 1, 0, 0])
         assert score == lift_score
         # lift_scores = eval_all(tl, cells)
         # assert lift_scores == scores
