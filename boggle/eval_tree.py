@@ -856,6 +856,7 @@ def eval_all(node: EvalNode, cells: list[str]):
     This is defined externally to EvalNode so that it can be used with C++ EvalNode, too.
     """
     num_letters = [len(cell) for cell in cells]
+    node.set_choice_point_mask(num_letters)
     indices = [range(n) for n in num_letters]
     return {
         choices: node.score_with_forces(choices)

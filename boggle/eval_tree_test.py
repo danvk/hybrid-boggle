@@ -732,17 +732,20 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         assert score == bb.Details().max_nomark
 
     # Try lifting each cell; this should not affect any scores.
+    mark = 0
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True)
+        mark += 1
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         if isinstance(tl, EvalNode):
             tl.assert_invariants(etb)
 
     # Do a second lift and check again.
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True)
+    mark += 1
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
