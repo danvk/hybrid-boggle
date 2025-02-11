@@ -637,7 +637,7 @@ class EvalNode:
         all_choices = len(children) == len(self.children) and all(
             c.letter == CHOICE_NODE for c in self.children
         )
-        print(f"{is_top_max=}, {all_choices=}")
+        # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
             if is_top_max and all_choices:

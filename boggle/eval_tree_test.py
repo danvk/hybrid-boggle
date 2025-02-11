@@ -474,7 +474,7 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
-    t = bb.BuildTree(arena)
+    t: EvalNode = bb.BuildTree(arena)
     assert 3 == bb.Details().sum_union
     assert 3 == bb.Details().max_nomark
     assert 2 == bb.NumReps()
@@ -484,7 +484,9 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     # print(t.to_string(bb))
 
     # A force on an irrelevant cell has no effect
-    t0 = t.force_cell(0, 1, arena, vec_arena)
+    mark = 0
+    mark += 1
+    t0 = t.force_cell(0, 1, arena, vec_arena, mark=mark)
     # assert len(t0) == 1
     # assert t0[0].bound == 3
     # t0[0].check_consistency()
@@ -493,19 +495,21 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     # t0.check_consistency()
 
     # A force on the choice cell reduces the bound.
-    t3 = t.force_cell(3, 2, arena, vec_arena)
+    mark += 1
+    t3 = t.force_cell(3, 2, arena, vec_arena, mark=mark)
     assert len(t3) == 2
     assert t3[0].bound == 1
     assert t3[1].bound == 2
     # t3[0].check_consistency()
     # t3[1].check_consistency()
 
+    t.set_choice_point_mask(num_letters)
     forces = [-1 for _ in range(9)]
-    assert t.score_with_forces(forces, num_letters) == 3  # no force
+    assert t.score_with_forces(forces) == 3  # no force
     forces[3] = 0
-    assert t.score_with_forces(forces, num_letters) == 1
+    assert t.score_with_forces(forces) == 1
     forces[3] = 1
-    assert t.score_with_forces(forces, num_letters) == 2
+    assert t.score_with_forces(forces) == 2
 
 
 # Invariants:
