@@ -127,11 +127,6 @@ def get_breaker(args) -> BreakingBundle:
     return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
 
 
-def has_required_class(board: str, required_class: str):
-    cells = board.split(" ")
-    return sum(1 if required_class in cell else 0 for cell in cells) >= 1
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Find all MxN boggle boards with >=P points",
