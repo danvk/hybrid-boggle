@@ -21,7 +21,7 @@ from boggle.breaker import (
 from boggle.dimensional_bogglers import BucketBogglers, TreeBuilders
 from boggle.eval_tree import EvalTreeBoggler
 from boggle.ibuckets import PyBucketBoggler
-from boggle.trie import PyTrie
+from boggle.trie import PyTrie, get_letter_map
 
 
 @dataclass
@@ -34,13 +34,21 @@ class BreakingBundle:
     breaker: IBucketBreaker | HybridTreeBreaker
 
 
+def get_process_id():
+    ids = multiprocessing.current_process()._identity
+    if len(ids) == 0:
+        return 1  # single-threaded case
+    assert len(ids) == 1
+    return ids[0]
+
+
 def break_init(args, needs_canonical_filter):
     bundle = get_breaker(args)
     # See https://stackoverflow.com/a/30816116/388951 for this trick to avoid a global
     break_worker.bundle = bundle
     break_worker.args = args
     break_worker.needs_canonical_filter = needs_canonical_filter
-    (me,) = multiprocessing.current_process()._identity
+    me = get_process_id()
     with open(f"tasks-{me}.ndjson", "w"):
         pass
 
@@ -50,7 +58,7 @@ def break_worker(task: str | int):
     breaker = bundle.breaker
     args = break_worker.args
     needs_canonical_filter = break_worker.needs_canonical_filter
-    (me,) = multiprocessing.current_process()._identity
+    me = get_process_id()
 
     best_score = args.best_score
     assert best_score > 0
@@ -63,11 +71,10 @@ def break_worker(task: str | int):
         ):
             return []
         board = from_board_id(classes, dims, task)
-        assert breaker.SetBoard(board)
     else:
-        break_class = task
-        assert breaker.SetBoard(break_class)
+        board = task
 
+    assert breaker.SetBoard(board)
     details = breaker.Break()
     if details.failures:
         for failure in details.failures:
@@ -107,6 +114,7 @@ def get_breaker(args) -> BreakingBundle:
             best_score,
             switchover_level=args.switchover_level,
             free_after_score=args.free_after_score,
+            log_breaker_progress=args.log_breaker_progress,
         )
     elif args.breaker == "ibuckets":
         if args.python:
@@ -119,9 +127,14 @@ def get_breaker(args) -> BreakingBundle:
     return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
 
 
+def has_required_class(board: str, required_class: str):
+    cells = board.split(" ")
+    return sum(1 if required_class in cell else 0 for cell in cells) >= 1
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Find all 3x3 boggle boards with >=N points",
+        description="Find all MxN boggle boards with >=P points",
     )
     parser.add_argument(
         "classes", type=str, help="Space-separated list of letter classes"
@@ -191,6 +204,11 @@ def main():
         action="store_true",
         help="Log stats on every board to stdout, rather just to an ndjson file.",
     )
+    parser.add_argument(
+        "--log_breaker_progress",
+        action="store_true",
+        help="Log progress and stats during breaking, which may slow it down.",
+    )
     args = parser.parse_args()
     if args.random_seed >= 0:
         random.seed(args.random_seed)
@@ -203,6 +221,12 @@ def main():
     assert 3 <= w <= 4
     assert 3 <= h <= 4
     max_index = num_classes ** (w * h)
+
+    if args.letter_grouping:
+        letter_map = get_letter_map(args.letter_grouping)
+        for lets in classes:
+            for c in lets:
+                assert letter_map[c] == c, f"Letter classes must be canonical ({c})"
 
     completed_ids = set()
     if args.resume_from:
@@ -254,11 +278,15 @@ def main():
     start_s = time.time()
     good_boards = []
 
-    # TODO: with --num_threads=1, skip the pool to keep stack traces simpler.
-    pool = multiprocessing.Pool(
-        args.num_threads, break_init, (args, needs_canonical_filter)
-    )
-    it = pool.imap_unordered(break_worker, indices)
+    if args.num_threads > 1:
+        pool = multiprocessing.Pool(
+            args.num_threads, break_init, (args, needs_canonical_filter)
+        )
+        it = pool.imap_unordered(break_worker, indices)
+    else:
+        # This keeps stack traces simpler in the single-threaded case.
+        break_init(args, needs_canonical_filter)
+        it = (break_worker(task) for task in indices)
 
     good_boards = []
     # smoothing=0 means to show the average pace so far, which is the best estimator.

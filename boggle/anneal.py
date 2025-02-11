@@ -9,12 +9,9 @@ import random
 from collections import Counter
 from dataclasses import dataclass
 
-from cpp_boggle import Trie
-
-from boggle.args import add_standard_args
+from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import LETTER_A, LETTER_Z, PyBoggler
-from boggle.dimensional_bogglers import Bogglers
-from boggle.trie import make_py_trie
+from boggle.trie import get_letter_map
 
 
 @dataclass
@@ -24,12 +21,17 @@ class Options:
     swap_ratio: float = 1.0
     mutation_p: float = 0.75
     max_stall: int = 2000
+    letter_map: dict[str, str] | None = None
 
 
-def initial_board(num_lets: int) -> list[int]:
-    return [random.randint(LETTER_A, LETTER_Z) for _ in range(num_lets)]
+def initial_board(num_lets: int, opts: Options) -> list[int]:
+    bd = [random.randint(LETTER_A, LETTER_Z) for _ in range(num_lets)]
+    if opts.letter_map:
+        bd = [ord(opts.letter_map[chr(letter)]) for letter in bd]
+    return bd
 
 
+# TODO: make this operate on strings like hillclimb.neighbors
 def mutate(board: list[int], opts: Options):
     num_cells = len(board)
     while True:
@@ -46,6 +48,8 @@ def mutate(board: list[int], opts: Options):
             while True:
                 cell = random.randint(0, num_cells - 1)
                 letter = random.randint(LETTER_A, LETTER_Z)
+                if opts.letter_map:
+                    letter = ord(opts.letter_map[chr(letter)])
                 if board[cell] != letter:
                     break
             board[cell] = letter
@@ -70,7 +74,7 @@ def temperature(n: int, opts: Options) -> float:
 
 
 def anneal(boggler: PyBoggler, num_lets: int, opts: Options):
-    last_board = initial_board(num_lets)
+    last_board = initial_board(num_lets, opts)
     best_score = 0
     last_accept = 0
 
@@ -122,20 +126,14 @@ def main():
     options = Options()
     options.max_stall = args.max_stall
     options.swap_ratio = args.swap_ratio
+    if args.letter_grouping:
+        options.letter_map = get_letter_map(args.letter_grouping)
 
     if args.random_seed >= 0:
         random.seed(args.random_seed)
 
-    w, h = dims = args.size // 10, args.size % 10
-
-    if args.python:
-        t = make_py_trie(args.dictionary)
-        assert t
-        boggler = PyBoggler(t, dims)
-    else:
-        t = Trie.CreateFromFile(args.dictionary)
-        assert t
-        boggler = Bogglers[dims](t)
+    w, h = args.size // 10, args.size % 10
+    t, boggler = get_trie_and_boggler_from_args(args)
 
     best = Counter[str]()
     for run in range(args.num_boards):
