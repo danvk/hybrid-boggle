@@ -1,14 +1,12 @@
 # Try to speed up ibuckets by explicitly constructing an evaluation tree.
 
 import itertools
-import math
 from collections import Counter
 from typing import Self, Sequence
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.trie import PyTrie, make_lookup_table
-from boggle.util import group_by
 
 ROOT_NODE = -2
 CHOICE_NODE = -1

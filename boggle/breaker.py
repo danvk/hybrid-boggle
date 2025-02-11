@@ -8,14 +8,12 @@ from cpp_boggle import (
     BucketBoggler33,
     BucketBoggler34,
     BucketBoggler44,
-    create_eval_node_arena,
 )
 
 from boggle.boggler import PyBoggler
 from boggle.eval_tree import (
     EvalNode,
     EvalTreeBoggler,
-    create_eval_node_arena_py,
 )
 
 type BucketBoggler = BucketBoggler33 | BucketBoggler34 | BucketBoggler44
@@ -197,6 +195,7 @@ class HybridTreeBreaker:
         # TODO: ideally this should depend on the node_count of the tree.
         switchover_level: int,
         free_after_score: bool,
+        log_breaker_progress: bool,
     ):
         self.etb = etb
         self.boggler = boggler
@@ -208,6 +207,7 @@ class HybridTreeBreaker:
         self.split_order = SPLIT_ORDER[dims]
         self.switchover_level = switchover_level
         self.free_after_score = free_after_score
+        self.log_breaker_progress = log_breaker_progress
 
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
@@ -238,8 +238,11 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena, dedupe=True)
-        self.mark += 1
-        # print(f"root {tree.bound=}, {tree.unique_node_count(self.mark)} unique nodes")
+        if self.log_breaker_progress:
+            self.mark += 1
+            print(
+                f"root {tree.bound=}, {tree.unique_node_count(self.mark)} unique nodes"
+            )
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.sum_union = self.etb.Details().sum_union
@@ -289,10 +292,11 @@ class HybridTreeBreaker:
             if n_filtered:
                 self.details_.num_filtered[level] = n_filtered
             # print(f"f -> {cell=} {tree.bound=}, {tree.unique_node_count()} unique nodes")
-        # self.mark += 1
-        # print(
-        #     f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count(self.mark)} unique nodes"
-        # )
+        if self.log_breaker_progress:
+            self.mark += 1
+            print(
+                f"{level=} {cell=} {tree.bound=}, {tree.unique_node_count(self.mark)} unique nodes"
+            )
 
         self.AttackTree(tree, level + 1, arena)
 
@@ -332,6 +336,9 @@ class HybridTreeBreaker:
 
         if not boards_to_test:
             return
+
+        if self.log_breaker_progress:
+            print(f"Found {len(boards_to_test)} to test.")
 
         # print(f"{len(boards_to_test)=}")
         # with open("/tmp/boards-to-test.txt", "w") as out:

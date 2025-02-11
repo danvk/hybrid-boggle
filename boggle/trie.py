@@ -90,9 +90,31 @@ def make_lookup_table(t: PyTrie, prefix="", out=None) -> dict[PyTrie, str]:
     return out
 
 
-def make_py_trie(dict_input: str):
+def make_py_trie(dict_input: str, letter_grouping: str):
     t = PyTrie()
+
+    if not letter_grouping:
+        for word in open(dict_input):
+            word = word.strip()
+            t.AddWord(word)
+        return t
+
+    letter_map = get_letter_map(letter_grouping)
     for word in open(dict_input):
         word = word.strip()
-        t.AddWord(word)
+        mapped = "".join(letter_map[c] for c in word)
+        t.AddWord(mapped)
     return t
+
+
+def get_letter_map(letter_grouping: str) -> dict[str, str]:
+    letter_map = {}
+    for chunk in letter_grouping.split(" "):
+        canonical = chunk[0]
+        for alternate in chunk[1:]:
+            letter_map[alternate] = canonical
+    for i in range(26):
+        letter = chr(ord("a") + i)
+        if letter not in letter_map:
+            letter_map[letter] = letter
+    return letter_map

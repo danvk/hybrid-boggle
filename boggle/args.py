@@ -6,7 +6,7 @@ from cpp_boggle import Trie
 
 from boggle.boggler import PyBoggler
 from boggle.dimensional_bogglers import Bogglers
-from boggle.trie import make_py_trie
+from boggle.trie import get_letter_map, make_py_trie
 
 
 def add_standard_args(
@@ -26,6 +26,14 @@ def add_standard_args(
         help="Path to dictionary file with one word per line. Words must be "
         '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
     )
+    parser.add_argument(
+        "--letter_grouping",
+        type=str,
+        default="",
+        help="Letter chunks, space-delimited. The first letter in each chunk is "
+        'the canonical one, so "abc" would change "b" and "c" to "a". Omitted letters '
+        "get their own class. Default is no chunking.",
+    )
 
     if random_seed:
         parser.add_argument(
@@ -44,10 +52,14 @@ def add_standard_args(
 
 def get_trie_from_args(args: argparse.Namespace):
     if args.python:
-        t = make_py_trie(args.dictionary)
+        t = make_py_trie(args.dictionary, args.letter_grouping)
         assert t
     else:
-        t = Trie.CreateFromFile(args.dictionary)
+        if args.letter_grouping:
+            m = get_letter_map(args.letter_grouping)
+            t = Trie.CreateFromFileWithGrouping(args.dictionary, m)
+        else:
+            t = Trie.CreateFromFile(args.dictionary)
         assert t
     return t
 
