@@ -184,10 +184,10 @@ class EvalNode:
                     choice_mask |= child.choice_mask
                 # TODO: sum nodes should not have null children
                 #       (this does happen after lifting)
-        # assert bound == self.bound
         if bound != self.bound:
             print(f"Warning {bound} != {self.bound}")
             self.cache_key = 255
+        assert bound == self.bound
         assert choice_mask == self.choice_mask
 
         for child in self.children:
@@ -824,7 +824,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     if not non_choice:
         if any_choice_changes:
             node.children = choice
-            node.bound = sum(c.bound for c in choice)
+            node.bound = (node.points or 0) + sum(c.bound for c in choice)
             return True
         return False
 
@@ -837,7 +837,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
         new_children += c.children
         new_bound += c.bound
     node.children = new_children
-    node.bound = new_bound
+    node.bound = new_bound + node.points
     # COUNTS["absorb"] += 1
     return True
 
