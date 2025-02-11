@@ -89,10 +89,12 @@ class EvalNode:
     def score_with_forces_dict(
         self, forces: dict[int, int], num_cells: int, cells: list[str]
     ) -> int:
+        """Requires that set_choice_point_mask() has been called on this tree."""
         forces_list = [forces.get(i, -1) for i in range(num_cells)]
         return self.score_with_forces(forces_list)
 
     def score_with_forces(self, forces: list[int]) -> int:
+        """Requires that set_choice_point_mask() has been called on this tree."""
         choice_mask = 0
         for cell, letter in enumerate(forces):
             if letter >= 0:
@@ -104,6 +106,7 @@ class EvalNode:
         forces: list[int],
         choice_mask: int,
     ) -> int:
+        """Requires that set_choice_point_mask() has been called on this tree."""
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
@@ -249,6 +252,7 @@ class EvalNode:
         dedupe=False,
         compress=False,
     ) -> Self | list[Self]:
+        """Helper for lift_choice"""
         assert mark
         force_cell_cache = {}
         out = self.force_cell_work(
@@ -450,7 +454,7 @@ class EvalNode:
         self._hash = h
         return h
 
-    def set_choice_point_mask(self, num_letters):
+    def set_choice_point_mask(self, num_letters: Sequence[int]):
         if self.letter == CHOICE_NODE and self.points == 0:
             n = num_letters[self.cell]
             if len(self.children) == n:
@@ -557,7 +561,9 @@ class EvalNode:
         return out
 
     def all_words(self, word_table: dict[PyTrie, str]) -> list[str]:
-        return [word_table[node.trie_node] for node in self.all_nodes() if node.points]
+        return [
+            word_table[node.trie_node] for node in self.all_nodes() if node.trie_node
+        ]
 
     def print_paths(self, word: str, word_table: dict[PyTrie, str], prefix=""):
         if self.letter == ROOT_NODE:

@@ -221,7 +221,9 @@ def test_equivalence():
     # print(dot)
     # assert False
 
-    fives = root.force_cell(5, len("aeiou"))
+    mark = 0
+    mark += 1
+    fives = root.force_cell(5, num_lets=len("aeiou"), mark=mark)
     assert len(fives) == 5
 
     # print(fives[1].bound)
@@ -244,6 +246,7 @@ def test_equivalence():
     # print(fives[1].recompute_score())
 
     t.ResetMarks()
+    root.set_choice_point_mask(num_letters=[len(cell) for cell in cells])
     for i, vowel in enumerate("aeiou"):
         subboard = f". . . . lnrsy {vowel} aeiou aeiou . . . ."
         bb.ParseBoard(subboard)
@@ -534,7 +537,11 @@ def test_lift_invariants(dedupe, compress):
 
     # Lifting a choice reduces the bound.
     # The bounds on the child cells should match what you get from ibuckets.
-    tc0 = t.lift_choice(0, len(cells[0]), arena, dedupe=dedupe, compress=compress)
+    mark = 0
+    mark += 1
+    tc0 = t.lift_choice(
+        0, len(cells[0]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc0.letter == CHOICE_NODE
     assert tc0.cell == 0
     assert len(tc0.children) == len(cells[0])
@@ -548,7 +555,10 @@ def test_lift_invariants(dedupe, compress):
     assert max_trees == [(child, [(0, i)]) for i, child in enumerate(tc0.children)]
 
     # Lifting a second time reduces the bound again.
-    tc1 = tc0.lift_choice(1, len(cells[1]), arena, dedupe=dedupe, compress=compress)
+    mark += 1
+    tc1 = tc0.lift_choice(
+        1, len(cells[1]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc1.letter == CHOICE_NODE
     assert tc1.cell == 1
     assert len(tc1.children) == len(cells[1])
@@ -569,13 +579,19 @@ def test_lift_invariants(dedupe, compress):
             assert ibb.ParseBoard(bd)
             assert ibb.UpperBound(123) == tc1.children[j].children[i].bound
 
-    tc2 = tc1.lift_choice(2, len(cells[2]), arena, dedupe=dedupe, compress=compress)
+    mark += 1
+    tc2 = tc1.lift_choice(
+        2, len(cells[2]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc2.letter == CHOICE_NODE
     assert tc2.cell == 2
     assert len(tc2.children) == len(cells[2])
     assert tc2.bound == 14
 
-    tc3 = tc2.lift_choice(3, len(cells[3]), arena, dedupe=dedupe, compress=compress)
+    mark += 1
+    tc3 = tc2.lift_choice(
+        3, len(cells[3]), arena, dedupe=dedupe, compress=compress, mark=mark
+    )
     assert tc3.letter == CHOICE_NODE
     assert tc3.cell == 3
     assert len(tc3.children) == len(cells[3])
