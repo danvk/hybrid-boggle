@@ -617,6 +617,7 @@ class EvalNode:
             if self.points:
                 label += f" ({self.points})"
                 attrs += ' peripheries="2"'
+        label += f"\\nbound={self.bound}"
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
 
@@ -708,6 +709,24 @@ class EvalNode:
                 results,
             )
         return results
+
+    def set_computed_fields_for_testing(self, cells: Sequence[str]):
+        for c in self.children:
+            if c:
+                c.set_computed_fields_for_testing(cells)
+
+        if self.letter == CHOICE_NODE:
+            self.choice_mask = 1 << self.cell if len(cells[self.cell]) > 1 else 0
+            self.bound = (
+                max(c.bound for c in self.children if c) if self.children else 0
+            )
+        else:
+            self.choice_mask = 0
+            self.bound = self.points + sum(c.bound for c in self.children if c)
+
+        for c in self.children:
+            if c:
+                self.choice_mask |= c.choice_mask
 
 
 def bound_remaining_boards_help(

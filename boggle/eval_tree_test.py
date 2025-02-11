@@ -13,6 +13,7 @@ from cpp_boggle import (
 from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
     CHOICE_NODE,
+    ROOT_NODE,
     EvalNode,
     EvalTreeBoggler,
     create_eval_node_arena_py,
@@ -753,3 +754,88 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
 
     # TODO: do another round of tests with compress=True
     # This is trickier since tree merging can affect scores.
+
+
+def test_lift_sum():
+    cells = ["ab", "xy"]
+    root = letter_node(
+        cell=0,
+        letter=ROOT_NODE,
+        children=[
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=0, points=1),
+                    letter_node(cell=0, letter=1, points=2),
+                ],
+            ),
+            choice_node(
+                cell=1,
+                children=[
+                    letter_node(cell=1, letter=0, points=3),
+                    letter_node(cell=1, letter=1, points=4),
+                ],
+            ),
+        ],
+    )
+    root.set_computed_fields_for_testing(cells)
+    print(root.to_dot(cells))
+
+    assert root.choice_mask == 0b11
+    assert root.children[0].choice_mask == 0b01
+    assert root.children[1].choice_mask == 0b10
+    assert root.children[0].children[0].choice_mask == 0
+    assert root.children[0].children[1].choice_mask == 0
+    assert root.children[1].children[0].choice_mask == 0
+    assert root.children[1].children[1].choice_mask == 0
+    assert root.bound == 6
+
+    lift0 = root.lift_choice(cell=0, num_lets=2, mark=1)
+    print(lift0.to_dot(cells))
+    assert lift0.bound == 6
+    assert len(lift0.children) == 2
+    assert lift0.children[0].letter == 0
+    assert lift0.children[0].bound == 5  # 1 + 4
+    assert lift0.children[1].letter == 1
+    assert lift0.children[1].bound == 6  # 2 + 4
+
+
+"""
+These are the tests from the clean-tree branch:
+
+def test_lift_sum():
+    root = SumNode(
+        points=0,
+        children=[
+            ChoiceNode(cell=1, children=[1, 3]),
+            ChoiceNode(cell=1, children=[2, 4]),
+        ],
+    )
+    assert lift_choice(root, 0, 1) == root
+    assert lift_choice(root, 1, 2) == ChoiceNode(
+        cell=1,
+        children=[3, 7],
+        # Collapsed from:
+        # SumNode(points=0, children=[1, 2]),
+        # SumNode(points=0, children=[3, 4]),
+    )
+
+
+def test_lift_choice():
+    root = ChoiceNode(
+        cell=0,
+        children=[
+            ChoiceNode(cell=1, children=[1, 3]),
+            ChoiceNode(cell=1, children=[2, 4]),
+        ],
+    )
+    assert lift_choice(root, 0, 2) == root
+    assert lift_choice(root, 2, 1) == root
+    assert lift_choice(root, 1, 2) == ChoiceNode(
+        cell=1,
+        children=[
+            ChoiceNode(cell=0, children=[1, 2]),
+            ChoiceNode(cell=0, children=[3, 4]),
+        ],
+    )
+"""
