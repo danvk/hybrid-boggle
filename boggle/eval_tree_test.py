@@ -705,8 +705,8 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
 @pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     trie = make_trie("testdata/boggle-words-9.txt")
-    board = ". . . . lnrsy e aeiou aeiou ."
-    # board = ". . . . rs e io au ."
+    # board = ". . . . lnrsy e aeiou aeiou ."
+    board = ". . . . rs e io au ."
     cells = board.split(" ")
     etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
@@ -738,7 +738,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=False, dedupe=True, mark=mark)
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
         if isinstance(tl, EvalNode):
@@ -746,7 +746,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
 
     # Do a second lift and check again.
     mark += 1
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=False, dedupe=True, mark=mark)
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
@@ -842,44 +842,3 @@ def test_lift_choice():
     assert lift0c.bound == 4
 
     assert False
-
-
-"""
-These are the tests from the clean-tree branch:
-
-def test_lift_sum():
-    root = SumNode(
-        points=0,
-        children=[
-            ChoiceNode(cell=1, children=[1, 3]),
-            ChoiceNode(cell=1, children=[2, 4]),
-        ],
-    )
-    assert lift_choice(root, 0, 1) == root
-    assert lift_choice(root, 1, 2) == ChoiceNode(
-        cell=1,
-        children=[3, 7],
-        # Collapsed from:
-        # SumNode(points=0, children=[1, 2]),
-        # SumNode(points=0, children=[3, 4]),
-    )
-
-
-def test_lift_choice():
-    root = ChoiceNode(
-        cell=0,
-        children=[
-            ChoiceNode(cell=1, children=[1, 3]),
-            ChoiceNode(cell=1, children=[2, 4]),
-        ],
-    )
-    assert lift_choice(root, 0, 2) == root
-    assert lift_choice(root, 2, 1) == root
-    assert lift_choice(root, 1, 2) == ChoiceNode(
-        cell=1,
-        children=[
-            ChoiceNode(cell=0, children=[1, 2]),
-            ChoiceNode(cell=0, children=[3, 4]),
-        ],
-    )
-"""
