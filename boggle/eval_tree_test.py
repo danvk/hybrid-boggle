@@ -747,15 +747,14 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if isinstance(tl, EvalNode):
             tl.assert_invariants(etb, is_top_max=True)
             tl_noc.assert_invariants(etb, is_top_max=True)
-            with open("t.dot", "w") as out:
-                out.write(t.to_dot(cells, trie=trie))
-            with open("tl.dot", "w") as out:
-                out.write(tl.to_dot(cells, trie=trie))
-            with open("tl_noc.dot", "w") as out:
-                out.write(tl_noc.to_dot(cells, trie=trie))
+            # with open("t.dot", "w") as out:
+            #     out.write(t.to_dot(cells, trie=trie))
+            # with open("tl.dot", "w") as out:
+            #     out.write(tl.to_dot(cells, trie=trie))
+            # with open("tl_noc.dot", "w") as out:
+            #     out.write(tl_noc.to_dot(cells, trie=trie))
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
-        assert False
 
     # Do a second lift and check again.
     mark += 1

@@ -185,10 +185,10 @@ class EvalNode:
                     choice_mask |= child.choice_mask
                 # TODO: sum nodes should not have null children
                 #       (this does happen after lifting)
-        if bound != self.bound:
-            print(f"Warning {bound} != {self.bound}")
-            self.flag = True
-        # assert bound == self.bound
+        # if bound != self.bound:
+        #     print(f"Warning {bound} != {self.bound}")
+        #     self.flag = True
+        assert bound == self.bound
         assert choice_mask == self.choice_mask
 
         for child in self.children:
