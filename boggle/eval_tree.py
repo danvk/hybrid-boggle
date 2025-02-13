@@ -110,14 +110,13 @@ class EvalNode:
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
-                v = 0
                 if self.points & (1 << force):
                     mask = self.points & ((1 << force) - 1)
                     idx = mask.bit_count()
                     child = self.children[idx]
                     if child:
-                        v = child.score_with_forces_mask(forces, choice_mask)
-                return v
+                        return child.score_with_forces_mask(forces, choice_mask)
+                return 0
 
         if not (self.choice_mask & choice_mask):
             # The force is irrelevant to this subtree, so we don't need to traverse it.
@@ -148,6 +147,7 @@ class EvalNode:
         - node.choice_mask is correct (checked shallowly)
         - choice node children are mutually-exclusive
         - choice node children are sorted
+        - TODO: no duplicate choice children for sum nodes
         """
         if is_top_max is None:
             is_top_max = self.letter == CHOICE_NODE
@@ -184,6 +184,9 @@ class EvalNode:
                     choice_mask |= child.choice_mask
                 # TODO: sum nodes should not have null children
                 #       (this does happen after lifting)
+        # if bound != self.bound:
+        #     print(f"Warning {bound} != {self.bound}")
+        #     self.flag = True
         assert bound == self.bound
         assert choice_mask == self.choice_mask
 
@@ -480,6 +483,13 @@ class EvalNode:
             if c:
                 c.set_choice_point_mask(num_letters)
 
+    def reset_choice_point_mask(self):
+        if self.letter == CHOICE_NODE:
+            self.points = 0
+        for child in self.children:
+            if child:
+                child.reset_choice_point_mask()
+
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
 
@@ -581,9 +591,10 @@ class EvalNode:
             for child in self.children:
                 child.print_paths(word, word_table, prefix)
 
-    def to_dot(self, cells: list[str], max_depth=100) -> str:
+    def to_dot(self, cells: list[str], max_depth=100, trie=None) -> str:
+        lookup_table = make_lookup_table(trie) if trie else None
         _root_id, dot = self.to_dot_help(
-            cells, "", {}, self.letter == CHOICE_NODE, max_depth
+            cells, "", {}, self.letter == CHOICE_NODE, max_depth, lookup_table
         )
         return f"""graph {{
     rankdir=LR;
@@ -594,15 +605,15 @@ class EvalNode:
 """
 
     def to_dot_help(
-        self, cells: list[str], prefix, cache, is_top_max, remaining_depth
+        self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
-        is_dupe = self in cache
+        is_dupe = hasattr(self, "flag")  # self in cache
         me = prefix
 
         attrs = ""
-        # if is_dupe:
-        #     attrs = 'color="red"'
+        if is_dupe:
+            attrs = 'color="red"'
         if self.letter == ROOT_NODE:
             me += "r"
             label = "ROOT"
@@ -617,6 +628,13 @@ class EvalNode:
             if self.points:
                 label += f" ({self.points})"
                 attrs += ' peripheries="2"'
+<<<<<<< HEAD
+||||||| 302f06b
+=======
+                if self.trie_node and lookup_table:
+                    word = lookup_table[self.trie_node]
+                    label += f"\\nword={word}"
+>>>>>>> main
         label += f"\\nbound={self.bound}"
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
@@ -631,6 +649,7 @@ class EvalNode:
                 cache,
                 is_top_max and child.letter == CHOICE_NODE,
                 remaining_depth - 1,
+                lookup_table,
             )
             for i, child in enumerate(self.children)
             if child
@@ -834,16 +853,23 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     if not non_choice:
         if any_choice_changes:
             node.children = choice
+            node.bound = (node.points or 0) + sum(c.bound for c in choice)
             return True
         return False
 
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
     new_children = choice
+    new_bound = sum(c.bound for c in choice)
+    new_points_from_children = 0
     for c in non_choice:
-        node.points = (node.points or 0) + c.points
+        new_points_from_children += c.points
         new_children += c.children
+        new_bound += c.bound
     node.children = new_children
+    # We need to take care here not to double-count points for the bound.
+    node.bound = new_bound + node.points
+    node.points += new_points_from_children
     # COUNTS["absorb"] += 1
     return True
 
@@ -853,7 +879,7 @@ def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
     if node.letter == ROOT_NODE:
         line = f"{indent}ROOT ({node.bound}) mask={node.choice_mask}"
     elif node.letter == CHOICE_NODE:
-        line = f"{indent}CHOICE ({node.cell} <{node.bound}) mask={node.choice_mask}"
+        line = f"{indent}CHOICE ({node.cell} <{node.bound}) mask={node.choice_mask} points={node.points}"
     else:
         cell = cells[node.cell][node.letter]
         line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound}) mask={node.choice_mask}"
@@ -869,10 +895,20 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
     return "\n".join(lines)
 
 
+def reset_choice_point_mask(node: EvalNode):
+    if node.letter == CHOICE_NODE:
+        node.points = 0
+    for child in node.children:
+        if child:
+            reset_choice_point_mask(child)
+
+
 def eval_all(node: EvalNode, cells: list[str]):
     """Evaluate all possible boards.
 
     This is defined externally to EvalNode so that it can be used with C++ EvalNode, too.
+    If you're going to do anything with the tree after this, make sure to call
+    node.reset_choice_point_mask().
     """
     num_letters = [len(cell) for cell in cells]
     node.set_choice_point_mask(num_letters)

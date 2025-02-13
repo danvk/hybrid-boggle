@@ -489,11 +489,20 @@ bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_mer
   // There's something to absorb.
   // TODO: pre-reserve the right number of slots for new_children
   auto& new_children = choice;
+  uint32_t new_bound = 0;
+  for (auto c : choice) {
+    new_bound += c->bound_;
+  }
+  uint32_t new_points_from_children = 0;
   for (auto c : non_choice) {
-    node->points_ += c->points_;
+    new_points_from_children += c->points_;
     new_children.insert(new_children.end(), c->children_.begin(), c->children_.end());
+    new_bound += c->bound_;
   }
   node->children_.swap(new_children);
+  // We need to take care here not to double-count points for the bound.
+  node->bound_ = new_bound + node->points_;
+  node->points_ += new_points_from_children;
   return true;
 }
 
@@ -603,6 +612,17 @@ void EvalNode::SetChoicePointMask(const vector<int>& num_letters) {
   for (auto c : children_) {
     if (c) {
       ((EvalNode*)c)->SetChoicePointMask(num_letters);
+    }
+  }
+}
+
+void EvalNode::ResetChoicePointMask() {
+  if (letter_ == CHOICE_NODE) {
+    points_ = 0;
+  }
+  for (auto c : children_) {
+    if (c) {
+      ((EvalNode*)c)->ResetChoicePointMask();
     }
   }
 }

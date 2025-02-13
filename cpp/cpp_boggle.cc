@@ -145,6 +145,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
         .def("structural_hash", &EvalNode::StructuralHash)
         .def("set_choice_point_mask", &EvalNode::SetChoicePointMask)
+        .def("reset_choice_point_mask", &EvalNode::ResetChoicePointMask)
         .def("filter_below_threshold", &EvalNode::FilterBelowThreshold)
         .def("bound_remaining_boards", &EvalNode::BoundRemainingBoards);
 
