@@ -744,16 +744,21 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=False, mark=mark)
         mark += 1
         tl_noc = t.lift_choice(
-            i, len(cell), arena, compress=False, dedupe=True, mark=mark
+            i, len(cell), arena, compress=False, dedupe=False, mark=mark
         )
         if isinstance(tl, EvalNode):
             # If these ever fail, setting dedupe=False makes debugging much easier.
             tl.assert_invariants(etb, is_top_max=True)
             tl_noc.assert_invariants(etb, is_top_max=True)
+
+        with open(f"testdata/tree33-{i}.{suffix}.txt", "w") as out:
+            out.write(eval_node_to_string(tl, cells))
+            out.write("\n")
         lift_scores = eval_all(tl, cells)
+        print(f"testing {i}")
         assert lift_scores == scores
         assert tl.bound <= t.bound
         assert tl_noc.bound <= t.bound

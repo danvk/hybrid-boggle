@@ -851,7 +851,7 @@ def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
     if node.letter == ROOT_NODE:
         line = f"{indent}ROOT ({node.bound}) mask={node.choice_mask}"
     elif node.letter == CHOICE_NODE:
-        line = f"{indent}CHOICE ({node.cell} <{node.bound}) mask={node.choice_mask}"
+        line = f"{indent}CHOICE ({node.cell} <{node.bound}) mask={node.choice_mask} points={node.points}"
     else:
         cell = cells[node.cell][node.letter]
         line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound}) mask={node.choice_mask}"

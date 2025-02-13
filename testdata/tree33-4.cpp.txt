@@ -1,0 +1,471 @@
+CHOICE (4 <16) mask=208 points=0
+ l (4=0 0/13) mask=192
+  CHOICE (5 <1) mask=192 points=1
+   e (5=0 0/1) mask=192
+    CHOICE (7 <1) mask=192 points=27
+     a (7=0 0/1) mask=64
+      CHOICE (6 <1) mask=64 points=16
+       u (6=4 1/1) mask=0
+     e (7=1 1/1) mask=0
+  CHOICE (6 <5) mask=192 points=31
+   a (6=0 0/5) mask=128
+    CHOICE (7 <1) mask=128 points=5
+     a (7=0 1/1) mask=0
+     i (7=2 1/1) mask=0
+    CHOICE (5 <2) mask=128 points=1
+     e (5=0 1/2) mask=128
+      CHOICE (7 <1) mask=128 points=2
+       e (7=1 1/1) mask=0
+    CHOICE (7 <2) mask=128 points=11
+     a (7=0 1/2) mask=0
+      CHOICE (5 <1) mask=0 points=1
+       e (5=0 1/1) mask=0
+     e (7=1 1/2) mask=0
+      CHOICE (5 <1) mask=0 points=1
+       e (5=0 1/1) mask=0
+     o (7=3 0/1) mask=0
+      CHOICE (5 <1) mask=0 points=1
+       e (5=0 1/1) mask=0
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=11
+     e (7=1 1/1) mask=0
+   i (6=2 0/1) mask=128
+    CHOICE (5 <1) mask=128 points=1
+     e (5=0 0/1) mask=128
+      CHOICE (7 <1) mask=128 points=1
+       a (7=0 1/1) mask=0
+   o (6=3 0/4) mask=128
+    CHOICE (7 <1) mask=128 points=23
+     i (7=2 1/1) mask=0
+    CHOICE (5 <2) mask=128 points=1
+     e (5=0 1/2) mask=128
+      CHOICE (7 <1) mask=128 points=9
+       a (7=0 1/1) mask=0
+       o (7=3 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   u (6=4 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=16
+     u (7=4 1/1) mask=0
+  CHOICE (7 <3) mask=192 points=31
+   a (7=0 0/3) mask=64
+    CHOICE (6 <1) mask=64 points=5
+     a (6=0 1/1) mask=0
+     i (6=2 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=3
+     a (6=0 1/1) mask=0
+     e (6=1 1/1) mask=0
+   e (7=1 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=11
+     e (6=1 1/1) mask=0
+   o (7=3 0/3) mask=64
+    CHOICE (6 <1) mask=64 points=23
+     i (6=2 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   u (7=4 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=16
+     u (6=4 1/1) mask=0
+  CHOICE (5 <1) mask=128 points=1
+   e (5=0 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=23
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+     i (7=2 1/1) mask=0
+     u (7=4 1/1) mask=0
+  CHOICE (6 <1) mask=192 points=14
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=23
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+     i (7=2 1/1) mask=0
+     u (7=4 1/1) mask=0
+   i (6=2 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   o (6=3 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=8
+     o (7=3 1/1) mask=0
+  CHOICE (7 <2) mask=192 points=14
+   e (7=1 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=23
+     a (6=0 1/1) mask=0
+     e (6=1 1/1) mask=0
+     i (6=2 1/1) mask=0
+     u (6=4 1/1) mask=0
+   i (7=2 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   o (7=3 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=8
+     o (6=3 1/1) mask=0
+ n (4=1 0/11) mask=192
+  CHOICE (5 <1) mask=192 points=1
+   e (5=0 0/1) mask=192
+    CHOICE (7 <1) mask=192 points=27
+     a (7=0 0/1) mask=64
+      CHOICE (6 <1) mask=64 points=16
+       u (6=4 1/1) mask=0
+     o (7=3 1/1) mask=0
+  CHOICE (6 <3) mask=192 points=31
+   a (6=0 0/3) mask=128
+    CHOICE (7 <1) mask=128 points=5
+     i (7=2 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=7
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+     i (7=2 1/1) mask=0
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=11
+     o (7=3 1/1) mask=0
+   i (6=2 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=8
+     o (7=3 1/1) mask=0
+   o (6=3 0/2) mask=128
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+  CHOICE (7 <3) mask=192 points=31
+   a (7=0 0/3) mask=64
+    CHOICE (6 <1) mask=64 points=5
+     i (6=2 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=7
+     a (6=0 1/1) mask=0
+     e (6=1 1/1) mask=0
+     i (6=2 1/1) mask=0
+   e (7=1 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=11
+     o (6=3 1/1) mask=0
+   i (7=2 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=8
+     o (6=3 1/1) mask=0
+   o (7=3 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+  CHOICE (5 <1) mask=128 points=1
+   e (5=0 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+  CHOICE (6 <1) mask=192 points=11
+   a (6=0 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   o (6=3 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=8
+     o (7=3 1/1) mask=0
+  CHOICE (7 <2) mask=192 points=11
+   a (7=0 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   e (7=1 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   o (7=3 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=8
+     o (6=3 1/1) mask=0
+ r (4=2 0/16) mask=192
+  CHOICE (5 <4) mask=192 points=1
+   e (5=0 0/4) mask=192
+    CHOICE (7 <2) mask=192 points=27
+     a (7=0 1/2) mask=64
+      CHOICE (6 <1) mask=64 points=16
+       u (6=4 1/1) mask=0
+     u (7=4 0/1) mask=64
+      CHOICE (6 <1) mask=64 points=8
+       o (6=3 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=3
+     a (6=0 1/1) mask=0
+     e (6=1 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=3
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+  CHOICE (6 <4) mask=192 points=31
+   a (6=0 0/4) mask=128
+    CHOICE (7 <1) mask=128 points=5
+     i (7=2 1/1) mask=0
+    CHOICE (5 <2) mask=128 points=1
+     e (5=0 1/2) mask=128
+      CHOICE (7 <1) mask=128 points=1
+       a (7=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   e (6=1 0/3) mask=128
+    CHOICE (7 <1) mask=128 points=11
+     a (7=0 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=3
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+   i (6=2 0/2) mask=128
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   o (6=3 0/3) mask=128
+    CHOICE (7 <1) mask=128 points=23
+     a (7=0 1/1) mask=0
+     u (7=4 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=3
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+   u (6=4 0/1) mask=128
+    CHOICE (5 <1) mask=128 points=1
+     e (5=0 0/1) mask=128
+      CHOICE (7 <1) mask=128 points=1
+       a (7=0 1/1) mask=0
+  CHOICE (7 <4) mask=192 points=31
+   a (7=0 0/4) mask=64
+    CHOICE (5 <1) mask=64 points=1
+     e (5=0 0/1) mask=64
+      CHOICE (6 <1) mask=64 points=8
+       o (6=3 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=5
+     i (6=2 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   e (7=1 0/3) mask=64
+    CHOICE (6 <1) mask=64 points=11
+     a (6=0 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=3
+     a (6=0 1/1) mask=0
+     e (6=1 1/1) mask=0
+   i (7=2 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   o (7=3 0/3) mask=64
+    CHOICE (6 <1) mask=64 points=23
+     a (6=0 1/1) mask=0
+     u (6=4 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=3
+     a (6=0 1/1) mask=0
+     e (6=1 1/1) mask=0
+  CHOICE (5 <1) mask=128 points=1
+   e (5=0 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=6
+     e (7=1 1/1) mask=0
+     i (7=2 1/1) mask=0
+  CHOICE (6 <1) mask=192 points=30
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=6
+     e (7=1 1/1) mask=0
+     i (7=2 1/1) mask=0
+   i (6=2 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=1
+     a (7=0 1/1) mask=0
+   o (6=3 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=18
+     e (7=1 1/1) mask=0
+     u (7=4 0/1) mask=0
+      CHOICE (5 <1) mask=0 points=1
+       e (5=0 1/1) mask=0
+   u (6=4 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+  CHOICE (7 <2) mask=192 points=30
+   e (7=1 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=6
+     e (6=1 1/1) mask=0
+     i (6=2 1/1) mask=0
+   i (7=2 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=1
+     a (6=0 1/1) mask=0
+   o (7=3 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   u (7=4 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+ s (4=3 0/12) mask=192
+  CHOICE (5 <1) mask=192 points=1
+   e (5=0 0/1) mask=192
+    CHOICE (7 <1) mask=192 points=27
+     a (7=0 0/1) mask=64
+      CHOICE (6 <1) mask=64 points=0
+       e (6=1 1/1) mask=0
+       u (6=4 1/1) mask=0
+  CHOICE (6 <3) mask=192 points=31
+   a (6=0 0/2) mask=128
+    CHOICE (5 <1) mask=128 points=1
+     e (5=0 0/1) mask=128
+      CHOICE (7 <1) mask=128 points=1
+       a (7=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=5
+     a (7=0 1/1) mask=0
+     i (7=2 1/1) mask=0
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=11
+     a (7=0 0/1) mask=0
+      CHOICE (5 <1) mask=0 points=1
+       e (5=0 1/1) mask=0
+   o (6=3 0/3) mask=128
+    CHOICE (7 <1) mask=128 points=23
+     e (7=1 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   u (6=4 0/2) mask=128
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+  CHOICE (7 <4) mask=192 points=31
+   a (7=0 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=5
+     a (6=0 1/1) mask=0
+     i (6=2 1/1) mask=0
+   e (7=1 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=11
+     a (6=0 0/1) mask=0
+      CHOICE (5 <1) mask=0 points=1
+       e (5=0 1/1) mask=0
+   o (7=3 0/4) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=23
+     e (6=1 1/1) mask=0
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   u (7=4 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+  CHOICE (5 <1) mask=128 points=1
+   e (5=0 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=7
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+     i (7=2 1/1) mask=0
+  CHOICE (6 <1) mask=192 points=27
+   a (6=0 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=18
+     e (7=1 1/1) mask=0
+     u (7=4 1/1) mask=0
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=7
+     a (7=0 1/1) mask=0
+     e (7=1 1/1) mask=0
+     i (7=2 1/1) mask=0
+   o (6=3 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=16
+     u (7=4 1/1) mask=0
+   u (6=4 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+  CHOICE (7 <2) mask=192 points=27
+   a (7=0 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=18
+     e (6=1 1/1) mask=0
+     u (6=4 1/1) mask=0
+   e (7=1 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=7
+     a (6=0 1/1) mask=0
+     e (6=1 1/1) mask=0
+     i (6=2 1/1) mask=0
+   o (7=3 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=16
+     u (6=4 1/1) mask=0
+   u (7=4 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+ y (4=4 0/10) mask=192
+  CHOICE (5 <3) mask=192 points=1
+   e (5=0 0/3) mask=192
+    CHOICE (7 <1) mask=192 points=27
+     a (7=0 0/1) mask=64
+      CHOICE (6 <1) mask=64 points=16
+       u (6=4 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+  CHOICE (6 <2) mask=192 points=31
+   a (6=0 0/2) mask=128
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+   e (6=1 0/2) mask=128
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (7 <1) mask=128 points=2
+     e (7=1 1/1) mask=0
+  CHOICE (7 <2) mask=192 points=31
+   a (7=0 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+   e (7=1 0/2) mask=64
+    CHOICE (5 <1) mask=0 points=1
+     e (5=0 1/1) mask=0
+    CHOICE (6 <1) mask=64 points=2
+     e (6=1 1/1) mask=0
+  CHOICE (5 <1) mask=128 points=1
+   e (5=0 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=1
+     a (7=0 1/1) mask=0
+  CHOICE (6 <1) mask=192 points=10
+   e (6=1 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=1
+     a (7=0 1/1) mask=0
+   o (6=3 0/1) mask=128
+    CHOICE (7 <1) mask=128 points=16
+     u (7=4 1/1) mask=0
+  CHOICE (7 <1) mask=192 points=10
+   e (7=1 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=1
+     a (6=0 1/1) mask=0
+   o (7=3 0/1) mask=64
+    CHOICE (6 <1) mask=64 points=16
+     u (6=4 1/1) mask=0
