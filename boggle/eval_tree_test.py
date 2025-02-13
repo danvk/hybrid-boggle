@@ -752,7 +752,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
 
     # Do a second lift and check again.
     mark += 1
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=False, dedupe=True, mark=mark)
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
