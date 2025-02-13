@@ -805,7 +805,7 @@ def test_lift_sum():
 
 
 def test_lift_choice():
-    cells = ["ab", "xy"]
+    cells = ["abc", "xy"]
     root = choice_node(
         cell=0,
         children=[
@@ -826,6 +826,11 @@ def test_lift_choice():
                         cell=1, children=[letter_node(1, 0, 2), letter_node(1, 1, 4)]
                     ),
                 ],
+            ),
+            letter_node(
+                0,
+                2,
+                points=3,
             ),
         ],
     )
