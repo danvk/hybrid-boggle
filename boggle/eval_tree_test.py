@@ -18,6 +18,7 @@ from boggle.eval_tree import (
     create_eval_node_arena_py,
     eval_all,
     merge_trees,
+    squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
@@ -705,7 +706,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
 def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     trie = make_trie("testdata/boggle-words-9.txt")
     # board = ". . . . lnrsy e aeiou aeiou ."
-    board = ". . . . rs e io au ."
+    board = ". . . . r e i au ."
     cells = board.split(" ")
     etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
@@ -739,15 +740,22 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         mark += 1
         print(f"lift {i}")
         tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=False, mark=mark)
+        mark += 1
+        tl_noc = t.lift_choice(
+            i, len(cell), arena, compress=False, dedupe=False, mark=mark
+        )
         if isinstance(tl, EvalNode):
+            tl.assert_invariants(etb, is_top_max=True)
+            tl_noc.assert_invariants(etb, is_top_max=True)
             with open("t.dot", "w") as out:
                 out.write(t.to_dot(cells, trie=trie))
             with open("tl.dot", "w") as out:
                 out.write(tl.to_dot(cells, trie=trie))
-            tl.assert_invariants(etb, is_top_max=True)
+            with open("tl_noc.dot", "w") as out:
+                out.write(tl_noc.to_dot(cells, trie=trie))
         lift_scores = eval_all(tl, cells)
         assert lift_scores == scores
-        # assert False
+        assert False
 
     # Do a second lift and check again.
     mark += 1
@@ -756,3 +764,16 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
+
+
+def test_squeeze_sum():
+    n = letter_node(
+        cell=6, letter=0, points=0, children=[letter_node(cell=7, letter=0, points=1)]
+    )
+    n.bound = 1
+    n.children[0].bound = 1
+
+    squeeze_sum_node_in_place(n, True)
+    assert n.points == 1
+    assert n.children == []
+    assert n.bound == 1

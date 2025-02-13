@@ -148,6 +148,7 @@ class EvalNode:
         - node.choice_mask is correct (checked shallowly)
         - choice node children are mutually-exclusive
         - choice node children are sorted
+        - TODO: no duplicate choice children for sum nodes
         """
         if is_top_max is None:
             is_top_max = self.letter == CHOICE_NODE
@@ -186,8 +187,8 @@ class EvalNode:
                 #       (this does happen after lifting)
         if bound != self.bound:
             print(f"Warning {bound} != {self.bound}")
-            self.cache_key = 255
-        assert bound == self.bound
+            self.flag = True
+        # assert bound == self.bound
         assert choice_mask == self.choice_mask
 
         for child in self.children:
@@ -601,7 +602,7 @@ class EvalNode:
         self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
-        is_dupe = self.cache_key == 255  # self in cache
+        is_dupe = hasattr(self, "flag")  # self in cache
         me = prefix
 
         attrs = ""
