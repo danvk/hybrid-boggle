@@ -616,6 +616,17 @@ void EvalNode::SetChoicePointMask(const vector<int>& num_letters) {
   }
 }
 
+void EvalNode::ResetChoicePointMask() {
+  if (letter_ == CHOICE_NODE) {
+    points_ = 0;
+  }
+  for (auto c : children_) {
+    if (c) {
+      ((EvalNode*)c)->ResetChoicePointMask();
+    }
+  }
+}
+
 template<typename T>
 int Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
   cerr << "MarkAndSweep not implemented" << endl;

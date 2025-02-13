@@ -110,14 +110,13 @@ class EvalNode:
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
-                v = 0
                 if self.points & (1 << force):
                     mask = self.points & ((1 << force) - 1)
                     idx = mask.bit_count()
                     child = self.children[idx]
                     if child:
-                        v = child.score_with_forces_mask(forces, choice_mask)
-                return v
+                        return child.score_with_forces_mask(forces, choice_mask)
+                return 0
 
         if not (self.choice_mask & choice_mask):
             # The force is irrelevant to this subtree, so we don't need to traverse it.
@@ -483,6 +482,13 @@ class EvalNode:
         for c in self.children:
             if c:
                 c.set_choice_point_mask(num_letters)
+
+    def reset_choice_point_mask(self):
+        if self.letter == CHOICE_NODE:
+            self.points = 0
+        for child in self.children:
+            if child:
+                child.reset_choice_point_mask()
 
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
@@ -865,6 +871,14 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
     lines = []
     _into_list(node, cells, lines)
     return "\n".join(lines)
+
+
+def reset_choice_point_mask(node: EvalNode):
+    if node.letter == CHOICE_NODE:
+        node.points = 0
+    for child in node.children:
+        if child:
+            reset_choice_point_mask(child)
 
 
 def eval_all(node: EvalNode, cells: list[str]):

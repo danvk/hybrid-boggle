@@ -84,6 +84,8 @@ class EvalNode {
 
   void SetChoicePointMask(const vector<int>& num_letters);
 
+  void ResetChoicePointMask();
+
   int8_t letter_;
   int8_t cell_;
   static const int8_t ROOT_NODE = -2;
@@ -98,6 +100,7 @@ class EvalNode {
   // points contributed by _this_ node.
   uint32_t points_;
 
+  // Note: using uint16_t here precludes 5x5 Boggle trees
   uint16_t choice_mask_;
 
   mutable uint32_t cache_key_;

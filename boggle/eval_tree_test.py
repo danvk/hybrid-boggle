@@ -19,6 +19,7 @@ from boggle.eval_tree import (
     eval_all,
     eval_node_to_string,
     merge_trees,
+    reset_choice_point_mask,
     squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
@@ -718,6 +719,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         t.assert_invariants(etb)
 
     scores = eval_all(t, cells)
+    t.reset_choice_point_mask()
 
     bb = PyBucketBoggler(trie, dims=(3, 3))
     for choices, score in scores.items():
@@ -758,6 +760,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
             out.write(eval_node_to_string(tl, cells))
             out.write("\n")
         lift_scores = eval_all(tl, cells)
+        tl.reset_choice_point_mask()
         print(f"testing {i}")
         assert lift_scores == scores
         assert tl.bound <= t.bound
