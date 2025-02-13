@@ -19,6 +19,7 @@ from boggle.eval_tree import (
     create_eval_node_arena_py,
     eval_all,
     merge_trees,
+    squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
@@ -845,5 +846,37 @@ def test_lift_choice():
     lift0c = root.lift_choice(1, 2, mark=2, compress=True)
     print(lift0c.to_dot(cells))
     assert lift0c.bound == 4
+
+    assert False
+
+
+def test_merge_choice_trees():
+    cells = ["abc"]
+    root = letter_node(
+        cell=0,
+        letter=ROOT_NODE,
+        children=[
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=0, points=1),
+                    letter_node(cell=0, letter=1, points=2),
+                ],
+            ),
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=1, points=3),
+                    letter_node(cell=0, letter=2, points=4),
+                ],
+            ),
+        ],
+    )
+    root.set_computed_fields_for_testing(cells)
+    print(root.to_dot(cells))
+    print("---")
+
+    squeeze_sum_node_in_place(root, True)
+    print(root.to_dot(cells))
 
     assert False
