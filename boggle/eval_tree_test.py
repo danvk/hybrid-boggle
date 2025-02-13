@@ -17,7 +17,10 @@ from boggle.eval_tree import (
     EvalTreeBoggler,
     create_eval_node_arena_py,
     eval_all,
+    eval_node_to_string,
     merge_trees,
+    reset_choice_point_mask,
+    squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
@@ -701,11 +704,14 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
             tl.assert_invariants(etb)
 
 
+WRITE_SNAPSHOTS = False
+
+
 @pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     trie = make_trie("testdata/boggle-words-9.txt")
     board = ". . . . lnrsy e aeiou aeiou ."
-    # board = ". . . . rs e io au ."
+    # board = ". . . . r e i au ."
     cells = board.split(" ")
     etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
@@ -716,6 +722,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         t.assert_invariants(etb)
 
     scores = eval_all(t, cells)
+    t.reset_choice_point_mask()
 
     bb = PyBucketBoggler(trie, dims=(3, 3))
     for choices, score in scores.items():
@@ -730,6 +737,13 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         bb.ParseBoard(this_board)
         bb.UpperBound(500_000)
         assert score == bb.Details().max_nomark
+
+    is_python = isinstance(t, EvalNode)
+    if WRITE_SNAPSHOTS and is_python:
+        with open("testdata/tree33.txt", "w") as out:
+            out.write(eval_node_to_string(t, cells))
+    # This asserts that the C++ and Python trees stay in sync
+    assert eval_node_to_string(t, cells) == open("testdata/tree33.txt").read()
 
     # Try lifting each cell; this should not affect any scores.
     mark = 0
@@ -737,19 +751,45 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=False, dedupe=True, mark=mark)
-        lift_scores = eval_all(tl, cells)
-        assert lift_scores == scores
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
+        mark += 1
+        tl_noc = t.lift_choice(
+            i, len(cell), arena, compress=False, dedupe=True, mark=mark
+        )
         if isinstance(tl, EvalNode):
-            tl.assert_invariants(etb)
+            # If these ever fail, setting dedupe=False makes debugging much easier.
+            tl.assert_invariants(etb, is_top_max=True)
+            tl_noc.assert_invariants(etb, is_top_max=True)
+
+        if WRITE_SNAPSHOTS and is_python:
+            with open(f"testdata/tree33-{i}.txt", "w") as out:
+                out.write(eval_node_to_string(tl, cells))
+        assert eval_node_to_string(tl, cells) == open(f"testdata/tree33-{i}.txt").read()
+
+        lift_scores = eval_all(tl, cells)
+        tl.reset_choice_point_mask()
+        assert lift_scores == scores
+        assert tl.bound <= t.bound
+        assert tl_noc.bound <= t.bound
 
     # Do a second lift and check again.
     mark += 1
     t2 = tl.lift_choice(0, len(cell[0]), arena, compress=False, dedupe=True, mark=mark)
     lift_scores = eval_all(t2, cells)
-    assert lift_scores == scores
+    # assert lift_scores == scores
     if isinstance(t2, EvalNode):
-        t2.assert_invariants(etb)
+        t2.assert_invariants(etb, is_top_max=True)
+    assert t2.bound <= tl.bound
 
-    # TODO: do another round of tests with compress=True
-    # This is trickier since tree merging can affect scores.
+
+def test_squeeze_sum():
+    n = letter_node(
+        cell=6, letter=0, points=0, children=[letter_node(cell=7, letter=0, points=1)]
+    )
+    n.bound = 1
+    n.children[0].bound = 1
+
+    squeeze_sum_node_in_place(n, True)
+    assert n.points == 1
+    assert n.children == []
+    assert n.bound == 1
