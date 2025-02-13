@@ -885,6 +885,8 @@ def eval_all(node: EvalNode, cells: list[str]):
     """Evaluate all possible boards.
 
     This is defined externally to EvalNode so that it can be used with C++ EvalNode, too.
+    If you're going to do anything with the tree after this, make sure to call
+    node.reset_choice_point_mask().
     """
     num_letters = [len(cell) for cell in cells]
     node.set_choice_point_mask(num_letters)

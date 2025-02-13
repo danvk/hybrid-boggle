@@ -768,7 +768,6 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
 
         lift_scores = eval_all(tl, cells)
         tl.reset_choice_point_mask()
-        print(f"testing {i}")
         assert lift_scores == scores
         assert tl.bound <= t.bound
         assert tl_noc.bound <= t.bound
