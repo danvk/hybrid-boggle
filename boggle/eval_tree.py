@@ -833,12 +833,15 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
     new_children = choice
     new_bound = sum(c.bound for c in choice)
+    new_points_from_children = 0
     for c in non_choice:
-        node.points = (node.points or 0) + c.points
+        new_points_from_children += c.points
         new_children += c.children
         new_bound += c.bound
     node.children = new_children
+    # We need to take care here not to double-count points for the bound.
     node.bound = new_bound + node.points
+    node.points += new_points_from_children
     # COUNTS["absorb"] += 1
     return True
 
