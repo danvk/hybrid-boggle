@@ -17,6 +17,7 @@ from boggle.eval_tree import (
     EvalTreeBoggler,
     create_eval_node_arena_py,
     eval_all,
+    eval_node_to_string,
     merge_trees,
     squeeze_sum_node_in_place,
 )
@@ -731,6 +732,11 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         bb.ParseBoard(this_board)
         bb.UpperBound(500_000)
         assert score == bb.Details().max_nomark
+
+    suffix = "py" if isinstance(t, EvalNode) else "cpp"
+    with open(f"testdata/tree33.{suffix}.txt", "w") as out:
+        out.write(eval_node_to_string(t, cells))
+        out.write("\n")
 
     # Try lifting each cell; this should not affect any scores.
     mark = 0
