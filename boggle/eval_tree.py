@@ -628,13 +628,9 @@ class EvalNode:
             if self.points:
                 label += f" ({self.points})"
                 attrs += ' peripheries="2"'
-<<<<<<< HEAD
-||||||| 302f06b
-=======
                 if self.trie_node and lookup_table:
                     word = lookup_table[self.trie_node]
                     label += f"\\nword={word}"
->>>>>>> main
         label += f"\\nbound={self.bound}"
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
@@ -893,14 +889,6 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
     lines = []
     _into_list(node, cells, lines)
     return "\n".join(lines)
-
-
-def reset_choice_point_mask(node: EvalNode):
-    if node.letter == CHOICE_NODE:
-        node.points = 0
-    for child in node.children:
-        if child:
-            reset_choice_point_mask(child)
 
 
 def eval_all(node: EvalNode, cells: list[str]):

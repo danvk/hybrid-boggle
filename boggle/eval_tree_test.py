@@ -20,7 +20,6 @@ from boggle.eval_tree import (
     eval_all,
     eval_node_to_string,
     merge_trees,
-    reset_choice_point_mask,
     squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
