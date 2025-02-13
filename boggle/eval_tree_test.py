@@ -738,32 +738,16 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=False, mark=mark)
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         mark += 1
         tl_noc = t.lift_choice(
-            i, len(cell), arena, compress=False, dedupe=False, mark=mark
+            i, len(cell), arena, compress=False, dedupe=True, mark=mark
         )
         if isinstance(tl, EvalNode):
             # If these ever fail, setting dedupe=False makes debugging much easier.
             tl.assert_invariants(etb, is_top_max=True)
             tl_noc.assert_invariants(etb, is_top_max=True)
         lift_scores = eval_all(tl, cells)
-        # assert [*lift_scores.keys()] == [*scores.keys()]
-        # for choice, score in scores.items():
-        #     lift_score = lift_scores[choice]
-        #     # if lift_score != score:
-        #     #     print("".join(cells[i][c] for i, c in enumerate(choice)))
-        #     #     for i, c in enumerate(choice):
-        #     #         if len(cells[i]) > 1:
-        #     #             print(f"{i}={cells[i][c]}")
-        #     #     if isinstance(t, EvalNode):
-        #     #         with open("t.dot", "w") as out:
-        #     #             out.write(t.to_dot(cells, trie=trie))
-        #     #         with open("tl.dot", "w") as out:
-        #     #             out.write(tl.to_dot(cells, trie=trie))
-        #     #         with open("tl_noc.dot", "w") as out:
-        #     #             out.write(tl_noc.to_dot(cells, trie=trie))
-        #     assert lift_score == score, f"{choice} {score} -> {lift_score}"
         assert lift_scores == scores
         assert tl.bound <= t.bound
         assert tl_noc.bound <= t.bound
