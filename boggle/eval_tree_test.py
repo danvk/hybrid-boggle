@@ -704,7 +704,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
             tl.assert_invariants(etb)
 
 
-WRITE_SNAPSHOTS = True
+WRITE_SNAPSHOTS = False
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
@@ -761,9 +761,11 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
             tl.assert_invariants(etb, is_top_max=True)
             tl_noc.assert_invariants(etb, is_top_max=True)
 
-        # with open(f"testdata/tree33-{i}.txt", "w") as out:
-        #     out.write(eval_node_to_string(tl, cells))
-        #     out.write("\n")
+        if WRITE_SNAPSHOTS and is_python:
+            with open(f"testdata/tree33-{i}.txt", "w") as out:
+                out.write(eval_node_to_string(tl, cells))
+        assert eval_node_to_string(tl, cells) == open(f"testdata/tree33-{i}.txt").read()
+
         lift_scores = eval_all(tl, cells)
         tl.reset_choice_point_mask()
         print(f"testing {i}")
