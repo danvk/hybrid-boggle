@@ -704,6 +704,9 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
             tl.assert_invariants(etb)
 
 
+WRITE_SNAPSHOTS = True
+
+
 @pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     trie = make_trie("testdata/boggle-words-9.txt")
@@ -735,10 +738,12 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         bb.UpperBound(500_000)
         assert score == bb.Details().max_nomark
 
-    suffix = "py" if isinstance(t, EvalNode) else "cpp"
-    with open(f"testdata/tree33.{suffix}.txt", "w") as out:
-        out.write(eval_node_to_string(t, cells))
-        out.write("\n")
+    is_python = isinstance(t, EvalNode)
+    if WRITE_SNAPSHOTS and is_python:
+        with open("testdata/tree33.txt", "w") as out:
+            out.write(eval_node_to_string(t, cells))
+    # This asserts that the C++ and Python trees stay in sync
+    assert eval_node_to_string(t, cells) == open("testdata/tree33.txt").read()
 
     # Try lifting each cell; this should not affect any scores.
     mark = 0
@@ -746,19 +751,19 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=False, mark=mark)
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         mark += 1
         tl_noc = t.lift_choice(
-            i, len(cell), arena, compress=False, dedupe=False, mark=mark
+            i, len(cell), arena, compress=False, dedupe=True, mark=mark
         )
         if isinstance(tl, EvalNode):
             # If these ever fail, setting dedupe=False makes debugging much easier.
             tl.assert_invariants(etb, is_top_max=True)
             tl_noc.assert_invariants(etb, is_top_max=True)
 
-        with open(f"testdata/tree33-{i}.{suffix}.txt", "w") as out:
-            out.write(eval_node_to_string(tl, cells))
-            out.write("\n")
+        # with open(f"testdata/tree33-{i}.txt", "w") as out:
+        #     out.write(eval_node_to_string(tl, cells))
+        #     out.write("\n")
         lift_scores = eval_all(tl, cells)
         tl.reset_choice_point_mask()
         print(f"testing {i}")
