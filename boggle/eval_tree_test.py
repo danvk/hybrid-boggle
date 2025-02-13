@@ -753,6 +753,9 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
             lift_score = lift_scores[choice]
             if lift_score != score:
                 print("".join(cells[i][c] for i, c in enumerate(choice)))
+                for i, c in enumerate(choice):
+                    if len(cells[i]) > 1:
+                        print(f"{i}={cells[i][c]}")
             assert lift_score == score, f"{choice} {score} -> {lift_score}"
         # assert lift_scores == scores
         assert tl.bound <= t.bound
