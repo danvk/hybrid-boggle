@@ -489,20 +489,28 @@ bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_mer
   // There's something to absorb.
   // TODO: pre-reserve the right number of slots for new_children
   auto& new_children = choice;
-  uint32_t new_bound = 0;
-  for (auto c : choice) {
-    new_bound += c->bound_;
-  }
   uint32_t new_points_from_children = 0;
   for (auto c : non_choice) {
     new_points_from_children += c->points_;
     new_children.insert(new_children.end(), c->children_.begin(), c->children_.end());
-    new_bound += c->bound_;
+  }
+
+  // new_children should be entirely choice nodes now, but there may be new collisions.
+  if (should_merge && any_choice_collisions(new_children)) {
+    merge_choice_collisions_in_place(new_children, arena);
   }
   node->children_.swap(new_children);
+
   // We need to take care here not to double-count points for the bound.
-  node->bound_ = new_bound + node->points_;
   node->points_ += new_points_from_children;
+  uint32_t child_bound = 0;
+  for (auto c : node->children_) {
+    if (c) {
+      child_bound += c->bound_;
+    }
+  }
+
+  node->bound_ = node->points_ + child_bound;
   return true;
 }
 
