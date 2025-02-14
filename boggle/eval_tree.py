@@ -246,10 +246,6 @@ class EvalNode:
         node.children = choices
         node.choice_mask = 1 << cell
         for child in choices:
-            # if compress and child.letter != CHOICE_NODE:
-            #     any_changes = squeeze_sum_node_in_place(child, MERGE_TREES)
-            #     if any_changes:
-            #         print("squeezed after lift")
             node.choice_mask |= child.choice_mask
         node.bound = max(child.bound for child in choices)
         return node
