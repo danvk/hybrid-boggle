@@ -618,14 +618,7 @@ class EvalNode:
         me = prefix
 
         if self.letter != CHOICE_NODE:
-            seen_choices = set[int]()
-            for child in self.children:
-                if child:
-                    if child.letter == CHOICE_NODE:
-                        if child.cell in seen_choices:
-                            is_dupe = True
-                        else:
-                            seen_choices.add(child.cell)
+            is_dupe = any_choice_collisions(self.children)
 
         attrs = ""
         if is_dupe:
@@ -874,16 +867,24 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
     new_children = choice
-    new_bound = sum(c.bound for c in choice)
     new_points_from_children = 0
     for c in non_choice:
         new_points_from_children += c.points
         new_children += c.children
-        new_bound += c.bound
+
+    for child in new_children:
+        if child:
+            assert child.letter == CHOICE_NODE
+
+    # new_children should be entirely choice nodes now, but there may be new collisions
+    if should_merge and any_choice_collisions(new_children):
+        new_children = merge_choice_collisions_in_place(new_children)
+
     node.children = new_children
     # We need to take care here not to double-count points for the bound.
-    node.bound = new_bound + node.points
     node.points += new_points_from_children
+    node.bound = node.points + sum(c.bound for c in node.children if c)
+
     # COUNTS["absorb"] += 1
     return True
 

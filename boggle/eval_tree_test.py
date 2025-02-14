@@ -763,6 +763,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
             # If these ever fail, setting dedupe=False makes debugging much easier.
             print(tl.to_dot(cells, trie=trie))
             tl.assert_invariants(etb, is_top_max=True)
+            assert False
             # This will fail since assert_invariants checks for correct compression.
             # tl_noc.assert_invariants(etb, is_top_max=True)
 
