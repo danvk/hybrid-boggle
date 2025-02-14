@@ -242,12 +242,12 @@ class EvalNode:
         node.letter = CHOICE_NODE
         node.cell = cell
         node.points = 0
+        node.bound = max(child.bound for child in choices)
         node.trie_node = None
         node.children = choices
         node.choice_mask = 1 << cell
         for child in choices:
             node.choice_mask |= child.choice_mask
-        node.bound = max(child.bound for child in choices)
         return node
 
     def force_cell(
@@ -613,8 +613,8 @@ class EvalNode:
         is_dupe = False  # self in cache  # hasattr(self, "flag")
         me = prefix
 
-        if self.letter != CHOICE_NODE:
-            is_dupe = any_choice_collisions(self.children)
+        # if self.letter != CHOICE_NODE:
+        #     is_dupe = any_choice_collisions(self.children)
 
         attrs = ""
         if is_dupe:
@@ -847,8 +847,6 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
-        # print("choice collisions!", node.cell, node.letter, node.bound)
-        # print(choice)
         choice = merge_choice_collisions_in_place(choice)
         any_choice_changes = True
 
@@ -974,7 +972,6 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
                     choices[child.letter] = merge_trees(existing, child)
                 else:
                     choices[child.letter] = child
-
         children = [*choices.values()]
         children.sort(key=lambda c: c.letter)
         n = EvalNode()
