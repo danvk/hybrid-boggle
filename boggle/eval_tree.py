@@ -147,7 +147,7 @@ class EvalNode:
         - node.choice_mask is correct (checked shallowly)
         - choice node children are mutually-exclusive
         - choice node children are sorted
-        - TODO: no duplicate choice children for sum nodes
+        - no duplicate choice children for sum nodes
         """
         if is_top_max is None:
             is_top_max = self.letter == CHOICE_NODE
@@ -178,10 +178,14 @@ class EvalNode:
         else:
             bound = self.points
             choice_mask = 0
+            seen_choices = set[int]()
             for child in self.children:
                 if child:
                     bound += child.bound
                     choice_mask |= child.choice_mask
+                    if child.letter == CHOICE_NODE:
+                        assert child.cell not in seen_choices
+                        seen_choices.add(child.cell)
                 # TODO: sum nodes should not have null children
                 #       (this does happen after lifting)
         # if bound != self.bound:
@@ -244,8 +248,6 @@ class EvalNode:
         node.choice_mask = 1 << cell
         for child in choices:
             node.choice_mask |= child.choice_mask
-
-        print(f"{hash_collisions=}")
         return node
 
     def force_cell(
@@ -608,8 +610,11 @@ class EvalNode:
         self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
-        is_dupe = self in cache  # hasattr(self, "flag")
+        is_dupe = False  # self in cache  # hasattr(self, "flag")
         me = prefix
+
+        # if self.letter != CHOICE_NODE:
+        #     is_dupe = any_choice_collisions(self.children)
 
         attrs = ""
         if is_dupe:
@@ -856,16 +861,24 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
     new_children = choice
-    new_bound = sum(c.bound for c in choice)
     new_points_from_children = 0
     for c in non_choice:
         new_points_from_children += c.points
         new_children += c.children
-        new_bound += c.bound
+
+    for child in new_children:
+        if child:
+            assert child.letter == CHOICE_NODE
+
+    # new_children should be entirely choice nodes now, but there may be new collisions
+    if should_merge and any_choice_collisions(new_children):
+        new_children = merge_choice_collisions_in_place(new_children)
+
     node.children = new_children
     # We need to take care here not to double-count points for the bound.
-    node.bound = new_bound + node.points
     node.points += new_points_from_children
+    node.bound = node.points + sum(c.bound for c in node.children if c)
+
     # COUNTS["absorb"] += 1
     return True
 
@@ -954,7 +967,6 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
                 choices[child.letter] = child
         for child in b.children:
             if child:
-                # choices[child.letter] = child
                 existing = choices.get(child.letter)
                 if existing:
                     choices[child.letter] = merge_trees(existing, child)
