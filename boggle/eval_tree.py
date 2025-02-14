@@ -970,25 +970,13 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
         for child in a.children:
             if child:
                 choices[child.letter] = child
-        needs_squeeze = 0
         for child in b.children:
             if child:
-                # choices[child.letter] = child
                 existing = choices.get(child.letter)
                 if existing:
                     choices[child.letter] = merge_trees(existing, child)
-                    needs_squeeze |= 1 << child.letter
                 else:
                     choices[child.letter] = child
-
-        letter = 0
-        while needs_squeeze:
-            if needs_squeeze & 1:
-                print("squeezing after merge_tree!")
-                any_changes = squeeze_sum_node_in_place(choices[letter], True)
-                print(f"{any_changes=}")
-            letter += 1
-            needs_squeeze >>= 1
 
         children = [*choices.values()]
         children.sort(key=lambda c: c.letter)
