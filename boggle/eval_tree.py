@@ -147,7 +147,7 @@ class EvalNode:
         - node.choice_mask is correct (checked shallowly)
         - choice node children are mutually-exclusive
         - choice node children are sorted
-        - TODO: no duplicate choice children for sum nodes
+        - no duplicate choice children for sum nodes
         """
         if is_top_max is None:
             is_top_max = self.letter == CHOICE_NODE
@@ -178,10 +178,14 @@ class EvalNode:
         else:
             bound = self.points
             choice_mask = 0
+            seen_choices = set[int]()
             for child in self.children:
                 if child:
                     bound += child.bound
                     choice_mask |= child.choice_mask
+                    if child.letter == CHOICE_NODE:
+                        assert child.cell not in seen_choices
+                        seen_choices.add(child.cell)
                 # TODO: sum nodes should not have null children
                 #       (this does happen after lifting)
         # if bound != self.bound:
