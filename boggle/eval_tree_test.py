@@ -710,8 +710,8 @@ WRITE_SNAPSHOTS = True
 @pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     trie = make_trie("testdata/boggle-words-9.txt")
-    board = ". . . . lnrsy e aeiou aeiou ."
-    # board = ". . . . r e i au ."
+    # board = ". . . . lnrsy e aeiou aeiou ."
+    board = ". . . . nr e ai au ."
     cells = board.split(" ")
     etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
@@ -745,11 +745,14 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     # This asserts that the C++ and Python trees stay in sync
     assert eval_node_to_string(t, cells) == open("testdata/tree33.txt").read()
 
+    print(t.to_dot(cells, trie=trie))
+
     # Try lifting each cell; this should not affect any scores.
     mark = 0
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
+        print(f"lift {i}")
         mark += 1
         tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
         mark += 1
@@ -763,6 +766,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
             # This will fail since assert_invariants checks for correct compression.
             # tl_noc.assert_invariants(etb, is_top_max=True)
 
+        print(f"cell {i} is OK")
         if WRITE_SNAPSHOTS and is_python:
             with open(f"testdata/tree33-{i}.txt", "w") as out:
                 out.write(eval_node_to_string(tl, cells))

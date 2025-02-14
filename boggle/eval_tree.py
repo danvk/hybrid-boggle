@@ -246,10 +246,10 @@ class EvalNode:
         node.children = choices
         node.choice_mask = 1 << cell
         for child in choices:
-            if child.letter != CHOICE_NODE:
-                any_changes = squeeze_sum_node_in_place(child, MERGE_TREES)
-                if any_changes:
-                    print("squeezed after lift")
+            # if compress and child.letter != CHOICE_NODE:
+            #     any_changes = squeeze_sum_node_in_place(child, MERGE_TREES)
+            #     if any_changes:
+            #         print("squeezed after lift")
             node.choice_mask |= child.choice_mask
         node.bound = max(child.bound for child in choices)
         return node
@@ -614,8 +614,18 @@ class EvalNode:
         self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
-        is_dupe = self in cache  # hasattr(self, "flag")
+        is_dupe = False  # self in cache  # hasattr(self, "flag")
         me = prefix
+
+        if self.letter != CHOICE_NODE:
+            seen_choices = set[int]()
+            for child in self.children:
+                if child:
+                    if child.letter == CHOICE_NODE:
+                        if child.cell in seen_choices:
+                            is_dupe = True
+                        else:
+                            seen_choices.add(child.cell)
 
         attrs = ""
         if is_dupe:
@@ -848,8 +858,8 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
-        print("choice collisions!", node.cell, node.letter, node.bound)
-        print(choice)
+        # print("choice collisions!", node.cell, node.letter, node.bound)
+        # print(choice)
         choice = merge_choice_collisions_in_place(choice)
         any_choice_changes = True
 
@@ -960,14 +970,26 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
         for child in a.children:
             if child:
                 choices[child.letter] = child
+        needs_squeeze = 0
         for child in b.children:
             if child:
                 # choices[child.letter] = child
                 existing = choices.get(child.letter)
                 if existing:
                     choices[child.letter] = merge_trees(existing, child)
+                    needs_squeeze |= 1 << child.letter
                 else:
                     choices[child.letter] = child
+
+        letter = 0
+        while needs_squeeze:
+            if needs_squeeze & 1:
+                print("squeezing after merge_tree!")
+                any_changes = squeeze_sum_node_in_place(choices[letter], True)
+                print(f"{any_changes=}")
+            letter += 1
+            needs_squeeze >>= 1
+
         children = [*choices.values()]
         children.sort(key=lambda c: c.letter)
         n = EvalNode()
