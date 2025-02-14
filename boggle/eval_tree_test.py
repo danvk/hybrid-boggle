@@ -13,13 +13,13 @@ from cpp_boggle import (
 from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
     CHOICE_NODE,
+    ROOT_NODE,
     EvalNode,
     EvalTreeBoggler,
     create_eval_node_arena_py,
     eval_all,
     eval_node_to_string,
     merge_trees,
-    reset_choice_point_mask,
     squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
@@ -774,12 +774,135 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
 
     # Do a second lift and check again.
     mark += 1
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=False, dedupe=True, mark=mark)
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
     lift_scores = eval_all(t2, cells)
     # assert lift_scores == scores
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
+
+
+def test_lift_sum():
+    cells = ["ab", "xy"]
+    root = letter_node(
+        cell=0,
+        letter=ROOT_NODE,
+        children=[
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=0, points=1),
+                    letter_node(cell=0, letter=1, points=2),
+                ],
+            ),
+            choice_node(
+                cell=1,
+                children=[
+                    letter_node(cell=1, letter=0, points=3),
+                    letter_node(cell=1, letter=1, points=4),
+                ],
+            ),
+        ],
+    )
+    root.set_computed_fields_for_testing(cells)
+    # print(root.to_dot(cells))
+
+    assert root.choice_mask == 0b11
+    assert root.children[0].choice_mask == 0b01
+    assert root.children[1].choice_mask == 0b10
+    assert root.children[0].children[0].choice_mask == 0
+    assert root.children[0].children[1].choice_mask == 0
+    assert root.children[1].children[0].choice_mask == 0
+    assert root.children[1].children[1].choice_mask == 0
+    assert root.bound == 6
+
+    lift0 = root.lift_choice(cell=0, num_lets=2, mark=1)
+    # print(lift0.to_dot(cells))
+    assert lift0.bound == 6
+    assert len(lift0.children) == 2
+    assert lift0.children[0].letter == 0
+    assert lift0.children[0].bound == 5  # 1 + 4
+    assert lift0.children[1].letter == 1
+    assert lift0.children[1].bound == 6  # 2 + 4
+
+    lift0c = root.lift_choice(cell=0, num_lets=2, mark=2, compress=True)
+    # print(lift0c.to_dot(cells))
+    assert lift0c.bound == 6
+
+
+def test_lift_choice():
+    cells = ["abc", "xy"]
+    root = choice_node(
+        cell=0,
+        children=[
+            letter_node(
+                0,
+                0,
+                children=[
+                    choice_node(
+                        cell=1, children=[letter_node(1, 0, 1), letter_node(1, 1, 3)]
+                    ),
+                ],
+            ),
+            letter_node(
+                0,
+                1,
+                children=[
+                    choice_node(
+                        cell=1, children=[letter_node(1, 0, 2), letter_node(1, 1, 4)]
+                    ),
+                ],
+            ),
+            letter_node(
+                0,
+                2,
+                points=3,
+            ),
+        ],
+    )
+    root.set_computed_fields_for_testing(cells)
+    # print(root.to_dot(cells))
+    assert root.bound == 4
+
+    lift0 = root.lift_choice(1, 2, mark=1)
+    # print(lift0.to_dot(cells))
+    assert lift0.bound == 4
+
+    lift0c = root.lift_choice(1, 2, mark=2, compress=True)
+    # print(lift0c.to_dot(cells))
+    assert lift0c.bound == 4
+
+
+def test_merge_choice_trees():
+    cells = ["abc"]
+    root = letter_node(
+        cell=0,
+        letter=ROOT_NODE,
+        children=[
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=0, points=1),
+                    letter_node(cell=0, letter=1, points=2),
+                ],
+            ),
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=1, points=3),
+                    letter_node(cell=0, letter=2, points=4),
+                ],
+            ),
+        ],
+    )
+    root.set_computed_fields_for_testing(cells)
+    assert root.bound == 6
+    # print(root.to_dot(cells))
+    # print("---")
+    squeeze_sum_node_in_place(root, True)
+    # print(root.to_dot(cells))
+    assert root.bound == 5
+    assert len(root.children[0].children) == 3
 
 
 def test_squeeze_sum():

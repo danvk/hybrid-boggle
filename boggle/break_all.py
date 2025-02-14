@@ -89,6 +89,7 @@ def break_worker(task: str | int):
         out.write(json.dumps(summary))
         out.write("\n")
         if args.log_per_board_stats:
+            print(f"{task}: {board}")
             print(json.dumps(summary, indent=2))
 
     return details.failures
