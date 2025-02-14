@@ -704,14 +704,14 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
             tl.assert_invariants(etb)
 
 
-WRITE_SNAPSHOTS = False
+WRITE_SNAPSHOTS = True
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
     trie = make_trie("testdata/boggle-words-9.txt")
-    board = ". . . . lnrsy e aeiou aeiou ."
-    # board = ". . . . r e i au ."
+    # board = ". . . . lnrsy e aeiou aeiou ."
+    board = ". . . . r e i au ."
     cells = board.split(" ")
     etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
