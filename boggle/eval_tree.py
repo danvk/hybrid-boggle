@@ -247,9 +247,11 @@ class EvalNode:
         node.children = choices
         node.choice_mask = 1 << cell
         for child in choices:
+            if child.letter != CHOICE_NODE:
+                any_changes = squeeze_sum_node_in_place(child)
+                if any_changes:
+                    print("squeezed after lift")
             node.choice_mask |= child.choice_mask
-
-        print(f"{hash_collisions=}")
         return node
 
     def force_cell(
@@ -846,6 +848,8 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
+        print("choice collisions!", node.cell, node.letter, node.bound)
+        print(choice)
         choice = merge_choice_collisions_in_place(choice)
         any_choice_changes = True
 

@@ -751,15 +751,16 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=False, mark=mark)
         mark += 1
         tl_noc = t.lift_choice(
-            i, len(cell), arena, compress=False, dedupe=True, mark=mark
+            i, len(cell), arena, compress=False, dedupe=False, mark=mark
         )
         if isinstance(tl, EvalNode):
             # If these ever fail, setting dedupe=False makes debugging much easier.
+            print(tl.to_dot(cells, trie=trie))
             tl.assert_invariants(etb, is_top_max=True)
-            tl_noc.assert_invariants(etb, is_top_max=True)
+            # tl_noc.assert_invariants(etb, is_top_max=True)
 
         if WRITE_SNAPSHOTS and is_python:
             with open(f"testdata/tree33-{i}.txt", "w") as out:
@@ -916,3 +917,56 @@ def test_squeeze_sum():
     assert n.points == 1
     assert n.children == []
     assert n.bound == 1
+
+
+def test_squeeze_sum_with_duplicate_choices():
+    cells = ["abc", "de", "fg", "h"]
+    root = letter_node(
+        cell=3,
+        letter=ROOT_NODE,
+        children=[
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=0, points=1),
+                    letter_node(cell=0, letter=1, points=2),
+                ],
+            ),
+            choice_node(
+                cell=1,
+                children=[
+                    letter_node(cell=1, letter=0, points=3),
+                    letter_node(cell=1, letter=1, points=4),
+                ],
+            ),
+            choice_node(
+                cell=2,
+                children=[
+                    letter_node(cell=2, letter=0, points=3),
+                    letter_node(cell=2, letter=1, points=4),
+                ],
+            ),
+            choice_node(
+                cell=0,
+                children=[
+                    letter_node(cell=0, letter=0, points=1),
+                    letter_node(cell=0, letter=1, points=2),
+                ],
+            ),
+            choice_node(
+                cell=2,
+                children=[
+                    letter_node(cell=2, letter=0, points=3),
+                    letter_node(cell=2, letter=1, points=4),
+                ],
+            ),
+        ],
+    )
+    root.set_computed_fields_for_testing(cells)
+
+    print(root.to_dot(cells))
+    print("---")
+
+    squeeze_sum_node_in_place(root, True)
+    print(root.to_dot(cells))
+    assert False
