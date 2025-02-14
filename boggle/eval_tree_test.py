@@ -805,7 +805,7 @@ def test_lift_sum():
         ],
     )
     root.set_computed_fields_for_testing(cells)
-    print(root.to_dot(cells))
+    # print(root.to_dot(cells))
 
     assert root.choice_mask == 0b11
     assert root.children[0].choice_mask == 0b01
@@ -817,7 +817,7 @@ def test_lift_sum():
     assert root.bound == 6
 
     lift0 = root.lift_choice(cell=0, num_lets=2, mark=1)
-    print(lift0.to_dot(cells))
+    # print(lift0.to_dot(cells))
     assert lift0.bound == 6
     assert len(lift0.children) == 2
     assert lift0.children[0].letter == 0
@@ -826,7 +826,7 @@ def test_lift_sum():
     assert lift0.children[1].bound == 6  # 2 + 4
 
     lift0c = root.lift_choice(cell=0, num_lets=2, mark=2, compress=True)
-    print(lift0c.to_dot(cells))
+    # print(lift0c.to_dot(cells))
     assert lift0c.bound == 6
 
 
@@ -861,18 +861,16 @@ def test_lift_choice():
         ],
     )
     root.set_computed_fields_for_testing(cells)
-    print(root.to_dot(cells))
+    # print(root.to_dot(cells))
     assert root.bound == 4
 
     lift0 = root.lift_choice(1, 2, mark=1)
-    print(lift0.to_dot(cells))
+    # print(lift0.to_dot(cells))
     assert lift0.bound == 4
 
     lift0c = root.lift_choice(1, 2, mark=2, compress=True)
-    print(lift0c.to_dot(cells))
+    # print(lift0c.to_dot(cells))
     assert lift0c.bound == 4
-
-    assert False
 
 
 def test_merge_choice_trees():
@@ -898,13 +896,13 @@ def test_merge_choice_trees():
         ],
     )
     root.set_computed_fields_for_testing(cells)
-    print(root.to_dot(cells))
-    print("---")
-
+    assert root.bound == 6
+    # print(root.to_dot(cells))
+    # print("---")
     squeeze_sum_node_in_place(root, True)
-    print(root.to_dot(cells))
-
-    assert False
+    # print(root.to_dot(cells))
+    assert root.bound == 5
+    assert len(root.children[0].children) == 3
 
 
 def test_squeeze_sum():

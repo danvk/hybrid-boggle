@@ -608,7 +608,7 @@ class EvalNode:
         self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
-        is_dupe = hasattr(self, "flag")  # self in cache
+        is_dupe = self in cache  # hasattr(self, "flag")
         me = prefix
 
         attrs = ""
