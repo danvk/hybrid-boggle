@@ -704,6 +704,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
             tl.assert_invariants(etb)
 
 
+# TODO: set up a real snapshot tool
 WRITE_SNAPSHOTS = False
 
 
@@ -979,17 +980,24 @@ def test_squeeze_sum_with_duplicate_choices():
 
 
 def test_add_word():
+    arena = create_eval_node_arena_py()
     root = letter_node(cell=0, letter=ROOT_NODE)
     cells = ["bcd", "aei", "nrd"]
-    root.add_word([(0, 0), (1, 0), (2, 0)], 1)  # ban
-    root.add_word([(0, 1), (1, 0), (2, 0)], 1)  # can
-    root.add_word([(0, 0), (1, 0), (2, 1)], 1)  # bar
-    root.add_word([(0, 0), (1, 1), (2, 2)], 1)  # bed
-    root.add_word([(0, 0), (1, 2), (2, 2)], 1)  # bid
-    root.add_word([(0, 2), (1, 2), (2, 2)], 1)  # did
+    root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
+    root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can
+    root.add_word([(0, 0), (1, 0), (2, 1)], 1, arena)  # bar
+    root.add_word([(0, 0), (1, 1), (2, 2)], 1, arena)  # bed
+    root.add_word([(0, 0), (1, 2), (2, 2)], 1, arena)  # bid
+    root.add_word([(0, 2), (1, 2), (2, 2)], 1, arena)  # did
 
     # XXX maybe not just for testing any more!
     root.set_computed_fields_for_testing(cells)
 
-    print(root.to_dot(cells))
-    assert False
+    # print(root.to_dot(cells))
+
+    is_python = isinstance(root, EvalNode)
+    if WRITE_SNAPSHOTS and is_python:
+        with open("testdata/add_word.txt", "w") as out:
+            out.write(eval_node_to_string(root, cells))
+    # This asserts that the C++ and Python trees stay in sync
+    assert eval_node_to_string(root, cells) == open("testdata/add_word.txt").read()
