@@ -118,6 +118,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("recompute_score", &EvalNode::RecomputeScore)
         .def("node_count", &EvalNode::NodeCount)
         .def("unique_node_count", &EvalNode::UniqueNodeCount)
+        .def("add_word", &EvalNode::AddWord)
         // TODO: remove this
         .def(
             "force_cell",
@@ -154,6 +155,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def(py::init())
         .def("free_the_children", &EvalNodeArena::FreeTheChildren)
         .def("mark_and_sweep", &EvalNodeArena::MarkAndSweep)
+        .def("new_node", &EvalNodeArena::NewNode, py::return_value_policy::reference)
         .def("num_nodes", &EvalNodeArena::NumNodes);
 
     // TODO: remove this once it's not part of a public API.

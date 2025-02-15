@@ -44,6 +44,9 @@ class PyArena:
     def mark_and_sweep(self, root, mark):
         return 0
 
+    def new_node(self):
+        return EvalNode()
+
 
 def create_eval_node_arena_py():
     return PyArena()
@@ -73,7 +76,7 @@ class EvalNode:
         self.cache_key = None
         self.cache_value = None
 
-    def add_word(self, choices: Sequence[tuple[int, int]], points: int):
+    def add_word(self, choices: Sequence[tuple[int, int]], points: int, arena):
         """Add a word at the end of a sequence of choices to the tree.
 
         This doesn't update bounds or choice_mask.
@@ -85,6 +88,8 @@ class EvalNode:
 
         (cell, letter) = choices[0]
         remaining_choices = choices[1:]
+
+        # TODO: binary search
         choice_child = None
         for c in self.children:
             if c.cell == cell:
@@ -97,6 +102,7 @@ class EvalNode:
             self.children.append(choice_child)
             # TODO: could keep self.children sorted
 
+        # TODO: binary search
         letter_child = None
         for c in choice_child.children:
             if c.letter == letter:
@@ -106,10 +112,11 @@ class EvalNode:
             letter_child = EvalNode()
             letter_child.cell = cell
             letter_child.letter = letter
+            # TODO: this could be more efficient
             choice_child.children.append(letter_child)
             choice_child.children.sort(key=lambda c: c.letter)
 
-        letter_child.add_word(remaining_choices, points)
+        letter_child.add_word(remaining_choices, points, arena)
 
     def recompute_score(self):
         # Should return self.bound
