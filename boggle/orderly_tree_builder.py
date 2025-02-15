@@ -91,27 +91,44 @@ def tree_stats(t: EvalNode) -> str:
 def main():
     parser = argparse.ArgumentParser(description="Lift all the way to breaking")
     add_standard_args(parser, python=True)
+    parser.add_argument("cutoff", type=int, help="Best known score for filtering.")
     parser.add_argument("board", type=str, help="Board class to lift.")
+    parser.add_argument("--num_lifts", type=int, default=0)
     args = parser.parse_args()
     board = args.board
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
-    etb = EvalTreeBoggler(trie, dims)
-    assert etb.ParseBoard(board)
-    e_arena = etb.create_arena()
-    classic_tree = etb.BuildTree(e_arena, dedupe=True)
+    # etb = EvalTreeBoggler(trie, dims)
+    # assert etb.ParseBoard(board)
+    # e_arena = etb.create_arena()
+    # classic_tree = etb.BuildTree(e_arena, dedupe=True)
 
     otb = OrderlyTreeBuilder(trie, dims)
     o_arena = otb.create_arena()
     assert otb.ParseBoard(board)
     orderly_tree = otb.BuildTree(o_arena)
 
-    print("EvalTreeBuilder:    ", end="")
-    print(tree_stats(classic_tree))
+    # print("EvalTreeBuilder:    ", end="")
+    # print(tree_stats(classic_tree))
 
     print("OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
+
+    global mark
+    t = orderly_tree
+    splits = SPLIT_ORDER[dims]
+    for cell in splits[: args.num_lifts]:
+        print(f"lift {cell}")
+        mark += 1
+        t = t.lift_choice(
+            cell, len(cells[cell]), o_arena, mark, dedupe=True, compress=True
+        )
+        if t.bound <= args.cutoff:
+            print(f"Fully broken! {t.bound} <= {args.cutoff} {tree_stats(t)}")
+            break
+        t.filter_below_threshold(args.cutoff)
+        print(f"f -> {tree_stats(t)}")
 
 
 if __name__ == "__main__":
