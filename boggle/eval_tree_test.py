@@ -976,3 +976,20 @@ def test_squeeze_sum_with_duplicate_choices():
     squeeze_sum_node_in_place(root, True)
     # print(root.to_dot(cells))
     assert len(root.children) == 3
+
+
+def test_add_word():
+    root = letter_node(cell=0, letter=ROOT_NODE)
+    cells = ["bcd", "aei", "nrd"]
+    root.add_word([(0, 0), (1, 0), (2, 0)], 1)  # ban
+    root.add_word([(0, 1), (1, 0), (2, 0)], 1)  # can
+    root.add_word([(0, 0), (1, 0), (2, 1)], 1)  # bar
+    root.add_word([(0, 0), (1, 1), (2, 2)], 1)  # bed
+    root.add_word([(0, 0), (1, 2), (2, 2)], 1)  # bid
+    root.add_word([(0, 2), (1, 2), (2, 2)], 1)  # did
+
+    # XXX maybe not just for testing any more!
+    root.set_computed_fields_for_testing(cells)
+
+    print(root.to_dot(cells))
+    assert False

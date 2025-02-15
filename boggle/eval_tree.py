@@ -73,6 +73,44 @@ class EvalNode:
         self.cache_key = None
         self.cache_value = None
 
+    def add_word(self, choices: Sequence[tuple[int, int]], points: int):
+        """Add a word at the end of a sequence of choices to the tree.
+
+        This doesn't update bounds or choice_mask.
+        """
+        assert self.letter != CHOICE_NODE
+        if not choices:
+            self.points += points
+            return
+
+        (cell, letter) = choices[0]
+        remaining_choices = choices[1:]
+        choice_child = None
+        for c in self.children:
+            if c.cell == cell:
+                choice_child = c
+                break
+        if not choice_child:
+            choice_child = EvalNode()
+            choice_child.letter = CHOICE_NODE
+            choice_child.cell = cell
+            self.children.append(choice_child)
+            # TODO: could keep self.children sorted
+
+        letter_child = None
+        for c in choice_child.children:
+            if c.letter == letter:
+                letter_child = c
+                break
+        if not letter_child:
+            letter_child = EvalNode()
+            letter_child.cell = cell
+            letter_child.letter = letter
+            choice_child.children.append(letter_child)
+            choice_child.children.sort(key=lambda c: c.letter)
+
+        letter_child.add_word(remaining_choices, points)
+
     def recompute_score(self):
         # Should return self.bound
         if self.letter == CHOICE_NODE:
