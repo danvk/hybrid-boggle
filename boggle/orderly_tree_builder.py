@@ -35,7 +35,7 @@ class OrderlyTreeBuilder(PyBucketBoggler):
         self.used_ = 0
 
         for cell in range(len(self.bd_)):
-            self.DoAllDescents(cell, 0, self.trie_, [])
+            self.DoAllDescents(cell, 0, self.trie_, [], arena)
         num_letters = [len(cell) for cell in self.bd_]
         root.set_computed_fields(num_letters)
         self.root = None
@@ -43,7 +43,7 @@ class OrderlyTreeBuilder(PyBucketBoggler):
 
     # TODO: rename these methods
     def DoAllDescents(
-        self, cell: int, length: int, t: PyTrie, choices: list[tuple[int, int]]
+        self, cell: int, length: int, t: PyTrie, choices: list[tuple[int, int]], arena
     ):
         choices.append((cell, 0))
         for j, char in enumerate(self.bd_[cell]):
@@ -51,7 +51,11 @@ class OrderlyTreeBuilder(PyBucketBoggler):
             if t.StartsWord(cc):
                 choices[-1] = (cell, j)
                 self.DoDFS(
-                    cell, length + (2 if cc == LETTER_Q else 1), t.Descend(cc), choices
+                    cell,
+                    length + (2 if cc == LETTER_Q else 1),
+                    t.Descend(cc),
+                    choices,
+                    arena,
                 )
         choices.pop()
 
@@ -61,18 +65,19 @@ class OrderlyTreeBuilder(PyBucketBoggler):
         length: int,
         t: PyTrie,
         choices: list[tuple[int, int]],
+        arena,
     ):
         self.used_ ^= 1 << cell
 
         for idx in self.neighbors[cell]:
             if not self.used_ & (1 << idx):
-                self.DoAllDescents(idx, length, t, choices)
+                self.DoAllDescents(idx, length, t, choices, arena)
 
         if t.IsWord():
             word_score = SCORES[length]
             # TODO: sort by split order
             orderly_choices = [*sorted(choices, key=lambda c: self.cell_to_order[c[0]])]
-            self.root.add_word(orderly_choices, word_score)
+            self.root.add_word(orderly_choices, word_score, arena)
 
         self.used_ ^= 1 << cell
 
