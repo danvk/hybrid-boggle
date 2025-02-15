@@ -44,6 +44,7 @@ class Arena {
     owned_nodes_.push_back(node);
   }
 
+  // For testing
   T* NewNode();
 
   // Returns the number of nodes deleted
@@ -68,6 +69,8 @@ class EvalNode {
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
   void AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena);
+
+  void SetComputedFields(vector<string>& cells);
 
   const EvalNode*
   LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe=false, bool compress=false) const;

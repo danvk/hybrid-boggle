@@ -45,7 +45,10 @@ class PyArena:
         return 0
 
     def new_node(self):
-        return EvalNode()
+        n = EvalNode()
+        n.letter = ROOT_NODE
+        n.cell = 0
+        return n
 
 
 def create_eval_node_arena_py():
@@ -775,10 +778,10 @@ class EvalNode:
             )
         return results
 
-    def set_computed_fields_for_testing(self, cells: Sequence[str]):
+    def set_computed_fields(self, cells: Sequence[str]):
         for c in self.children:
             if c:
-                c.set_computed_fields_for_testing(cells)
+                c.set_computed_fields(cells)
 
         if self.letter == CHOICE_NODE:
             self.choice_mask = 1 << self.cell if len(cells[self.cell]) > 1 else 0

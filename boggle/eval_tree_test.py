@@ -811,7 +811,7 @@ def test_lift_sum():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(cells)
     # print(root.to_dot(cells))
 
     assert root.choice_mask == 0b11
@@ -867,7 +867,7 @@ def test_lift_choice():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(cells)
     # print(root.to_dot(cells))
     assert root.bound == 4
 
@@ -902,7 +902,7 @@ def test_merge_choice_trees():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(cells)
     assert root.bound == 6
     # print(root.to_dot(cells))
     # print("---")
@@ -968,7 +968,7 @@ def test_squeeze_sum_with_duplicate_choices():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(cells)
     assert len(root.children) == 5
 
     # print(root.to_dot(cells))
@@ -979,15 +979,12 @@ def test_squeeze_sum_with_duplicate_choices():
     assert len(root.children) == 3
 
 
-# @pytest.mark.parametrize(
-#     "create_arena", (create_eval_node_arena_py, create_eval_node_arena)
-# )
-def test_add_word():
-    create_arena = create_eval_node_arena_py
+@pytest.mark.parametrize(
+    "create_arena", (create_eval_node_arena_py, create_eval_node_arena)
+)
+def test_add_word(create_arena):
     arena = create_arena()
     root = arena.new_node()
-    root.cell = 0
-    root.letter = ROOT_NODE
     cells = ["bcd", "aei", "nrd"]
     root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
     root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can
@@ -997,7 +994,7 @@ def test_add_word():
     root.add_word([(0, 2), (1, 2), (2, 2)], 1, arena)  # did
 
     # XXX maybe not just for testing any more!
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(cells)
 
     # print(root.to_dot(cells))
 
@@ -1006,4 +1003,9 @@ def test_add_word():
         with open("testdata/add_word.txt", "w") as out:
             out.write(eval_node_to_string(root, cells))
     # This asserts that the C++ and Python trees stay in sync
-    assert eval_node_to_string(root, cells) == open("testdata/add_word.txt").read()
+    expected = open("testdata/add_word.txt").read()
+    actual = eval_node_to_string(root, cells)
+    if actual != expected:
+        with open("/tmp/actual.txt", "w") as out:
+            out.write(actual)
+        assert actual == expected

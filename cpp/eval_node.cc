@@ -12,8 +12,8 @@ using namespace std;
 
 static const bool MERGE_TREES = true;
 
-inline int SortByLetter(const EvalNode* a, const EvalNode* b) {
-  return a->letter_ - b->letter_;
+inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
+  return a->letter_ < b->letter_;
 }
 
 void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {
@@ -63,6 +63,38 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
 
 void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena) {
   AddWordWork(choices.size(), choices.data(), points, arena);
+}
+
+void EvalNode::SetComputedFields(vector<string>& cells) {
+  for (auto c : children_) {
+    if (c) {
+      ((EvalNode*)c)->SetComputedFields(cells);
+    }
+  }
+
+  if (letter_ == CHOICE_NODE) {
+    choice_mask_ = cells[cell_].size() > 1 ? (1 << cell_) : 0;
+    bound_ = 0;
+    for (auto c : children_) {
+      if (c) {
+        bound_ = max(bound_, c->bound_);
+      }
+    }
+  } else {
+    choice_mask_ = 0;
+    bound_ = points_;
+    for (auto c : children_) {
+      if (c) {
+        bound_ += c->bound_;
+      }
+    }
+  }
+
+  for (auto c : children_) {
+    if (c) {
+      choice_mask_ |= c->choice_mask_;
+    }
+  }
 }
 
 const EvalNode* SqueezeChoiceChild(const EvalNode* child);
@@ -723,6 +755,8 @@ T* Arena<T>::NewNode() {
 template <>
 EvalNode* Arena<EvalNode>::NewNode() {
   EvalNode* n = new EvalNode;
+  n->letter_ = EvalNode::ROOT_NODE;
+  n->cell_ = 0;
   AddNode(n);
   return n;
 }
