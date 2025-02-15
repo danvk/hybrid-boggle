@@ -979,9 +979,15 @@ def test_squeeze_sum_with_duplicate_choices():
     assert len(root.children) == 3
 
 
+# @pytest.mark.parametrize(
+#     "create_arena", (create_eval_node_arena_py, create_eval_node_arena)
+# )
 def test_add_word():
-    arena = create_eval_node_arena_py()
-    root = letter_node(cell=0, letter=ROOT_NODE)
+    create_arena = create_eval_node_arena_py
+    arena = create_arena()
+    root = arena.new_node()
+    root.cell = 0
+    root.letter = ROOT_NODE
     cells = ["bcd", "aei", "nrd"]
     root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
     root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can
