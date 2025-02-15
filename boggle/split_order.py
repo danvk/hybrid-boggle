@@ -1,5 +1,7 @@
 """Order in which to split cells. Middle then edges then corners."""
 
+import json
+
 SPLIT_ORDER_33 = (4, 5, 3, 1, 7, 0, 2, 6, 8)
 
 
@@ -56,3 +58,17 @@ SPLIT_ORDER = {
     (3, 4): SPLIT_ORDER_34,
     (4, 4): SPLIT_ORDER_44,
 }
+
+
+def main():
+    for (w, h), split_order in SPLIT_ORDER.items():
+        print(
+            f"""template<>
+const int BucketBoggler<{w}, {h}>::SPLIT_ORDER[{w}*{h}] = {{%s}};
+"""
+            % ", ".join(str(x) for x in split_order)
+        )
+
+
+if __name__ == "__main__":
+    main()
