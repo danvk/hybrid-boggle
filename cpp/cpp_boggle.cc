@@ -125,10 +125,10 @@ PYBIND11_MODULE(cpp_boggle, m)
     declare_tree_builder<3, 4>(m, "TreeBuilder34");
     declare_tree_builder<4, 4>(m, "TreeBuilder44");
 
-    declare_orderly_tree_builder<2, 2>(m, "TreeBuilder22");
-    // declare_orderly_tree_builder<3, 3>(m, "TreeBuilder33");
-    // declare_orderly_tree_builder<3, 4>(m, "TreeBuilder34");
-    // declare_orderly_tree_builder<4, 4>(m, "TreeBuilder44");
+    declare_orderly_tree_builder<2, 2>(m, "OrderlyTreeBuilder22");
+    declare_orderly_tree_builder<3, 3>(m, "OrderlyTreeBuilder33");
+    declare_orderly_tree_builder<3, 4>(m, "OrderlyTreeBuilder34");
+    declare_orderly_tree_builder<4, 4>(m, "OrderlyTreeBuilder44");
 
     py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)

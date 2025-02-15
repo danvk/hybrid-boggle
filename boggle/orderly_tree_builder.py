@@ -2,7 +2,7 @@ import argparse
 
 from boggle.args import add_standard_args, get_trie_from_args
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
-from boggle.dimensional_bogglers import LEN_TO_DIMS
+from boggle.dimensional_bogglers import LEN_TO_DIMS, OrderlyTreeBuilders
 from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
@@ -105,7 +105,8 @@ def main():
     # e_arena = etb.create_arena()
     # classic_tree = etb.BuildTree(e_arena, dedupe=True)
 
-    otb = OrderlyTreeBuilder(trie, dims)
+    # otb = OrderlyTreeBuilder(trie, dims)
+    otb = OrderlyTreeBuilders[dims](trie)
     o_arena = otb.create_arena()
     assert otb.ParseBoard(board)
     orderly_tree = otb.BuildTree(o_arena)

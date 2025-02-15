@@ -6,6 +6,10 @@ from cpp_boggle import (
     BucketBoggler33,
     BucketBoggler34,
     BucketBoggler44,
+    OrderlyTreeBuilder22,
+    OrderlyTreeBuilder33,
+    OrderlyTreeBuilder34,
+    OrderlyTreeBuilder44,
     TreeBuilder22,
     TreeBuilder33,
     TreeBuilder34,
@@ -29,6 +33,13 @@ TreeBuilders = {
     (3, 3): TreeBuilder33,
     (3, 4): TreeBuilder34,
     (4, 4): TreeBuilder44,
+}
+
+OrderlyTreeBuilders = {
+    (2, 2): OrderlyTreeBuilder22,
+    (3, 3): OrderlyTreeBuilder33,
+    (3, 4): OrderlyTreeBuilder34,
+    (4, 4): OrderlyTreeBuilder44,
 }
 
 
