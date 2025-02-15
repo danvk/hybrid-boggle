@@ -107,12 +107,10 @@ def main():
     assert otb.ParseBoard(board)
     orderly_tree = otb.BuildTree(o_arena)
 
-    print(orderly_tree.to_dot(cells))
-
-    print("EvalTreeBuilder:")
+    print("EvalTreeBuilder:    ", end="")
     print(tree_stats(classic_tree))
 
-    print("OrderlyTreeBuilder:")
+    print("OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
 
 
