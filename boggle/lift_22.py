@@ -53,7 +53,7 @@ def main():
         etb = cpp_tree_builder(trie, dims)
 
     arena = etb.create_arena()
-    etb.ParseBoard(board)
+    assert etb.ParseBoard(board)
     t = etb.BuildTree(arena, dedupe=args.dedupe)
     print(tree_stats(t))
     # t.compress_in_place()
