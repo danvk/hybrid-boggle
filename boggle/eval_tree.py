@@ -871,6 +871,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
             assert child.letter == CHOICE_NODE
 
     # new_children should be entirely choice nodes now, but there may be new collisions
+    # TODO: is it more efficient to do this all at once, before absorbing child nodes?
     if should_merge and any_choice_collisions(new_children):
         new_children = merge_choice_collisions_in_place(new_children)
 
