@@ -36,7 +36,8 @@ class OrderlyTreeBuilder(PyBucketBoggler):
 
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, [])
-        root.set_computed_fields(self.bd_)
+        num_letters = [len(cell) for cell in self.bd_]
+        root.set_computed_fields(num_letters)
         self.root = None
         return root
 

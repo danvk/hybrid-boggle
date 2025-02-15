@@ -65,15 +65,15 @@ void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena
   AddWordWork(choices.size(), choices.data(), points, arena);
 }
 
-void EvalNode::SetComputedFields(vector<string>& cells) {
+void EvalNode::SetComputedFields(vector<int>& num_letters) {
   for (auto c : children_) {
     if (c) {
-      ((EvalNode*)c)->SetComputedFields(cells);
+      ((EvalNode*)c)->SetComputedFields(num_letters);
     }
   }
 
   if (letter_ == CHOICE_NODE) {
-    choice_mask_ = cells[cell_].size() > 1 ? (1 << cell_) : 0;
+    choice_mask_ = num_letters[cell_] > 1 ? (1 << cell_) : 0;
     bound_ = 0;
     for (auto c : children_) {
       if (c) {

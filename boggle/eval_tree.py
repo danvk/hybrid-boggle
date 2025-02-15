@@ -778,13 +778,13 @@ class EvalNode:
             )
         return results
 
-    def set_computed_fields(self, cells: Sequence[str]):
+    def set_computed_fields(self, num_letters: Sequence[int]):
         for c in self.children:
             if c:
-                c.set_computed_fields(cells)
+                c.set_computed_fields(num_letters)
 
         if self.letter == CHOICE_NODE:
-            self.choice_mask = 1 << self.cell if len(cells[self.cell]) > 1 else 0
+            self.choice_mask = 1 << self.cell if num_letters[self.cell] > 1 else 0
             self.bound = (
                 max(c.bound for c in self.children if c) if self.children else 0
             )

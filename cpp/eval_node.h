@@ -70,7 +70,7 @@ class EvalNode {
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
   void AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena);
 
-  void SetComputedFields(vector<string>& cells);
+  void SetComputedFields(vector<int>& num_letters);
 
   const EvalNode*
   LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe=false, bool compress=false) const;

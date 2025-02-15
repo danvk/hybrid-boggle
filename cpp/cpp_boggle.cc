@@ -11,6 +11,7 @@ using std::vector;
 #include "ibuckets.h"
 #include "eval_node.h"
 #include "tree_builder.h"
+#include "orderly_tree_builder.h"
 // #include "breaker.h"
 
 // See https://stackoverflow.com/a/47749076/388951
@@ -32,6 +33,28 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
 template<int M, int N>
 void declare_tree_builder(py::module &m, const string &pyclass_name) {
     using BB = TreeBuilder<M, N>;
+    // TODO: do I care about buffer_protocol() here?
+    py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
+        .def(py::init<Trie*>())
+        .def(
+            "BuildTree",
+            &BB::BuildTree,
+            py::return_value_policy::reference,
+            py::arg("arena"),
+            py::arg("dedupe")=false
+        )
+        .def("ParseBoard", &BB::ParseBoard)
+        .def("as_string",  &BB::as_string)
+        .def("Cell",    &BB::Cell)
+        .def("SetCell", &BB::SetCell)
+        .def("Details", &BB::Details)
+        .def("NumReps", &BB::NumReps)
+        .def("create_arena", &BB::CreateArena);
+}
+
+template<int M, int N>
+void declare_orderly_tree_builder(py::module &m, const string &pyclass_name) {
+    using BB = OrderlyTreeBuilder<M, N>;
     // TODO: do I care about buffer_protocol() here?
     py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
         .def(py::init<Trie*>())
@@ -101,6 +124,11 @@ PYBIND11_MODULE(cpp_boggle, m)
     declare_tree_builder<3, 3>(m, "TreeBuilder33");
     declare_tree_builder<3, 4>(m, "TreeBuilder34");
     declare_tree_builder<4, 4>(m, "TreeBuilder44");
+
+    declare_orderly_tree_builder<2, 2>(m, "TreeBuilder22");
+    // declare_orderly_tree_builder<3, 3>(m, "TreeBuilder33");
+    // declare_orderly_tree_builder<3, 4>(m, "TreeBuilder34");
+    // declare_orderly_tree_builder<4, 4>(m, "TreeBuilder44");
 
     py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
