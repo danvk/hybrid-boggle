@@ -1,4 +1,8 @@
-from boggle.eval_tree import EvalNode
+import pytest
+from cpp_boggle import Trie
+
+from boggle.dimensional_bogglers import cpp_orderly_tree_builder
+from boggle.eval_tree import EvalNode, eval_node_to_string
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import PyTrie
 
@@ -13,15 +17,19 @@ def snapshot(value: str, filename: str, is_readonly=False):
     assert value == expected
 
 
-def test_build_orderly_tree():
-    t = PyTrie()
+@pytest.mark.parametrize(
+    "TrieT, TreeBuilderT",
+    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
+)
+def test_build_orderly_tree(TrieT, TreeBuilderT):
+    t = TrieT()
     t.AddWord("sea")
     t.AddWord("seat")
     t.AddWord("seats")
     t.AddWord("tea")
     t.AddWord("teas")
 
-    bb = OrderlyTreeBuilder(t, (3, 3))
+    bb = TreeBuilderT(t, (3, 3))
     arena = bb.create_arena()
 
     # s e h
@@ -33,4 +41,8 @@ def test_build_orderly_tree():
     t = bb.BuildTree(arena)
     is_python = isinstance(t, EvalNode)
     is_readonly = not is_python
-    snapshot(t.to_string(cells), "testdata/sepeathtc-tree.txt", is_readonly=is_readonly)
+    snapshot(
+        eval_node_to_string(t, cells),
+        "testdata/sepeathtc-tree.txt",
+        is_readonly=is_readonly,
+    )

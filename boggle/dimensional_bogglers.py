@@ -53,6 +53,10 @@ def cpp_tree_builder(t, dims):
     return TreeBuilders[dims](t)
 
 
+def cpp_orderly_tree_builder(t, dims):
+    return OrderlyTreeBuilders[dims](t)
+
+
 LEN_TO_DIMS = {
     4: (2, 2),
     6: (2, 3),
