@@ -662,20 +662,20 @@ def test_lift_invariants_22():
 
 
 INVARIANT_PARAMS = [
-    (make_py_trie, EvalTreeBoggler, create_eval_node_arena_py),
-    (Trie.CreateFromFile, cpp_tree_builder, create_eval_node_arena),
+    (make_py_trie, EvalTreeBoggler),
+    (Trie.CreateFromFile, cpp_tree_builder),
 ]
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
-def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena):
+@pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
+def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-4.txt")
     board = "ny ae ch ."
     cells = board.split(" ")
     num_letters = [len(c) for c in cells]
     etb = get_tree_builder(trie, (2, 2))
     etb.ParseBoard(board)
-    arena = create_arena()
+    arena = etb.create_arena()
     t = etb.BuildTree(arena)
     if isinstance(t, EvalNode):
         t.assert_invariants(etb)
@@ -708,15 +708,15 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
 WRITE_SNAPSHOTS = False
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
-def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
+@pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
+def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
     board = ". . . . lnrsy e aeiou aeiou ."
     # board = ". . . . nr e ai au ."
     cells = board.split(" ")
     etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
-    arena = create_arena()
+    arena = etb.create_arena()
     # t = etb.BuildTree(arena, dedupe=True)
     t = etb.BuildTree(arena)
     if isinstance(t, EvalNode):
