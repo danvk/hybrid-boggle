@@ -32,3 +32,7 @@ jobs:
 
     - name: Run lint
       run: poetry run ruff check
+
+    - name: Integration test
+      run: |
+        /usr/bin/time -v ./integration-test.sh
