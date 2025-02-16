@@ -15,13 +15,11 @@ import argparse
 import random
 from collections import Counter
 
-from cpp_boggle import Trie
 
 from boggle.anneal import initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import PyBoggler
-from boggle.dimensional_bogglers import Bogglers
-from boggle.trie import LETTER_A, make_py_trie
+from boggle.trie import LETTER_A
 
 
 def neighbors(board: str):
