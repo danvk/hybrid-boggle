@@ -708,6 +708,20 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
 WRITE_SNAPSHOTS = False
 
 
+def snapshot(value: str, filename: str, is_readonly=False):
+    if WRITE_SNAPSHOTS and not is_readonly:
+        with open(filename, "w") as out:
+            out.write(value)
+    expected = open(filename).read()
+    if value != expected:
+        print("Expected:")
+        print(expected)
+        print("---")
+        print("Actual:")
+        print(value)
+    assert value == expected
+
+
 @pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
@@ -740,11 +754,11 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         assert score == bb.Details().max_nomark
 
     is_python = isinstance(t, EvalNode)
-    if WRITE_SNAPSHOTS and is_python:
-        with open("testdata/tree33.txt", "w") as out:
-            out.write(eval_node_to_string(t, cells))
+    is_readonly = not is_python
     # This asserts that the C++ and Python trees stay in sync
-    assert eval_node_to_string(t, cells) == open("testdata/tree33.txt").read()
+    snapshot(
+        eval_node_to_string(t, cells), "testdata/tree33.txt", is_readonly=is_readonly
+    )
 
     # print(t.to_dot(cells, trie=trie))
 
@@ -768,10 +782,11 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
             # so no compression might avoid them.
             tl_noc.assert_invariants(etb, is_top_max=True)
 
-        if WRITE_SNAPSHOTS and is_python:
-            with open(f"testdata/tree33-{i}.txt", "w") as out:
-                out.write(eval_node_to_string(tl, cells))
-        assert eval_node_to_string(tl, cells) == open(f"testdata/tree33-{i}.txt").read()
+        snapshot(
+            eval_node_to_string(tl, cells),
+            f"testdata/tree33-{i}.txt",
+            is_readonly=is_readonly,
+        )
 
         lift_scores = eval_all(tl, cells)
         tl.reset_choice_point_mask()

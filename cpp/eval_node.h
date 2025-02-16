@@ -64,7 +64,7 @@ unique_ptr<VectorArena> create_vector_arena();
 
 class EvalNode {
  public:
-  EvalNode() : points_(0), choice_mask_(0), hash_(0) {}
+  EvalNode() : points_(0), choice_mask_(0), cache_key_(0), hash_(0) {}
   virtual ~EvalNode() {}
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);

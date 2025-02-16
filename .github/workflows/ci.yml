@@ -1,0 +1,31 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.13'
+
+    - name: Install Poetry
+      run: curl -sSL https://install.python-poetry.org | python3 -
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Set up C++ compiler
+      run: sudo apt-get install -y g++
+
+    - name: Build C++ code
+      run: ./build.sh
+
+    - name: Run tests
+      run: poetry run pytest
