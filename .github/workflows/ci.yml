@@ -30,6 +30,9 @@ jobs:
     - name: Run tests
       run: poetry run pytest
 
+    - name: Run lint
+      run: poetry run ruff check
+
     - name: Integration test
       run: |
         /usr/bin/time -v poetry run python -m boggle.break_all \
