@@ -22,6 +22,7 @@ class OrderlyTreeBuilder : public BucketBoggler<M, N> {
   using BucketBoggler<M, N>::dict_;
   using BucketBoggler<M, N>::bd_;
   using BucketBoggler<M, N>::used_;
+  using BucketBoggler<M, N>::details_;
 
   /** Build an EvalTree for the current board. */
   const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe=false);
