@@ -44,6 +44,9 @@ class Arena {
     owned_nodes_.push_back(node);
   }
 
+  // For testing
+  T* NewNode();
+
   // Returns the number of nodes deleted
   int MarkAndSweep(T* root, uint32_t mark);
 
@@ -63,6 +66,11 @@ class EvalNode {
  public:
   EvalNode() : points_(0), choice_mask_(0), hash_(0) {}
   virtual ~EvalNode() {}
+
+  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
+  void AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena);
+
+  void SetComputedFields(vector<int>& num_letters);
 
   const EvalNode*
   LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe=false, bool compress=false) const;
@@ -92,6 +100,7 @@ class EvalNode {
   static const int8_t CHOICE_NODE = -1;
 
   // These might be the various options on a cell or the various directions.
+  // TODO: the "const" here is increasingly a joke.
   vector<const EvalNode*> children_;
 
   // cached computation across all children

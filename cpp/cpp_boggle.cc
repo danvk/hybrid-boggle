@@ -11,6 +11,7 @@ using std::vector;
 #include "ibuckets.h"
 #include "eval_node.h"
 #include "tree_builder.h"
+#include "orderly_tree_builder.h"
 // #include "breaker.h"
 
 // See https://stackoverflow.com/a/47749076/388951
@@ -32,6 +33,28 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
 template<int M, int N>
 void declare_tree_builder(py::module &m, const string &pyclass_name) {
     using BB = TreeBuilder<M, N>;
+    // TODO: do I care about buffer_protocol() here?
+    py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
+        .def(py::init<Trie*>())
+        .def(
+            "BuildTree",
+            &BB::BuildTree,
+            py::return_value_policy::reference,
+            py::arg("arena"),
+            py::arg("dedupe")=false
+        )
+        .def("ParseBoard", &BB::ParseBoard)
+        .def("as_string",  &BB::as_string)
+        .def("Cell",    &BB::Cell)
+        .def("SetCell", &BB::SetCell)
+        .def("Details", &BB::Details)
+        .def("NumReps", &BB::NumReps)
+        .def("create_arena", &BB::CreateArena);
+}
+
+template<int M, int N>
+void declare_orderly_tree_builder(py::module &m, const string &pyclass_name) {
+    using BB = OrderlyTreeBuilder<M, N>;
     // TODO: do I care about buffer_protocol() here?
     py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
         .def(py::init<Trie*>())
@@ -102,6 +125,11 @@ PYBIND11_MODULE(cpp_boggle, m)
     declare_tree_builder<3, 4>(m, "TreeBuilder34");
     declare_tree_builder<4, 4>(m, "TreeBuilder44");
 
+    declare_orderly_tree_builder<2, 2>(m, "OrderlyTreeBuilder22");
+    declare_orderly_tree_builder<3, 3>(m, "OrderlyTreeBuilder33");
+    declare_orderly_tree_builder<3, 4>(m, "OrderlyTreeBuilder34");
+    declare_orderly_tree_builder<4, 4>(m, "OrderlyTreeBuilder44");
+
     py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
         .def_readwrite("sum_union", &ScoreDetails::sum_union)
@@ -118,6 +146,8 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("recompute_score", &EvalNode::RecomputeScore)
         .def("node_count", &EvalNode::NodeCount)
         .def("unique_node_count", &EvalNode::UniqueNodeCount)
+        .def("add_word", &EvalNode::AddWord)
+        .def("set_computed_fields", &EvalNode::SetComputedFields)
         // TODO: remove this
         .def(
             "force_cell",
@@ -154,6 +184,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def(py::init())
         .def("free_the_children", &EvalNodeArena::FreeTheChildren)
         .def("mark_and_sweep", &EvalNodeArena::MarkAndSweep)
+        .def("new_node", &EvalNodeArena::NewNode, py::return_value_policy::reference)
         .def("num_nodes", &EvalNodeArena::NumNodes);
 
     // TODO: remove this once it's not part of a public API.

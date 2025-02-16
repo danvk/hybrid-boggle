@@ -662,20 +662,20 @@ def test_lift_invariants_22():
 
 
 INVARIANT_PARAMS = [
-    (make_py_trie, EvalTreeBoggler, create_eval_node_arena_py),
-    (Trie.CreateFromFile, cpp_tree_builder, create_eval_node_arena),
+    (make_py_trie, EvalTreeBoggler),
+    (Trie.CreateFromFile, cpp_tree_builder),
 ]
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
-def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena):
+@pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
+def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-4.txt")
     board = "ny ae ch ."
     cells = board.split(" ")
     num_letters = [len(c) for c in cells]
     etb = get_tree_builder(trie, (2, 2))
     etb.ParseBoard(board)
-    arena = create_arena()
+    arena = etb.create_arena()
     t = etb.BuildTree(arena)
     if isinstance(t, EvalNode):
         t.assert_invariants(etb)
@@ -704,18 +704,19 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder, create_arena
             tl.assert_invariants(etb)
 
 
+# TODO: set up a real snapshot tool
 WRITE_SNAPSHOTS = False
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder, create_arena", INVARIANT_PARAMS)
-def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
+@pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
+def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
     board = ". . . . lnrsy e aeiou aeiou ."
     # board = ". . . . nr e ai au ."
     cells = board.split(" ")
     etb = get_tree_builder(trie, dims=(3, 3))
     etb.ParseBoard(board)
-    arena = create_arena()
+    arena = etb.create_arena()
     # t = etb.BuildTree(arena, dedupe=True)
     t = etb.BuildTree(arena)
     if isinstance(t, EvalNode):
@@ -790,6 +791,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder, create_arena):
 
 def test_lift_sum():
     cells = ["ab", "xy"]
+    num_letters = [len(cell) for cell in cells]
     root = letter_node(
         cell=0,
         letter=ROOT_NODE,
@@ -810,7 +812,7 @@ def test_lift_sum():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(num_letters)
     # print(root.to_dot(cells))
 
     assert root.choice_mask == 0b11
@@ -838,6 +840,7 @@ def test_lift_sum():
 
 def test_lift_choice():
     cells = ["abc", "xy"]
+    num_letters = [len(cell) for cell in cells]
     root = choice_node(
         cell=0,
         children=[
@@ -866,7 +869,7 @@ def test_lift_choice():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(num_letters)
     # print(root.to_dot(cells))
     assert root.bound == 4
 
@@ -881,6 +884,7 @@ def test_lift_choice():
 
 def test_merge_choice_trees():
     cells = ["abc"]
+    num_letters = [len(cell) for cell in cells]
     root = letter_node(
         cell=0,
         letter=ROOT_NODE,
@@ -901,7 +905,7 @@ def test_merge_choice_trees():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(num_letters)
     assert root.bound == 6
     # print(root.to_dot(cells))
     # print("---")
@@ -926,6 +930,7 @@ def test_squeeze_sum():
 
 def test_squeeze_sum_with_duplicate_choices():
     cells = ["abc", "de", "fg", "h"]
+    num_letters = [len(cell) for cell in cells]
     root = letter_node(
         cell=3,
         letter=ROOT_NODE,
@@ -967,7 +972,7 @@ def test_squeeze_sum_with_duplicate_choices():
             ),
         ],
     )
-    root.set_computed_fields_for_testing(cells)
+    root.set_computed_fields(num_letters)
     assert len(root.children) == 5
 
     # print(root.to_dot(cells))
@@ -976,3 +981,35 @@ def test_squeeze_sum_with_duplicate_choices():
     squeeze_sum_node_in_place(root, True)
     # print(root.to_dot(cells))
     assert len(root.children) == 3
+
+
+@pytest.mark.parametrize(
+    "create_arena", (create_eval_node_arena_py, create_eval_node_arena)
+)
+def test_add_word(create_arena):
+    arena = create_arena()
+    root = arena.new_node()
+    cells = ["bcd", "aei", "nrd"]
+    num_letters = [len(cell) for cell in cells]
+    root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
+    root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can
+    root.add_word([(0, 0), (1, 0), (2, 1)], 1, arena)  # bar
+    root.add_word([(0, 0), (1, 1), (2, 2)], 1, arena)  # bed
+    root.add_word([(0, 0), (1, 2), (2, 2)], 1, arena)  # bid
+    root.add_word([(0, 2), (1, 2), (2, 2)], 1, arena)  # did
+
+    root.set_computed_fields(num_letters)
+
+    # print(root.to_dot(cells))
+
+    is_python = isinstance(root, EvalNode)
+    if WRITE_SNAPSHOTS and is_python:
+        with open("testdata/add_word.txt", "w") as out:
+            out.write(eval_node_to_string(root, cells))
+    # This asserts that the C++ and Python trees stay in sync
+    expected = open("testdata/add_word.txt").read()
+    actual = eval_node_to_string(root, cells)
+    if actual != expected:
+        with open("/tmp/actual.txt", "w") as out:
+            out.write(actual)
+        assert actual == expected

@@ -12,6 +12,91 @@ using namespace std;
 
 static const bool MERGE_TREES = true;
 
+inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
+  return a->letter_ < b->letter_;
+}
+
+void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {
+  if (!num_choices) {
+    points_ += points;
+    return;
+  }
+
+  auto cell = choices->first;
+  auto letter = choices->second;
+  choices++;
+  num_choices--;
+
+  // See Python for optimization TODOs
+  EvalNode* choice_child = NULL;
+  for (auto c : children_) {
+    if (c->cell_ == cell) {
+      choice_child = (EvalNode*)c;
+      break;
+    }
+  }
+  if (!choice_child) {
+    choice_child = new EvalNode;
+    choice_child->letter_ = CHOICE_NODE;
+    choice_child->cell_ = cell;
+    arena.AddNode(choice_child);
+    children_.push_back(choice_child);
+  }
+
+  EvalNode* letter_child = NULL;
+  for (auto c : choice_child->children_) {
+    if (c->letter_ == letter) {
+      letter_child = (EvalNode*)c;
+      break;
+    }
+  }
+  if (!letter_child) {
+    letter_child = new EvalNode;
+    letter_child->cell_ = cell;
+    letter_child->letter_ = letter;
+    arena.AddNode(letter_child);
+    choice_child->children_.push_back(letter_child);
+    sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
+  }
+  letter_child->AddWordWork(num_choices, choices, points, arena);
+}
+
+void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena) {
+  AddWordWork(choices.size(), choices.data(), points, arena);
+}
+
+void EvalNode::SetComputedFields(vector<int>& num_letters) {
+  for (auto c : children_) {
+    if (c) {
+      ((EvalNode*)c)->SetComputedFields(num_letters);
+    }
+  }
+
+  if (letter_ == CHOICE_NODE) {
+    choice_mask_ = num_letters[cell_] > 1 ? (1 << cell_) : 0;
+    bound_ = 0;
+    for (auto c : children_) {
+      if (c) {
+        bound_ = max(bound_, c->bound_);
+      }
+    }
+  } else {
+    choice_mask_ = 0;
+    bound_ = points_;
+    for (auto c : children_) {
+      if (c) {
+        bound_ += c->bound_;
+      }
+    }
+  }
+
+  for (auto c : children_) {
+    if (c) {
+      choice_mask_ |= c->choice_mask_;
+    }
+  }
+}
+
 const EvalNode* SqueezeChoiceChild(const EvalNode* child);
 bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_merge);
 
@@ -637,8 +722,7 @@ void EvalNode::ResetChoicePointMask() {
 
 template<typename T>
 int Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
-  cerr << "MarkAndSweep not implemented" << endl;
-  exit(1);
+  throw new runtime_error("MarkAndSweep not implemented");
 }
 
 template <>
@@ -661,6 +745,20 @@ int Arena<EvalNode>::MarkAndSweep(EvalNode* root, uint32_t mark) {
 
   // cout << "Deleted " << num_deleted << " nodes, " << old_size << " -> " << owned_nodes_.size() << endl;
   return num_deleted;
+}
+
+template <typename T>
+T* Arena<T>::NewNode() {
+  throw new runtime_error("not implemented");
+}
+
+template <>
+EvalNode* Arena<EvalNode>::NewNode() {
+  EvalNode* n = new EvalNode;
+  n->letter_ = EvalNode::ROOT_NODE;
+  n->cell_ = 0;
+  AddNode(n);
+  return n;
 }
 
 const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena);

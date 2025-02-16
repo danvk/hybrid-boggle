@@ -44,6 +44,12 @@ class PyArena:
     def mark_and_sweep(self, root, mark):
         return 0
 
+    def new_node(self):
+        n = EvalNode()
+        n.letter = ROOT_NODE
+        n.cell = 0
+        return n
+
 
 def create_eval_node_arena_py():
     return PyArena()
@@ -72,6 +78,48 @@ class EvalNode:
         self.trie_node = None
         self.cache_key = None
         self.cache_value = None
+
+    def add_word(self, choices: Sequence[tuple[int, int]], points: int, arena):
+        """Add a word at the end of a sequence of choices to the tree.
+
+        This doesn't update bounds or choice_mask.
+        """
+        assert self.letter != CHOICE_NODE
+        if not choices:
+            self.points += points
+            return
+
+        (cell, letter) = choices[0]
+        remaining_choices = choices[1:]
+
+        # TODO: binary search
+        choice_child = None
+        for c in self.children:
+            if c.cell == cell:
+                choice_child = c
+                break
+        if not choice_child:
+            choice_child = EvalNode()
+            choice_child.letter = CHOICE_NODE
+            choice_child.cell = cell
+            self.children.append(choice_child)
+            # TODO: could keep self.children sorted
+
+        # TODO: binary search
+        letter_child = None
+        for c in choice_child.children:
+            if c.letter == letter:
+                letter_child = c
+                break
+        if not letter_child:
+            letter_child = EvalNode()
+            letter_child.cell = cell
+            letter_child.letter = letter
+            # TODO: this could be more efficient
+            choice_child.children.append(letter_child)
+            choice_child.children.sort(key=lambda c: c.letter)
+
+        letter_child.add_word(remaining_choices, points, arena)
 
     def recompute_score(self):
         # Should return self.bound
@@ -730,13 +778,13 @@ class EvalNode:
             )
         return results
 
-    def set_computed_fields_for_testing(self, cells: Sequence[str]):
+    def set_computed_fields(self, num_letters: Sequence[int]):
         for c in self.children:
             if c:
-                c.set_computed_fields_for_testing(cells)
+                c.set_computed_fields(num_letters)
 
         if self.letter == CHOICE_NODE:
-            self.choice_mask = 1 << self.cell if len(cells[self.cell]) > 1 else 0
+            self.choice_mask = 1 << self.cell if num_letters[self.cell] > 1 else 0
             self.bound = (
                 max(c.bound for c in self.children if c) if self.children else 0
             )

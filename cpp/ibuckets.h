@@ -74,6 +74,7 @@ class BucketBoggler {
   ScoreDetails details_;
 
   static const int NEIGHBORS[M*N][9];
+  static const int SPLIT_ORDER[M*N];
 
  private:
   unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
@@ -421,5 +422,18 @@ const int BucketBoggler<4, 4>::NEIGHBORS[4*4][9] = {
   {5, 9, 10, 11, 13, 15},
   {3, 10, 11, 14},
 };
+
+// poetry run python -m boggle.split_order
+template<>
+const int BucketBoggler<2, 2>::SPLIT_ORDER[2*2] = {0, 1, 2, 3};
+
+template<>
+const int BucketBoggler<3, 3>::SPLIT_ORDER[3*3] = {4, 5, 3, 1, 7, 0, 2, 6, 8};
+
+template<>
+const int BucketBoggler<3, 4>::SPLIT_ORDER[3*4] = {5, 6, 1, 9, 2, 10, 4, 7, 0, 8, 3, 11};
+
+template<>
+const int BucketBoggler<4, 4>::SPLIT_ORDER[4*4] = {5, 6, 9, 10, 1, 13, 2, 14, 4, 7, 8, 11, 0, 12, 3, 15};
 
 #endif  // BUCKET_H
