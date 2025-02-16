@@ -11,7 +11,11 @@ from dataclasses import dataclass
 
 from tqdm import tqdm
 
-from boggle.args import add_standard_args, get_trie_and_boggler_from_args
+from boggle.args import (
+    add_standard_args,
+    get_trie_and_boggler_from_args,
+    get_trie_from_args,
+)
 from boggle.board_id import from_board_id, is_canonical_board_id
 from boggle.boggler import PyBoggler
 from boggle.breaker import (
@@ -109,7 +113,12 @@ def get_breaker(args) -> BreakingBundle:
     dims = args.size // 10, args.size % 10
     best_score = args.best_score
 
-    t, boggler = get_trie_and_boggler_from_args(args)
+    # With grouping, HybridTreeBreaker needs an ungrouped boggler but a grouped Trie.
+    if args.letter_grouping:
+        _t, boggler = get_trie_and_boggler_from_args(args, no_grouping=True)
+        t = get_trie_from_args(args)
+    else:
+        t, boggler = get_trie_and_boggler_from_args(args)
 
     # (args.python, args.tree_builder)
     builder = {
@@ -129,6 +138,7 @@ def get_breaker(args) -> BreakingBundle:
             switchover_level=args.switchover_level,
             free_after_score=args.free_after_score,
             log_breaker_progress=args.log_breaker_progress,
+            letter_grouping=args.letter_grouping,
         )
     elif args.breaker == "ibuckets":
         if args.python:
