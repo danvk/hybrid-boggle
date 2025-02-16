@@ -13,7 +13,6 @@ class OrderlyTreeBuilder : public BucketBoggler<M, N> {
  public:
   OrderlyTreeBuilder(Trie* t) : BucketBoggler<M, N>(t) {
     for (int i = 0; i < M*N; i++) {
-      cout << i << endl;
       cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
   }
