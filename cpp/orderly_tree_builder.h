@@ -58,9 +58,8 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   vector<int> num_letters(M*N, 0);
   for (int i = 0; i < M*N; i++) {
     num_letters[i] = strlen(bd_[i]);
-    cout << i << " " << num_letters[i] << endl;
   }
-  // root_->SetComputedFields(num_letters);
+  root_->SetComputedFields(num_letters);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
@@ -106,11 +105,6 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
     sort(orderly_choices.begin(), orderly_choices.end(), [this](const pair<int, int>& a, const pair<int, int>& b) {
       return cell_to_order_[a.first] < cell_to_order_[b.first];
     });
-    cout << "AddWord ";
-    for (auto c : orderly_choices) {
-      cout << "(" << c.first << ", " << c.second << ") ";
-    }
-    cout << word_score << " " << endl;
     root_->AddWord(orderly_choices, word_score, arena);
   }
 
