@@ -50,6 +50,11 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_->points_ = 0;
   used_ = 0;
 
+  // TODO: remove this if I disentangle OrderlyTreeBuilder and BucketBoggler.
+  details_.max_nomark = 0;
+  details_.sum_union = 0;
+  details_.bailout_cell = -1;
+
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
@@ -62,6 +67,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
+  details_.max_nomark = root->bound_;
   return root;
 }
 
