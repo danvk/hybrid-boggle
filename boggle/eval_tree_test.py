@@ -292,6 +292,8 @@ def test_merge_eval_trees():
     # for w in MINI_DICT:
     #     t.AddWord(w)
     board = ". . . . lnrsy aeiou aeiou aeiou . . . ."
+    cells = board.split(" ")
+    num_letters = [len(c) for c in cells]
     etb = EvalTreeBoggler(t, (3, 4))
     etb.ParseBoard(board)
 
@@ -310,6 +312,8 @@ def test_merge_eval_trees():
             )
         ],
     )
+    t0.set_computed_fields(num_letters)
+    assert t0.bound == 1
 
     t1 = choice_node(
         cell=6,
@@ -326,6 +330,8 @@ def test_merge_eval_trees():
             )
         ],
     )
+    t1.set_computed_fields(num_letters)
+    assert t1.bound == 1
 
     # print("t0:")
     # print(t0.to_dot(etb))
@@ -368,16 +374,20 @@ def test_merge_eval_trees():
             ),
         ],
     )
+    t2.set_computed_fields(num_letters)
+    assert t2.bound == 2
 
     # print("t2")
     # print(t2.to_dot(etb))
 
     # print("t0+t2")
     m = merge_trees(t0, t2)
+    assert m.bound == 3
     # print(m.to_dot(etb))
 
     # print("t1+t2")
     m = merge_trees(t1, t2)
+    assert m.bound == 2
     # print(m.to_dot(etb))
 
     # TODO: assert something!
