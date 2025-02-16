@@ -1,7 +1,5 @@
 """Order in which to split cells. Middle then edges then corners."""
 
-import json
-
 SPLIT_ORDER_33 = (4, 5, 3, 1, 7, 0, 2, 6, 8)
 
 

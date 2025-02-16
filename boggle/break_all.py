@@ -20,7 +20,6 @@ from boggle.breaker import (
 )
 from boggle.dimensional_bogglers import (
     BucketBogglers,
-    TreeBuilders,
     cpp_orderly_tree_builder,
     cpp_tree_builder,
 )

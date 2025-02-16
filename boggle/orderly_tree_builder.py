@@ -6,7 +6,6 @@ from boggle.dimensional_bogglers import LEN_TO_DIMS, OrderlyTreeBuilders
 from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
-    EvalTreeBoggler,
     create_eval_node_arena_py,
 )
 from boggle.ibuckets import PyBucketBoggler
