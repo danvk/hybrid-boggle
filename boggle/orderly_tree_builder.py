@@ -39,7 +39,7 @@ class OrderlyTreeBuilder(PyBucketBoggler):
         num_letters = [len(cell) for cell in self.bd_]
         root.set_computed_fields(num_letters)
         self.root = None
-        self.details_.max_nomark = self.root.bound
+        self.details_.max_nomark = root.bound
         return root
 
     # TODO: rename these methods
