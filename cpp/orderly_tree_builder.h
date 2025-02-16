@@ -71,7 +71,9 @@ template<int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena) {
   choices_[n] = {cell, 0};
 
-  for (int j = 0; j < n; j++) {
+  // TODO: store num_letters array or iterate string
+  int n_chars = strlen(bd_[cell]);
+  for (int j = 0; j < n_chars; j++) {
     auto cc = bd_[cell][j] - 'a';
     if (t->StartsWord(cc)) {
       choices_[n].second = j;
