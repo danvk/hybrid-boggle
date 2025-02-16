@@ -55,3 +55,8 @@ def test_ungroup_letters():
         "cej",
         "zej",
     }
+
+    board = "perslatesind"
+    boards_to_test = [board]
+    it = (b for board in boards_to_test for b in ungroup_letters(board, rev))
+    assert board in [*it]

@@ -51,6 +51,7 @@ class HybridBreakDetails(BreakDetails):
     sum_union: int
     bounds: dict[int, int]
     boards_to_test: int
+    expanded_to_test: int
     init_nodes: int
     total_nodes: int
     freed_nodes: int
@@ -216,6 +217,11 @@ class HybridTreeBreaker:
             if letter_grouping
             else None
         )
+        if self.rev_letter_grouping:
+            # cz uxj mk wv fb gy
+            board = "perslatesind"
+            score = self.boggler.score(board)
+            print(f"{score} {board}")
 
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
@@ -233,6 +239,7 @@ class HybridTreeBreaker:
             bounds={},
             sum_union=0,
             boards_to_test=0,
+            expanded_to_test=0,
             init_nodes=0,
             total_nodes=0,
             num_filtered={},
@@ -352,7 +359,9 @@ class HybridTreeBreaker:
                 self.details_.failures.append(board)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level + 1] += elapsed_s
-        print(f"{n_expanded=}")
+        self.details_.expanded_to_test = n_expanded
+        if self.log_breaker_progress and self.rev_letter_grouping:
+            print(f"Evaluated {n_expanded} boards.")
 
     def try_remaining_boards(self, tree: EvalNode):
         """We have a fully-lifted tree that isn't broken. Try all boards explicitly."""
