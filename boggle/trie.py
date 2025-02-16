@@ -1,5 +1,7 @@
 from typing import Self
 
+from boggle.letter_grouping import get_letter_map
+
 LETTER_A = ord("a")
 
 
@@ -105,16 +107,3 @@ def make_py_trie(dict_input: str, letter_grouping: str = ""):
         mapped = "".join(letter_map[c] for c in word)
         t.AddWord(mapped)
     return t
-
-
-def get_letter_map(letter_grouping: str) -> dict[str, str]:
-    letter_map = {}
-    for chunk in letter_grouping.split(" "):
-        canonical = chunk[0]
-        for alternate in chunk[1:]:
-            letter_map[alternate] = canonical
-    for i in range(26):
-        letter = chr(ord("a") + i)
-        if letter not in letter_map:
-            letter_map[letter] = letter
-    return letter_map
