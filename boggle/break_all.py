@@ -91,6 +91,10 @@ def break_worker(task: str | int):
     # all_details.append((task, details))
     with open(f"tasks-{me}.ndjson", "a") as out:
         summary = details.asdict()
+        if args.omit_times:
+            del summary["elapsed_s"]
+            del summary["free_time_s"]
+            del summary["secs_by_level"]
         summary["id"] = task
         out.write(json.dumps(summary))
         out.write("\n")
@@ -221,6 +225,11 @@ def main():
         action="store_true",
         help="Log progress and stats during breaking, which may slow it down.",
     )
+    parser.add_argument(
+        "--omit_times",
+        action="store_true",
+        help="Omit times from logging, to get deterministic output.",
+    )
     args = parser.parse_args()
     if args.random_seed >= 0:
         random.seed(args.random_seed)
@@ -307,7 +316,8 @@ def main():
 
     end_s = time.time()
 
-    print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
+    if not args.omit_times:
+        print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
     print(f"Found {len(good_boards)} breaking failure(s):")
     print("\n".join(good_boards))
 

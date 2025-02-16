@@ -1,0 +1,66 @@
+Unable to break board: cerslatesind 1406
+Unable to break board: merslatesind 1440
+Unable to break board: perslatesind 1651
+Unable to break board: perslatesing 1528
+Unable to break board: perssatelind 1487
+Unable to break board: terssatelind 1432
+Unable to break board: pinslateserd 1460
+Unable to break board: marslitesand 1432
+Unable to break board: parslitesand 1507
+Unable to break board: parslitesang 1406
+Unable to break board: pansliteserd 1448
+Unable to break board: perslitesand 1417
+Found unbreakable board for 2520743: cerslatesind
+Found unbreakable board for 2520743: merslatesind
+Found unbreakable board for 2520743: perslatesind
+Found unbreakable board for 2520743: perslatesing
+Found unbreakable board for 2520743: perssatelind
+Found unbreakable board for 2520743: terssatelind
+Found unbreakable board for 2520743: pinslateserd
+Found unbreakable board for 2520743: marslitesand
+Found unbreakable board for 2520743: parslitesand
+Found unbreakable board for 2520743: parslitesang
+Found unbreakable board for 2520743: pansliteserd
+Found unbreakable board for 2520743: perslitesand
+2520743: chkmpt aeiou lnrsy lnrsy lnrsy aeiou chkmpt aeiou lnrsy aeiou lnrsy bdfgjvwxz
+{
+  "num_reps": 632812500,
+  "failures": [
+    "cerslatesind",
+    "merslatesind",
+    "perslatesind",
+    "perslatesing",
+    "perssatelind",
+    "terssatelind",
+    "pinslateserd",
+    "marslitesand",
+    "parslitesand",
+    "parslitesang",
+    "pansliteserd",
+    "perslitesand"
+  ],
+  "elim_level": {},
+  "sum_union": 0,
+  "bounds": {
+    "0": 6652
+  },
+  "boards_to_test": 8078,
+  "init_nodes": 1960065,
+  "total_nodes": 1960065,
+  "freed_nodes": 0,
+  "num_filtered": {},
+  "id": 2520743
+}
+Found 12 breaking failure(s):
+cerslatesind
+merslatesind
+perslatesind
+perslatesing
+perssatelind
+terssatelind
+pinslateserd
+marslitesand
+parslitesand
+parslitesang
+pansliteserd
+perslitesand

@@ -18,7 +18,7 @@ from collections import Counter
 from cpp_boggle import Trie
 
 from boggle.anneal import initial_board
-from boggle.args import add_standard_args
+from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import PyBoggler
 from boggle.dimensional_bogglers import Bogglers
 from boggle.trie import LETTER_A, make_py_trie
@@ -119,16 +119,9 @@ def main():
     if args.random_seed >= 0:
         random.seed(args.random_seed)
 
-    w, h = dims = args.size // 10, args.size % 10
+    w, h = args.size // 10, args.size % 10
 
-    if args.python:
-        t = make_py_trie(args.dictionary)
-        assert t
-        boggler = PyBoggler(t, dims)
-    else:
-        t = Trie.CreateFromFile(args.dictionary)
-        assert t
-        boggler = Bogglers[dims](t)
+    _t, boggler = get_trie_and_boggler_from_args(args)
 
     best = Counter[str]()
     for run in range(args.num_boards):
