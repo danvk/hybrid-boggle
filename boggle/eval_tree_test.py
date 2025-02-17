@@ -750,10 +750,18 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("testdata/tree33.txt")
+        external("c22dd10a5a11*.txt")
     )
 
     # print(t.to_dot(cells, trie=trie))
+
+    lifted_snapshots = snapshot(
+        {
+            4: external("a27e4864900e*.txt"),
+            6: external("5cdc2782741d*.txt"),
+            7: external("9905993e0327*.txt"),
+        }
+    )
 
     # Try lifting each cell; this should not affect any scores.
     mark = 0
@@ -775,9 +783,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
             # so no compression might avoid them.
             tl_noc.assert_invariants(etb, is_top_max=True)
 
-        assert outsource(eval_node_to_string(tl, cells)) == snapshot(
-            external(f"testdata/tree33-{i}.txt")
-        )
+        assert outsource(eval_node_to_string(tl, cells)) == lifted_snapshots[i]
 
         lift_scores = eval_all(tl, cells)
         tl.reset_choice_point_mask()
@@ -793,6 +799,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
+    # TODO: snapshot this, too
 
 
 def test_lift_sum():
