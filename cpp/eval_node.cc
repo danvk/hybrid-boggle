@@ -65,6 +65,67 @@ void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena
   AddWordWork(choices.size(), choices.data(), points, arena);
 }
 
+bool EvalNode::StructuralEq(const EvalNode& other) const {
+  if (letter_ != other.letter_ || cell_ != other.cell_) {
+    return false;
+  }
+  if (bound_ != other.bound_) {
+    return false;
+  }
+  if (points_ != other.points_) {
+    return false;
+  }
+  vector<const EvalNode*> nnc, nno;
+  for (auto c : children_) {
+    if (c) nnc.push_back(c);
+  }
+  for (auto c : other.children_) {
+    if (c) nno.push_back(c);
+  }
+  if (nnc.size() != nno.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < nnc.size(); ++i) {
+    if (!nnc[i]->StructuralEq(*nno[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void EvalNode::PrintJSON() const {
+  cout << "{\"type\": \"";
+  if (letter_ == CHOICE_NODE) {
+    cout << "CHOICE";
+  } else if (letter_ == ROOT_NODE) {
+    cout << "ROOT";
+  } else {
+    cout << (int)cell_ << "=? (" << (int)letter_ << ")";
+  }
+  cout << "\", \"cell\": " << (int)cell_;
+  cout << ", \"bound\": " << bound_;
+  if (points_) {
+    cout << ", \"points\": " << (int)points_;
+  }
+  if (!children_.empty()) {
+    cout << ", \"children\": [";
+    bool has_commad = false;
+    for (auto c : children_) {
+      if (!c) {
+        continue;
+      }
+      if (!has_commad) {
+        has_commad = true;
+      } else {
+        cout << ", ";
+      }
+      c->PrintJSON();
+    }
+    cout << "]";
+  }
+  cout << "}";
+}
+
 void EvalNode::SetComputedFields(vector<int>& num_letters) {
   for (auto c : children_) {
     if (c) {
@@ -309,6 +370,14 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
           // We want _equivalent_ nodes, not identical nodes.
           if (match->cell_ == node->cell_ && match->letter_ == node->letter_) {
             out_node = r->second;
+            if (!node->StructuralEq(*out_node)) {
+              cout << "- ";
+              node->PrintJSON();
+              cout << endl;
+              cout << "+ ";
+              out_node->PrintJSON();
+              cout << endl;
+            }
             delete node;
           } else {
             // hash_collisions++;
