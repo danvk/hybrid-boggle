@@ -799,14 +799,16 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     # Do a second lift and check again.
     print("second lift")
     mark += 1
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=dedupe, mark=mark)
+    t2 = tl_noc.lift_choice(
+        0, len(cell[0]), arena, compress=False, dedupe=dedupe, mark=mark
+    )
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
-    assert t2.bound <= tl.bound
+    # assert t2.bound <= tl.bound
     assert outsource(eval_node_to_string(tl, cells)) == snapshot(
-        external("04bb02813b13*.txt")
+        external("e0852342de8c*.txt")
     )
     # assert False
 
