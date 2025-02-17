@@ -759,8 +759,8 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
 
     lifted_snapshots = snapshot(
         {
-            4: external("a27e4864900e*.txt"),
-            6: external("5cdc2782741d*.txt"),
+            4: external("db779668b06d*.txt"),
+            6: external("0c0c9072b769*.txt"),
             7: external("2a7a838905d5*.txt"),
         }
     )
@@ -769,8 +769,6 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     mark = 0
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
-            continue
-        if i != 7:
             continue
         mark += 1
         print(f"lift {i}")
