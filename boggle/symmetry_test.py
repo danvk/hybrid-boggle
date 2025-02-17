@@ -1,4 +1,14 @@
-from boggle.symmetry import all_symmetries, canonicalize, flip_x, flip_y, mat_to_str, rot90
+from inline_snapshot import snapshot
+
+from boggle.symmetry import (
+    all_symmetries,
+    canonicalize,
+    flip_x,
+    flip_y,
+    list_to_matrix,
+    mat_to_str,
+    rot90,
+)
 
 
 def test_rot90():
@@ -100,3 +110,18 @@ def test_canonicalize():
     assert canonicalize(mat) == mat
     for sym in all_symmetries(mat):
         assert canonicalize(sym) == mat
+
+
+def test_list_to_matrix():
+    board = "dnisetalsrep"
+    mat = list_to_matrix(board)
+    assert mat == [["d", "n", "i", "s"], ["e", "t", "a", "l"], ["s", "r", "e", "p"]]
+    assert mat_to_str(mat) == board
+
+
+def test_all_symmetries34():
+    board = "dnisetalsrep"
+    mat = list_to_matrix(board)
+    assert [mat_to_str(m) for m in all_symmetries(mat, no_rotations=True)] == snapshot(
+        ["srepetaldnis", "sindlatepers", "perslatesind"]
+    )

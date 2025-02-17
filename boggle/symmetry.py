@@ -5,6 +5,8 @@
 from itertools import chain
 from typing import Sequence
 
+from boggle.dimensional_bogglers import LEN_TO_DIMS
+
 
 def rot90[T](mat: list[list[T]]):
     """Rotate an NxM matrix 90 degrees clockwise."""
@@ -45,7 +47,16 @@ def all_symmetries[T](mat: list[list[T]], no_rotations=False):
 
 def mat_to_str[T](mat: list[list[T]]):
     """Convert a 2D matrix to a string."""
-    return "\n".join(" ".join(str(row) for row in mat))
+    return "".join("".join(str(v) for v in row) for row in mat)
+
+
+def list_to_matrix(letters):
+    w, h = LEN_TO_DIMS[len(letters)]
+
+    bd_2d = [[0 for _y in range(0, h)] for _x in range(0, w)]
+    for i in range(0, len(letters)):
+        bd_2d[i // h][i % h] = letters[i]
+    return bd_2d
 
 
 def canonicalize[T](mat: list[list[T]]):

@@ -5,16 +5,7 @@
 
 import fileinput
 
-from boggle.symmetry import canonicalize, transpose
-
-
-def list_to_matrix(letters):
-    w, h = {4: (2, 2), 9: (3, 3), 12: (3, 4), 16: (4, 4)}[len(letters)]
-
-    bd_2d = [[0 for _y in range(0, h)] for _x in range(0, w)]
-    for i in range(0, len(letters)):
-        bd_2d[i // h][i % h] = letters[i]
-    return bd_2d
+from boggle.symmetry import canonicalize, list_to_matrix, transpose
 
 
 def main():
