@@ -1,6 +1,7 @@
 # Try to speed up ibuckets by explicitly constructing an evaluation tree.
 
 import itertools
+import json
 from collections import Counter
 from typing import Self, Sequence
 
@@ -78,6 +79,27 @@ class EvalNode:
         self.trie_node = None
         self.cache_key = None
         self.cache_value = None
+
+    def structural_eq(self, other: Self) -> bool:
+        """Deep structural equality."""
+        if self.letter != other.letter or self.cell != other.cell:
+            return False
+        if self.bound != other.bound:
+            return False
+        if self.points != other.points:
+            return False
+        nnc = [c for c in self.children if c]
+        nno = [c for c in other.children if c]
+        if len(nnc) != len(nno):
+            return False
+        for a, b in zip(nnc, nno):
+            if a == b:
+                continue
+            if a is None or b is None:
+                return False
+            if not a.structural_eq(b):
+                return False
+        return True
 
     def add_word(self, choices: Sequence[tuple[int, int]], points: int, arena):
         """Add a word at the end of a sequence of choices to the tree.
@@ -429,6 +451,11 @@ class EvalNode:
                             # and match.points == node.points
                         ):
                             prev = match
+                            if not node.structural_eq(match):
+                                nj = json.dumps(node.to_json(None))
+                                mj = json.dumps(match.to_json(None))
+                                print(f"- {nj}")
+                                print(f"+ {mj}")
                         else:
                             global hash_collisions
                             hash_collisions += 1
@@ -717,16 +744,17 @@ class EvalNode:
             dot.append(child_dot)
         return me, "\n".join(dot)
 
-    def to_json(self, solver: PyBucketBoggler, max_depth=100, lookup=None):
-        if not lookup:
+    def to_json(self, solver: PyBucketBoggler | None, max_depth=100, lookup=None):
+        if not lookup and solver:
             lookup = make_lookup_table(solver.trie_)
+        char = solver.bd_[self.cell][self.letter] if solver else "?"
         out = {
             "type": (
                 "ROOT"
                 if self.letter == ROOT_NODE
                 else "CHOICE"
                 if self.letter == CHOICE_NODE
-                else f"{self.cell}={solver.bd_[self.cell][self.letter]} ({self.letter})"
+                else f"{self.cell}={char} ({self.letter})"
             ),
             "cell": self.cell,
             "bound": self.bound,
@@ -735,7 +763,7 @@ class EvalNode:
             out["mask"] = [i for i in range(16) if self.choice_mask & (1 << i)]
         if self.points:
             out["points"] = self.points
-        if self.trie_node:
+        if self.trie_node and lookup:
             out["word"] = lookup[self.trie_node]
         if self.children:
             # child_range = [child.bound for child in self.children]
@@ -746,7 +774,7 @@ class EvalNode:
                 out["children"] = self.node_count()
             else:
                 out["children"] = [
-                    child.to_json(solver, max_depth - 1, lookup)
+                    child.to_json(solver, max_depth - 1, lookup) if child else None
                     for child in self.children
                 ]
         return out

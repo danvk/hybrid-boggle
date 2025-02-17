@@ -643,6 +643,7 @@ def test_lift_invariants(dedupe, compress):
         # print(t.to_string(etb))
 
 
+# TODO: is this identical to the test below?
 def test_lift_invariants_22():
     trie = make_py_trie("testdata/boggle-words-4.txt")
     board = "ny ae ch ."
@@ -726,7 +727,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     arena = etb.create_arena()
     # t = etb.BuildTree(arena, dedupe=True)
     dedupe = True  # TODO: parametrize this, it shouldnt' matter
-    t = etb.BuildTree(arena)
+    t = etb.BuildTree(arena)  # TODO: dedupe here, too
     if isinstance(t, EvalNode):
         t.assert_invariants(etb)
 
@@ -772,6 +773,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         if i != 7:
             continue
         mark += 1
+        print(f"lift {i}")
         tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=dedupe, mark=mark)
         mark += 1
         tl_noc = t.lift_choice(
@@ -795,6 +797,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         assert tl_noc.bound <= t.bound
 
     # Do a second lift and check again.
+    print("second lift")
     mark += 1
     t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=dedupe, mark=mark)
     lift_scores = eval_all(t2, cells)
@@ -805,6 +808,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     assert outsource(eval_node_to_string(tl, cells)) == snapshot(
         external("de05eea880da*.txt")
     )
+    assert False
 
 
 def test_lift_sum():
