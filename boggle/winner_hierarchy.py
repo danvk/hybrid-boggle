@@ -52,7 +52,7 @@ def main():
         d = board_distance(board, parent)
         parent_score = board_to_score[parent]
         fields = [board, score, d, parent, parent_score]
-        is_local_optimum = d > 1
+        is_local_optimum = d > 2
         if is_local_optimum:
             peak_parent = closest(board, peaks)
             peak_d = board_distance(board, peak_parent)
