@@ -761,7 +761,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         {
             4: external("a27e4864900e*.txt"),
             6: external("5cdc2782741d*.txt"),
-            7: external("c75ded3804d9*.txt"),
+            7: external("2a7a838905d5*.txt"),
         }
     )
 
@@ -806,7 +806,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
     assert outsource(eval_node_to_string(tl, cells)) == snapshot(
-        external("49d544b8329f*.txt")
+        external("d6d778b28c50*.txt")
     )
     # assert False
 

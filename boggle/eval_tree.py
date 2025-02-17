@@ -982,6 +982,8 @@ def _into_list(
     for child in node.children:
         if child:
             _into_list(child, cells, lines, " " + indent, ids)
+        else:
+            lines.append(f"{indent} null")
 
 
 def eval_node_to_string(node: EvalNode, cells: list[str]):
