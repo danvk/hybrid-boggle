@@ -799,7 +799,9 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
-    # TODO: snapshot this, too
+    assert outsource(eval_node_to_string(tl, cells)) == snapshot(
+        external("de05eea880da*.txt")
+    )
 
 
 def test_lift_sum():
