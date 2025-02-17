@@ -752,7 +752,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("c22dd10a5a11*.txt")
+        external("6a973f6cf204*.txt")
     )
 
     # print(t.to_dot(cells, trie=trie))
@@ -761,7 +761,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         {
             4: external("a27e4864900e*.txt"),
             6: external("5cdc2782741d*.txt"),
-            7: external("9905993e0327*.txt"),
+            7: external("c75ded3804d9*.txt"),
         }
     )
 
@@ -806,9 +806,9 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
     assert outsource(eval_node_to_string(tl, cells)) == snapshot(
-        external("de05eea880da*.txt")
+        external("04bb02813b13*.txt")
     )
-    assert False
+    # assert False
 
 
 def test_lift_sum():

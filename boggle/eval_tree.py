@@ -451,11 +451,11 @@ class EvalNode:
                             # and match.points == node.points
                         ):
                             prev = match
-                            if not node.structural_eq(match):
-                                nj = json.dumps(node.to_json(None))
-                                mj = json.dumps(match.to_json(None))
-                                print(f"- {nj}")
-                                print(f"+ {mj}")
+                            # if not node.structural_eq(match):
+                            #     nj = json.dumps(node.to_json(None))
+                            #     mj = json.dumps(match.to_json(None))
+                            #     print(f"- {nj}")
+                            #     print(f"+ {mj}")
                         else:
                             global hash_collisions
                             hash_collisions += 1
@@ -960,7 +960,9 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     return True
 
 
-def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
+def _into_list(
+    node: EvalNode, cells: list[str], lines: list[str], indent="", ids: dict = None
+):
     line = ""
     if node.letter == ROOT_NODE:
         line = f"{indent}ROOT ({node.bound}) mask={node.choice_mask}"
@@ -969,15 +971,23 @@ def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
     else:
         cell = cells[node.cell][node.letter]
         line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound}) mask={node.choice_mask}"
+    if node in ids:
+        prev_id = ids[node]
+        line += f" (={prev_id})"
+    else:
+        this_id = len(ids)
+        ids[node] = this_id
+        line += f" ({this_id})"
     lines.append(line)
     for child in node.children:
         if child:
-            _into_list(child, cells, lines, " " + indent)
+            _into_list(child, cells, lines, " " + indent, ids)
 
 
 def eval_node_to_string(node: EvalNode, cells: list[str]):
+    ids = {}
     lines = []
-    _into_list(node, cells, lines)
+    _into_list(node, cells, lines, indent="", ids=ids)
     return "\n".join(lines)
 
 
