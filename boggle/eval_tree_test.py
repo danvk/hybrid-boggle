@@ -9,6 +9,7 @@ from cpp_boggle import (
     create_eval_node_arena,
     create_vector_arena,
 )
+from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
@@ -714,24 +715,6 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
             tl.assert_invariants(etb)
 
 
-# TODO: set up a real snapshot tool
-WRITE_SNAPSHOTS = False
-
-
-def snapshot(value: str, filename: str, is_readonly=False):
-    if WRITE_SNAPSHOTS and not is_readonly:
-        with open(filename, "w") as out:
-            out.write(value)
-    expected = open(filename).read()
-    if value != expected:
-        print("Expected:")
-        print(expected)
-        print("---")
-        print("Actual:")
-        print(value)
-    assert value == expected
-
-
 @pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
@@ -764,10 +747,10 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         assert score == bb.Details().max_nomark
 
     is_python = isinstance(t, EvalNode)
-    is_readonly = not is_python
+
     # This asserts that the C++ and Python trees stay in sync
-    snapshot(
-        eval_node_to_string(t, cells), "testdata/tree33.txt", is_readonly=is_readonly
+    assert outsource(eval_node_to_string(t, cells)) == snapshot(
+        external("testdata/tree33.txt")
     )
 
     # print(t.to_dot(cells, trie=trie))
@@ -783,7 +766,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         tl_noc = t.lift_choice(
             i, len(cell), arena, compress=False, dedupe=True, mark=mark
         )
-        if isinstance(tl, EvalNode):
+        if is_python:
             # If these ever fail, setting dedupe=False makes debugging much easier.
             # print(tl.to_dot(cells, trie=trie))
             tl.assert_invariants(etb, is_top_max=True)
@@ -792,10 +775,8 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
             # so no compression might avoid them.
             tl_noc.assert_invariants(etb, is_top_max=True)
 
-        snapshot(
-            eval_node_to_string(tl, cells),
-            f"testdata/tree33-{i}.txt",
-            is_readonly=is_readonly,
+        assert outsource(eval_node_to_string(tl, cells)) == snapshot(
+            external(f"testdata/tree33-{i}.txt")
         )
 
         lift_scores = eval_all(tl, cells)
@@ -1027,14 +1008,7 @@ def test_add_word(create_arena):
 
     # print(root.to_dot(cells))
 
-    is_python = isinstance(root, EvalNode)
-    if WRITE_SNAPSHOTS and is_python:
-        with open("testdata/add_word.txt", "w") as out:
-            out.write(eval_node_to_string(root, cells))
     # This asserts that the C++ and Python trees stay in sync
-    expected = open("testdata/add_word.txt").read()
-    actual = eval_node_to_string(root, cells)
-    if actual != expected:
-        with open("/tmp/actual.txt", "w") as out:
-            out.write(actual)
-        assert actual == expected
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("06a322a3d5ba*.txt")
+    )
