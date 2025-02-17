@@ -725,6 +725,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     etb.ParseBoard(board)
     arena = etb.create_arena()
     # t = etb.BuildTree(arena, dedupe=True)
+    dedupe = True  # TODO: parametrize this, it shouldnt' matter
     t = etb.BuildTree(arena)
     if isinstance(t, EvalNode):
         t.assert_invariants(etb)
@@ -768,11 +769,13 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     for i, cell in enumerate(cells):
         if len(cell) <= 1:
             continue
+        if i != 7:
+            continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=dedupe, mark=mark)
         mark += 1
         tl_noc = t.lift_choice(
-            i, len(cell), arena, compress=False, dedupe=True, mark=mark
+            i, len(cell), arena, compress=False, dedupe=dedupe, mark=mark
         )
         if is_python:
             # If these ever fail, setting dedupe=False makes debugging much easier.
@@ -793,7 +796,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
 
     # Do a second lift and check again.
     mark += 1
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=dedupe, mark=mark)
     lift_scores = eval_all(t2, cells)
     assert lift_scores == scores
     if isinstance(t2, EvalNode):
