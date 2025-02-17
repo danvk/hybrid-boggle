@@ -39,17 +39,27 @@ def main():
     boards.sort(key=lambda b: -board_to_score[b])
 
     parents = dict[str, str]()
+    peaks = list[str]()
 
     for i, board in enumerate(boards):
         score = board_to_score[board]
         if i == 0:
             print(f"{board}\t{score}")
             parents[board] = ""
+            peaks.append(board)
             continue
         parent = closest(board, boards[:i])
         d = board_distance(board, parent)
         parent_score = board_to_score[parent]
-        print("\t".join(str(x) for x in (board, score, d, parent, parent_score)))
+        fields = [board, score, d, parent, parent_score]
+        is_local_optimum = d > 1
+        if is_local_optimum:
+            peak_parent = closest(board, peaks)
+            peak_d = board_distance(board, peak_parent)
+            peak_parent_score = board_to_score[peak_parent]
+            fields.extend([peak_d, peak_parent, peak_parent_score])
+            peaks.append(board)
+        print("\t".join(str(x) for x in fields))
 
 
 if __name__ == "__main__":
