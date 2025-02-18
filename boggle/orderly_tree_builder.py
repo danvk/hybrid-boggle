@@ -76,7 +76,6 @@ class OrderlyTreeBuilder(PyBucketBoggler):
 
         if t.IsWord():
             word_score = SCORES[length]
-            # TODO: sort by split order
             orderly_choices = [*sorted(choices, key=lambda c: self.cell_to_order[c[0]])]
             self.root.add_word(orderly_choices, word_score, arena)
 
