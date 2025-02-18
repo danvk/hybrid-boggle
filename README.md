@@ -43,7 +43,7 @@ To find all the high-scoring 3x3 boards, run:
 $ poetry run python -m boggle.break_all 'bdfgjqvwxz aeiou lnrsy chkmpt' 500 --size 33 --switchover_level=0 --breaker=hybrid --tree_builder orderly
 ```
 
-This takes ~10 minutes on my M2 MacBook.
+This takes ~10 minutes on my M2 MacBook. It prints out all the boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
 
 To find high-scoring 4x4 boards, run:
 
