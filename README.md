@@ -51,7 +51,27 @@ To find high-scoring 4x4 boards, run:
 $ poetry run python -m boggle.hillclimb 20 --size 44 --pool_size 250
 ```
 
-The command line tools all take some standard flags like `--dictionary`. Run with `--help` to see them.
+To calculate the scores of individual boards, use `boggle.score`:
+
+```
+$ echo 'dnisetalsrep\ngresenalstip' | poetry run python -m boggle.score --size 34
+dnisetalsrep: 1651
+gresenalstip: 1563
+2 boards in 0.00s = 4704.77 boards/s
+```
+
+Pass `--print_words` to prin the words on each board.
+
+To calculate the upper bound on a board class, use `ibucket_solver`:
+
+```
+$ poetry run python -m boggle.ibucket_solver "lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz"
+9359 (max=9359, sum=106383) lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz
+```
+
+This also takes a `--print_words` flag that will print all the words that can be found on any board in the board class.
+
+The command line tools all take some standard flags like `--dictionary` and `--python`. Run with `--help` to see them.
 
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
