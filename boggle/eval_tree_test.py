@@ -534,8 +534,8 @@ def test_lift_invariants(dedupe, compress):
     trie = make_py_trie("testdata/boggle-words-4.txt")
     board = "lnrsy aeiou chkmpt bdfgjvwxz"
     cells = board.split(" ")
-    # What??
-    dedupe = False
+    # dedupe = False
+    # TODO: run these tests with compression (will change bounds)
     compress = False
 
     arena = create_eval_node_arena_py()
