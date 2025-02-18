@@ -804,6 +804,8 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
+    # TODO: get null children to match between C++/Python and uncomment this.
+    #       (see comment about tracking nulls in _into_list)
     t2.reset_choice_point_mask()
     assert outsource(eval_node_to_string(tl, cells)) == snapshot(
         external("c75ded3804d9*.txt")

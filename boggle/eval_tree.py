@@ -394,13 +394,6 @@ class EvalNode:
             for child in self.children
         ]
 
-        # aligned_results is dense.
-        # len(aligned_results) = len(self.children)
-        # len(aligned_results[0]) = num_lets
-        # TODO: transpose this to simplify the next loop
-        # aligned_results = [
-        #     r if isinstance(r, list) else [r] * num_lets for r in results
-        # ]
         # Construct a new sum node for each forced letter.
         out = []
         for i in range(num_lets):
@@ -452,11 +445,6 @@ class EvalNode:
                             # and match.points == node.points
                         ):
                             prev = match
-                            # if not node.structural_eq(match):
-                            #     nj = json.dumps(node.to_json(None))
-                            #     mj = json.dumps(match.to_json(None))
-                            #     print(f"- {nj}")
-                            #     print(f"+ {mj}")
                         else:
                             global hash_collisions
                             hash_collisions += 1
@@ -994,6 +982,8 @@ def _into_list(
     for child in node.children:
         if child:
             _into_list(child, cells, lines, " " + indent, ids)
+        # There are some slight discrepancies between C++ and Python trees that
+        # are functionally irrelevant but surfaced if you uncomment this:
         # else:
         #     lines.append(f"{indent} null")
 
