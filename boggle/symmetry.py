@@ -30,7 +30,7 @@ def transpose[T](mat: list[list[T]]):
     return [[mat[i][j] for i in range(len(mat))] for j in range(len(mat[0]))]
 
 
-def all_symmetries[T](mat: list[list[T]], no_rotations=False):
+def all_symmetries[T](mat: list[list[T]]):
     """Return all symmetries of a 2D matrix."""
     fy = flip_y(mat)
     flips = [
@@ -38,7 +38,7 @@ def all_symmetries[T](mat: list[list[T]], no_rotations=False):
         fy,
         flip_x(fy),
     ]
-    if no_rotations:
+    if len(mat) != len(mat[0]):
         return flips
     r90 = rot90(mat)
     r90fy = flip_y(r90)

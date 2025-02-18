@@ -87,12 +87,8 @@ def test_fourfold_sym():
         [7, 8, 9],
         [10, 11, 12],
     ]
-    syms8 = all_symmetries(mat)
-    assert len(syms8) == 7
-    unique = {mat_to_str(sym) for sym in [mat] + syms8}
-    assert len(unique) == 8
 
-    syms4 = all_symmetries(mat, no_rotations=True)
+    syms4 = all_symmetries(mat)
     assert len(syms4) == 3
     unique = {mat_to_str(sym) for sym in [mat] + syms4}
     assert len(unique) == 4
@@ -122,6 +118,13 @@ def test_list_to_matrix():
 def test_all_symmetries34():
     board = "dnisetalsrep"
     mat = list_to_matrix(board)
-    assert [mat_to_str(m) for m in all_symmetries(mat, no_rotations=True)] == snapshot(
+    assert [mat_to_str(m) for m in all_symmetries(mat)] == snapshot(
         ["srepetaldnis", "sindlatepers", "perslatesind"]
     )
+
+
+def test_canonicalize_34():
+    board = "srebetaldnip"
+    mat = list_to_matrix(board)
+    assert mat_to_str(mat) == board
+    assert mat_to_str(canonicalize(mat)) == snapshot("berslatepind")

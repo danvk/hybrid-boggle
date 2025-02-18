@@ -12,10 +12,9 @@ def distance(a: str, b: str):
 
 def symmetry_group(bd: str):
     mat = list_to_matrix(bd)
-    no_rotations = len(mat) != len(mat[0])
     return [
         bd,
-        *(mat_to_str(m) for m in all_symmetries(mat, no_rotations=no_rotations)),
+        *(mat_to_str(m) for m in all_symmetries(mat)),
     ]
 
 
