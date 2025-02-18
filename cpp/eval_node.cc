@@ -939,6 +939,7 @@ void merge_choice_collisions_in_place(
     auto next_it = std::next(it);
     while (next_it != choices.end() && (*it)->cell_ == (*next_it)->cell_) {
       *it = merge_trees(*it, *next_it, arena);
+      // TODO: this shifts every element in the vector, so this may be O(N^2)
       next_it = choices.erase(next_it);
     }
     ++it;

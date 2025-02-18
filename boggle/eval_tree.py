@@ -892,21 +892,22 @@ def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
     return False
 
 
-def merge_choice_collisions_in_place(choices: Sequence[EvalNode]):
+def merge_choice_collisions_in_place(choices: list[EvalNode]):
     choices.sort(key=lambda c: c.cell)
-    children = []
-    for c in choices:
-        if not children or c.cell != children[-1].cell:
-            children.append(c)
-            continue
-        assert children[-1].cell == c.cell
-        children[-1] = merge_trees(children[-1], c)
 
-    # TODO: do this in-place on choices
-    # for i, c in enumerate(children):
-    #     choices[i] = children[i]
-    # del children[len(choices) :]
-    return children
+    i = 0
+    n = len(choices)
+    while i < n:
+        j = i + 1
+        while j < n and choices[i].cell == choices[j].cell:
+            choices[i] = merge_trees(choices[i], choices[j])
+            for k in range(j, n - 1):
+                choices[k] = choices[k + 1]
+            n -= 1
+        i += 1
+
+    while n < len(choices):
+        choices.pop()
 
 
 def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
@@ -946,7 +947,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
-        choice = merge_choice_collisions_in_place(choice)
+        merge_choice_collisions_in_place(choice)
 
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
@@ -963,7 +964,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     # new_children should be entirely choice nodes now, but there may be new collisions
     # TODO: is it more efficient to do this all at once, before absorbing child nodes?
     if should_merge and any_choice_collisions(new_children):
-        new_children = merge_choice_collisions_in_place(new_children)
+        merge_choice_collisions_in_place(new_children)
 
     node.children = new_children
     # We need to take care here not to double-count points for the bound.
