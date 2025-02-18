@@ -79,6 +79,27 @@ class EvalNode:
         self.cache_key = None
         self.cache_value = None
 
+    def structural_eq(self, other: Self) -> bool:
+        """Deep structural equality."""
+        if self.letter != other.letter or self.cell != other.cell:
+            return False
+        if self.bound != other.bound:
+            return False
+        if self.points != other.points:
+            return False
+        nnc = [c for c in self.children if c]
+        nno = [c for c in other.children if c]
+        if len(nnc) != len(nno):
+            return False
+        for a, b in zip(nnc, nno):
+            if a == b:
+                continue
+            if a is None or b is None:
+                return False
+            if not a.structural_eq(b):
+                return False
+        return True
+
     def add_word(self, choices: Sequence[tuple[int, int]], points: int, arena):
         """Add a word at the end of a sequence of choices to the tree.
 
@@ -228,14 +249,12 @@ class EvalNode:
             choice_mask = 0
             seen_choices = set[int]()
             for child in self.children:
-                if child:
-                    bound += child.bound
-                    choice_mask |= child.choice_mask
-                    if child.letter == CHOICE_NODE:
-                        assert child.cell not in seen_choices
-                        seen_choices.add(child.cell)
-                # TODO: sum nodes should not have null children
-                #       (this does happen after lifting)
+                assert child
+                bound += child.bound
+                choice_mask |= child.choice_mask
+                if child.letter == CHOICE_NODE:
+                    assert child.cell not in seen_choices
+                    seen_choices.add(child.cell)
         # if bound != self.bound:
         #     print(f"Warning {bound} != {self.bound}")
         #     self.flag = True
@@ -375,25 +394,22 @@ class EvalNode:
             for child in self.children
         ]
 
-        # aligned_results is dense.
-        # len(aligned_results) = len(self.children)
-        # len(aligned_results[0]) = num_lets
-        # TODO: transpose this to simplify the next loop
-        aligned_results = [
-            r if isinstance(r, list) else [r] * num_lets for r in results
-        ]
         # Construct a new sum node for each forced letter.
         out = []
         for i in range(num_lets):
-            children = [result[i] for result in aligned_results]
+            children = []
+            for result in results:
+                if isinstance(result, EvalNode):
+                    children.append(result)
+                else:
+                    children.append(result[i] if result else None)
+
             node_choice_mask = 0
             if self.letter == CHOICE_NODE:
-                non_null_children = [c for c in children if c]
-                node_bound = (
-                    max(child.bound for child in non_null_children)
-                    if non_null_children
-                    else 0
-                )
+                node_bound = 0
+                for child in children:
+                    if child:
+                        node_bound = max(node_bound, child.bound)
                 # TODO: Why the "& self.choice_mask" here? It _is_ needed.
                 node_choice_mask = (1 << self.cell) & self.choice_mask
             else:
@@ -717,16 +733,17 @@ class EvalNode:
             dot.append(child_dot)
         return me, "\n".join(dot)
 
-    def to_json(self, solver: PyBucketBoggler, max_depth=100, lookup=None):
-        if not lookup:
+    def to_json(self, solver: PyBucketBoggler | None, max_depth=100, lookup=None):
+        if not lookup and solver:
             lookup = make_lookup_table(solver.trie_)
+        char = solver.bd_[self.cell][self.letter] if solver else "?"
         out = {
             "type": (
                 "ROOT"
                 if self.letter == ROOT_NODE
                 else "CHOICE"
                 if self.letter == CHOICE_NODE
-                else f"{self.cell}={solver.bd_[self.cell][self.letter]} ({self.letter})"
+                else f"{self.cell}={char} ({self.letter})"
             ),
             "cell": self.cell,
             "bound": self.bound,
@@ -735,7 +752,7 @@ class EvalNode:
             out["mask"] = [i for i in range(16) if self.choice_mask & (1 << i)]
         if self.points:
             out["points"] = self.points
-        if self.trie_node:
+        if self.trie_node and lookup:
             out["word"] = lookup[self.trie_node]
         if self.children:
             # child_range = [child.bound for child in self.children]
@@ -746,7 +763,7 @@ class EvalNode:
                 out["children"] = self.node_count()
             else:
                 out["children"] = [
-                    child.to_json(solver, max_depth - 1, lookup)
+                    child.to_json(solver, max_depth - 1, lookup) if child else None
                     for child in self.children
                 ]
         return out
@@ -840,10 +857,14 @@ def squeeze_choice_child(child: EvalNode):
     # TODO: this could be much more aggressive.
     if child.points:
         return child
-    nnc = [c for c in child.children if c]
-    if len(nnc) == 1:
-        child = nnc[0]
-    return child
+    non_null_child = None
+    for c in child.children:
+        if c:
+            if non_null_child:
+                return child  # two non-null children
+            non_null_child = c
+    # return the non-null child if there's exactly one.
+    return non_null_child if non_null_child else child
 
 
 def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
@@ -856,21 +877,22 @@ def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
     return False
 
 
-def merge_choice_collisions_in_place(choices: Sequence[EvalNode]):
+def merge_choice_collisions_in_place(choices: list[EvalNode]):
     choices.sort(key=lambda c: c.cell)
-    children = []
-    for c in choices:
-        if not children or c.cell != children[-1].cell:
-            children.append(c)
-            continue
-        assert children[-1].cell == c.cell
-        children[-1] = merge_trees(children[-1], c)
 
-    # TODO: do this in-place on choices
-    # for i, c in enumerate(children):
-    #     choices[i] = children[i]
-    # del children[len(choices) :]
-    return children
+    i = 0
+    n = len(choices)
+    while i < n:
+        j = i + 1
+        while j < n and choices[i].cell == choices[j].cell:
+            choices[i] = merge_trees(choices[i], choices[j])
+            for k in range(j, n - 1):
+                choices[k] = choices[k + 1]
+            n -= 1
+        i += 1
+
+    while n < len(choices):
+        choices.pop()
 
 
 def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
@@ -881,30 +903,36 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     if not node.children:
         return False
 
+    any_sum_children = False
+    any_null = False
+    for c in node.children:
+        if c:
+            if c.letter != CHOICE_NODE:
+                any_sum_children = True
+                break
+        else:
+            any_null = True
+
+    any_collisions = any_choice_collisions(node.children)
+
+    if not any_sum_children and not any_collisions:
+        if any_null:
+            node.children = [c for c in node.children if c]
+            return True
+        return False
+
     non_choice = []
     choice = []
-    any_choice_changes = False
     for c in node.children:
         if c:  # XXX this should not be necessary; sum nodes should prune
             if c.letter == CHOICE_NODE:
                 choice.append(c)
             else:
                 non_choice.append(c)
-        else:
-            any_choice_changes = True
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
-        choice = merge_choice_collisions_in_place(choice)
-        any_choice_changes = True
-
-    # TODO: prune NULLs here, too
-    if not non_choice:
-        if any_choice_changes:
-            node.children = choice
-            node.bound = (node.points or 0) + sum(c.bound for c in choice)
-            return True
-        return False
+        merge_choice_collisions_in_place(choice)
 
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
@@ -921,7 +949,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     # new_children should be entirely choice nodes now, but there may be new collisions
     # TODO: is it more efficient to do this all at once, before absorbing child nodes?
     if should_merge and any_choice_collisions(new_children):
-        new_children = merge_choice_collisions_in_place(new_children)
+        merge_choice_collisions_in_place(new_children)
 
     node.children = new_children
     # We need to take care here not to double-count points for the bound.
@@ -932,7 +960,9 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     return True
 
 
-def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
+def _into_list(
+    node: EvalNode, cells: list[str], lines: list[str], indent="", ids: dict = None
+):
     line = ""
     if node.letter == ROOT_NODE:
         line = f"{indent}ROOT ({node.bound}) mask={node.choice_mask}"
@@ -941,15 +971,27 @@ def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
     else:
         cell = cells[node.cell][node.letter]
         line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound}) mask={node.choice_mask}"
+    if node in ids:
+        prev_id = ids[node]
+        line += f" (={prev_id})"
+    else:
+        this_id = len(ids)
+        ids[node] = this_id
+        line += f" ({this_id})"
     lines.append(line)
     for child in node.children:
         if child:
-            _into_list(child, cells, lines, " " + indent)
+            _into_list(child, cells, lines, " " + indent, ids)
+        # There are some slight discrepancies between C++ and Python trees that
+        # are functionally irrelevant but surfaced if you uncomment this:
+        # else:
+        #     lines.append(f"{indent} null")
 
 
 def eval_node_to_string(node: EvalNode, cells: list[str]):
+    ids = {}
     lines = []
-    _into_list(node, cells, lines)
+    _into_list(node, cells, lines, indent="", ids=ids)
     return "\n".join(lines)
 
 
@@ -1004,25 +1046,55 @@ def dedupe_subtrees(t: EvalNode):
             node.children[i] = hash_to_node[n.structural_hash()]
 
 
+def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    bc = b.children
+    a_n = len(ac)
+    b_n = len(bc)
+
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.letter < b.letter:
+            out.append(a)
+            i_a += 1
+        elif b.letter < a.letter:
+            out.append(b)
+            i_b += 1
+        else:
+            out.append(merge_trees(a, b))
+            i_a += 1
+            i_b += 1
+
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
+
+
 def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
     assert a.cell == b.cell, f"{a.cell} != {b.cell}"
     COUNTS["merge"] += 1
 
     if a.letter == CHOICE_NODE and b.letter == CHOICE_NODE:
-        # merge equivalent choices
-        choices = {}
-        for child in a.children:
-            if child:
-                choices[child.letter] = child
-        for child in b.children:
-            if child:
-                existing = choices.get(child.letter)
-                if existing:
-                    choices[child.letter] = merge_trees(existing, child)
-                else:
-                    choices[child.letter] = child
-        children = [*choices.values()]
-        children.sort(key=lambda c: c.letter)
+        children = []
+        merge_choice_children(a, b, children)
+
         n = EvalNode()
         n.letter = CHOICE_NODE
         n.cell = a.cell

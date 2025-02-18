@@ -65,6 +65,67 @@ void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena
   AddWordWork(choices.size(), choices.data(), points, arena);
 }
 
+bool EvalNode::StructuralEq(const EvalNode& other) const {
+  if (letter_ != other.letter_ || cell_ != other.cell_) {
+    return false;
+  }
+  if (bound_ != other.bound_) {
+    return false;
+  }
+  if (points_ != other.points_) {
+    return false;
+  }
+  vector<const EvalNode*> nnc, nno;
+  for (auto c : children_) {
+    if (c) nnc.push_back(c);
+  }
+  for (auto c : other.children_) {
+    if (c) nno.push_back(c);
+  }
+  if (nnc.size() != nno.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < nnc.size(); ++i) {
+    if (!nnc[i]->StructuralEq(*nno[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void EvalNode::PrintJSON() const {
+  cout << "{\"type\": \"";
+  if (letter_ == CHOICE_NODE) {
+    cout << "CHOICE";
+  } else if (letter_ == ROOT_NODE) {
+    cout << "ROOT";
+  } else {
+    cout << (int)cell_ << "=? (" << (int)letter_ << ")";
+  }
+  cout << "\", \"cell\": " << (int)cell_;
+  cout << ", \"bound\": " << bound_;
+  if (points_) {
+    cout << ", \"points\": " << (int)points_;
+  }
+  if (!children_.empty()) {
+    cout << ", \"children\": [";
+    bool has_commad = false;
+    for (auto c : children_) {
+      if (!c) {
+        continue;
+      }
+      if (!has_commad) {
+        has_commad = true;
+      } else {
+        cout << ", ";
+      }
+      c->PrintJSON();
+    }
+    cout << "]";
+  }
+  cout << "}";
+}
+
 void EvalNode::SetComputedFields(vector<int>& num_letters) {
   for (auto c : children_) {
     if (c) {
@@ -567,6 +628,7 @@ bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_mer
     }
   }
 
+  // look for repeated choice cells
   if (should_merge && any_collisions) {
     merge_choice_collisions_in_place(choice, arena);
   }
@@ -781,7 +843,7 @@ void merge_choice_children(const EvalNode* a, const EvalNode* b, EvalNodeArena& 
       continue;
     }
     if (a->letter_ < b->letter_) {
-      out.push_back(*it_a);
+      out.push_back(a);
       ++it_a;
     } else if (b->letter_ < a->letter_) {
       out.push_back(b);
@@ -818,10 +880,10 @@ const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena&
     arena.AddNode(n);
     n->letter_ = EvalNode::CHOICE_NODE;
     n->cell_ = a->cell_;
-    n->children_ = children;
+    n->children_.swap(children);
     n->points_ = 0;
     n->bound_ = 0;
-    for (auto child : children) {
+    for (auto child : n->children_) {
       if (child) {
         n->bound_ = max(n->bound_, child->bound_);
       }
@@ -840,10 +902,10 @@ const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena&
     arena.AddNode(n);
     n->letter_ = a->letter_;
     n->cell_ = a->cell_;
-    n->children_ = children;
+    n->children_.swap(children);
     n->points_ = a->points_ + b->points_;
     n->bound_ = n->points_;
-    for (auto child : children) {
+    for (auto child : n->children_) {
       if (child) {
         n->bound_ += child->bound_;
       }
@@ -869,6 +931,7 @@ void merge_choice_collisions_in_place(
     auto next_it = std::next(it);
     while (next_it != choices.end() && (*it)->cell_ == (*next_it)->cell_) {
       *it = merge_trees(*it, *next_it, arena);
+      // TODO: this shifts every element in the vector, so this may be O(N^2)
       next_it = choices.erase(next_it);
     }
     ++it;

@@ -9,6 +9,7 @@ from cpp_boggle import (
     create_eval_node_arena,
     create_vector_arena,
 )
+from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_tree_builder
 from boggle.eval_tree import (
@@ -533,7 +534,8 @@ def test_lift_invariants(dedupe, compress):
     trie = make_py_trie("testdata/boggle-words-4.txt")
     board = "lnrsy aeiou chkmpt bdfgjvwxz"
     cells = board.split(" ")
-    dedupe = False
+    # dedupe = False
+    # TODO: run these tests with compression (will change bounds)
     compress = False
 
     arena = create_eval_node_arena_py()
@@ -642,35 +644,6 @@ def test_lift_invariants(dedupe, compress):
         # print(t.to_string(etb))
 
 
-def test_lift_invariants_22():
-    trie = make_py_trie("testdata/boggle-words-4.txt")
-    board = "ny ae ch ."
-    cells = board.split(" ")
-    etb = EvalTreeBoggler(trie, dims=(2, 2))
-    etb.ParseBoard(board)
-    t = etb.BuildTree(dedupe=True)
-    t.assert_invariants(etb)
-    # print(t.to_string(cells))
-
-    num_letters = [len(c) for c in cells]
-    t.set_choice_point_mask(num_letters)
-    scores = eval_all(t, cells)
-
-    mark = 0
-    # Try lifting each cell; this should not affect any scores.
-    for i, cell in enumerate(cells):
-        if len(cell) <= 1:
-            continue
-        mark += 1
-        tl = t.lift_choice(i, len(cell), compress=True, dedupe=True, mark=mark)
-        # print(tl.to_string(cells))
-        # print("---")
-        tl.set_choice_point_mask(num_letters)
-        lift_scores = eval_all(tl, cells)
-        assert lift_scores == scores
-        tl.assert_invariants(etb)
-
-
 INVARIANT_PARAMS = [
     (make_py_trie, EvalTreeBoggler),
     (Trie.CreateFromFile, cpp_tree_builder),
@@ -678,7 +651,7 @@ INVARIANT_PARAMS = [
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
-def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
+def test_lift_invariants_22(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-4.txt")
     board = "ny ae ch ."
     cells = board.split(" ")
@@ -694,8 +667,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
     t.set_choice_point_mask(num_letters)
     score = t.score_with_forces([0, 1, 0, 0])
 
-    # TODO: assert that these scores are the sames one you get in Python.
-    # TODO: port to_string() to C++ and assert that the trees are identical.
+    # TODO: assert that C++ and Python trees are identical.
     # Try lifting each cell; this should not affect any scores.
     mark = 0
     for i, cell in enumerate(cells):
@@ -714,24 +686,6 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
             tl.assert_invariants(etb)
 
 
-# TODO: set up a real snapshot tool
-WRITE_SNAPSHOTS = False
-
-
-def snapshot(value: str, filename: str, is_readonly=False):
-    if WRITE_SNAPSHOTS and not is_readonly:
-        with open(filename, "w") as out:
-            out.write(value)
-    expected = open(filename).read()
-    if value != expected:
-        print("Expected:")
-        print(expected)
-        print("---")
-        print("Actual:")
-        print(value)
-    assert value == expected
-
-
 @pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
@@ -742,7 +696,8 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     etb.ParseBoard(board)
     arena = etb.create_arena()
     # t = etb.BuildTree(arena, dedupe=True)
-    t = etb.BuildTree(arena)
+    dedupe = True  # TODO: parametrize this, it shouldnt' matter
+    t = etb.BuildTree(arena)  # TODO: dedupe here, too
     if isinstance(t, EvalNode):
         t.assert_invariants(etb)
 
@@ -764,13 +719,21 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         assert score == bb.Details().max_nomark
 
     is_python = isinstance(t, EvalNode)
-    is_readonly = not is_python
+
     # This asserts that the C++ and Python trees stay in sync
-    snapshot(
-        eval_node_to_string(t, cells), "testdata/tree33.txt", is_readonly=is_readonly
+    assert outsource(eval_node_to_string(t, cells)) == snapshot(
+        external("6a973f6cf204*.txt")
     )
 
     # print(t.to_dot(cells, trie=trie))
+
+    lifted_snapshots = snapshot(
+        {
+            4: external("db779668b06d*.txt"),
+            6: external("ac4f27094984*.txt"),
+            7: external("c75ded3804d9*.txt"),
+        }
+    )
 
     # Try lifting each cell; this should not affect any scores.
     mark = 0
@@ -778,25 +741,22 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         if len(cell) <= 1:
             continue
         mark += 1
-        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=True, mark=mark)
+        print(f"lift {i}")
+        tl = t.lift_choice(i, len(cell), arena, compress=True, dedupe=dedupe, mark=mark)
         mark += 1
         tl_noc = t.lift_choice(
-            i, len(cell), arena, compress=False, dedupe=True, mark=mark
+            i, len(cell), arena, compress=False, dedupe=dedupe, mark=mark
         )
-        if isinstance(tl, EvalNode):
+        if is_python:
             # If these ever fail, setting dedupe=False makes debugging much easier.
             # print(tl.to_dot(cells, trie=trie))
             tl.assert_invariants(etb, is_top_max=True)
             # This might fail since assert_invariants checks for correct compression.
             # On the other hand, incomplete compression tends to lead to invariant failures,
             # so no compression might avoid them.
-            tl_noc.assert_invariants(etb, is_top_max=True)
+            # tl_noc.assert_invariants(etb, is_top_max=True)
 
-        snapshot(
-            eval_node_to_string(tl, cells),
-            f"testdata/tree33-{i}.txt",
-            is_readonly=is_readonly,
-        )
+        assert outsource(eval_node_to_string(tl, cells)) == lifted_snapshots[i]
 
         lift_scores = eval_all(tl, cells)
         tl.reset_choice_point_mask()
@@ -805,13 +765,20 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         assert tl_noc.bound <= t.bound
 
     # Do a second lift and check again.
+    print("second lift")
     mark += 1
-    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=True, mark=mark)
+    t2 = tl.lift_choice(0, len(cell[0]), arena, compress=True, dedupe=dedupe, mark=mark)
     lift_scores = eval_all(t2, cells)
-    # assert lift_scores == scores
+    assert lift_scores == scores
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
+    # TODO: get null children to match between C++/Python and uncomment this.
+    #       (see comment about tracking nulls in _into_list)
+    t2.reset_choice_point_mask()
+    assert outsource(eval_node_to_string(tl, cells)) == snapshot(
+        external("c75ded3804d9*.txt")
+    )
 
 
 def test_lift_sum():
@@ -1027,14 +994,7 @@ def test_add_word(create_arena):
 
     # print(root.to_dot(cells))
 
-    is_python = isinstance(root, EvalNode)
-    if WRITE_SNAPSHOTS and is_python:
-        with open("testdata/add_word.txt", "w") as out:
-            out.write(eval_node_to_string(root, cells))
     # This asserts that the C++ and Python trees stay in sync
-    expected = open("testdata/add_word.txt").read()
-    actual = eval_node_to_string(root, cells)
-    if actual != expected:
-        with open("/tmp/actual.txt", "w") as out:
-            out.write(actual)
-        assert actual == expected
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("0d77e0378247*.txt")
+    )

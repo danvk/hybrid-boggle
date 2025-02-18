@@ -24,9 +24,9 @@ class Options:
     letter_map: dict[str, str] | None = None
 
 
-def initial_board(num_lets: int, opts: Options) -> list[int]:
+def initial_board(num_lets: int, opts: Options = None) -> list[int]:
     bd = [random.randint(LETTER_A, LETTER_Z) for _ in range(num_lets)]
-    if opts.letter_map:
+    if opts and opts.letter_map:
         bd = [ord(opts.letter_map[chr(letter)]) for letter in bd]
     return bd
 

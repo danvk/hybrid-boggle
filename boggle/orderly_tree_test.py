@@ -1,20 +1,13 @@
 import pytest
 from cpp_boggle import Trie
+from inline_snapshot import outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_orderly_tree_builder
 from boggle.eval_tree import EvalNode, eval_node_to_string
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import PyTrie, make_py_trie
 
-WRITE_SNAPSHOTS = False
-
-
-def snapshot(value: str, filename: str, is_readonly=False):
-    if WRITE_SNAPSHOTS and not is_readonly:
-        with open(filename, "w") as out:
-            out.write(value)
-    expected = open(filename).read()
-    assert value == expected
+from inline_snapshot import external
 
 
 @pytest.mark.parametrize(
@@ -39,12 +32,10 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     cells = board.split(" ")
     assert bb.ParseBoard(board)
     t = bb.BuildTree(arena)
-    is_python = isinstance(t, EvalNode)
-    is_readonly = not is_python
-    snapshot(
-        eval_node_to_string(t, cells),
-        "testdata/sepeathtc-tree.txt",
-        is_readonly=is_readonly,
+    if isinstance(t, EvalNode):
+        t.assert_invariants(bb)
+    assert outsource(eval_node_to_string(t, cells)) == snapshot(
+        external("2589552d7664*.txt")
     )
 
 
@@ -67,10 +58,6 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
 
-    is_python = isinstance(t, EvalNode)
-    is_readonly = not is_python
-    snapshot(
-        eval_node_to_string(t, cells),
-        "testdata/orderly-3x3.txt",
-        is_readonly=is_readonly,
+    assert outsource(eval_node_to_string(t, cells)) == snapshot(
+        external("31d49f6a9eab*.txt")
     )

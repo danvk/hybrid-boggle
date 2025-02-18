@@ -16,6 +16,13 @@ gprof2dot = "^2024.6.6"
 numpy = "^2.2.1"
 
 
+[tool.poetry.group.dev.dependencies]
+inline-snapshot = "^0.20.2"
+
+[tool.inline-snapshot]
+format-command="ruff format --stdin-filename {filename}"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
