@@ -636,6 +636,7 @@ bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_mer
     }
   }
 
+  // look for repeated choice cells
   if (should_merge && any_collisions) {
     merge_choice_collisions_in_place(choice, arena);
   }

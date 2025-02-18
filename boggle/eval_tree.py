@@ -917,30 +917,36 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     if not node.children:
         return False
 
+    any_sum_children = False
+    any_null = False
+    for c in node.children:
+        if c:
+            if c.letter != CHOICE_NODE:
+                any_sum_children = True
+                break
+        else:
+            any_null = True
+
+    any_collisions = any_choice_collisions(node.children)
+
+    if not any_sum_children and not any_collisions:
+        if any_null:
+            node.children = [c for c in node.children if c]
+            return True
+        return False
+
     non_choice = []
     choice = []
-    any_choice_changes = False
     for c in node.children:
         if c:  # XXX this should not be necessary; sum nodes should prune
             if c.letter == CHOICE_NODE:
                 choice.append(c)
             else:
                 non_choice.append(c)
-        else:
-            any_choice_changes = True
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
         choice = merge_choice_collisions_in_place(choice)
-        any_choice_changes = True
-
-    # TODO: prune NULLs here, too
-    if not non_choice:
-        if any_choice_changes:
-            node.children = choice
-            node.bound = (node.points or 0) + sum(c.bound for c in choice)
-            return True
-        return False
 
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
