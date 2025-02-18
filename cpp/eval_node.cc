@@ -370,14 +370,6 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
           // We want _equivalent_ nodes, not identical nodes.
           if (match->cell_ == node->cell_ && match->letter_ == node->letter_) {
             out_node = r->second;
-            // if (!node->StructuralEq(*out_node)) {
-            //   cout << "- ";
-            //   node->PrintJSON();
-            //   cout << endl;
-            //   cout << "+ ";
-            //   out_node->PrintJSON();
-            //   cout << endl;
-            // }
             delete node;
           } else {
             // hash_collisions++;
@@ -851,7 +843,7 @@ void merge_choice_children(const EvalNode* a, const EvalNode* b, EvalNodeArena& 
       continue;
     }
     if (a->letter_ < b->letter_) {
-      out.push_back(*it_a);
+      out.push_back(a);
       ++it_a;
     } else if (b->letter_ < a->letter_) {
       out.push_back(b);

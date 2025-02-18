@@ -250,17 +250,12 @@ class EvalNode:
             choice_mask = 0
             seen_choices = set[int]()
             for child in self.children:
-                if not child:
-                    print("eh?")
                 assert child
-                if child:
-                    bound += child.bound
-                    choice_mask |= child.choice_mask
-                    if child.letter == CHOICE_NODE:
-                        assert child.cell not in seen_choices
-                        seen_choices.add(child.cell)
-                # TODO: sum nodes should not have null children
-                #       (this does happen after lifting)
+                bound += child.bound
+                choice_mask |= child.choice_mask
+                if child.letter == CHOICE_NODE:
+                    assert child.cell not in seen_choices
+                    seen_choices.add(child.cell)
         # if bound != self.bound:
         #     print(f"Warning {bound} != {self.bound}")
         #     self.flag = True
@@ -1062,25 +1057,55 @@ def dedupe_subtrees(t: EvalNode):
             node.children[i] = hash_to_node[n.structural_hash()]
 
 
+def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    bc = b.children
+    a_n = len(ac)
+    b_n = len(bc)
+
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.letter < b.letter:
+            out.append(a)
+            i_a += 1
+        elif b.letter < a.letter:
+            out.append(b)
+            i_b += 1
+        else:
+            out.append(merge_trees(a, b))
+            i_a += 1
+            i_b += 1
+
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
+
+
 def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
     assert a.cell == b.cell, f"{a.cell} != {b.cell}"
     COUNTS["merge"] += 1
 
     if a.letter == CHOICE_NODE and b.letter == CHOICE_NODE:
-        # merge equivalent choices
-        choices = {}
-        for child in a.children:
-            if child:
-                choices[child.letter] = child
-        for child in b.children:
-            if child:
-                existing = choices.get(child.letter)
-                if existing:
-                    choices[child.letter] = merge_trees(existing, child)
-                else:
-                    choices[child.letter] = child
-        children = [*choices.values()]
-        children.sort(key=lambda c: c.letter)
+        children = []
+        merge_choice_children(a, b, children)
+
         n = EvalNode()
         n.letter = CHOICE_NODE
         n.cell = a.cell
