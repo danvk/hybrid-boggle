@@ -1,6 +1,6 @@
 # Hybrid Boggle
 
-An attempt to find the highest-scoring Boggle board, and prove that it's the best.
+An attempt to find the highest-scoring [Boggle] board, and prove that it's the best.
 
 ## Results
 
@@ -23,7 +23,7 @@ The general approach is [branch and bound][bnb]:
   - If not, split `C` into smaller classes `C1`, `C2`, …, `Cn` and repeat.
   - If `C` contains a single board, then it is a candidate for the best board.
 
-Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive to performing this search quickly is to optimize each of these operations. [This post] describes several of the techniques used to do so in this repo.
+Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations. [This post] describes several of the techniques used to do so in this repo.
 
 ## Development and usage
 
@@ -41,14 +41,47 @@ To find all the high-scoring 3x3 boards, run:
 
 ```
 $ poetry run python -m boggle.break_all 'bdfgjqvwxz aeiou lnrsy chkmpt' 500 --size 33 --switchover_level=0 --breaker=hybrid --tree_builder orderly
+Found 262144 total boards in 0.05s.
+...
+Unable to break board: septalres 503
+Unable to break board: niptalser 504
+Unable to break board: septarles 528
+...
+Broke 262144 classes in 725.34s.
+Found 56 breaking failure(s):
+...
 ```
 
-This takes ~10 minutes on my M2 MacBook. It prints out all the boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
+This takes ~12 minutes on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
 
 To find high-scoring 4x4 boards, run:
 
 ```
 $ poetry run python -m boggle.hillclimb 20 --size 44 --pool_size 250
+num_iter=1: max(scores)=(561, 'irrynsaesesthkyw') min(scores)=(245, 'eiobnsttiamfmwam')
+num_iter=2: max(scores)=(790, 'irryntaesesthkyw') min(scores)=(539, 'irrfnseesesthkyw')
+num_iter=3: max(scores)=(1172, 'ecolsaizlrtnbese') min(scores)=(821, 'irryntaesesthwyk')
+num_iter=4: max(scores)=(1639, 'ecolsnislatnbere') min(scores)=(1191, 'sragetemincrcasf')
+...
+num_iter=28: max(scores)=(3625, 'tslpeiaerntrsegs') min(scores)=(3420, 'oresstipenaldger')
+num_iter=29: max(scores)=(3625, 'tslpeiaerntrsegs') min(scores)=(3420, 'oresstipenaldger')
+run=0 3625 tslpeiaerntrsegs (29 iterations)
+---
+Top ten boards:
+tslpeiaerntrsegs 3625
+terssinelatgpers 3625
+sgesrtnreaieplst 3625
+sretenisgtalsrep 3625
+```
+
+These are all equivalent to each other, which you can see by piping them through `boggle.canonicalize`:
+
+```
+$ echo 'tslpeiaerntrsegs\nterssinelatgpers\nsgesrtnreaieplst\nsretenisgtalsrep' | poetry run python -m boggle.canonicalize
+perslatgsineters
+perslatgsineters
+perslatgsineters
+perslatgsineters
 ```
 
 To calculate the scores of individual boards, use `boggle.score`:
@@ -60,7 +93,7 @@ gresenalstip: 1563
 2 boards in 0.00s = 4704.77 boards/s
 ```
 
-Pass `--print_words` to prin the words on each board.
+Pass `--print_words` to print the actual words on each board.
 
 To calculate the upper bound on a board class, use `ibucket_solver`:
 
@@ -83,3 +116,5 @@ The command line tools all take some standard flags like `--dictionary` and `--p
 [upper bound]: https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/index.html
 [np-hard]: https://stackoverflow.com/questions/79381817/calculate-an-upper-bound-on-a-tree-containing-sum-nodes-choice-nodes-and-requi
 [This post]: https://www.danvk.org/2025/02/13/boggle2025.html
+[pybind11]: https://pybind11.readthedocs.io/en/stable/index.html
+[Boggle]: https://en.wikipedia.org/wiki/Boggle
