@@ -1,7 +1,6 @@
 # Try to speed up ibuckets by explicitly constructing an evaluation tree.
 
 import itertools
-import json
 from collections import Counter
 from typing import Self, Sequence
 
