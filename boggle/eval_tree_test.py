@@ -761,8 +761,8 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     lifted_snapshots = snapshot(
         {
             4: external("db779668b06d*.txt"),
-            6: external("0c0c9072b769*.txt"),
-            7: external("2a7a838905d5*.txt"),
+            6: external("ac4f27094984*.txt"),
+            7: external("c75ded3804d9*.txt"),
         }
     )
 
@@ -804,10 +804,10 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     if isinstance(t2, EvalNode):
         t2.assert_invariants(etb, is_top_max=True)
     assert t2.bound <= tl.bound
+    t2.reset_choice_point_mask()
     assert outsource(eval_node_to_string(tl, cells)) == snapshot(
-        external("d6d778b28c50*.txt")
+        external("c75ded3804d9*.txt")
     )
-    # assert False
 
 
 def test_lift_sum():
