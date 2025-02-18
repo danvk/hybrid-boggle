@@ -50,13 +50,14 @@ def add_standard_args(
         )
 
 
-def get_trie_from_args(args: argparse.Namespace):
+def get_trie_from_args(args: argparse.Namespace, *, no_grouping=False):
+    grouping = "" if no_grouping else args.letter_grouping
     if args.python:
-        t = make_py_trie(args.dictionary, args.letter_grouping)
+        t = make_py_trie(args.dictionary, grouping)
         assert t
     else:
-        if args.letter_grouping:
-            m = get_letter_map(args.letter_grouping)
+        if grouping:
+            m = get_letter_map(grouping)
             t = Trie.CreateFromFileWithGrouping(args.dictionary, m)
         else:
             t = Trie.CreateFromFile(args.dictionary)
@@ -64,8 +65,8 @@ def get_trie_from_args(args: argparse.Namespace):
     return t
 
 
-def get_trie_and_boggler_from_args(args: argparse.Namespace):
-    t = get_trie_from_args(args)
+def get_trie_and_boggler_from_args(args: argparse.Namespace, *, no_grouping=False):
+    t = get_trie_from_args(args, no_grouping=no_grouping)
     dims = args.size // 10, args.size % 10
 
     if args.python:
