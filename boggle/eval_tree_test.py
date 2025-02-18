@@ -548,6 +548,7 @@ def test_lift_invariants(dedupe, compress):
     max_trees = [*t.max_subtrees()]
     assert len(max_trees) == 1
     assert max_trees == [(t, [])]
+    t.assert_invariants(etb)
 
     # Lifting a choice reduces the bound.
     # The bounds on the child cells should match what you get from ibuckets.
@@ -560,6 +561,7 @@ def test_lift_invariants(dedupe, compress):
     assert tc0.cell == 0
     assert len(tc0.children) == len(cells[0])
     assert tc0.bound == 23
+    tc0.assert_invariants(etb)
     for i, letter in enumerate(cells[0]):
         bd = " ".join(cell if j != 0 else letter for j, cell in enumerate(cells))
         assert ibb.ParseBoard(bd)
@@ -577,6 +579,7 @@ def test_lift_invariants(dedupe, compress):
     assert tc1.cell == 1
     assert len(tc1.children) == len(cells[1])
     assert tc1.bound == 17
+    tc1.assert_invariants(etb)
     max_trees = [*tc1.max_subtrees()]
     assert len(max_trees) == len(cells[0]) * len(cells[1])
     assert max_trees == [
@@ -601,6 +604,7 @@ def test_lift_invariants(dedupe, compress):
     assert tc2.cell == 2
     assert len(tc2.children) == len(cells[2])
     assert tc2.bound == 14
+    tc2.assert_invariants(etb)
 
     mark += 1
     tc3 = tc2.lift_choice(
@@ -610,6 +614,7 @@ def test_lift_invariants(dedupe, compress):
     assert tc3.cell == 3
     assert len(tc3.children) == len(cells[3])
     assert tc3.bound == 13
+    tc3.assert_invariants(etb)
     n = 0
     n_non_null = 0
     for tc2 in tc3.children:

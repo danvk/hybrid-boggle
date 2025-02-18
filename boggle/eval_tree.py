@@ -250,6 +250,7 @@ class EvalNode:
             choice_mask = 0
             seen_choices = set[int]()
             for child in self.children:
+                assert child
                 if child:
                     bound += child.bound
                     choice_mask |= child.choice_mask
@@ -412,6 +413,8 @@ class EvalNode:
                 if isinstance(result, EvalNode):
                     children.append(result)
                 else:
+                    if result is None:
+                        print("eh?")
                     children.append(result[i])
 
             node_choice_mask = 0
