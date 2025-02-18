@@ -644,36 +644,6 @@ def test_lift_invariants(dedupe, compress):
         # print(t.to_string(etb))
 
 
-# TODO: is this identical to the test below?
-def test_lift_invariants_22():
-    trie = make_py_trie("testdata/boggle-words-4.txt")
-    board = "ny ae ch ."
-    cells = board.split(" ")
-    etb = EvalTreeBoggler(trie, dims=(2, 2))
-    etb.ParseBoard(board)
-    t = etb.BuildTree(dedupe=True)
-    t.assert_invariants(etb)
-    # print(t.to_string(cells))
-
-    num_letters = [len(c) for c in cells]
-    t.set_choice_point_mask(num_letters)
-    scores = eval_all(t, cells)
-
-    mark = 0
-    # Try lifting each cell; this should not affect any scores.
-    for i, cell in enumerate(cells):
-        if len(cell) <= 1:
-            continue
-        mark += 1
-        tl = t.lift_choice(i, len(cell), compress=True, dedupe=True, mark=mark)
-        # print(tl.to_string(cells))
-        # print("---")
-        tl.set_choice_point_mask(num_letters)
-        lift_scores = eval_all(tl, cells)
-        assert lift_scores == scores
-        tl.assert_invariants(etb)
-
-
 INVARIANT_PARAMS = [
     (make_py_trie, EvalTreeBoggler),
     (Trie.CreateFromFile, cpp_tree_builder),
@@ -681,7 +651,7 @@ INVARIANT_PARAMS = [
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", INVARIANT_PARAMS)
-def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
+def test_lift_invariants_22(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-4.txt")
     board = "ny ae ch ."
     cells = board.split(" ")
@@ -697,8 +667,7 @@ def test_lift_invariants_22_equivalent(make_trie, get_tree_builder):
     t.set_choice_point_mask(num_letters)
     score = t.score_with_forces([0, 1, 0, 0])
 
-    # TODO: assert that these scores are the sames one you get in Python.
-    # TODO: port to_string() to C++ and assert that the trees are identical.
+    # TODO: assert that C++ and Python trees are identical.
     # Try lifting each cell; this should not affect any scores.
     mark = 0
     for i, cell in enumerate(cells):
