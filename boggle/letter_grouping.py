@@ -33,3 +33,7 @@ def reverse_letter_map(letter_map: dict[str, str]):
     for k in out:
         out[k] = "".join(sorted(out[k]))
     return out
+
+
+def filter_to_canonical(word: str, letter_map: dict[str, str]):
+    return "".join(letter for letter in word if letter_map[letter] == letter)

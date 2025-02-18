@@ -29,6 +29,7 @@ from boggle.dimensional_bogglers import (
 )
 from boggle.eval_tree import EvalTreeBoggler
 from boggle.ibuckets import PyBucketBoggler
+from boggle.letter_grouping import filter_to_canonical
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import PyTrie, get_letter_map
 
@@ -74,6 +75,10 @@ def break_worker(task: str | int):
     assert best_score > 0
     classes = args.classes.split(" ")
     dims = args.size // 10, args.size % 10
+    if args.letter_grouping:
+        letter_map = get_letter_map(args.letter_grouping)
+        classes = [filter_to_canonical(cls, letter_map) for cls in classes]
+        # print(f'Filtered {args.classes} -> {" ".join(classes)}')
 
     if isinstance(task, int):
         if needs_canonical_filter and not is_canonical_board_id(
@@ -255,12 +260,6 @@ def main():
     assert 3 <= w <= 4
     assert 3 <= h <= 4
     max_index = num_classes ** (w * h)
-
-    if args.letter_grouping:
-        letter_map = get_letter_map(args.letter_grouping)
-        for lets in classes:
-            for c in lets:
-                assert letter_map[c] == c, f"Letter classes must be canonical ({c})"
 
     completed_ids = set()
     if args.resume_from:
