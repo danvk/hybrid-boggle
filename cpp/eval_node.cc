@@ -880,10 +880,10 @@ const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena&
     arena.AddNode(n);
     n->letter_ = EvalNode::CHOICE_NODE;
     n->cell_ = a->cell_;
-    n->children_ = children;
+    n->children_.swap(children);
     n->points_ = 0;
     n->bound_ = 0;
-    for (auto child : children) {
+    for (auto child : n->children_) {
       if (child) {
         n->bound_ = max(n->bound_, child->bound_);
       }
@@ -902,10 +902,10 @@ const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena&
     arena.AddNode(n);
     n->letter_ = a->letter_;
     n->cell_ = a->cell_;
-    n->children_ = children;
+    n->children_.swap(children);
     n->points_ = a->points_ + b->points_;
     n->bound_ = n->points_;
-    for (auto child : children) {
+    for (auto child : n->children_) {
       if (child) {
         n->bound_ += child->bound_;
       }
