@@ -401,21 +401,25 @@ class EvalNode:
         # len(aligned_results) = len(self.children)
         # len(aligned_results[0]) = num_lets
         # TODO: transpose this to simplify the next loop
-        aligned_results = [
-            r if isinstance(r, list) else [r] * num_lets for r in results
-        ]
+        # aligned_results = [
+        #     r if isinstance(r, list) else [r] * num_lets for r in results
+        # ]
         # Construct a new sum node for each forced letter.
         out = []
         for i in range(num_lets):
-            children = [result[i] for result in aligned_results]
+            children = []
+            for result in results:
+                if isinstance(result, EvalNode):
+                    children.append(result)
+                else:
+                    children.append(result[i])
+
             node_choice_mask = 0
             if self.letter == CHOICE_NODE:
-                non_null_children = [c for c in children if c]
-                node_bound = (
-                    max(child.bound for child in non_null_children)
-                    if non_null_children
-                    else 0
-                )
+                node_bound = 0
+                for child in children:
+                    if child:
+                        node_bound = max(node_bound, child.bound)
                 # TODO: Why the "& self.choice_mask" here? It _is_ needed.
                 node_choice_mask = (1 << self.cell) & self.choice_mask
             else:
@@ -868,10 +872,14 @@ def squeeze_choice_child(child: EvalNode):
     # TODO: this could be much more aggressive.
     if child.points:
         return child
-    nnc = [c for c in child.children if c]
-    if len(nnc) == 1:
-        child = nnc[0]
-    return child
+    non_null_child = None
+    for c in child.children:
+        if c:
+            if non_null_child:
+                return child  # two non-null children
+            non_null_child = c
+    # return the non-null child if there's exactly one.
+    return non_null_child if non_null_child else child
 
 
 def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
