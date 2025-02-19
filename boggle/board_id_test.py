@@ -6,6 +6,7 @@ from boggle.board_id import (
     from_board_id,
     get_canonical_board_id,
     is_canonical_board_id,
+    parse_classes,
     to_1d,
     to_2d,
 )
@@ -129,3 +130,18 @@ def test_cell_type_for_index():
     )
     for i in range(16):
         assert cell_type_for_index(i, (4, 4)) == four[i]
+
+
+def test_parse_classes():
+    assert parse_classes("c v", (3, 3)) == [["c", "v"] for _ in range(9)]
+    assert parse_classes("center:a b c d, edge:x y z, corner:c v", (3, 3)) == [
+        ["c", "v"],
+        ["x", "y", "z"],
+        ["c", "v"],
+        ["x", "y", "z"],
+        ["a", "b", "c", "d"],
+        ["x", "y", "z"],
+        ["c", "v"],
+        ["x", "y", "z"],
+        ["c", "v"],
+    ]

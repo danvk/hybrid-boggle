@@ -163,13 +163,14 @@ def parse_classes(classes: str, dims: tuple[int, int]):
     cell_types = {}
     for clause in clauses:
         if ":" in clause:
-            where, what = (c.trim() for c in clause.split(":"))
+            where, what = (c.strip() for c in clause.split(":"))
             assert where in CELL_TYPES
             cell_types[where] = what.split(" ")
         else:
             for type in CELL_TYPES:
                 cell_types[type] = clause.split(" ")
-    print(cell_types)
+
+    return [cell_types[cell_type_for_index(i, dims)] for i in range(w * h)]
 
 
 def main():
