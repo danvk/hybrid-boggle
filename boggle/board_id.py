@@ -2,27 +2,25 @@ import argparse
 from typing import Sequence
 
 
-# TODO: classes: list[str] -> list[list[str]]
-def from_board_id(classes: list[str], dims: tuple[int, int], idx: int) -> str:
-    w, h = dims
-    num_classes = len(classes)
+def from_board_id(cell_classes: list[list[str]], idx: int) -> str:
     board: list[str] = []
     left = idx
     # print("from_board_id")
-    for i in range(0, w * h):
+    for classes in cell_classes:
         # print(left % num_classes)
-        board.append(classes[left % num_classes])
-        left //= num_classes
+        board.append(classes[left % len(classes)])
+        left //= len(classes)
     assert left == 0
     return " ".join(board)
 
 
 # TODO: num_classes: int -> list[int]
-def board_id(bd: list[list[int]], dims: tuple[int, int], num_classes: int) -> int:
-    w, h = dims
+def board_id(bd: list[list[int]], num_classes: list[int]) -> int:
+    h = len(bd)
+    w = len(bd[0])
     id = 0
     for i in range(w * h - 1, -1, -1):
-        id *= num_classes
+        id *= num_classes[i]
         id += bd[i % h][i // h]
     return id
 
@@ -53,7 +51,7 @@ def swap(ary, a, b):
 
 # TODO: num_classes: int -> list[int]
 # TODO: can probably express this all more concisely in Python
-def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
+def canonicalize_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     """Return an index for a more canonical version of this board.
 
     Returns the original board ID if there is no such index.
@@ -64,10 +62,11 @@ def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
     bd = [[0 for _x in range(0, w)] for _y in range(0, h)]
     left = idx
 
+    # TODO: call to_2d
     # dims=(3, 4): bd is 4x3; len(bd) == 4, len(bd[0]) == 3
     for i in range(0, w * h):
-        bd[i % h][i // h] = left % num_classes
-        left //= num_classes
+        bd[i % h][i // h] = left % num_classes[i]
+        left //= num_classes[i]
     assert left == 0
 
     # if dims == (3, 4):
@@ -83,7 +82,7 @@ def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
         for j in range(0, w // 2):
             for i in range(0, h):
                 swap(bd, (j, i), (w - 1 - j, i))
-        other = board_id(bd, dims, num_classes)
+        other = board_id(bd, num_classes)
         if other < idx:
             return other
 
@@ -93,7 +92,7 @@ def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
         for j in range(0, h // 2):
             for i in range(0, w):
                 swap(bd, (i, j), (i, h - 1 - j))
-        other = board_id(bd, dims, num_classes)
+        other = board_id(bd, num_classes)
         if other < idx:
             return other
 
@@ -103,7 +102,7 @@ def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
         for j in range(0, w // 2):
             for i in range(0, h):
                 swap(bd, (j, i), (w - 1 - j, i))
-        other = board_id(bd, dims, num_classes)
+        other = board_id(bd, num_classes)
         if other < idx:
             return other
 
@@ -120,7 +119,7 @@ def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
             for j in range(0, i):
                 swap(bd, (i, j), (j, i))
 
-        other = board_id(bd, dims, num_classes)
+        other = board_id(bd, num_classes)
         if other < idx:
             return other
 
@@ -128,7 +127,7 @@ def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
 
 
 # TODO: num_classes: int -> list[int]
-def get_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
+def get_canonical_board_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     other = canonicalize_id(num_classes, dims, idx)
     if other == idx:
         return idx
@@ -136,7 +135,7 @@ def get_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
 
 
 # TODO: num_classes: int -> list[int]
-def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
+def is_canonical_board_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     r = canonicalize_id(num_classes, dims, idx)
     return r == idx
 
