@@ -136,7 +136,7 @@ def get_breaker(args) -> BreakingBundle:
 
     if args.breaker == "hybrid":
         switchover_level = 2
-        if args.switchover_level:
+        if args.switchover_level is not None:
             switchover_level = args.switchover_level
         elif args.switchover_sizes:
             switchover_level = [
