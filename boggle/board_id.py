@@ -2,6 +2,7 @@ import argparse
 from typing import Sequence
 
 
+# TODO: classes: list[str] -> list[list[str]]
 def from_board_id(classes: list[str], dims: tuple[int, int], idx: int) -> str:
     w, h = dims
     num_classes = len(classes)
@@ -16,6 +17,7 @@ def from_board_id(classes: list[str], dims: tuple[int, int], idx: int) -> str:
     return " ".join(board)
 
 
+# TODO: num_classes: int -> list[int]
 def board_id(bd: list[list[int]], dims: tuple[int, int], num_classes: int) -> int:
     w, h = dims
     id = 0
@@ -49,6 +51,7 @@ def swap(ary, a, b):
     ary[ay][ax], ary[by][bx] = ary[by][bx], ary[ay][ax]
 
 
+# TODO: num_classes: int -> list[int]
 # TODO: can probably express this all more concisely in Python
 def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
     """Return an index for a more canonical version of this board.
@@ -124,6 +127,7 @@ def canonicalize_id(num_classes: int, dims: tuple[int, int], idx: int):
     return idx
 
 
+# TODO: num_classes: int -> list[int]
 def get_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
     other = canonicalize_id(num_classes, dims, idx)
     if other == idx:
@@ -131,6 +135,7 @@ def get_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
     return get_canonical_board_id(num_classes, dims, other)
 
 
+# TODO: num_classes: int -> list[int]
 def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
     r = canonicalize_id(num_classes, dims, idx)
     return r == idx
@@ -153,6 +158,8 @@ def main():
     parser.add_argument("boards", nargs="+", help="Board classes (space-delimited)")
 
     args = parser.parse_args()
+    # TODO: implement parse_classes(args.classes, dims)
+    # --classes="center:aeiou blah, edge:aeiou blah, corner:aeiou blah"
     classes = args.classes.split(" ")
     n_classes = len(classes)
     w, h = dims = args.size // 10, args.size % 10
