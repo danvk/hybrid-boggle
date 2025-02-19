@@ -5,6 +5,7 @@ from collections import Counter
 from typing import Self, Sequence
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
+from boggle.bucket_base import BoardClassBoggler
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.trie import PyTrie, make_lookup_table
 
@@ -1123,12 +1124,9 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
     )
 
 
-class EvalTreeBoggler(PyBucketBoggler):
+class EvalTreeBoggler(BoardClassBoggler):
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
-
-    def UpperBound(self, bailout_score):
-        raise NotImplementedError()
 
     def BuildTree(self, arena=None, dedupe=False):
         root = EvalNode()
@@ -1216,6 +1214,9 @@ class EvalTreeBoggler(PyBucketBoggler):
         self.used_ ^= 1 << i
         node.bound = score
         return score
+
+    def Details(self):
+        return self.details_
 
     def get_canonical_node(self, node: EvalNode):
         if not self.dedupe:
