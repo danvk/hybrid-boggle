@@ -94,11 +94,6 @@ class HybridTreeBreaker:
             if letter_grouping
             else None
         )
-        if self.rev_letter_grouping:
-            # cz uxj mk wv fb gy
-            board = "perslatesind"
-            score = self.boggler.score(board)
-            print(f"{score} {board}")
 
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
