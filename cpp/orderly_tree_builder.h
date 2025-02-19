@@ -29,6 +29,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
     return create_eval_node_arena();
   }
 
+  int SumUnion() const { return 0; }
+
  private:
   EvalNode* root_;
   bool dedupe_;

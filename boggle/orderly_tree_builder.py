@@ -1,6 +1,7 @@
 import argparse
 
 from boggle.args import add_standard_args, get_trie_from_args
+from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.dimensional_bogglers import LEN_TO_DIMS, OrderlyTreeBuilders
 from boggle.eval_tree import (
@@ -8,22 +9,18 @@ from boggle.eval_tree import (
     EvalNode,
     create_eval_node_arena_py,
 )
-from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
 
 
 # TODO: decide if this really needs to inherit PyBucketBoggler
-class OrderlyTreeBuilder(PyBucketBoggler):
+class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
     root: EvalNode
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
-
-    def UpperBound(self, bailout_score):
-        raise NotImplementedError()
 
     def BuildTree(self, arena=None):
         root = EvalNode()
@@ -39,6 +36,10 @@ class OrderlyTreeBuilder(PyBucketBoggler):
         root.set_computed_fields(num_letters)
         self.root = None
         return root
+
+    def SumUnion(self):
+        # This _could_ be computed if there were a need.
+        return 0
 
     # TODO: rename these methods
     def DoAllDescents(

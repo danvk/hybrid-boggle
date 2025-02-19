@@ -138,7 +138,7 @@ class HybridTreeBreaker:
             )
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
-        self.details_.sum_union = self.etb.Details().sum_union
+        self.details_.sum_union = self.etb.SumUnion()
         self.details_.init_nodes = arena.num_nodes()
         self.details_.nodes[0] = self.details_.init_nodes
 

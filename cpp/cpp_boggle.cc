@@ -50,7 +50,6 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
 template<int M, int N>
 void declare_orderly_tree_builder(py::module &m, const string &pyclass_name) {
     using BB = OrderlyTreeBuilder<M, N>;
-    // TODO: do I care about buffer_protocol() here?
     py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
         .def(py::init<Trie*>())
         .def(
@@ -62,6 +61,7 @@ void declare_orderly_tree_builder(py::module &m, const string &pyclass_name) {
         )
         .def("ParseBoard", &BB::ParseBoard)
         .def("as_string",  &BB::as_string)
+        .def("SumUnion", &BB::SumUnion)
         .def("NumReps", &BB::NumReps)
         .def("create_arena", &BB::CreateArena);
 }
