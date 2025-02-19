@@ -12,7 +12,6 @@ using std::vector;
 #include "eval_node.h"
 #include "tree_builder.h"
 #include "orderly_tree_builder.h"
-// #include "breaker.h"
 
 // See https://stackoverflow.com/a/47749076/388951
 template<int M, int N>
@@ -43,7 +42,7 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
         )
         .def("ParseBoard", &BB::ParseBoard)
         .def("as_string",  &BB::as_string)
-        .def("Details", &BB::Details)
+        .def("SumUnion", &BB::SumUnion)
         .def("NumReps", &BB::NumReps)
         .def("create_arena", &BB::CreateArena);
 }
@@ -63,7 +62,6 @@ void declare_orderly_tree_builder(py::module &m, const string &pyclass_name) {
         )
         .def("ParseBoard", &BB::ParseBoard)
         .def("as_string",  &BB::as_string)
-        .def("Details", &BB::Details)
         .def("NumReps", &BB::NumReps)
         .def("create_arena", &BB::CreateArena);
 }

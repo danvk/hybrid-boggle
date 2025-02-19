@@ -42,8 +42,8 @@ def test_eval_tree_match():
 
     assert bb.ParseBoard("a b c d e f g h i")
     t = bb.BuildTree()
-    assert 0 == bb.Details().sum_union
-    assert 0 == bb.Details().max_nomark
+    assert 0 == bb.SumUnion()
+    assert 0 == t.bound
     assert 0 == t.recompute_score()
 
     # s e h
@@ -51,8 +51,8 @@ def test_eval_tree_match():
     # p u c
     assert bb.ParseBoard("s e p e a u h t c")
     t = bb.BuildTree()
-    assert 4 == bb.Details().sum_union  # sea(t), tea(s)
-    assert 6 == bb.Details().max_nomark  # seat*2, sea*2, tea
+    assert 4 == bb.SumUnion()  # sea(t), tea(s)
+    assert 6 == t.bound  # seat*2, sea*2, tea
     assert 6 == t.recompute_score()
     t.prune()
     assert 6 == t.recompute_score()
@@ -65,8 +65,8 @@ def test_eval_tree_match():
     #  e a s
     assert bb.ParseBoard("st z z e a s z z z")
     t = bb.BuildTree()
-    assert 3 == bb.Details().sum_union  # tea(s) + sea
-    assert 2 == bb.Details().max_nomark  # tea(s)
+    assert 3 == bb.SumUnion()  # tea(s) + sea
+    assert 2 == t.max_nomark  # tea(s)
     assert 2 == t.recompute_score()
     t.prune()
     assert 2 == t.recompute_score()
@@ -80,8 +80,8 @@ def test_eval_tree_match():
     assert bb.ParseBoard("st z z e a st z z s")
 
     t = bb.BuildTree()
-    assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
-    assert 4 == bb.Details().max_nomark  # sea(t(s))
+    assert 2 + 4 == bb.SumUnion()  # all but "hiccup"
+    assert 4 == t.max_nomark  # sea(t(s))
     assert 4 == t.recompute_score()
     t.prune()
     assert 4 == t.recompute_score()
@@ -104,10 +104,9 @@ def test_eval_tree_force():
 
     # With no force, we match the behavior of scalar ibuckets
     t = bb.BuildTree()
-    assert 3 == bb.Details().sum_union
-    assert 3 == bb.Details().max_nomark
-    assert 4 == bb.NumReps()
+    assert 3 == bb.SumUnion()
     assert 3 == t.bound
+    assert 4 == bb.NumReps()
     assert 3 == t.recompute_score()
     t.check_consistency()
     # print(t.to_string(bb))

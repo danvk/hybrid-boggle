@@ -6,20 +6,17 @@
 
 using namespace std;
 
-// TODO: inheritance isn't that helpful here.
-// TODO: templating on M, N probably isn't helpful, either.
+// TODO: templating on M, N probably isn't that helpful here.
 template <int M, int N>
-class TreeBuilder : public BucketBoggler<M, N> {
+class TreeBuilder : public BoardClassBoggler<M, N> {
  public:
-  TreeBuilder(Trie* t) : BucketBoggler<M, N>(t) {}
+  TreeBuilder(Trie* t) : BoardClassBoggler<M, N>(t), runs_(0) {}
   virtual ~TreeBuilder() {}
 
   // These are "dependent names", see https://stackoverflow.com/a/1528010/388951.
-  using BucketBoggler<M, N>::dict_;
-  using BucketBoggler<M, N>::runs_;
-  using BucketBoggler<M, N>::bd_;
-  using BucketBoggler<M, N>::used_;
-  using BucketBoggler<M, N>::details_;
+  using BoardClassBoggler<M, N>::dict_;
+  using BoardClassBoggler<M, N>::bd_;
+  using BoardClassBoggler<M, N>::used_;
 
   /** Build an EvalTree for the current board. */
   const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe=false);
@@ -28,12 +25,15 @@ class TreeBuilder : public BucketBoggler<M, N> {
     return create_eval_node_arena();
   }
 
+  int SumUnion() const { return details_.sum_union; }
+
  private:
+  uintptr_t runs_;
+  ScoreDetails details_;
   EvalNode* root_;
   bool dedupe_;
   unordered_map<uint64_t, EvalNode*> node_cache_;
 
-  // This one does not depend on M, N
   unsigned int DoAllDescents(int idx, int length, Trie* t, EvalNode* node, EvalNodeArena& arena);
   unsigned int DoDFS(int i, int length, Trie* t, EvalNode* node, EvalNodeArena& arena);
   EvalNode* GetCanonicalNode(EvalNode* node);

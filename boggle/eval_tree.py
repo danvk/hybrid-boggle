@@ -1215,8 +1215,8 @@ class EvalTreeBoggler(BoardClassBoggler):
         node.bound = score
         return score
 
-    def Details(self):
-        return self.details_
+    def SumUnion(self):
+        return self.details_.sum_union
 
     def get_canonical_node(self, node: EvalNode):
         if not self.dedupe:

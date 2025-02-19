@@ -39,11 +39,9 @@ class BucketBoggler : public BoardClassBoggler<M, N> {
   using BoardClassBoggler<M, N>::bd_;
   using BoardClassBoggler<M, N>::used_;
 
- protected:
+ private:
   uintptr_t runs_;
   ScoreDetails details_;
-
- private:
   unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
   unsigned int DoDFS(unsigned int i, unsigned int len, Trie* t);
 };

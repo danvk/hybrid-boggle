@@ -89,7 +89,7 @@ def main():
     with Timer("Construct EvalTree"):
         tree = etb.BuildTree()
     print("num nodes:", tree.node_count())
-    print(f"score (construction): {tree.bound}", etb.Details())
+    print(f"score (construction): {tree.bound}", etb.SumUnion())
     PrintEvalTreeCounts()
     print("---")
 

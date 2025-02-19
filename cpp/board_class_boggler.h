@@ -6,7 +6,7 @@
 template<int M, int N>
 class BoardClassBoggler {
  public:
-  BoardClassBoggler(Trie* t) : dict_(t) {}
+  BoardClassBoggler(Trie* t) : dict_(t), used_(0) {}
   virtual ~BoardClassBoggler() {}
 
   // bd is a class of boards with cells delimited by spaces.
