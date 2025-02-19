@@ -27,43 +27,23 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
         .def("NumReps", &BB::NumReps);
 }
 
-template<int M, int N>
+template<typename TB>
 void declare_tree_builder(py::module &m, const string &pyclass_name) {
-    using BB = TreeBuilder<M, N>;
     // TODO: do I care about buffer_protocol() here?
-    py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
+    py::class_<TB>(m, pyclass_name.c_str(), py::buffer_protocol())
         .def(py::init<Trie*>())
         .def(
             "BuildTree",
-            &BB::BuildTree,
+            &TB::BuildTree,
             py::return_value_policy::reference,
             py::arg("arena"),
             py::arg("dedupe")=false
         )
-        .def("ParseBoard", &BB::ParseBoard)
-        .def("as_string",  &BB::as_string)
-        .def("SumUnion", &BB::SumUnion)
-        .def("NumReps", &BB::NumReps)
-        .def("create_arena", &BB::CreateArena);
-}
-
-template<int M, int N>
-void declare_orderly_tree_builder(py::module &m, const string &pyclass_name) {
-    using BB = OrderlyTreeBuilder<M, N>;
-    py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
-        .def(py::init<Trie*>())
-        .def(
-            "BuildTree",
-            &BB::BuildTree,
-            py::return_value_policy::reference,
-            py::arg("arena"),
-            py::arg("dedupe")=false
-        )
-        .def("ParseBoard", &BB::ParseBoard)
-        .def("as_string",  &BB::as_string)
-        .def("SumUnion", &BB::SumUnion)
-        .def("NumReps", &BB::NumReps)
-        .def("create_arena", &BB::CreateArena);
+        .def("ParseBoard", &TB::ParseBoard)
+        .def("as_string",  &TB::as_string)
+        .def("SumUnion", &TB::SumUnion)
+        .def("NumReps", &TB::NumReps)
+        .def("create_arena", &TB::CreateArena);
 }
 
 template<int M, int N>
@@ -112,15 +92,15 @@ PYBIND11_MODULE(cpp_boggle, m)
     declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
     declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
 
-    declare_tree_builder<2, 2>(m, "TreeBuilder22");
-    declare_tree_builder<3, 3>(m, "TreeBuilder33");
-    declare_tree_builder<3, 4>(m, "TreeBuilder34");
-    declare_tree_builder<4, 4>(m, "TreeBuilder44");
+    declare_tree_builder<TreeBuilder<2, 2>>(m, "TreeBuilder22");
+    declare_tree_builder<TreeBuilder<3, 3>>(m, "TreeBuilder33");
+    declare_tree_builder<TreeBuilder<3, 4>>(m, "TreeBuilder34");
+    declare_tree_builder<TreeBuilder<4, 4>>(m, "TreeBuilder44");
 
-    declare_orderly_tree_builder<2, 2>(m, "OrderlyTreeBuilder22");
-    declare_orderly_tree_builder<3, 3>(m, "OrderlyTreeBuilder33");
-    declare_orderly_tree_builder<3, 4>(m, "OrderlyTreeBuilder34");
-    declare_orderly_tree_builder<4, 4>(m, "OrderlyTreeBuilder44");
+    declare_tree_builder<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22");
+    declare_tree_builder<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33");
+    declare_tree_builder<OrderlyTreeBuilder<3, 4>>(m, "OrderlyTreeBuilder34");
+    declare_tree_builder<OrderlyTreeBuilder<4, 4>>(m, "OrderlyTreeBuilder44");
 
     py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
         .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
