@@ -228,20 +228,6 @@ def test_equivalence():
     table = make_lookup_table(t)
     root_words = root.all_words(table)
     assert [*sorted(root_words)] == [*sorted(bb.words)]
-    # print("Root:")
-    # print("\n".join(root_words))
-    # print("---")
-    # print("5=e words:")
-    # print("\n".join(fives[1].all_words(table)))
-    # print("---")
-
-    # print(fives[1].recompute_score())
-    # fives[1].compress()
-    # print(fives[1].to_dot(etb))
-    # PrintEvalTreeCounts()
-    # assert False
-    # print(fives[1].bound)
-    # print(fives[1].recompute_score())
 
     t.ResetMarks()
     root.set_choice_point_mask(num_letters=[len(cell) for cell in cells])
@@ -257,7 +243,8 @@ def test_equivalence():
         # Some combinations may have been ruled out by subtree merging.
         # The word lists will be the same, however.
         assert fives[i].bound <= bb.Details().max_nomark
-        assert bb.Details().max_nomark == root.score_with_forces_dict({5: i}, 9, cells)
+        forces = [i if cell == 5 else -1 for cell in range(9)]
+        assert bb.Details().max_nomark == root.score_with_forces(forces)
         fives[i].check_consistency()
         # Some choices may have been pruned out
         assert fives[i].choice_cells().issubset({4, 6, 7})

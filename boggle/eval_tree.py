@@ -1,4 +1,26 @@
-# Try to speed up ibuckets by explicitly constructing an evaluation tree.
+"""A tree representing the evaluation of a class of Boggle boards.
+
+See https://www.danvk.org/2025/02/13/boggle2025.html#the-evaluation-tree
+
+There are two types of nodes: sum and choice:
+
+- Sum nodes sum points across their children. This models how you can move in any direction
+  to extend a word, or start words from any cell on the board.
+- Choice nodes reflect a choice that must be made, namely which letter to choose for
+  a cell for a board in the board class. To get a bound, we can take the max across any
+  choice, but this is imprecise because the same choice can appear in many subtrees and
+  our choices won't be synchronized across those subtrees.
+
+You can use node.bound to get the current upper bound for any subtree.
+To reduce the bound, you can "lift" a choice on a cell to the top of the subtree, thus
+synchronizing it across all subtrees. This comes at the cost of allocating new nodes.
+
+It's a battle to keep tree operations from blowing up the number of nodes too much.
+There are two ways to shrink the tree: compression and deduplication. Compression
+restructures the tree into an equivalent but more compact representation, and de-
+duplication replaces structurally equivalent nodes with references to the same object.
+These are both described in the blog post linked above.
+"""
 
 import itertools
 from collections import Counter
@@ -60,11 +82,42 @@ hash_collisions = 0
 
 class EvalNode:
     letter: int
+    """For a sum node: which choice of letter on the cell does this represent? (0-based)
+    This can also be set to CHOICE_NODE or ROOT_NODE
+    """
+
     cell: int
+    """Which cell does this represent on the Boggle board?"""
+
     bound: int
+    """Upper bound on the number of points available in this subtree."""
+
     points: int
+    """Points provided by _this_ node, not children.
+
+    Only relevant for sum nodes, unless you call set_choice_point_mask(), in which case
+    it's a bit mask for which children are set that's used by bound_remaining_boards().
+    """
+
+    choice_mask: int
+    """Which choice nodes appear in this subtree?
+
+    If choice_mask & (1<<C) == 0 then there is no choice node for cell C under us.
+    """
+
     children: list[Self | None]
+    """For sum nodes: the children to sum, in no particular order.
+    For choice nodes: the choices, ordered by child.letter.
+
+    For a choice node for cell C, children will typically have child.cell = C,
+    but this may not be the case at the very top of the tree, where a dense representation
+    is used to represent a "choice pyramid."
+
+    null children are rare, particularly with compress=True, but they can occur.
+    """
+
     trie_node: PyTrie | None
+    """If set, the node in the Trie that this corresponds to."""
 
     # TODO: could even track _which_ choice on each cell matters
     choice_mask: int
@@ -77,27 +130,6 @@ class EvalNode:
         self.trie_node = None
         self.cache_key = None
         self.cache_value = None
-
-    def structural_eq(self, other: Self) -> bool:
-        """Deep structural equality."""
-        if self.letter != other.letter or self.cell != other.cell:
-            return False
-        if self.bound != other.bound:
-            return False
-        if self.points != other.points:
-            return False
-        nnc = [c for c in self.children if c]
-        nno = [c for c in other.children if c]
-        if len(nnc) != len(nno):
-            return False
-        for a, b in zip(nnc, nno):
-            if a == b:
-                continue
-            if a is None or b is None:
-                return False
-            if not a.structural_eq(b):
-                return False
-        return True
 
     def add_word(self, choices: Sequence[tuple[int, int]], points: int, arena):
         """Add a word at the end of a sequence of choices to the tree.
@@ -140,26 +172,6 @@ class EvalNode:
             choice_child.children.sort(key=lambda c: c.letter)
 
         letter_child.add_word(remaining_choices, points, arena)
-
-    def recompute_score(self):
-        # Should return self.bound
-        if self.letter == CHOICE_NODE:
-            return (
-                max(child.recompute_score() if child else 0 for child in self.children)
-                if self.children
-                else 0
-            )
-        else:
-            return self.points + sum(
-                child.recompute_score() if child else 0 for child in self.children
-            )
-
-    def score_with_forces_dict(
-        self, forces: dict[int, int], num_cells: int, cells: list[str]
-    ) -> int:
-        """Requires that set_choice_point_mask() has been called on this tree."""
-        forces_list = [forces.get(i, -1) for i in range(num_cells)]
-        return self.score_with_forces(forces_list)
 
     def score_with_forces(self, forces: list[int]) -> int:
         """Requires that set_choice_point_mask() has been called on this tree."""
@@ -206,65 +218,6 @@ class EvalNode:
                 for child in self.children
             )
         return v
-
-    def assert_invariants(self, solver, is_top_max=None):
-        """Ensure the tree is well-formed. Some desirable properties:
-
-        - Choice nodes do not have points.
-        - node.bound is correct (checked shallowly)
-        - node.choice_mask is correct (checked shallowly)
-        - choice node children are mutually-exclusive
-        - choice node children are sorted
-        - no duplicate choice children for sum nodes
-        """
-        if is_top_max is None:
-            is_top_max = self.letter == CHOICE_NODE
-        if self.letter == CHOICE_NODE:
-            if not hasattr(self, "points") or self.points == 0:
-                pass
-            else:
-                pass  # TODO: assert that child mask is set properly.
-            if is_top_max and all(c and c.letter == CHOICE_NODE for c in self.children):
-                pass
-            else:
-                # choice nodes _may_ have non-null children, but the rest must be sorted.
-                nnc = [c for c in self.children if c]
-                for a, b in zip(nnc, nnc[1:]):
-                    assert a.letter < b.letter
-            if len(self.children) == len(solver.bd_[self.cell]) and all(
-                c for c in self.children
-            ):
-                for i, c in enumerate(self.children):
-                    if c.letter != CHOICE_NODE:
-                        assert c.letter == i
-            bound = 0
-            choice_mask = 1 << self.cell if len(solver.bd_[self.cell]) > 1 else 0
-            for child in self.children:
-                if child:
-                    bound = max(bound, child.bound)
-                    choice_mask |= child.choice_mask
-        else:
-            bound = self.points
-            choice_mask = 0
-            seen_choices = set[int]()
-            for child in self.children:
-                assert child
-                bound += child.bound
-                choice_mask |= child.choice_mask
-                if child.letter == CHOICE_NODE:
-                    assert child.cell not in seen_choices
-                    seen_choices.add(child.cell)
-        # if bound != self.bound:
-        #     print(f"Warning {bound} != {self.bound}")
-        #     self.flag = True
-        assert bound == self.bound
-        assert choice_mask == self.choice_mask
-
-        for child in self.children:
-            if child:
-                child.assert_invariants(
-                    solver, is_top_max and child.letter == CHOICE_NODE
-                )
 
     def lift_choice(
         self,
@@ -470,14 +423,6 @@ class EvalNode:
         self.cache_value = out
         return out
 
-    def prune(self):
-        # TODO: remove, this should always be a no-op
-        if self.bound == 0 and self.letter != ROOT_NODE:
-            return False  # discard
-        new_children = [child for child in self.children if child and child.prune()]
-        self.children = new_children
-        return True  # keep
-
     def filter_below_threshold(self, min_score: int) -> int:
         """Remove choice subtrees with bounds equal to or below min_score.
 
@@ -547,6 +492,174 @@ class EvalNode:
         for c in self.children:
             if c:
                 c.set_choice_point_mask(num_letters)
+
+    def bound_remaining_boards(
+        self, cells: Sequence[str], cutoff: int, split_order: Sequence[int]
+    ):
+        """Try all remaining boards to determine which ones might have a score >= cutoff."""
+        results = []
+
+        # TODO: this could share a lot of work by calling score_with_forces on the root.
+        for t, seq in self.max_subtrees():
+            choices = [-1 for _ in cells]
+            for cell, letter in seq:
+                choices[cell] = letter
+            remaining_split_order = []
+            for order in split_order:
+                if choices[order] == -1:
+                    remaining_split_order.append(order)
+            # print("remaining cells:", sum(1 for x in choices if x == -1))
+            bound_remaining_boards_help(
+                t,
+                cells,
+                choices,
+                cutoff,
+                remaining_split_order,
+                0,
+                results,
+            )
+        return results
+
+    def max_subtrees(
+        self, out=None, path=None
+    ) -> list[tuple[list[tuple[int, int]], Self]]:
+        """Yield all subtrees below a choice node.
+
+        Each yielded value is a list of (cell, letter) choices leading down to the tree.
+        """
+        if out is None:
+            out = []
+        if path is None:
+            path = []
+
+        if self.letter != CHOICE_NODE:
+            out.append((self, path))
+        else:
+            for i, child in enumerate(self.children):
+                if child:
+                    child.max_subtrees(out, path + [(self.cell, i)])
+        return out
+
+    def set_computed_fields(self, num_letters: Sequence[int]):
+        for c in self.children:
+            if c:
+                c.set_computed_fields(num_letters)
+
+        if self.letter == CHOICE_NODE:
+            self.choice_mask = 1 << self.cell if num_letters[self.cell] > 1 else 0
+            self.bound = (
+                max(c.bound for c in self.children if c) if self.children else 0
+            )
+        else:
+            self.choice_mask = 0
+            self.bound = self.points + sum(c.bound for c in self.children if c)
+
+        for c in self.children:
+            if c:
+                self.choice_mask |= c.choice_mask
+
+    # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def recompute_score(self):
+        """Should return self.bound. (For debugging/testing)"""
+        if self.letter == CHOICE_NODE:
+            return (
+                max(child.recompute_score() if child else 0 for child in self.children)
+                if self.children
+                else 0
+            )
+        else:
+            return self.points + sum(
+                child.recompute_score() if child else 0 for child in self.children
+            )
+
+    def structural_eq(self, other: Self) -> bool:
+        """Deep structural equality (for debugging)."""
+        if self.letter != other.letter or self.cell != other.cell:
+            return False
+        if self.bound != other.bound:
+            return False
+        if self.points != other.points:
+            return False
+        nnc = [c for c in self.children if c]
+        nno = [c for c in other.children if c]
+        if len(nnc) != len(nno):
+            return False
+        for a, b in zip(nnc, nno):
+            if a == b:
+                continue
+            if a is None or b is None:
+                return False
+            if not a.structural_eq(b):
+                return False
+        return True
+
+    def assert_invariants(self, solver, is_top_max=None):
+        """Ensure the tree is well-formed. Some desirable properties:
+
+        - Choice nodes do not have points.
+        - node.bound is correct (checked shallowly)
+        - node.choice_mask is correct (checked shallowly)
+        - choice node children are mutually-exclusive
+        - choice node children are sorted
+        - no duplicate choice children for sum nodes
+        """
+        if is_top_max is None:
+            is_top_max = self.letter == CHOICE_NODE
+        if self.letter == CHOICE_NODE:
+            if not hasattr(self, "points") or self.points == 0:
+                pass
+            else:
+                pass  # TODO: assert that child mask is set properly.
+            if is_top_max and all(c and c.letter == CHOICE_NODE for c in self.children):
+                pass
+            else:
+                # choice nodes _may_ have non-null children, but the rest must be sorted.
+                nnc = [c for c in self.children if c]
+                for a, b in zip(nnc, nnc[1:]):
+                    assert a.letter < b.letter
+            if len(self.children) == len(solver.bd_[self.cell]) and all(
+                c for c in self.children
+            ):
+                for i, c in enumerate(self.children):
+                    if c.letter != CHOICE_NODE:
+                        assert c.letter == i
+            bound = 0
+            choice_mask = 1 << self.cell if len(solver.bd_[self.cell]) > 1 else 0
+            for child in self.children:
+                if child:
+                    bound = max(bound, child.bound)
+                    choice_mask |= child.choice_mask
+        else:
+            bound = self.points
+            choice_mask = 0
+            seen_choices = set[int]()
+            for child in self.children:
+                assert child
+                bound += child.bound
+                choice_mask |= child.choice_mask
+                if child.letter == CHOICE_NODE:
+                    assert child.cell not in seen_choices
+                    seen_choices.add(child.cell)
+        # if bound != self.bound:
+        #     print(f"Warning {bound} != {self.bound}")
+        #     self.flag = True
+        assert bound == self.bound
+        assert choice_mask == self.choice_mask
+
+        for child in self.children:
+            if child:
+                child.assert_invariants(
+                    solver, is_top_max and child.letter == CHOICE_NODE
+                )
+
+    def prune(self):
+        # TODO: remove, this should always be a no-op
+        if self.bound == 0 and self.letter != ROOT_NODE:
+            return False  # discard
+        new_children = [child for child in self.children if child and child.prune()]
+        self.children = new_children
+        return True  # keep
 
     def reset_choice_point_mask(self):
         if self.letter == CHOICE_NODE:
@@ -618,43 +731,10 @@ class EvalNode:
             if child:
                 yield from child.all_nodes_unique(mark)
 
-    def max_subtrees(
-        self, out=None, path=None
-    ) -> list[tuple[list[tuple[int, int]], Self]]:
-        """Yield all subtrees below a choice node.
-
-        Each yielded value is a list of (cell, letter) choices leading down to the tree.
-        """
-        if out is None:
-            out = []
-        if path is None:
-            path = []
-
-        if self.letter != CHOICE_NODE:
-            out.append((self, path))
-        else:
-            for i, child in enumerate(self.children):
-                if child:
-                    child.max_subtrees(out, path + [(self.cell, i)])
-        return out
-
     def all_words(self, word_table: dict[PyTrie, str]) -> list[str]:
         return [
             word_table[node.trie_node] for node in self.all_nodes() if node.trie_node
         ]
-
-    def print_paths(self, word: str, word_table: dict[PyTrie, str], prefix=""):
-        if self.letter == ROOT_NODE:
-            prefix = "r"
-        elif self.letter == CHOICE_NODE:
-            prefix += f"->(CH {self.cell})"
-        else:
-            prefix += f"->({self.cell}={self.letter})"
-        if self.points and word_table[self.trie_node] == word:
-            print(prefix)
-        else:
-            for child in self.children:
-                child.print_paths(word, word_table, prefix)
 
     def to_dot(self, cells: list[str], max_depth=100, trie=None) -> str:
         lookup_table = make_lookup_table(trie) if trie else None
@@ -766,51 +846,6 @@ class EvalNode:
                     for child in self.children
                 ]
         return out
-
-    def bound_remaining_boards(
-        self, cells: Sequence[str], cutoff: int, split_order: Sequence[int]
-    ):
-        """Try all remaining boards to determine which ones might have a score >= cutoff."""
-        results = []
-
-        # TODO: this could share a lot of work by calling score_with_forces on the root.
-        for t, seq in self.max_subtrees():
-            choices = [-1 for _ in cells]
-            for cell, letter in seq:
-                choices[cell] = letter
-            remaining_split_order = []
-            for order in split_order:
-                if choices[order] == -1:
-                    remaining_split_order.append(order)
-            # print("remaining cells:", sum(1 for x in choices if x == -1))
-            bound_remaining_boards_help(
-                t,
-                cells,
-                choices,
-                cutoff,
-                remaining_split_order,
-                0,
-                results,
-            )
-        return results
-
-    def set_computed_fields(self, num_letters: Sequence[int]):
-        for c in self.children:
-            if c:
-                c.set_computed_fields(num_letters)
-
-        if self.letter == CHOICE_NODE:
-            self.choice_mask = 1 << self.cell if num_letters[self.cell] > 1 else 0
-            self.bound = (
-                max(c.bound for c in self.children if c) if self.children else 0
-            )
-        else:
-            self.choice_mask = 0
-            self.bound = self.points + sum(c.bound for c in self.children if c)
-
-        for c in self.children:
-            if c:
-                self.choice_mask |= c.choice_mask
 
 
 def bound_remaining_boards_help(
