@@ -132,7 +132,7 @@ class HybridTreeBreaker:
             )
 
         if isinstance(self.switchover_level_input, int):
-            self.switchover_level = self.switchover_level
+            self.switchover_level = self.switchover_level_input
         else:
             self.switchover_level = 0
             for level, size in self.switchover_level_input:

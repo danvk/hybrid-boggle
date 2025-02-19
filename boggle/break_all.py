@@ -135,7 +135,7 @@ def get_breaker(args) -> BreakingBundle:
     etb = builder[(args.python, args.tree_builder)](t, dims)
 
     if args.breaker == "hybrid":
-        switchover_level = 4
+        switchover_level = 2
         if args.switchover_level:
             switchover_level = args.switchover_level
         elif args.switchover_sizes:
@@ -203,7 +203,7 @@ def main():
         type=int,
         default=None,
         help="Depth at which to switch from lifting choices to exhaustively trying them. "
-        "Default is 4, unless you set --switchover_sizes. Only relevant with --breaker=hybrid.",
+        "Default is 2, unless you set --switchover_sizes. Only relevant with --breaker=hybrid.",
     )
     switchovers.add_argument(
         "--switchover_sizes",
