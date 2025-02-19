@@ -4,8 +4,8 @@ import itertools
 from collections import Counter
 from typing import Self, Sequence
 
+from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
-from boggle.bucket_base import BoardClassBoggler
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.trie import PyTrie, make_lookup_table
 

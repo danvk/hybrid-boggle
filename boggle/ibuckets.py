@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
+from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
-from boggle.bucket_base import BoardClassBoggler
 from boggle.trie import PyTrie, make_lookup_table
 
 

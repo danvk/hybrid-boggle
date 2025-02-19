@@ -43,8 +43,6 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
         )
         .def("ParseBoard", &BB::ParseBoard)
         .def("as_string",  &BB::as_string)
-        .def("Cell",    &BB::Cell)
-        .def("SetCell", &BB::SetCell)
         .def("Details", &BB::Details)
         .def("NumReps", &BB::NumReps)
         .def("create_arena", &BB::CreateArena);
@@ -65,8 +63,6 @@ void declare_orderly_tree_builder(py::module &m, const string &pyclass_name) {
         )
         .def("ParseBoard", &BB::ParseBoard)
         .def("as_string",  &BB::as_string)
-        .def("Cell",    &BB::Cell)
-        .def("SetCell", &BB::SetCell)
         .def("Details", &BB::Details)
         .def("NumReps", &BB::NumReps)
         .def("create_arena", &BB::CreateArena);
