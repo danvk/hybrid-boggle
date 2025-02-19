@@ -126,10 +126,20 @@ void EvalNode::PrintJSON() const {
   cout << "}";
 }
 
-void EvalNode::SetComputedFields(vector<int>& num_letters) {
-  for (auto c : children_) {
+void EvalNode::SetComputedFieldsAndDedupe(
+  vector<int>& num_letters,
+  unordered_map<uint64_t, const EvalNode*>* hash_to_node
+) {
+  for (auto &c : children_) {
     if (c) {
-      ((EvalNode*)c)->SetComputedFields(num_letters);
+      ((EvalNode*)c)->SetComputedFieldsAndDedupe(num_letters, hash_to_node);
+      if (hash_to_node) {
+        auto h = c->StructuralHash();
+        auto result = hash_to_node->emplace(h, c);
+        if (!result.second) {
+          c = result.first->second;
+        }
+      }
     }
   }
 

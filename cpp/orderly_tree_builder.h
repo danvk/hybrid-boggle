@@ -58,10 +58,17 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   for (int i = 0; i < M*N; i++) {
     num_letters[i] = strlen(bd_[i]);
   }
-  root_->SetComputedFields(num_letters);
+  auto hash_to_node = dedupe ? new unordered_map<uint64_t, const EvalNode*> : NULL;
+  if (hash_to_node) {
+    hash_to_node->reserve(arena.NumNodes() / 4);
+  }
+  root_->SetComputedFieldsAndDedupe(num_letters, hash_to_node);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
+  if (hash_to_node) {
+    delete hash_to_node;
+  }
   return root;
 }
 

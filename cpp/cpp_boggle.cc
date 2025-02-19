@@ -119,7 +119,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("node_count", &EvalNode::NodeCount)
         .def("unique_node_count", &EvalNode::UniqueNodeCount)
         .def("add_word", &EvalNode::AddWord)
-        .def("set_computed_fields", &EvalNode::SetComputedFields)
+        .def("set_computed_fields_and_dedupe", &EvalNode::SetComputedFieldsAndDedupe)
         // TODO: remove this
         .def(
             "force_cell",

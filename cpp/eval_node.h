@@ -73,7 +73,7 @@ class EvalNode {
   bool StructuralEq(const EvalNode& other) const;
   void PrintJSON() const;
 
-  void SetComputedFields(vector<int>& num_letters);
+  void SetComputedFieldsAndDedupe(vector<int>& num_letters, unordered_map<uint64_t, const EvalNode*>* hash_to_node);
 
   const EvalNode*
   LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe=false, bool compress=false) const;

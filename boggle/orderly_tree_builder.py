@@ -9,7 +9,6 @@ from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
     create_eval_node_arena_py,
-    dedupe_subtrees,
 )
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
