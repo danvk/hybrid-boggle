@@ -23,7 +23,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         super().__init__(trie, dims)
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
 
-    def BuildTree(self, arena=None):
+    def BuildTree(self, arena=None, dedupe=False):
         root = EvalNode()
         root.letter = ROOT_NODE
         root.cell = 0  # irrelevant
@@ -34,7 +34,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, [], arena)
         num_letters = [len(cell) for cell in self.bd_]
-        root.set_computed_fields(num_letters)
+        node_cache = {} if dedupe else None
+        root.set_computed_fields_and_dedupe(num_letters, node_cache)
+        node_cache = None
         self.root = None
         return root
 
@@ -100,6 +102,9 @@ def main():
     parser.add_argument("cutoff", type=int, help="Best known score for filtering.")
     parser.add_argument("board", type=str, help="Board class to lift.")
     parser.add_argument("--num_lifts", type=int, default=0)
+    parser.add_argument(
+        "--dedupe", action="store_true", help="De-dupe nodes after building"
+    )
     args = parser.parse_args()
     board = args.board
     cells = board.split(" ")
@@ -118,20 +123,19 @@ def main():
     o_arena = otb.create_arena()
     assert otb.ParseBoard(board)
     start_s = time.time()
-    orderly_tree = otb.BuildTree(o_arena)
+    orderly_tree = otb.BuildTree(o_arena, args.dedupe)
     elapsed_s = time.time() - start_s
     print(f"{elapsed_s:.02f}s BuildTree: ", end="")
     print(tree_stats(orderly_tree))
 
     global mark
-    mark += 1
-    start_s = time.time()
-    dedupe_subtrees(orderly_tree, mark)
-    elapsed_s = time.time() - start_s
-    print(elapsed_s)
-
-    print(f"{elapsed_s:.02f}s dedupe:    ", end="")
-    print(tree_stats(orderly_tree))
+    # mark += 1
+    # start_s = time.time()
+    # dedupe_subtrees(orderly_tree, mark)
+    # elapsed_s = time.time() - start_s
+    # print(elapsed_s)
+    # print(f"{elapsed_s:.02f}s dedupe:    ", end="")
+    # print(tree_stats(orderly_tree))
 
     t = orderly_tree
     splits = SPLIT_ORDER[dims]

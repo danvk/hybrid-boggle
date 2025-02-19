@@ -541,9 +541,20 @@ class EvalNode:
         return out
 
     def set_computed_fields(self, num_letters: Sequence[int]):
-        for c in self.children:
+        return self.set_computed_fields_and_dedupe(num_letters)
+
+    def set_computed_fields_and_dedupe(
+        self, num_letters: Sequence[int], hash_to_node: dict | None = None
+    ):
+        for i, c in enumerate(self.children):
             if c:
-                c.set_computed_fields(num_letters)
+                c.set_computed_fields_and_dedupe(num_letters, hash_to_node)
+                if hash_to_node is not None:
+                    h = c.structural_hash()
+                    if h not in hash_to_node:
+                        hash_to_node[h] = c
+                    else:
+                        self.children[i] = hash_to_node[h]
 
         if self.letter == CHOICE_NODE:
             self.choice_mask = 1 << self.cell if num_letters[self.cell] > 1 else 0
