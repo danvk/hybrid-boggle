@@ -4,7 +4,7 @@
 import sys
 
 from boggle.dimensional_bogglers import LEN_TO_DIMS
-from boggle.eval_tree import EvalTreeBoggler
+from boggle.eval_tree import TreeBuilder
 from boggle.trie import make_py_trie
 
 
@@ -15,7 +15,7 @@ def main():
 
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
-    etb = EvalTreeBoggler(trie, dims)
+    etb = TreeBuilder(trie, dims)
     etb.ParseBoard(board)
     t = etb.BuildTree(dedupe=True)
     # assert_invariants(t, cells)

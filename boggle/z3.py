@@ -8,7 +8,8 @@ See https://stackoverflow.com/q/79422270/388951
 import sys
 
 from boggle.dimensional_bogglers import LEN_TO_DIMS
-from boggle.eval_tree import CHOICE_NODE, EvalNode, EvalTreeBoggler
+from boggle.eval_tree import CHOICE_NODE, EvalNode
+from boggle.tree_builder import TreeBuilder
 from boggle.trie import make_py_trie
 
 MARK = 2
@@ -288,7 +289,7 @@ def main():
     cutoff = int(cutoff_str)
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
-    etb = EvalTreeBoggler(trie, dims)
+    etb = TreeBuilder(trie, dims)
     assert etb.ParseBoard(board)
     tree = etb.BuildTree(None, dedupe=True)
     eqs = []

@@ -2,8 +2,9 @@ import json
 import sys
 import time
 
-from boggle.eval_tree import EvalTreeBoggler, PrintEvalTreeCounts, ResetEvalTreeCount
+from boggle.eval_tree import PrintEvalTreeCounts, ResetEvalTreeCount
 from boggle.ibuckets import PyBucketBoggler
+from boggle.tree_builder import TreeBuilder
 from boggle.trie import make_py_trie
 
 BIGINT = 1_000_000
@@ -67,7 +68,7 @@ def try_all2(bb: PyBucketBoggler, cell1: int, cell2: int):
 def main_viz():
     (board,) = sys.argv[1:]
     pyt = make_py_trie("wordlists/enable2k.txt")
-    etb = EvalTreeBoggler(pyt, (3, 4))
+    etb = TreeBuilder(pyt, (3, 4))
     etb.ParseBoard(board)
     tree = etb.BuildTree()
     json.dump(tree.to_json(etb, 5), sys.stdout, indent=2)
@@ -84,12 +85,12 @@ def main():
     print(f"PyBucketBoggler: {score} {pbb.Details()}")
 
     pyt.ResetMarks()
-    etb = EvalTreeBoggler(pyt, (3, 4))
+    etb = TreeBuilder(pyt, (3, 4))
     etb.ParseBoard(board)
     with Timer("Construct EvalTree"):
         tree = etb.BuildTree()
     print("num nodes:", tree.node_count())
-    print(f"score (construction): {tree.bound}", etb.Details())
+    print(f"score (construction): {tree.bound}", etb.SumUnion())
     PrintEvalTreeCounts()
     print("---")
 

@@ -44,6 +44,9 @@ Found unbreakable board for 2520743: perslitesand
   "bounds": {
     "0": 6652
   },
+  "nodes": {
+    "0": 1960065
+  },
   "boards_to_test": 8078,
   "expanded_to_test": 8078,
   "init_nodes": 1960065,

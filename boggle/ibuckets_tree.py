@@ -1,4 +1,5 @@
 # ibuckets with a "choice tree" to track a limited number of choices
+# (This is an abandoned approach)
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.ibuckets import PyBucketBoggler, ScoreDetails

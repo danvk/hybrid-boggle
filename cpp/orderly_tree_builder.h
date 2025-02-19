@@ -6,12 +6,11 @@
 
 using namespace std;
 
-// TODO: inheritance isn't that helpful here.
 // TODO: templating on M, N probably isn't helpful, either.
 template <int M, int N>
-class OrderlyTreeBuilder : public BucketBoggler<M, N> {
+class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  public:
-  OrderlyTreeBuilder(Trie* t) : BucketBoggler<M, N>(t) {
+  OrderlyTreeBuilder(Trie* t) : BoardClassBoggler<M, N>(t) {
     for (int i = 0; i < M*N; i++) {
       cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
@@ -19,10 +18,9 @@ class OrderlyTreeBuilder : public BucketBoggler<M, N> {
   virtual ~OrderlyTreeBuilder() {}
 
   // These are "dependent names", see https://stackoverflow.com/a/1528010/388951.
-  using BucketBoggler<M, N>::dict_;
-  using BucketBoggler<M, N>::bd_;
-  using BucketBoggler<M, N>::used_;
-  using BucketBoggler<M, N>::details_;
+  using BoardClassBoggler<M, N>::dict_;
+  using BoardClassBoggler<M, N>::bd_;
+  using BoardClassBoggler<M, N>::used_;
 
   /** Build an EvalTree for the current board. */
   const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe=false);
@@ -31,13 +29,14 @@ class OrderlyTreeBuilder : public BucketBoggler<M, N> {
     return create_eval_node_arena();
   }
 
+  int SumUnion() const { return 0; }
+
  private:
   EvalNode* root_;
   bool dedupe_;
   int cell_to_order_[M*N];
   pair<int, int> choices_[M*N];
 
-  // This one does not depend on M, N
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
 };
@@ -51,11 +50,6 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_->points_ = 0;
   used_ = 0;
 
-  // TODO: remove this if I disentangle OrderlyTreeBuilder and BucketBoggler.
-  details_.max_nomark = 0;
-  details_.sum_union = 0;
-  details_.bailout_cell = -1;
-
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
@@ -68,7 +62,6 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
-  details_.max_nomark = root->bound_;
   return root;
 }
 

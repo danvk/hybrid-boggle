@@ -1,19 +1,20 @@
 import pytest
-from cpp_boggle import BucketBoggler33, Trie
+from cpp_boggle import BucketBoggler34, Trie
 
 from boggle.boggler import PyBoggler
+from boggle.dimensional_bogglers import cpp_bucket_boggler
 from boggle.ibuckets import PyBucketBoggler
 from boggle.trie import PyTrie
 
 BIGINT = 1_000_000
 
 
-PARAMS = [(PyBucketBoggler, PyTrie), (BucketBoggler33, Trie)]
+PARAMS = [(PyBucketBoggler, PyTrie), (cpp_bucket_boggler, Trie)]
 
 
 @pytest.mark.parametrize("Boggler, TrieT", PARAMS)
-def test_boards(Boggler, TrieT):
-    bb = Boggler(None)
+def test_boards(Boggler: type[PyBucketBoggler], TrieT: type[PyTrie]):
+    bb = Boggler(None, (3, 3))
 
     assert not bb.ParseBoard("")
     assert not bb.ParseBoard("abc def")
@@ -21,23 +22,16 @@ def test_boards(Boggler, TrieT):
     assert not bb.ParseBoard("a b c d e  g h i")
 
     assert bb.ParseBoard("a b c d e f g h i")
-    for i in range(0, 9):
-        assert bb.Cell(i) == chr(ord("a") + i)
+    assert bb.as_string() == "a b c d e f g h i"
     assert bb.NumReps() == 1
 
-    bb.SetCell(0, "abc")
-    bb.SetCell(8, "pqrs")
-    bb.SetCell(7, "htuv")
-
-    assert bb.Cell(0) != "a"
-    assert bb.Cell(0) == "abc"
-    assert bb.Cell(7) == "htuv"
-    assert bb.Cell(8) == "pqrs"
+    assert bb.ParseBoard("abc b c d e f g htuv pqrs")
+    assert bb.as_string() == "abc b c d e f g htuv pqrs"
     assert 3 * 4 * 4 == bb.NumReps()
 
 
 @pytest.mark.parametrize("Boggler, TrieT", PARAMS)
-def test_bound(Boggler, TrieT):
+def test_bound(Boggler: type[PyBucketBoggler], TrieT: type[PyTrie]):
     t = TrieT()
     t.AddWord("sea")
     t.AddWord("seat")
@@ -45,7 +39,7 @@ def test_bound(Boggler, TrieT):
     t.AddWord("tea")
     t.AddWord("teas")
 
-    bb = Boggler(t)
+    bb = Boggler(t, (3, 3))
 
     assert bb.ParseBoard("a b c d e f g h i")
     assert 0 == bb.UpperBound(BIGINT)
@@ -77,8 +71,7 @@ def test_bound(Boggler, TrieT):
     # st z z
     #  e a st
     #  z z s
-    bb.SetCell(5, "st")
-    bb.SetCell(8, "s")
+    assert bb.ParseBoard("st z z e a st z z s")
 
     score = bb.UpperBound(BIGINT)
     assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
@@ -93,7 +86,7 @@ def test_q(Boggler, TrieT):
     t.AddWord("qas")  # qua = 1
     t.AddWord("qest")  # quest = 2
 
-    bb = Boggler(t)
+    bb = Boggler(t, (3, 3))
 
     # q a s
     # a e z
@@ -126,7 +119,7 @@ def test_tar_tier(Boggler, TrieT):
     t.AddWord("tea")
     t.AddWord("the")
 
-    bb = Boggler(t)
+    bb = Boggler(t, (3, 3))
 
     #  t i z
     # ae z z
@@ -159,3 +152,24 @@ def test_tar_tier_boggler():
     b = PyBoggler(t, (4, 4))
     assert b.score("tizzazzzrzzzzzzz") == 1
     assert b.score("tizzezzzrzzzzzzz") == 2
+
+
+def test_bucket_boggle34():
+    t = Trie.CreateFromFile("wordlists/enable2k.txt")
+    bb = BucketBoggler34(t)
+    # s l p i a e n t r d e s
+    assert bb.ParseBoard(
+        "lnrsy lnrsy chkmpt aeiou aeiou aeiou lnrsy chkmpt lnrsy bdfgjvwxz aeiou lnrsy"
+    )
+    assert bb.UpperBound(BIGINT) > 1600
+    d = bb.Details()
+    print(d.max_nomark, d.sum_union)
+    assert d.max_nomark == 57_158
+    assert d.sum_union == 353_018
+
+    assert bb.ParseBoard("s i n d l a t e p e r s")
+    assert bb.UpperBound(BIGINT) > 1600
+    d = bb.Details()
+    print(d.max_nomark, d.sum_union)
+    assert d.max_nomark == 1847
+    assert d.sum_union == 1651

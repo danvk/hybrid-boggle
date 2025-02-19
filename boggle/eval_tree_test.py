@@ -16,7 +16,6 @@ from boggle.eval_tree import (
     CHOICE_NODE,
     ROOT_NODE,
     EvalNode,
-    EvalTreeBoggler,
     create_eval_node_arena_py,
     eval_all,
     eval_node_to_string,
@@ -24,6 +23,7 @@ from boggle.eval_tree import (
     squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
+from boggle.tree_builder import TreeBuilder
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
 
 # TODO: add assertions about choice_mask
@@ -38,12 +38,12 @@ def test_eval_tree_match():
     t.AddWord("tea")
     t.AddWord("teas")
 
-    bb = EvalTreeBoggler(t, (3, 3))
+    bb = TreeBuilder(t, (3, 3))
 
     assert bb.ParseBoard("a b c d e f g h i")
     t = bb.BuildTree()
-    assert 0 == bb.Details().sum_union
-    assert 0 == bb.Details().max_nomark
+    assert 0 == bb.SumUnion()
+    assert 0 == t.bound
     assert 0 == t.recompute_score()
 
     # s e h
@@ -51,8 +51,8 @@ def test_eval_tree_match():
     # p u c
     assert bb.ParseBoard("s e p e a u h t c")
     t = bb.BuildTree()
-    assert 4 == bb.Details().sum_union  # sea(t), tea(s)
-    assert 6 == bb.Details().max_nomark  # seat*2, sea*2, tea
+    assert 4 == bb.SumUnion()  # sea(t), tea(s)
+    assert 6 == t.bound  # seat*2, sea*2, tea
     assert 6 == t.recompute_score()
     t.prune()
     assert 6 == t.recompute_score()
@@ -65,8 +65,8 @@ def test_eval_tree_match():
     #  e a s
     assert bb.ParseBoard("st z z e a s z z z")
     t = bb.BuildTree()
-    assert 3 == bb.Details().sum_union  # tea(s) + sea
-    assert 2 == bb.Details().max_nomark  # tea(s)
+    assert 3 == bb.SumUnion()  # tea(s) + sea
+    assert 2 == t.bound  # tea(s)
     assert 2 == t.recompute_score()
     t.prune()
     assert 2 == t.recompute_score()
@@ -77,12 +77,11 @@ def test_eval_tree_match():
     # st z z
     #  e a st
     #  z z s
-    bb.SetCell(5, "st")
-    bb.SetCell(8, "s")
+    assert bb.ParseBoard("st z z e a st z z s")
 
     t = bb.BuildTree()
-    assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
-    assert 4 == bb.Details().max_nomark  # sea(t(s))
+    assert 2 + 4 == bb.SumUnion()  # all but "hiccup"
+    assert 4 == t.bound  # sea(t(s))
     assert 4 == t.recompute_score()
     t.prune()
     assert 4 == t.recompute_score()
@@ -100,15 +99,14 @@ def test_eval_tree_force():
     #  t i .
     # ae . .
     #  r . .
-    bb = EvalTreeBoggler(t, (3, 3))
+    bb = TreeBuilder(t, (3, 3))
     assert bb.ParseBoard("tc i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
     t = bb.BuildTree()
-    assert 3 == bb.Details().sum_union
-    assert 3 == bb.Details().max_nomark
-    assert 4 == bb.NumReps()
+    assert 3 == bb.SumUnion()
     assert 3 == t.bound
+    assert 4 == bb.NumReps()
     assert 3 == t.recompute_score()
     t.check_consistency()
     # print(t.to_string(bb))
@@ -210,7 +208,7 @@ def test_equivalence():
     # print("\n".join(bb.words))
 
     t.ResetMarks()
-    etb = EvalTreeBoggler(t, (3, 4))
+    etb = TreeBuilder(t, (3, 4))
     etb.ParseBoard(board)
     root = etb.BuildTree()
     assert root.bound == 5
@@ -230,20 +228,6 @@ def test_equivalence():
     table = make_lookup_table(t)
     root_words = root.all_words(table)
     assert [*sorted(root_words)] == [*sorted(bb.words)]
-    # print("Root:")
-    # print("\n".join(root_words))
-    # print("---")
-    # print("5=e words:")
-    # print("\n".join(fives[1].all_words(table)))
-    # print("---")
-
-    # print(fives[1].recompute_score())
-    # fives[1].compress()
-    # print(fives[1].to_dot(etb))
-    # PrintEvalTreeCounts()
-    # assert False
-    # print(fives[1].bound)
-    # print(fives[1].recompute_score())
 
     t.ResetMarks()
     root.set_choice_point_mask(num_letters=[len(cell) for cell in cells])
@@ -259,7 +243,8 @@ def test_equivalence():
         # Some combinations may have been ruled out by subtree merging.
         # The word lists will be the same, however.
         assert fives[i].bound <= bb.Details().max_nomark
-        assert bb.Details().max_nomark == root.score_with_forces_dict({5: i}, 9, cells)
+        forces = [i if cell == 5 else -1 for cell in range(9)]
+        assert bb.Details().max_nomark == root.score_with_forces(forces)
         fives[i].check_consistency()
         # Some choices may have been pruned out
         assert fives[i].choice_cells().issubset({4, 6, 7})
@@ -295,7 +280,7 @@ def test_merge_eval_trees():
     board = ". . . . lnrsy aeiou aeiou aeiou . . . ."
     cells = board.split(" ")
     num_letters = [len(c) for c in cells]
-    etb = EvalTreeBoggler(t, (3, 4))
+    etb = TreeBuilder(t, (3, 4))
     etb.ParseBoard(board)
 
     t0 = choice_node(
@@ -396,7 +381,7 @@ def test_merge_eval_trees():
 
 
 PARAMS = [
-    (PyTrie, EvalTreeBoggler, create_eval_node_arena_py, create_eval_node_arena_py),
+    (PyTrie, TreeBuilder, create_eval_node_arena_py, create_eval_node_arena_py),
     (Trie, TreeBuilder33, create_eval_node_arena, create_vector_arena),
 ]
 
@@ -415,8 +400,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     arena = create_arena()
     assert bb.ParseBoard("a b c d e f g h i")
     tree = bb.BuildTree(arena)
-    assert 0 == bb.Details().sum_union
-    assert 0 == bb.Details().max_nomark
+    assert 0 == bb.SumUnion()
+    assert 0 == tree.bound
     assert 0 == tree.recompute_score()
     assert 1 == tree.node_count()
 
@@ -426,8 +411,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     print("sepeauhtc")
     assert bb.ParseBoard("s e p e a u h t c")
     tree = bb.BuildTree(arena)
-    assert 4 == bb.Details().sum_union  # sea(t), tea(s)
-    assert 6 == bb.Details().max_nomark  # seat*2, sea*2, tea
+    assert 4 == bb.SumUnion()  # sea(t), tea(s)
+    assert 6 == tree.bound  # seat*2, sea*2, tea
     assert 6 == tree.recompute_score()
     assert 6 == tree.bound
     assert 23 == tree.node_count()
@@ -439,8 +424,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     #  e a s
     assert bb.ParseBoard("st z z e a s z z z")
     tree = bb.BuildTree(arena)
-    assert 3 == bb.Details().sum_union  # tea(s) + sea
-    assert 2 == bb.Details().max_nomark  # tea(s)
+    assert 3 == bb.SumUnion()  # tea(s) + sea
+    assert 2 == tree.bound  # tea(s)
     assert 2 == tree.recompute_score()
     assert 2 == tree.bound
     assert 14 == tree.node_count()
@@ -450,20 +435,20 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     # st z z
     #  e a st
     #  z z s
-    bb.SetCell(5, "st")
-    bb.SetCell(8, "s")
+    assert bb.ParseBoard("st z z e a st z z s")
 
     tree = bb.BuildTree(arena)
-    assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
-    assert 4 == bb.Details().max_nomark  # sea(t(s))
+    assert 2 + 4 == bb.SumUnion()  # all but "hiccup"
+    assert 4 == tree.bound  # sea(t(s))
     assert 4 == tree.recompute_score()
     assert 4 == tree.recompute_score()
-    assert 4 == tree.bound
     assert 20 == tree.node_count()
 
 
 @pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena, create_vec_arena", PARAMS)
-def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
+def test_cpp_force_equivalence(
+    TrieT, TreeBuilderT: type[TreeBuilder], create_arena, create_vec_arena
+):
     t = TrieT()
     t.AddWord("tar")
     t.AddWord("tie")
@@ -484,11 +469,10 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
-    t: EvalNode = bb.BuildTree(arena)
-    assert 3 == bb.Details().sum_union
-    assert 3 == bb.Details().max_nomark
-    assert 2 == bb.NumReps()
+    t = bb.BuildTree(arena)
+    assert 3 == bb.SumUnion()
     assert 3 == t.bound
+    assert 2 == bb.NumReps()
     assert 3 == t.recompute_score()
     # t.check_consistency()
     # print(t.to_string(bb))
@@ -539,7 +523,7 @@ def test_lift_invariants(dedupe, compress):
     compress = False
 
     arena = create_eval_node_arena_py()
-    etb = EvalTreeBoggler(trie, (2, 2))
+    etb = TreeBuilder(trie, (2, 2))
     ibb = PyBucketBoggler(trie, (2, 2))
     assert etb.ParseBoard(board)
     t = etb.BuildTree(arena, dedupe=dedupe)
@@ -645,7 +629,7 @@ def test_lift_invariants(dedupe, compress):
 
 
 INVARIANT_PARAMS = [
-    (make_py_trie, EvalTreeBoggler),
+    (make_py_trie, TreeBuilder),
     (Trie.CreateFromFile, cpp_tree_builder),
 ]
 

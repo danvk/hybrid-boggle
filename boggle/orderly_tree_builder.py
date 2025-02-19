@@ -1,6 +1,7 @@
 import argparse
 
 from boggle.args import add_standard_args, get_trie_from_args
+from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.dimensional_bogglers import LEN_TO_DIMS, OrderlyTreeBuilders
 from boggle.eval_tree import (
@@ -8,13 +9,12 @@ from boggle.eval_tree import (
     EvalNode,
     create_eval_node_arena_py,
 )
-from boggle.ibuckets import PyBucketBoggler, ScoreDetails
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
 
 
 # TODO: decide if this really needs to inherit PyBucketBoggler
-class OrderlyTreeBuilder(PyBucketBoggler):
+class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
     root: EvalNode
 
@@ -22,15 +22,11 @@ class OrderlyTreeBuilder(PyBucketBoggler):
         super().__init__(trie, dims)
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
 
-    def UpperBound(self, bailout_score):
-        raise NotImplementedError()
-
     def BuildTree(self, arena=None):
         root = EvalNode()
         root.letter = ROOT_NODE
         root.cell = 0  # irrelevant
         root.points = 0
-        self.details_ = ScoreDetails(0, 0, -1)
         self.root = root
         self.used_ = 0
 
@@ -39,8 +35,11 @@ class OrderlyTreeBuilder(PyBucketBoggler):
         num_letters = [len(cell) for cell in self.bd_]
         root.set_computed_fields(num_letters)
         self.root = None
-        self.details_.max_nomark = root.bound
         return root
+
+    def SumUnion(self):
+        # This _could_ be computed if there were a need.
+        return 0
 
     # TODO: rename these methods
     def DoAllDescents(
@@ -105,7 +104,7 @@ def main():
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
-    # etb = EvalTreeBoggler(trie, dims)
+    # etb = TreeBuilder(trie, dims)
     # assert etb.ParseBoard(board)
     # e_arena = etb.create_arena()
     # classic_tree = etb.BuildTree(e_arena, dedupe=True)
