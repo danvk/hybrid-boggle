@@ -18,16 +18,14 @@ from boggle.args import (
 )
 from boggle.board_id import from_board_id, is_canonical_board_id
 from boggle.boggler import PyBoggler
-from boggle.breaker import (
-    HybridTreeBreaker,
-    IBucketBreaker,
-)
+from boggle.breaker import HybridTreeBreaker
 from boggle.dimensional_bogglers import (
     BucketBogglers,
     cpp_orderly_tree_builder,
     cpp_tree_builder,
 )
 from boggle.eval_tree import EvalTreeBoggler
+from boggle.ibucket_breaker import IBucketBreaker
 from boggle.ibuckets import PyBucketBoggler
 from boggle.letter_grouping import filter_to_canonical
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
@@ -143,7 +141,7 @@ def get_breaker(args) -> BreakingBundle:
             dims,
             best_score,
             switchover_level=args.switchover_level,
-            free_after_score=args.free_after_score,
+            free_after_lift=args.free_after_lift,
             log_breaker_progress=args.log_breaker_progress,
             letter_grouping=args.letter_grouping,
         )
@@ -228,10 +226,10 @@ def main():
         help="Glob pattern of ndjson output files from a previous run.",
     )
     parser.add_argument(
-        "--free_after_score",
+        "--free_after_lift",
         action="store_true",
-        help="Wait to free memory until after score_with_forces in HybridBreaker. "
-        "This is a ~5%% performance hit but significantly reduces the time that memory is held.",
+        help="Free memory before bound_remaining_boards in HybridBreaker. "
+        "This is a ~5%% performance hit but may reduce the time that memory is held.",
     )
     parser.add_argument(
         "--log_per_board_stats",
