@@ -66,7 +66,7 @@ def test_eval_tree_match():
     assert bb.ParseBoard("st z z e a s z z z")
     t = bb.BuildTree()
     assert 3 == bb.SumUnion()  # tea(s) + sea
-    assert 2 == t.max_nomark  # tea(s)
+    assert 2 == t.bound  # tea(s)
     assert 2 == t.recompute_score()
     t.prune()
     assert 2 == t.recompute_score()
@@ -81,7 +81,7 @@ def test_eval_tree_match():
 
     t = bb.BuildTree()
     assert 2 + 4 == bb.SumUnion()  # all but "hiccup"
-    assert 4 == t.max_nomark  # sea(t(s))
+    assert 4 == t.bound  # sea(t(s))
     assert 4 == t.recompute_score()
     t.prune()
     assert 4 == t.recompute_score()
@@ -413,8 +413,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     arena = create_arena()
     assert bb.ParseBoard("a b c d e f g h i")
     tree = bb.BuildTree(arena)
-    assert 0 == bb.Details().sum_union
-    assert 0 == bb.Details().max_nomark
+    assert 0 == bb.SumUnion()
+    assert 0 == tree.bound
     assert 0 == tree.recompute_score()
     assert 1 == tree.node_count()
 
@@ -424,8 +424,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     print("sepeauhtc")
     assert bb.ParseBoard("s e p e a u h t c")
     tree = bb.BuildTree(arena)
-    assert 4 == bb.Details().sum_union  # sea(t), tea(s)
-    assert 6 == bb.Details().max_nomark  # seat*2, sea*2, tea
+    assert 4 == bb.SumUnion()  # sea(t), tea(s)
+    assert 6 == tree.bound  # seat*2, sea*2, tea
     assert 6 == tree.recompute_score()
     assert 6 == tree.bound
     assert 23 == tree.node_count()
@@ -437,8 +437,8 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     #  e a s
     assert bb.ParseBoard("st z z e a s z z z")
     tree = bb.BuildTree(arena)
-    assert 3 == bb.Details().sum_union  # tea(s) + sea
-    assert 2 == bb.Details().max_nomark  # tea(s)
+    assert 3 == bb.SumUnion()  # tea(s) + sea
+    assert 2 == tree.bound  # tea(s)
     assert 2 == tree.recompute_score()
     assert 2 == tree.bound
     assert 14 == tree.node_count()
@@ -451,16 +451,17 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     assert bb.ParseBoard("st z z e a st z z s")
 
     tree = bb.BuildTree(arena)
-    assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
-    assert 4 == bb.Details().max_nomark  # sea(t(s))
+    assert 2 + 4 == bb.SumUnion()  # all but "hiccup"
+    assert 4 == tree.bound  # sea(t(s))
     assert 4 == tree.recompute_score()
     assert 4 == tree.recompute_score()
-    assert 4 == tree.bound
     assert 20 == tree.node_count()
 
 
 @pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena, create_vec_arena", PARAMS)
-def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
+def test_cpp_force_equivalence(
+    TrieT, TreeBuilderT: type[EvalTreeBoggler], create_arena, create_vec_arena
+):
     t = TrieT()
     t.AddWord("tar")
     t.AddWord("tie")
@@ -481,11 +482,10 @@ def test_cpp_force_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_are
     assert bb.ParseBoard("t i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
-    t: EvalNode = bb.BuildTree(arena)
-    assert 3 == bb.Details().sum_union
-    assert 3 == bb.Details().max_nomark
-    assert 2 == bb.NumReps()
+    t = bb.BuildTree(arena)
+    assert 3 == bb.SumUnion()
     assert 3 == t.bound
+    assert 2 == bb.NumReps()
     assert 3 == t.recompute_score()
     # t.check_consistency()
     # print(t.to_string(bb))
