@@ -24,11 +24,11 @@ from boggle.dimensional_bogglers import (
     cpp_orderly_tree_builder,
     cpp_tree_builder,
 )
-from boggle.eval_tree import EvalTreeBoggler
 from boggle.ibucket_breaker import IBucketBreaker
 from boggle.ibuckets import PyBucketBoggler
 from boggle.letter_grouping import filter_to_canonical
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
+from boggle.tree_builder import TreeBuilder
 from boggle.trie import PyTrie, get_letter_map
 
 
@@ -38,7 +38,7 @@ class BreakingBundle:
 
     trie: PyTrie
     boggler: PyBoggler
-    etb: EvalTreeBoggler
+    etb: TreeBuilder
     breaker: IBucketBreaker | HybridTreeBreaker
     ungrouped_trie: PyTrie
 
@@ -128,7 +128,7 @@ def get_breaker(args) -> BreakingBundle:
     # (args.python, args.tree_builder)
     builder = {
         (True, "orderly"): OrderlyTreeBuilder,
-        (True, "natural"): EvalTreeBoggler,
+        (True, "natural"): TreeBuilder,
         (False, "orderly"): cpp_orderly_tree_builder,
         (False, "natural"): cpp_tree_builder,
     }

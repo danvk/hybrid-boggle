@@ -8,9 +8,9 @@ from boggle.breaker import SPLIT_ORDER
 from boggle.dimensional_bogglers import LEN_TO_DIMS, cpp_tree_builder
 from boggle.eval_tree import (
     EvalNode,
-    EvalTreeBoggler,
     PrintEvalTreeCounts,
 )
+from boggle.tree_builder import TreeBuilder
 
 mark = 1
 
@@ -48,7 +48,7 @@ def main():
     trie = get_trie_from_args(args)
 
     if args.python:
-        etb = EvalTreeBoggler(trie, dims)
+        etb = TreeBuilder(trie, dims)
     else:
         etb = cpp_tree_builder(trie, dims)
 

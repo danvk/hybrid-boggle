@@ -103,7 +103,7 @@ def main():
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
-    # etb = EvalTreeBoggler(trie, dims)
+    # etb = TreeBuilder(trie, dims)
     # assert etb.ParseBoard(board)
     # e_arena = etb.create_arena()
     # classic_tree = etb.BuildTree(e_arena, dedupe=True)

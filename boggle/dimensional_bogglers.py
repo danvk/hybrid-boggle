@@ -52,7 +52,7 @@ def cpp_bucket_boggler(t, dims):
     return BucketBogglers[dims](t)
 
 
-# Matches EvalTreeBoggler
+# Matches TreeBuilder
 def cpp_tree_builder(t, dims):
     return TreeBuilders[dims](t)
 

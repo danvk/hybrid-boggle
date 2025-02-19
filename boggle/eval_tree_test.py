@@ -16,7 +16,6 @@ from boggle.eval_tree import (
     CHOICE_NODE,
     ROOT_NODE,
     EvalNode,
-    EvalTreeBoggler,
     create_eval_node_arena_py,
     eval_all,
     eval_node_to_string,
@@ -24,6 +23,7 @@ from boggle.eval_tree import (
     squeeze_sum_node_in_place,
 )
 from boggle.ibuckets import PyBucketBoggler
+from boggle.tree_builder import TreeBuilder
 from boggle.trie import PyTrie, make_lookup_table, make_py_trie
 
 # TODO: add assertions about choice_mask
@@ -38,7 +38,7 @@ def test_eval_tree_match():
     t.AddWord("tea")
     t.AddWord("teas")
 
-    bb = EvalTreeBoggler(t, (3, 3))
+    bb = TreeBuilder(t, (3, 3))
 
     assert bb.ParseBoard("a b c d e f g h i")
     t = bb.BuildTree()
@@ -99,7 +99,7 @@ def test_eval_tree_force():
     #  t i .
     # ae . .
     #  r . .
-    bb = EvalTreeBoggler(t, (3, 3))
+    bb = TreeBuilder(t, (3, 3))
     assert bb.ParseBoard("tc i z ae z z r z z")
 
     # With no force, we match the behavior of scalar ibuckets
@@ -208,7 +208,7 @@ def test_equivalence():
     # print("\n".join(bb.words))
 
     t.ResetMarks()
-    etb = EvalTreeBoggler(t, (3, 4))
+    etb = TreeBuilder(t, (3, 4))
     etb.ParseBoard(board)
     root = etb.BuildTree()
     assert root.bound == 5
@@ -293,7 +293,7 @@ def test_merge_eval_trees():
     board = ". . . . lnrsy aeiou aeiou aeiou . . . ."
     cells = board.split(" ")
     num_letters = [len(c) for c in cells]
-    etb = EvalTreeBoggler(t, (3, 4))
+    etb = TreeBuilder(t, (3, 4))
     etb.ParseBoard(board)
 
     t0 = choice_node(
@@ -394,7 +394,7 @@ def test_merge_eval_trees():
 
 
 PARAMS = [
-    (PyTrie, EvalTreeBoggler, create_eval_node_arena_py, create_eval_node_arena_py),
+    (PyTrie, TreeBuilder, create_eval_node_arena_py, create_eval_node_arena_py),
     (Trie, TreeBuilder33, create_eval_node_arena, create_vector_arena),
 ]
 
@@ -460,7 +460,7 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
 
 @pytest.mark.parametrize("TrieT, TreeBuilderT, create_arena, create_vec_arena", PARAMS)
 def test_cpp_force_equivalence(
-    TrieT, TreeBuilderT: type[EvalTreeBoggler], create_arena, create_vec_arena
+    TrieT, TreeBuilderT: type[TreeBuilder], create_arena, create_vec_arena
 ):
     t = TrieT()
     t.AddWord("tar")
@@ -536,7 +536,7 @@ def test_lift_invariants(dedupe, compress):
     compress = False
 
     arena = create_eval_node_arena_py()
-    etb = EvalTreeBoggler(trie, (2, 2))
+    etb = TreeBuilder(trie, (2, 2))
     ibb = PyBucketBoggler(trie, (2, 2))
     assert etb.ParseBoard(board)
     t = etb.BuildTree(arena, dedupe=dedupe)
@@ -642,7 +642,7 @@ def test_lift_invariants(dedupe, compress):
 
 
 INVARIANT_PARAMS = [
-    (make_py_trie, EvalTreeBoggler),
+    (make_py_trie, TreeBuilder),
     (Trie.CreateFromFile, cpp_tree_builder),
 ]
 

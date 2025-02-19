@@ -22,10 +22,10 @@ from dataclasses import dataclass
 from boggle.boggler import PyBoggler
 from boggle.eval_tree import (
     EvalNode,
-    EvalTreeBoggler,
 )
 from boggle.letter_grouping import get_letter_map, reverse_letter_map, ungroup_letters
 from boggle.split_order import SPLIT_ORDER
+from boggle.tree_builder import TreeBuilder
 
 
 @dataclass
@@ -67,7 +67,7 @@ class HybridTreeBreaker:
 
     def __init__(
         self,
-        etb: EvalTreeBoggler,
+        etb: TreeBuilder,
         ungrouped_boggler: PyBoggler,
         dims: tuple[int, int],
         best_score: int,
