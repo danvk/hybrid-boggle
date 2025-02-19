@@ -1,5 +1,8 @@
+from inline_snapshot import snapshot
+
 from boggle.board_id import (
     board_id,
+    cell_type_for_index,
     from_board_id,
     get_canonical_board_id,
     is_canonical_board_id,
@@ -79,3 +82,50 @@ def test_2d_1d_round_trip():
         ["n", "t", "r", "c"],
         ["d", "e", "s", "d"],
     ]
+
+
+def test_cell_type_for_index():
+    assert cell_type_for_index(0, (3, 3)) == "corner"
+    assert cell_type_for_index(1, (3, 3)) == "edge"
+    assert cell_type_for_index(2, (3, 3)) == "corner"
+    assert cell_type_for_index(4, (3, 3)) == "center"
+
+    assert {i: cell_type_for_index(i, (3, 4)) for i in range(12)} == snapshot(
+        {
+            0: "corner",
+            1: "edge",
+            2: "edge",
+            3: "corner",
+            4: "edge",
+            5: "center",
+            6: "center",
+            7: "edge",
+            8: "corner",
+            9: "edge",
+            10: "edge",
+            11: "corner",
+        }
+    )
+
+    four = snapshot(
+        {
+            0: "corner",
+            1: "edge",
+            2: "edge",
+            3: "corner",
+            4: "edge",
+            5: "center",
+            6: "center",
+            7: "edge",
+            8: "edge",
+            9: "center",
+            10: "center",
+            11: "edge",
+            12: "corner",
+            13: "edge",
+            14: "edge",
+            15: "corner",
+        }
+    )
+    for i in range(16):
+        assert cell_type_for_index(i, (4, 4)) == four[i]

@@ -141,6 +141,37 @@ def is_canonical_board_id(num_classes: int, dims: tuple[int, int], idx: int):
     return r == idx
 
 
+CELL_TYPES = {"center", "edge", "corner"}
+
+
+def cell_type_for_index(idx: int, dims: tuple[int, int]):
+    w, h = dims
+    y = idx % h
+    x = idx // h
+    ex = x == 0 or x == w - 1
+    ey = y == 0 or y == h - 1
+    if ex and ey:
+        return "corner"
+    elif ex or ey:
+        return "edge"
+    return "center"
+
+
+def parse_classes(classes: str, dims: tuple[int, int]):
+    w, h = dims
+    clauses = [clause.strip() for clause in classes.split(",")]
+    cell_types = {}
+    for clause in clauses:
+        if ":" in clause:
+            where, what = (c.trim() for c in clause.split(":"))
+            assert where in CELL_TYPES
+            cell_types[where] = what.split(" ")
+        else:
+            for type in CELL_TYPES:
+                cell_types[type] = clause.split(" ")
+    print(cell_types)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Go between board IDs and board classes",
