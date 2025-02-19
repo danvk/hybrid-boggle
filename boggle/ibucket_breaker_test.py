@@ -1,6 +1,6 @@
 from cpp_boggle import BucketBoggler34, Trie
 
-from boggle.breaker import even_split
+from boggle.ibucket_breaker import even_split
 
 
 def test_even_split():
@@ -17,12 +17,16 @@ def test_bucket_boggle34():
     assert bb.ParseBoard(
         "lnrsy lnrsy chkmpt aeiou aeiou aeiou lnrsy chkmpt lnrsy bdfgjvwxz aeiou lnrsy"
     )
-    assert bb.UpperBound(1600000) > 1600
+    assert bb.UpperBound(1_000_000) > 1600
     d = bb.Details()
     print(d.max_nomark, d.sum_union)
+    assert d.max_nomark == 57_158
+    assert d.sum_union == 353_018
 
     # assert bb.ParseBoard('s l p i a e n t r d e s')
     assert bb.ParseBoard("s i n d l a t e p e r s")
-    assert bb.UpperBound(1600000) > 1600
+    assert bb.UpperBound(1_000_000) > 1600
     d = bb.Details()
     print(d.max_nomark, d.sum_union)
+    assert d.max_nomark == 1847
+    assert d.sum_union == 1651

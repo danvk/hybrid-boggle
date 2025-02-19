@@ -53,12 +53,6 @@ class PyBucketBoggler:
     def as_string(self):
         return " ".join(b if b else "." for b in self.bd_)
 
-    def Cell(self, i: int):
-        return self.bd_[i]
-
-    def SetCell(self, i: int, chars: str):
-        self.bd_[i] = chars
-
     def Details(self):
         return self.details_
 
@@ -89,15 +83,10 @@ class PyBucketBoggler:
         for char in self.bd_[idx]:
             cc = ord(char) - LETTER_A
             if t.StartsWord(cc):
-                # print(" %s" % char)
-                # if self.collect_words:
-                #     self.cells.append((idx, char))
                 tscore = self.DoDFS(
                     idx, length + (2 if cc == LETTER_Q else 1), t.Descend(cc)
                 )
                 max_score = max(max_score, tscore)
-                # if self.collect_words:
-                #     self.cells.pop()
         return max_score
 
     def DoDFS(self, i: int, length: int, t: PyTrie):
@@ -113,13 +102,7 @@ class PyBucketBoggler:
             score += word_score
             if self.collect_words:
                 word = self.lookup_table[t]
-                # print(" +%2d (%d,%d) %s" % (word_score, i // 3, i % 3, word))
                 self.words.append(word)
-                # if word == self.target_word:
-                #     print(
-                #         word,
-                #         "->".join(f"{cell}={letter}" for cell, letter in self.cells),
-                #     )
             if t.Mark() != self.runs_:
                 self.details_.sum_union += word_score
                 t.SetMark(self.runs_)

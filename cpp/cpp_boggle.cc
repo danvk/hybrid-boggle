@@ -24,8 +24,6 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
         .def("ParseBoard", &BB::ParseBoard)
         .def("UpperBound", &BB::UpperBound)
         .def("as_string",  &BB::as_string)
-        .def("Cell",    &BB::Cell)
-        .def("SetCell", &BB::SetCell)
         .def("Details", &BB::Details)
         .def("NumReps", &BB::NumReps);
 }

@@ -77,8 +77,7 @@ def test_eval_tree_match():
     # st z z
     #  e a st
     #  z z s
-    bb.SetCell(5, "st")
-    bb.SetCell(8, "s")
+    assert bb.ParseBoard("st z z e a st z z s")
 
     t = bb.BuildTree()
     assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"
