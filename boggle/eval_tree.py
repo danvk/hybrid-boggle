@@ -1061,16 +1061,13 @@ def eval_tree_from_json(d: dict) -> EvalNode:
     return node
 
 
-def dedupe_subtrees(t: EvalNode):
+def dedupe_subtrees(t: EvalNode, mark: int):
     """Replace identical subtrees with a single copy."""
-    global cache_count
-    cache_count += 1
-
     hash_to_node = {}
     for node in t.all_nodes_postorder():
-        if node.cache_key == cache_count:
+        if node.cache_key == mark:
             continue  # already de-duped; save the cost of hashing it.
-        node.cache_key = cache_count
+        node.cache_key = mark
         h = node.structural_hash()
         if h not in hash_to_node:
             hash_to_node[h] = node
