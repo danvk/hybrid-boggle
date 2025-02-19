@@ -449,8 +449,7 @@ def test_cpp_equivalence(TrieT, TreeBuilderT, create_arena, create_vec_arena):
     # st z z
     #  e a st
     #  z z s
-    bb.SetCell(5, "st")
-    bb.SetCell(8, "s")
+    assert bb.ParseBoard("st z z e a st z z s")
 
     tree = bb.BuildTree(arena)
     assert 2 + 4 == bb.Details().sum_union  # all but "hiccup"

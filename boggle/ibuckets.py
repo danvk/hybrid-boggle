@@ -1,10 +1,9 @@
-# Bucketed Boggle in Python
+# See https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
 
-import math
 from dataclasses import dataclass
 
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
-from boggle.neighbors import NEIGHBORS
+from boggle.bucket_base import BoardClassBoggler
 from boggle.trie import PyTrie, make_lookup_table
 
 
@@ -15,7 +14,9 @@ class ScoreDetails:
     bailout_cell: int
 
 
-class PyBucketBoggler:
+class PyBucketBoggler(BoardClassBoggler):
+    """Calculate max/nomark and sum/union upper bounds on a board class."""
+
     trie_: PyTrie
     bd_: list[str]
     runs_: int
@@ -26,32 +27,13 @@ class PyBucketBoggler:
     cells: list[int]
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
-        self.trie_ = trie
+        super().__init__(trie, dims)
         self.runs_ = 0
-        self.used_ = 0
-        self.bd_ = []
         self.details_ = None
-        self.neighbors = NEIGHBORS[dims]
         self.dims = dims
         self.collect_words = False
         self.words = None
         self.lookup_table = None
-        self.cells = []
-        self.target_word = None
-
-    def ParseBoard(self, board: str):
-        cells = board.split(" ")
-        if len(cells) != self.dims[0] * self.dims[1] or not all(cells):
-            return False
-        # '.' is an explicit "don't go here," which is useful for testing.
-        self.bd_ = [b if b != "." else "" for b in cells]
-        return True
-
-    def NumReps(self) -> int:
-        return math.prod(len(cell) for cell in self.bd_)
-
-    def as_string(self):
-        return " ".join(b if b else "." for b in self.bd_)
 
     def Details(self):
         return self.details_
