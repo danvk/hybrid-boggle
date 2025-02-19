@@ -30,6 +30,8 @@ from boggle.split_order import SPLIT_ORDER
 
 @dataclass
 class BreakDetails:
+    """Details shared between hybrid and ibuckets."""
+
     num_reps: int
     elapsed_s: float
     failures: list[str]

@@ -206,7 +206,7 @@ def main():
     parser.add_argument(
         "--tree_builder",
         choices=("natural", "orderly"),
-        default="natural",
+        default="orderly",
         help="Tree builder to use.",
     )
     parser.add_argument(
