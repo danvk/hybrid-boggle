@@ -14,7 +14,6 @@ def from_board_id(cell_classes: list[list[str]], idx: int) -> str:
     return " ".join(board)
 
 
-# TODO: num_classes: int -> list[int]
 def board_id(bd: list[list[int]], num_classes: list[int]) -> int:
     h = len(bd)
     w = len(bd[0])
@@ -49,7 +48,6 @@ def swap(ary, a, b):
     ary[ay][ax], ary[by][bx] = ary[by][bx], ary[ay][ax]
 
 
-# TODO: num_classes: int -> list[int]
 # TODO: can probably express this all more concisely in Python
 def canonicalize_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     """Return an index for a more canonical version of this board.
@@ -62,16 +60,11 @@ def canonicalize_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     bd = [[0 for _x in range(0, w)] for _y in range(0, h)]
     left = idx
 
-    # TODO: call to_2d
     # dims=(3, 4): bd is 4x3; len(bd) == 4, len(bd[0]) == 3
     for i in range(0, w * h):
         bd[i % h][i // h] = left % num_classes[i]
         left //= num_classes[i]
     assert left == 0
-
-    # if dims == (3, 4):
-    #     assert len(bd) == 4
-    #     assert len(bd[0]) == 3
 
     rots = (0, 1) if w == h else (0,)
 
@@ -126,7 +119,6 @@ def canonicalize_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     return idx
 
 
-# TODO: num_classes: int -> list[int]
 def get_canonical_board_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     other = canonicalize_id(num_classes, dims, idx)
     if other == idx:
@@ -134,7 +126,6 @@ def get_canonical_board_id(num_classes: list[int], dims: tuple[int, int], idx: i
     return get_canonical_board_id(num_classes, dims, other)
 
 
-# TODO: num_classes: int -> list[int]
 def is_canonical_board_id(num_classes: list[int], dims: tuple[int, int], idx: int):
     r = canonicalize_id(num_classes, dims, idx)
     return r == idx
@@ -189,13 +180,12 @@ def main():
     parser.add_argument("boards", nargs="+", help="Board classes (space-delimited)")
 
     args = parser.parse_args()
-    # TODO: implement parse_classes(args.classes, dims)
-    # --classes="center:aeiou blah, edge:aeiou blah, corner:aeiou blah"
-    classes = args.classes.split(" ")
-    n_classes = len(classes)
     w, h = dims = args.size // 10, args.size % 10
     assert 3 <= w <= 4
     assert 3 <= h <= 4
+    classes = parse_classes(args.classes, dims)
+    assert len(classes) == w * h
+    num_classes = [len(c) for c in classes]
 
     boards: set[str] = set(args.boards)
     numeric_boards = {board for board in boards if board.isdigit()}
@@ -203,7 +193,7 @@ def main():
 
     if numeric_boards:
         for i in numeric_boards:
-            board = from_board_id(classes, dims, int(i))
+            board = from_board_id(classes, int(i))
             print(f"{i}: {board}")
 
     if not boards:
@@ -215,20 +205,22 @@ def main():
         if " " in board:
             expanded_boards.add(board)
             continue
-        board_class = " ".join(next(c for c in classes if b in c) for b in board)
+        board_class = " ".join(
+            next(c for c in classes[i] if b in c) for i, b in enumerate(board)
+        )
         print(f"Expanding {board} -> {board_class}")
         expanded_boards.add(board_class)
     boards = expanded_boards
 
     for board in boards:
         bd_1d = board.split(" ")
-        nums = [classes.index(c) for c in bd_1d]
+        nums = [classes[i].index(c) for i, c in enumerate(bd_1d)]
         bd = to_2d(nums, dims)
-        bd_id = board_id(bd, dims, n_classes)
+        bd_id = board_id(bd, num_classes)
         canon = (
             "canonical"
-            if is_canonical_board_id(n_classes, dims, bd_id)
-            else f"canonical -> {get_canonical_board_id(n_classes, dims, bd_id)}"
+            if is_canonical_board_id(num_classes, dims, bd_id)
+            else f"canonical -> {get_canonical_board_id(num_classes, dims, bd_id)}"
         )
 
         print(f"{bd_id}\t{board}\t{canon}")

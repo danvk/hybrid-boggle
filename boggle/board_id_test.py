@@ -67,6 +67,38 @@ def test_best_34():
     ]
 
 
+def test_best_34_per_cell():
+    classes = parse_classes(
+        "center:aeiou bfgpst xyz djlmnrvw chkq, edge:aeijou bcdfgmpqvwxz hklnrsty, corner:aeiou bcdfghjklmnpqrstvwxyz",
+        (3, 4),
+    )
+    assert len(classes) == 12
+    num_classes = [len(cls) for cls in classes]
+
+    best = "s i n d l a t e p e r s".split(" ")
+    best_classes = " ".join(
+        [next(c for c in classes[i] if x in c) for i, x in enumerate(best)]
+    )
+    best_idxs = [
+        next(i for i, c in enumerate(classes[j]) if x in c) for j, x in enumerate(best)
+    ]
+    assert best_idxs == snapshot([1, 0, 2, 1, 2, 0, 1, 0, 1, 0, 2, 1])
+    best_idxs2d = to_2d(best_idxs, (3, 4))
+    assert board_id(best_idxs2d, num_classes) == 251743
+    assert from_board_id(classes, 251743) == best_classes
+    assert get_canonical_board_id(num_classes, (3, 4), 251743) == 191831
+    canonical_best_class = from_board_id(classes, 191831)
+    best_2d = to_2d(canonical_best_class.split(" "), (3, 4))
+    assert best_2d == snapshot(
+        [
+            ["bcdfghjklmnpqrstvwxyz", "aeijou", "bcdfghjklmnpqrstvwxyz"],  # S E D
+            ["hklnrsty", "bfgpst", "hklnrsty"],  # R T N
+            ["aeijou", "aeiou", "aeijou"],  # E A I
+            ["bcdfghjklmnpqrstvwxyz", "hklnrsty", "bcdfghjklmnpqrstvwxyz"],  # P L S
+        ]
+    )
+
+
 def test_2d_1d_round_trip():
     board = "sindlatepers"
     bd2d = to_2d(board, (3, 4))
