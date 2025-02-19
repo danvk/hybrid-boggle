@@ -42,7 +42,8 @@ Found unbreakable board for 2520743: perslitesand
   "elim_level": {},
   "sum_union": 0,
   "bounds": {
-    "0": 6652
+    "0": 6652,
+    "1": 5691
   },
   "nodes": {
     "0": 1960065
@@ -50,7 +51,7 @@ Found unbreakable board for 2520743: perslitesand
   "boards_to_test": 8078,
   "expanded_to_test": 8078,
   "init_nodes": 1960065,
-  "total_nodes": 1960065,
+  "total_nodes": 2362581,
   "freed_nodes": 0,
   "num_filtered": {},
   "id": 2520743
