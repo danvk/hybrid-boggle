@@ -72,8 +72,7 @@ class HybridTreeBreaker:
         dims: tuple[int, int],
         best_score: int,
         *,
-        # TODO: ideally this should depend on the node_count of the tree.
-        switchover_level: int,
+        switchover_level: int | list[tuple[int, int]],
         free_after_lift: bool,
         log_breaker_progress: bool,
         letter_grouping: str = "",
@@ -86,7 +85,7 @@ class HybridTreeBreaker:
         self.orig_reps_ = 0
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
-        self.switchover_level = switchover_level
+        self.switchover_level_input = switchover_level
         self.free_after_lift = free_after_lift
         self.log_breaker_progress = log_breaker_progress
         self.rev_letter_grouping = (
@@ -94,17 +93,11 @@ class HybridTreeBreaker:
             if letter_grouping
             else None
         )
-        if self.rev_letter_grouping:
-            # cz uxj mk wv fb gy
-            board = "perslatesind"
-            score = self.boggler.score(board)
-            print(f"{score} {board}")
 
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
 
     def Break(self) -> HybridBreakDetails:
-        # TODO: this is kind of roundabout
         self.cells = self.etb.as_string().split(" ")
         self.num_letters = [len(c) for c in self.cells]
         self.details_ = HybridBreakDetails(
@@ -130,12 +123,22 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
-        tree = self.etb.BuildTree(arena, dedupe=True)
+        tree = self.etb.BuildTree(arena, dedupe=False)
+        num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             self.mark += 1
             print(
-                f"root {tree.bound=}, {tree.unique_node_count(self.mark)} unique nodes"
+                f"root {tree.bound=}, {num_nodes} nodes, {tree.unique_node_count(self.mark)} unique nodes"
             )
+
+        if isinstance(self.switchover_level_input, int):
+            self.switchover_level = self.switchover_level
+        else:
+            self.switchover_level = 0
+            for level, size in self.switchover_level_input:
+                if num_nodes >= size:
+                    self.switchover_level = level
+
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.sum_union = self.etb.SumUnion()
