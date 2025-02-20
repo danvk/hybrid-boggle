@@ -40,7 +40,7 @@ def main():
     for i, cell in enumerate(lift_cells):
         mark += 1
         t = t.lift_choice(
-            cell, len(cells[cell]), None, mark, dedupe=True, compress=False
+            cell, len(cells[cell]), None, mark, dedupe=False, compress=True
         )
         mark += 1
         sys.stderr.write(

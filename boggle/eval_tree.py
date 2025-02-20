@@ -744,7 +744,7 @@ class EvalNode:
         return f"""graph {{
     rankdir=LR;
     splines="false";
-    node [shape="rect" penwidth="0"];
+    node [shape="rect" penwidth="0" style="rounded" fontname="Comic Sans MS"];
     {dot}
 }}
 """
@@ -768,7 +768,6 @@ class EvalNode:
             attrs += ' penwidth="1"'
         elif self.letter == CHOICE_NODE:
             me += f"_{self.cell}c"
-            # r1_1c0_1c0_0c [label="1" shape="rectangle" fillcolor="red" style="rounded, filled" fontcolor="black" penwidth="0"];
             color = DOT_FILL_COLORS[self.cell]
             attrs += f' style="rounded, filled" fillcolor="{color}"'
         else:
@@ -776,7 +775,8 @@ class EvalNode:
             me += f"_{self.cell}{letter}"
             attrs += ' penwidth="1"'
             # label = f"{self.cell}={letter}"
-            # if self.points:
+            if self.points and self.bound != self.points:
+                attrs += ' peripheries="2"'
             #     label += f" ({self.points})"
             #     if self.trie_node and lookup_table:
             #         word = lookup_table[self.trie_node]
@@ -806,9 +806,9 @@ class EvalNode:
         # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
-            if is_top_max and all_choices:
-                letter = cells[self.cell][i]
-                attrs = f' [label="{self.cell}={letter}"]'
+            # if is_top_max and all_choices:
+            #     letter = cells[self.cell][i]
+            #     attrs = f' [label="{self.cell}={letter}"]'
             dot.append(f"{me} -- {child_id}{attrs};")
         for _, child_dot in children:
             dot.append(child_dot)
