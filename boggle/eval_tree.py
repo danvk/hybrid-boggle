@@ -744,7 +744,7 @@ class EvalNode:
         return f"""graph {{
     rankdir=LR;
     splines="false";
-    node [shape="rect"];
+    node [shape="rect" penwidth="0"];
     {dot}
 }}
 """
@@ -759,27 +759,29 @@ class EvalNode:
         # if self.letter != CHOICE_NODE:
         #     is_dupe = any_choice_collisions(self.children)
 
+        label = f"{self.bound}"
         attrs = ""
         if is_dupe:
             attrs = 'color="red"'
         if self.letter == ROOT_NODE:
             me += "r"
-            label = "ROOT"
+            attrs += ' penwidth="1"'
         elif self.letter == CHOICE_NODE:
             me += f"_{self.cell}c"
-            label = f"{self.cell} CH"
-            attrs += ' shape="oval"'
+            # r1_1c0_1c0_0c [label="1" shape="rectangle" fillcolor="red" style="rounded, filled" fontcolor="black" penwidth="0"];
+            color = DOT_FILL_COLORS[self.cell]
+            attrs += f' style="rounded, filled" fillcolor="{color}"'
         else:
             letter = cells[self.cell][self.letter]
             me += f"_{self.cell}{letter}"
-            label = f"{self.cell}={letter}"
-            if self.points:
-                label += f" ({self.points})"
-                attrs += ' peripheries="2"'
-                if self.trie_node and lookup_table:
-                    word = lookup_table[self.trie_node]
-                    label += f"\\nword={word}"
-        label += f"\\nbound={self.bound}"
+            attrs += ' penwidth="1"'
+            # label = f"{self.cell}={letter}"
+            # if self.points:
+            #     label += f" ({self.points})"
+            #     if self.trie_node and lookup_table:
+            #         word = lookup_table[self.trie_node]
+            #         label += f"\\nword={word}"
+        # label += f"\\nbound={self.bound}"
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
 
@@ -846,6 +848,26 @@ class EvalNode:
                     for child in self.children
                 ]
         return out
+
+
+DOT_FILL_COLORS = [
+    "LightSkyBlue",
+    "PaleGreen",
+    "LightSalmon",
+    "Khaki",
+    "Plum",
+    "Thistle",
+    "PeachPuff",
+    "Lavender",
+    "HoneyDew",
+    "MintCream",
+    "AliceBlue",
+    "LemonChiffon",
+    "MistyRose",
+    "PapayaWhip",
+    "BlanchedAlmond",
+    "LightCyan",
+]
 
 
 def bound_remaining_boards_help(
