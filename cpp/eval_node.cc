@@ -16,7 +16,8 @@ inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
   return a->letter_ < b->letter_;
 }
 
-void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {
+void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {\
+  // TODO: convert this to a loop, once you encounter a missing node you no longer need to search.
   if (!num_choices) {
     points_ += points;
     return;
@@ -27,7 +28,6 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
   choices++;
   num_choices--;
 
-  // See Python for optimization TODOs
   EvalNode* choice_child = NULL;
   for (auto c : children_) {
     if (c->cell_ == cell) {
@@ -55,6 +55,7 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
     arena.AddNode(letter_child);
+    // TODO: special-case adding to a one-element vector
     choice_child->children_.push_back(letter_child);
     sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
   }
