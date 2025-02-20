@@ -4,6 +4,7 @@
 import sys
 
 from boggle.dimensional_bogglers import LEN_TO_DIMS
+from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.tree_builder import TreeBuilder
 from boggle.trie import make_py_trie
 
@@ -15,9 +16,10 @@ def main():
 
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
-    etb = TreeBuilder(trie, dims)
+    # etb = TreeBuilder(trie, dims)
+    etb = OrderlyTreeBuilder(trie, dims)
     etb.ParseBoard(board)
-    t = etb.BuildTree(dedupe=False)
+    t = etb.BuildTree()  # dedupe=False)
     # assert_invariants(t, cells)
     # dedupe_subtrees(t)
 
