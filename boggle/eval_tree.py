@@ -743,7 +743,7 @@ class EvalNode:
         )
         return f"""graph {{
     rankdir=LR;
-    splines="false";
+    nodesep=0.15;
     node [shape="rect" penwidth="0" style="rounded" fontname="Comic Sans MS"];
     {dot}
 }}
