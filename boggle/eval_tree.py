@@ -803,6 +803,12 @@ class EvalNode:
         all_choices = len(children) == len(self.children) and all(
             c.letter == CHOICE_NODE for c in self.children
         )
+
+        if self.letter != CHOICE_NODE and len(children) == 1 and not self.points:
+            # A sum node with no points and only one child is just a placeholder.
+            # Remove it from the graph to simplify the visualization.
+            return children[0]
+
         # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
