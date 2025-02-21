@@ -68,7 +68,7 @@ class EvalNode {
   virtual ~EvalNode() {}
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
-  void AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena);
+  void AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena);
 
   bool StructuralEq(const EvalNode& other) const;
   void PrintJSON() const;

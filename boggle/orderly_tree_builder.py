@@ -1,4 +1,5 @@
 import argparse
+import time
 
 from boggle.args import add_standard_args, get_trie_from_args
 from boggle.board_class_boggler import BoardClassBoggler
@@ -109,16 +110,20 @@ def main():
     # e_arena = etb.create_arena()
     # classic_tree = etb.BuildTree(e_arena, dedupe=True)
 
-    # otb = OrderlyTreeBuilder(trie, dims)
-    otb = OrderlyTreeBuilders[dims](trie)
+    if args.python:
+        otb = OrderlyTreeBuilder(trie, dims)
+    else:
+        otb = OrderlyTreeBuilders[dims](trie)
     o_arena = otb.create_arena()
     assert otb.ParseBoard(board)
+    start_s = time.time()
     orderly_tree = otb.BuildTree(o_arena)
+    elapsed_s = time.time() - start_s
 
     # print("EvalTreeBuilder:    ", end="")
     # print(tree_stats(classic_tree))
 
-    print("OrderlyTreeBuilder: ", end="")
+    print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
 
     global mark
@@ -127,14 +132,18 @@ def main():
     for cell in splits[: args.num_lifts]:
         print(f"lift {cell}")
         mark += 1
+        start_s = time.time()
         t = t.lift_choice(
             cell, len(cells[cell]), o_arena, mark, dedupe=True, compress=True
         )
+        elapsed_s = time.time() - start_s
         if t.bound <= args.cutoff:
-            print(f"Fully broken! {t.bound} <= {args.cutoff} {tree_stats(t)}")
+            print(
+                f"{elapsed_s:.02f}s Fully broken! {t.bound} <= {args.cutoff} {tree_stats(t)}"
+            )
             break
         t.filter_below_threshold(args.cutoff)
-        print(f"f -> {tree_stats(t)}")
+        print(f"{elapsed_s:.02f}s f -> {tree_stats(t)}")
 
 
 if __name__ == "__main__":

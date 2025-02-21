@@ -16,9 +16,10 @@ inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
   return a->letter_ < b->letter_;
 }
 
-void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {
+void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena) {
   if (!num_choices) {
     points_ += points;
+    bound_ += points;
     return;
   }
 
@@ -27,7 +28,6 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
   choices++;
   num_choices--;
 
-  // See Python for optimization TODOs
   EvalNode* choice_child = NULL;
   for (auto c : children_) {
     if (c->cell_ == cell) {
@@ -35,12 +35,17 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
       break;
     }
   }
+  int old_choice_bound = 0;
   if (!choice_child) {
     choice_child = new EvalNode;
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
+    choice_child->bound_ = 0;
+    choice_child->choice_mask_ = num_letters[cell] > 1 ? (1 << cell) : 0;
     arena.AddNode(choice_child);
     children_.push_back(choice_child);
+  } else {
+    old_choice_bound = choice_child->bound_;
   }
 
   EvalNode* letter_child = NULL;
@@ -54,15 +59,24 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
     letter_child = new EvalNode;
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
+    letter_child->bound_ = 0;
     arena.AddNode(letter_child);
     choice_child->children_.push_back(letter_child);
     sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
   }
-  letter_child->AddWordWork(num_choices, choices, points, arena);
+  letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
+
+  if (letter_child->bound_ > old_choice_bound) {
+    choice_child->bound_ = letter_child->bound_;
+  }
+  choice_child->choice_mask_ |= letter_child->choice_mask_;
+  choice_mask_ |= choice_child->choice_mask_;
+  bound_ += (choice_child->bound_ - old_choice_bound);
 }
 
 void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena) {
-  AddWordWork(choices.size(), choices.data(), points, arena);
+  vector<int> num_letters(choices.size(), 1);
+  AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
 }
 
 bool EvalNode::StructuralEq(const EvalNode& other) const {

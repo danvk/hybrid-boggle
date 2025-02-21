@@ -89,6 +89,7 @@ const char* BoardClassBoggler<M, N>::as_string() {
 // Generated via:
 // poetry run python -m boggle.neighbors
 // First entry is the number of neighbors in the list.
+// TODO: make these null-terminated rather than "pascal arrays" (may be faster).
 
 // 2x2
 template<>

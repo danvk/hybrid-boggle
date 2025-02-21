@@ -33,9 +33,10 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
  private:
   EvalNode* root_;
-  bool dedupe_;
   int cell_to_order_[M*N];
+  vector<int> num_letters_;
   pair<int, int> choices_[M*N];
+  pair<int, int> orderly_choices_[M*N];
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -48,17 +49,18 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_->letter_ = EvalNode::ROOT_NODE;
   root_->cell_ = 0; // irrelevant
   root_->points_ = 0;
+  root_->bound_ = 0;
   used_ = 0;
+
+  num_letters_.resize(M*N);
+  for (int i = 0; i < M*N; i++) {
+    num_letters_[i] = strlen(bd_[i]);
+  }
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
 
-  vector<int> num_letters(M*N, 0);
-  for (int i = 0; i < M*N; i++) {
-    num_letters[i] = strlen(bd_[i]);
-  }
-  root_->SetComputedFields(num_letters);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
@@ -69,14 +71,16 @@ template<int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena) {
   choices_[n] = {cell, 0};
 
-  // TODO: store num_letters array or iterate string
-  int n_chars = strlen(bd_[cell]);
-  for (int j = 0; j < n_chars; j++) {
-    auto cc = bd_[cell][j] - 'a';
+  char* c = &bd_[cell][0];
+  int j = 0;
+  while (*c) {
+    auto cc = *c - 'a';
     if (t->StartsWord(cc)) {
       choices_[n].second = j;
       DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
     }
+    c++;
+    j++;
   }
 }
 
@@ -96,19 +100,18 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
 
-    vector<pair<int, int>> orderly_choices;
-    for (int j = 0; j < n; j++) {
-      orderly_choices.push_back(choices_[j]);
-    }
-    // TODO: "this" capture could be avoided
-    sort(orderly_choices.begin(), orderly_choices.end(), [this](const pair<int, int>& a, const pair<int, int>& b) {
+    // TODO: track current letter for each cell in a plain array.
+    //       Use used_ bit mask to track which ones are relevant.
+    //       map these through cell_to_order to avoid the need for sorting or copying.
+    pair<int, int>* orderly_ptr = &orderly_choices_[0];
+    memcpy(orderly_ptr, &choices_[0], n * sizeof(pair<int, int>));
+    sort(orderly_ptr, orderly_ptr + n, [this](const pair<int, int>& a, const pair<int, int>& b) {
       return cell_to_order_[a.first] < cell_to_order_[b.first];
     });
-    root_->AddWord(orderly_choices, word_score, arena);
+    root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
   }
 
   used_ ^= (1 << i);
 }
-
 
 #endif // ORDERLY_TREE_BUILDER_H
