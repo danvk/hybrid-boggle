@@ -34,6 +34,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  private:
   EvalNode* root_;
   int cell_to_order_[M*N];
+  vector<int> num_letters_;
   pair<int, int> choices_[M*N];
   pair<int, int> orderly_choices_[M*N];
 
@@ -50,15 +51,16 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_->points_ = 0;
   used_ = 0;
 
+  num_letters_.resize(M*N);
+  for (int i = 0; i < M*N; i++) {
+    num_letters_[i] = strlen(bd_[i]);
+  }
+
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
 
-  vector<int> num_letters(M*N, 0);
-  for (int i = 0; i < M*N; i++) {
-    num_letters[i] = strlen(bd_[i]);
-  }
-  root_->SetChoiceMask(num_letters);
+  // root_->SetChoiceMask(num_letters);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
@@ -106,7 +108,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
     sort(orderly_ptr, orderly_ptr + n, [this](const pair<int, int>& a, const pair<int, int>& b) {
       return cell_to_order_[a.first] < cell_to_order_[b.first];
     });
-    root_->AddWordWork(n, orderly_choices_, word_score, arena);
+    root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
   }
 
   used_ ^= (1 << i);
