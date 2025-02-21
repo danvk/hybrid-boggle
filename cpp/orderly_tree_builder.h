@@ -36,6 +36,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   bool dedupe_;
   int cell_to_order_[M*N];
   pair<int, int> choices_[M*N];
+  pair<int, int> orderly_choices_[M*N];
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -96,15 +97,17 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
 
-    vector<pair<int, int>> orderly_choices;
-    for (int j = 0; j < n; j++) {
-      orderly_choices.push_back(choices_[j]);
-    }
-    // TODO: "this" capture could be avoided
-    sort(orderly_choices.begin(), orderly_choices.end(), [this](const pair<int, int>& a, const pair<int, int>& b) {
+    pair<int, int>* orderly_ptr = &orderly_choices_[0];
+    memcpy(orderly_ptr, &choices_[0], n);
+    sort(orderly_ptr, orderly_ptr + n, [this](const pair<int, int>& a, const pair<int, int>& b) {
       return cell_to_order_[a.first] < cell_to_order_[b.first];
     });
-    root_->AddWord(orderly_choices, word_score, arena);
+    cout << "Add";
+    for (int i = 0; i < n; i++) {
+      cout << " " << (int)orderly_choices_[i].first << ":" << (int)orderly_choices_[i].second;
+    }
+    cout << endl;
+    root_->AddWordWork(n, orderly_choices_, word_score, arena);
   }
 
   used_ ^= (1 << i);
