@@ -58,7 +58,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   for (int i = 0; i < M*N; i++) {
     num_letters[i] = strlen(bd_[i]);
   }
-  root_->SetComputedFields(num_letters);
+  root_->SetChoiceMask(num_letters);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);

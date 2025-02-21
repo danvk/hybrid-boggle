@@ -74,6 +74,7 @@ class EvalNode {
   void PrintJSON() const;
 
   void SetComputedFields(vector<int>& num_letters);
+  void SetChoiceMask(vector<int>& num_letters);
 
   const EvalNode*
   LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe=false, bool compress=false) const;

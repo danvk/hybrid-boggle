@@ -19,6 +19,7 @@ inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
 void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {
   if (!num_choices) {
     points_ += points;
+    bound_ += points;
     return;
   }
 
@@ -34,12 +35,16 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
       break;
     }
   }
+  int old_choice_bound = 0;
   if (!choice_child) {
     choice_child = new EvalNode;
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
+    choice_child->bound_ = 0;
     arena.AddNode(choice_child);
     children_.push_back(choice_child);
+  } else {
+    old_choice_bound = choice_child->bound_;
   }
 
   EvalNode* letter_child = NULL;
@@ -53,11 +58,17 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points,
     letter_child = new EvalNode;
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
+    letter_child->bound_ = 0;
     arena.AddNode(letter_child);
     choice_child->children_.push_back(letter_child);
     sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
   }
   letter_child->AddWordWork(num_choices, choices, points, arena);
+
+  if (letter_child->bound_ > old_choice_bound) {
+    choice_child->bound_ = letter_child->bound_;
+  }
+  bound_ += (choice_child->bound_ - old_choice_bound);
 }
 
 void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena) {
@@ -148,6 +159,26 @@ void EvalNode::SetComputedFields(vector<int>& num_letters) {
         bound_ += c->bound_;
       }
     }
+  }
+
+  for (auto c : children_) {
+    if (c) {
+      choice_mask_ |= c->choice_mask_;
+    }
+  }
+}
+
+void EvalNode::SetChoiceMask(vector<int>& num_letters) {
+  for (auto c : children_) {
+    if (c) {
+      ((EvalNode*)c)->SetChoiceMask(num_letters);
+    }
+  }
+
+  if (letter_ == CHOICE_NODE) {
+    choice_mask_ = num_letters[cell_] > 1 ? (1 << cell_) : 0;
+  } else {
+    choice_mask_ = 0;
   }
 
   for (auto c : children_) {
