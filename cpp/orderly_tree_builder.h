@@ -101,6 +101,9 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
 
+    // TODO: track current letter for each cell in a plain array.
+    //       Use used_ bit mask to track which ones are relevant.
+    //       map these through cell_to_order to avoid the need for sorting or copying.
     pair<int, int>* orderly_ptr = &orderly_choices_[0];
     memcpy(orderly_ptr, &choices_[0], n * sizeof(pair<int, int>));
     sort(orderly_ptr, orderly_ptr + n, [this](const pair<int, int>& a, const pair<int, int>& b) {
