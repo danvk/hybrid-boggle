@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Try to find a good split of the letters into buckets.
 
+2: aeiosuy bcdfghjklmnpqrtvwxz (12656.0)
 3: aeijou bcdfgmpqvwxz hklnrsty (2689.8)
 4: aeiou bcfhpst qxyz dgjklmnrvw (849.9)
-5: aeiou bfgpst xyz djlmnrvw chkq (461.6)
+5: aejsv bcfgkmpt dhlnrw iou qxyz (437.5)
 
 I've been doing most of my analysis with this bucketing (which excludes q):
 4: bdfgjvwxz aeiou lnrsy chkmpt
@@ -88,7 +89,10 @@ def main():
 
     boards = [[random.randint(0, 25) for _ in range(w * h)] for _ in range(10)]
 
-    manual = "bdfgjvwxzq aeiou lnrsy chkmpt"
+    # manual = "bdfgjvwxzq aeiou lnrsy chkmpt"
+    # manual = "aeiou bcdfghjklmnpqrstvwxyz"
+    # manual = "aeiosuy bcdfghjklmnpqrtvwxz"
+    manual = "aeiou bfgpst xyz djlmnrvw chkq"
     manual_buckets = class_to_buckets(manual)
     # print(manual_buckets)
     # print(realize_bucket(manual_buckets))
@@ -96,14 +100,14 @@ def main():
     score = bucket_score(bb, manual_buckets, boards)
     print(f"Manual score: {score}")
 
-    for _ in range(5):
+    for _ in range(10):
         init = random_buckets(num_classes)
         print(f"Initial: {realize_bucket(init)}")
         score = bucket_score(bb, init, boards)
         print(f"Initial score: {score}")
 
         last_improvement = 0
-        for i in range(10000):
+        for i in range(20_000):
             new = mutate_buckets(init, num_classes)
             new_score = bucket_score(bb, new, boards)
             if new_score < score:

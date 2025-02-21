@@ -4,6 +4,7 @@ import argparse
 import glob
 import itertools
 import json
+import math
 import multiprocessing
 import random
 import time
@@ -16,7 +17,7 @@ from boggle.args import (
     get_trie_and_boggler_from_args,
     get_trie_from_args,
 )
-from boggle.board_id import from_board_id, is_canonical_board_id
+from boggle.board_id import from_board_id, is_canonical_board_id, parse_classes
 from boggle.boggler import PyBoggler
 from boggle.breaker import HybridTreeBreaker
 from boggle.dimensional_bogglers import (
@@ -71,19 +72,22 @@ def break_worker(task: str | int):
 
     best_score = args.best_score
     assert best_score > 0
-    classes = args.classes.split(" ")
     dims = args.size // 10, args.size % 10
+    classes = parse_classes(args.classes, dims)
     if args.letter_grouping:
+        raise NotImplementedError(
+            "--letter_grouping not yet supported with per-cell classes"
+        )
         letter_map = get_letter_map(args.letter_grouping)
         classes = [filter_to_canonical(cls, letter_map) for cls in classes]
         # print(f'Filtered {args.classes} -> {" ".join(classes)}')
 
     if isinstance(task, int):
         if needs_canonical_filter and not is_canonical_board_id(
-            len(classes), dims, task
+            [len(c) for c in classes], dims, task
         ):
             return []
-        board = from_board_id(classes, dims, task)
+        board = from_board_id(classes, task)
     else:
         board = task
 
@@ -268,12 +272,13 @@ def main():
 
     best_score = args.best_score
     assert best_score > 0
-    classes = args.classes.split(" ")
-    num_classes = len(classes)
     w, h = dims = args.size // 10, args.size % 10
     assert 3 <= w <= 4
     assert 3 <= h <= 4
-    max_index = num_classes ** (w * h)
+    classes = parse_classes(args.classes, dims)
+    assert len(classes) == w * h
+    num_classes = [len(c) for c in classes]
+    max_index = math.prod(num_classes)
 
     completed_ids = set()
     if args.resume_from:
