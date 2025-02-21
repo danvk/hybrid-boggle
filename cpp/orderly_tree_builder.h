@@ -49,6 +49,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_->letter_ = EvalNode::ROOT_NODE;
   root_->cell_ = 0; // irrelevant
   root_->points_ = 0;
+  root_->bound_ = 0;
   used_ = 0;
 
   num_letters_.resize(M*N);
