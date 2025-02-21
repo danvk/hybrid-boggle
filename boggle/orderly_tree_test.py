@@ -1,13 +1,11 @@
 import pytest
 from cpp_boggle import Trie
-from inline_snapshot import outsource, snapshot
+from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_orderly_tree_builder
 from boggle.eval_tree import EvalNode, eval_node_to_string
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import PyTrie, make_py_trie
-
-from inline_snapshot import external
 
 
 @pytest.mark.parametrize(
@@ -61,3 +59,15 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
         external("31d49f6a9eab*.txt")
     )
+
+
+def test_orderly_bound():
+    trie = make_py_trie("testdata/boggle-words-4.txt")
+    board = "ab cd ef gh"
+    cells = board.split(" ")
+    otb = OrderlyTreeBuilder(trie, dims=(2, 2))
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    t = otb.BuildTree(arena)
+    t.assert_invariants(otb)
+    assert t.bound == 8
