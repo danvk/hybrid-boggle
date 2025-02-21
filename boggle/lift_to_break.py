@@ -2,6 +2,7 @@
 """Break a 2x2 board class via successive lifting."""
 
 import argparse
+import time
 
 from boggle.args import add_standard_args, get_trie_from_args
 from boggle.breaker import SPLIT_ORDER
@@ -54,7 +55,10 @@ def main():
 
     arena = etb.create_arena()
     assert etb.ParseBoard(board)
+    start_s = time.time()
     t = etb.BuildTree(arena, dedupe=args.dedupe)
+    elapsed_s = time.time() - start_s
+    print(f"{elapsed_s:.02f}s BuildTree: ", end="")
     print(tree_stats(t))
     # t.compress_in_place()
     # print(f"c -> {tree_stats(t)}")
