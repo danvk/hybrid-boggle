@@ -33,7 +33,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
  private:
   EvalNode* root_;
-  vector<int> num_letters_;
   int cell_to_order_[M*N];
   pair<int, int> choices_[M*N];
   pair<int, int> orderly_choices_[M*N];
@@ -51,16 +50,15 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_->points_ = 0;
   used_ = 0;
 
-  num_letters_.resize(M*N);
-  for (int i = 0; i < M*N; i++) {
-    num_letters_[i] = strlen(bd_[i]);
-  }
-
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
 
-  root_->SetComputedFields(num_letters_);
+  vector<int> num_letters(M*N, 0);
+  for (int i = 0; i < M*N; i++) {
+    num_letters[i] = strlen(bd_[i]);
+  }
+  root_->SetComputedFields(num_letters);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
@@ -71,7 +69,6 @@ template<int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena) {
   choices_[n] = {cell, 0};
 
-  // int n_chars = num_letters_[cell];
   char* c = &bd_[cell][0];
   int j = 0;
   while (*c) {

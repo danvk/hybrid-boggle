@@ -16,7 +16,7 @@ inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
   return a->letter_ < b->letter_;
 }
 
-void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {\
+void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena) {
   if (!num_choices) {
     points_ += points;
     return;
