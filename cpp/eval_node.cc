@@ -172,26 +172,6 @@ void EvalNode::SetComputedFields(vector<int>& num_letters) {
   }
 }
 
-void EvalNode::SetChoiceMask(vector<int>& num_letters) {
-  for (auto c : children_) {
-    if (c) {
-      ((EvalNode*)c)->SetChoiceMask(num_letters);
-    }
-  }
-
-  if (letter_ == CHOICE_NODE) {
-    choice_mask_ = num_letters[cell_] > 1 ? (1 << cell_) : 0;
-  } else {
-    choice_mask_ = 0;
-  }
-
-  for (auto c : children_) {
-    if (c) {
-      choice_mask_ |= c->choice_mask_;
-    }
-  }
-}
-
 const EvalNode* SqueezeChoiceChild(const EvalNode* child);
 bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_merge);
 

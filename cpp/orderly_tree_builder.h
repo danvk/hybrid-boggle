@@ -60,7 +60,6 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
 
-  // root_->SetChoiceMask(num_letters);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
@@ -113,6 +112,5 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
 
   used_ ^= (1 << i);
 }
-
 
 #endif // ORDERLY_TREE_BUILDER_H
