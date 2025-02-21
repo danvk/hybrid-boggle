@@ -558,6 +558,60 @@ class EvalNode:
             if c:
                 self.choice_mask |= c.choice_mask
 
+    def orderly_bound(
+        self, cutoff: int, num_letters: Sequence[int], split_order: Sequence[int]
+    ):
+        stacks = [[] for _ in num_letters]
+        choices = []  # for tracking unbreakable boards
+
+        def advance(node: Self):
+            assert node.letter != CHOICE_NODE
+            for child in node.children:
+                assert child.letter == CHOICE_NODE
+                stacks[child.cell].append(child)
+            return node.points
+
+        def rec(base_points: int, num_splits: int):
+            # TODO: this could be much more efficient; track a bound to the top of each stack.
+            bound = base_points + sum(
+                sum(node.bound for node in stacks[cell])
+                for cell in split_order[num_splits:]
+            )
+            indent = "  " * num_splits
+            print(f"{indent}{num_splits=} {base_points=} {bound=}")
+            if bound < cutoff:
+                return True  # done!
+            if num_splits == len(split_order):
+                print(f"{indent}unbreakable board! {choices=}")
+                return False  # have an unbreakable board; TODO: which board?
+
+            # need to advance; try each possibility in turn.
+            next_to_split = split_order[num_splits]
+            stack_top = [len(stack) for stack in stacks]
+            print(f"{indent}{stack_top=}")
+            for letter in range(0, num_letters[next_to_split]):
+                print(f"{indent}{next_to_split}={letter}")
+                choices.append((next_to_split, letter))
+                points = base_points
+                for node in stacks[next_to_split]:
+                    letter_node = None
+                    for n in node.children:
+                        if n.letter == letter:
+                            letter_node = n
+                            break
+                    if letter_node:
+                        points += advance(letter_node)
+
+                rec(points, num_splits + 1)
+                # reset the stacks
+                choices.pop()
+                # TODO: track a "top" of each stack and leave the rest as garbage
+                for i, length in enumerate(stack_top):
+                    stacks[i] = stacks[i][:length]
+
+        advance(self)
+        return rec(0, 0)
+
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
     def recompute_score(self):
