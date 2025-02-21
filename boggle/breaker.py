@@ -123,8 +123,11 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
-        tree = self.etb.BuildTree(arena, dedupe=False)
-        num_nodes = arena.num_nodes()
+        tree = self.etb.BuildTree(arena)
+        if isinstance(tree, EvalNode):
+            num_nodes = tree.node_count()
+        else:
+            num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             self.mark += 1
             print(
