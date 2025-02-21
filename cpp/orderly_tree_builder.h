@@ -33,7 +33,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
  private:
   EvalNode* root_;
-  bool dedupe_;
+  vector<int> num_letters_;
   int cell_to_order_[M*N];
   pair<int, int> choices_[M*N];
   pair<int, int> orderly_choices_[M*N];
@@ -51,15 +51,16 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_->points_ = 0;
   used_ = 0;
 
+  num_letters_.resize(M*N);
+  for (int i = 0; i < M*N; i++) {
+    num_letters_[i] = strlen(bd_[i]);
+  }
+
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
 
-  vector<int> num_letters(M*N, 0);
-  for (int i = 0; i < M*N; i++) {
-    num_letters[i] = strlen(bd_[i]);
-  }
-  root_->SetComputedFields(num_letters);
+  root_->SetComputedFields(num_letters_);
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
@@ -70,14 +71,17 @@ template<int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena) {
   choices_[n] = {cell, 0};
 
-  // TODO: store num_letters array or iterate string
-  int n_chars = strlen(bd_[cell]);
-  for (int j = 0; j < n_chars; j++) {
-    auto cc = bd_[cell][j] - 'a';
+  // int n_chars = num_letters_[cell];
+  char* c = &bd_[cell][0];
+  int j = 0;
+  while (*c) {
+    auto cc = *c - 'a';
     if (t->StartsWord(cc)) {
       choices_[n].second = j;
       DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
     }
+    c++;
+    j++;
   }
 }
 
@@ -98,9 +102,6 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
     auto word_score = kWordScores[length];
 
     pair<int, int>* orderly_ptr = &orderly_choices_[0];
-    // for (int i = 0; i < n; i++) {
-    //   orderly_choices_[i] = choices_[i];
-    // }
     memcpy(orderly_ptr, &choices_[0], n * sizeof(pair<int, int>));
     sort(orderly_ptr, orderly_ptr + n, [this](const pair<int, int>& a, const pair<int, int>& b) {
       return cell_to_order_[a.first] < cell_to_order_[b.first];
