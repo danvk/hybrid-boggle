@@ -98,15 +98,13 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
     auto word_score = kWordScores[length];
 
     pair<int, int>* orderly_ptr = &orderly_choices_[0];
-    memcpy(orderly_ptr, &choices_[0], n);
+    // for (int i = 0; i < n; i++) {
+    //   orderly_choices_[i] = choices_[i];
+    // }
+    memcpy(orderly_ptr, &choices_[0], n * sizeof(pair<int, int>));
     sort(orderly_ptr, orderly_ptr + n, [this](const pair<int, int>& a, const pair<int, int>& b) {
       return cell_to_order_[a.first] < cell_to_order_[b.first];
     });
-    cout << "Add";
-    for (int i = 0; i < n; i++) {
-      cout << " " << (int)orderly_choices_[i].first << ":" << (int)orderly_choices_[i].second;
-    }
-    cout << endl;
     root_->AddWordWork(n, orderly_choices_, word_score, arena);
   }
 
