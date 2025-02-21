@@ -558,11 +558,11 @@ class EvalNode:
             if c:
                 self.choice_mask |= c.choice_mask
 
-    def orderly_bound(
-        self, cutoff: int, num_letters: Sequence[int], split_order: Sequence[int]
-    ):
+    def orderly_bound(self, cutoff: int, cells: list[str], split_order: Sequence[int]):
+        num_letters = [len(cell) for cell in cells]
         stacks = [[] for _ in num_letters]
         choices = []  # for tracking unbreakable boards
+        failures: list[str] = []
 
         def advance(node: Self):
             assert node.letter != CHOICE_NODE
@@ -582,7 +582,13 @@ class EvalNode:
             if bound < cutoff:
                 return True  # done!
             if num_splits == len(split_order):
-                print(f"{indent}unbreakable board! {choices=}")
+                bd = [None] * len(num_letters)
+                for cell, letter in choices:
+                    bd[cell] = cells[cell][letter]
+                board = "".join(bd)
+                print(f"{indent}unbreakable board! {board} {choices=}")
+                nonlocal failures
+                failures.append(board)
                 return False  # have an unbreakable board; TODO: which board?
 
             # need to advance; try each possibility in turn.
@@ -610,7 +616,8 @@ class EvalNode:
                     stacks[i] = stacks[i][:length]
 
         advance(self)
-        return rec(0, 0)
+        rec(0, 0)
+        return failures
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
