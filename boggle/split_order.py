@@ -52,6 +52,7 @@ assert len(set(SPLIT_ORDER_44)) == 16
 
 SPLIT_ORDER = {
     (2, 2): (0, 1, 2, 3),
+    (2, 3): (0, 1, 2, 3, 4, 5),
     (3, 3): SPLIT_ORDER_33,
     (3, 4): SPLIT_ORDER_34,
     (4, 4): SPLIT_ORDER_44,

@@ -743,8 +743,8 @@ class EvalNode:
         )
         return f"""graph {{
     rankdir=LR;
-    splines="false";
-    node [shape="rect"];
+    nodesep=0.1;
+    node [shape="rect" penwidth="0" style="rounded" fontname="Comic Sans MS"];
     {dot}
 }}
 """
@@ -759,27 +759,29 @@ class EvalNode:
         # if self.letter != CHOICE_NODE:
         #     is_dupe = any_choice_collisions(self.children)
 
+        label = f"{self.bound}"
         attrs = ""
         if is_dupe:
             attrs = 'color="red"'
         if self.letter == ROOT_NODE:
             me += "r"
-            label = "ROOT"
+            attrs += ' penwidth="1"'
         elif self.letter == CHOICE_NODE:
             me += f"_{self.cell}c"
-            label = f"{self.cell} CH"
-            attrs += ' shape="oval"'
+            color = DOT_FILL_COLORS[self.cell]
+            attrs += f' style="rounded, filled" fillcolor="{color}"'
         else:
             letter = cells[self.cell][self.letter]
             me += f"_{self.cell}{letter}"
-            label = f"{self.cell}={letter}"
-            if self.points:
-                label += f" ({self.points})"
+            attrs += ' penwidth="1"'
+            # label = f"{self.cell}={letter}"
+            if self.points and self.bound != self.points:
                 attrs += ' peripheries="2"'
-                if self.trie_node and lookup_table:
-                    word = lookup_table[self.trie_node]
-                    label += f"\\nword={word}"
-        label += f"\\nbound={self.bound}"
+            #     label += f" ({self.points})"
+            #     if self.trie_node and lookup_table:
+            #         word = lookup_table[self.trie_node]
+            #         label += f"\\nword={word}"
+        # label += f"\\nbound={self.bound}"
         cache[self] = me
         dot = [f'{me} [label="{label}"{attrs}];']
 
@@ -798,15 +800,21 @@ class EvalNode:
             for i, child in enumerate(self.children)
             if child
         ]
-        all_choices = len(children) == len(self.children) and all(
-            c.letter == CHOICE_NODE for c in self.children
-        )
+        # all_choices = len(children) == len(self.children) and all(
+        #     c.letter == CHOICE_NODE for c in self.children
+        # )
+
+        if self.letter != CHOICE_NODE and len(children) == 1 and not self.points:
+            # A sum node with no points and only one child is just a placeholder.
+            # Remove it from the graph to simplify the visualization.
+            return children[0]
+
         # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
-            if is_top_max and all_choices:
-                letter = cells[self.cell][i]
-                attrs = f' [label="{self.cell}={letter}"]'
+            # if is_top_max and all_choices:
+            #     letter = cells[self.cell][i]
+            #     attrs = f' [label="{self.cell}={letter}"]'
             dot.append(f"{me} -- {child_id}{attrs};")
         for _, child_dot in children:
             dot.append(child_dot)
@@ -846,6 +854,26 @@ class EvalNode:
                     for child in self.children
                 ]
         return out
+
+
+DOT_FILL_COLORS = [
+    "LightSkyBlue",
+    "PaleGreen",
+    "LightSalmon",
+    "Khaki",
+    "Plum",
+    "Thistle",
+    "PeachPuff",
+    "Lavender",
+    "HoneyDew",
+    "MintCream",
+    "AliceBlue",
+    "LemonChiffon",
+    "MistyRose",
+    "PapayaWhip",
+    "BlanchedAlmond",
+    "LightCyan",
+]
 
 
 def bound_remaining_boards_help(
