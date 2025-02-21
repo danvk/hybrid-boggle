@@ -800,9 +800,9 @@ class EvalNode:
             for i, child in enumerate(self.children)
             if child
         ]
-        all_choices = len(children) == len(self.children) and all(
-            c.letter == CHOICE_NODE for c in self.children
-        )
+        # all_choices = len(children) == len(self.children) and all(
+        #     c.letter == CHOICE_NODE for c in self.children
+        # )
 
         if self.letter != CHOICE_NODE and len(children) == 1 and not self.points:
             # A sum node with no points and only one child is just a placeholder.

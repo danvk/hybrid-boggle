@@ -4,7 +4,7 @@
 import argparse
 import sys
 
-from boggle.args import add_standard_args, get_trie_from_args
+from boggle.args import add_standard_args
 from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.tree_builder import TreeBuilder
