@@ -208,14 +208,16 @@ class HybridTreeBreaker:
             self.details_.free_time_s = time.time() - start_s
         start_s = time.time()
         # TODO: move this call into bound_remaining_boards()
-        tree.set_choice_point_mask(self.num_letters)
+        # tree.set_choice_point_mask(self.num_letters)
         elapsed_s = time.time() - start_s
         start_s = time.time()
-        boards_to_test = tree.bound_remaining_boards(
-            self.cells, self.best_score, self.split_order
-        )
+        # boards_to_test = tree.bound_remaining_boards(
+        #     self.cells, self.best_score, self.split_order
+        # )
+        remainder = tree.orderly_bound(self.best_score, self.cells, self.split_order)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
+        boards_to_test = [board for _score, board in remainder]
 
         if not boards_to_test:
             return
