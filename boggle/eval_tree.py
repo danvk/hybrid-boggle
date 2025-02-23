@@ -608,10 +608,12 @@ class EvalNode:
             next_to_split = split_order[num_splits]
             stack_top = [len(stack) for stack in stacks]
             # print(f"{indent}{stack_top=}")
+            base_sums = [*stack_sums]
             for letter in range(0, num_letters[next_to_split]):
                 # print(f"{indent}{next_to_split}={letter}")
-                # TODO: don't reallocate this
-                next_sums = [*stack_sums]
+                if letter > 0:
+                    for i, v in enumerate(base_sums):
+                        stack_sums[i] = v
                 choices.append((next_to_split, letter))
                 points = base_points
                 for node in stacks[next_to_split]:
@@ -622,9 +624,9 @@ class EvalNode:
                             letter_node = n
                             break
                     if letter_node:
-                        points += advance(letter_node, next_sums)
+                        points += advance(letter_node, stack_sums)
 
-                rec(points, num_splits + 1, next_sums)
+                rec(points, num_splits + 1, stack_sums)
                 # reset the stacks
                 choices.pop()
                 # TODO: track a "top" of each stack and leave the rest as garbage
