@@ -566,7 +566,9 @@ class EvalNode:
             if c:
                 self.choice_mask |= c.choice_mask
 
-    def orderly_bound(self, cutoff: int, cells: list[str], split_order: Sequence[int]):
+    def orderly_bound(
+        self, cutoff: int, cells: list[str], split_order: Sequence[int], arena
+    ):
         num_letters = [len(cell) for cell in cells]
         stacks = [[] for _ in num_letters]
         choices = []  # for tracking unbreakable boards
@@ -640,6 +642,16 @@ class EvalNode:
         return failures
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def child_size_stats(self, out=None):
+        if out is None:
+            out = Counter[int]()
+
+        out[len(self.children)] += 1
+        for child in self.children:
+            if child:
+                child.child_size_stats(out)
+        return out
 
     def recompute_score(self):
         """Should return self.bound. (For debugging/testing)"""

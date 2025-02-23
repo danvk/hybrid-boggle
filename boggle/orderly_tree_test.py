@@ -79,7 +79,7 @@ def test_orderly_bound22(make_trie, get_tree_builder):
         t.assert_invariants(otb)
     assert t.bound == 8
 
-    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)])
+    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], arena)
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
@@ -134,4 +134,5 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     print(time.time() - start_s)
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([(512, "stsaseblt")])
-    # assert False
+    print(f"{t.child_size_stats()}")
+    assert False

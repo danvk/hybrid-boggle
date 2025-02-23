@@ -214,7 +214,9 @@ class HybridTreeBreaker:
         # boards_to_test = tree.bound_remaining_boards(
         #     self.cells, self.best_score, self.split_order
         # )
-        remainder = tree.orderly_bound(self.best_score, self.cells, self.split_order)
+        remainder = tree.orderly_bound(
+            self.best_score, self.cells, self.split_order, arena
+        )
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
         boards_to_test = [board for _score, board in remainder]

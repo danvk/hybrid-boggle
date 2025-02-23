@@ -61,7 +61,6 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* 
   if (!letter_child) {
     auto letter_child_id = arena.NewNode();
     letter_child = arena.at(letter_child_id);
-    letter_child = new EvalNode;
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
