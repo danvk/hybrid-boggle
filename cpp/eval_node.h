@@ -131,6 +131,13 @@ class EvalNode {
     vector<int> split_order
   );
 
+  void OrderlyBound(
+    int cutoff,
+    const vector<string>& cells,
+    const vector<int>& split_order,
+    vector<string>& failures
+  ) const;
+
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const;
   void MaxSubtreesHelp(vector<pair<const EvalNode*, vector<pair<int, int>>>>& out, vector<pair<int, int>> path) const;
