@@ -952,15 +952,15 @@ void merge_choice_collisions_in_place(
   }
 }
 
-void EvalNode::OrderlyBound(
+vector<pair<int, string>> EvalNode::OrderlyBound(
   int cutoff,
   const vector<string>& cells,
-  const vector<int>& split_order,
-  vector<string>& failures
+  const vector<int>& split_order
 ) const {
   vector<vector<const EvalNode*>> stacks(cells.size());
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
+  vector<pair<int, string>> failures;
 
   auto advance = [&](const EvalNode* node, vector<int>& sums) {
     assert(node->letter_ != CHOICE_NODE);
@@ -977,7 +977,7 @@ void EvalNode::OrderlyBound(
     for (const auto& choice : choices) {
       board[choice.first] = cells[choice.first][choice.second];
     }
-    failures.push_back(board);
+    failures.push_back({bound, board});
   };
 
   function<bool(int, int, vector<int>&)> rec = [&](int base_points, int num_splits, vector<int>& stack_sums) {
@@ -1030,4 +1030,5 @@ void EvalNode::OrderlyBound(
   vector<int> sums(cells.size(), 0);
   assert(advance(this, sums) == 0);
   rec(0, 0, sums);
+  return failures;
 }
