@@ -64,16 +64,24 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     )
 
 
-def test_orderly_bound22():
-    trie = make_py_trie("testdata/boggle-words-4.txt")
+@pytest.mark.parametrize(
+    "make_trie, get_tree_builder",
+    [
+        (make_py_trie, OrderlyTreeBuilder),
+        (Trie.CreateFromFile, cpp_orderly_tree_builder),
+    ],
+)
+def test_orderly_bound22(make_trie, get_tree_builder):
+    trie = make_trie("testdata/boggle-words-4.txt")
     board = "ab cd ef gh"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = OrderlyTreeBuilder(trie, dims=(2, 2))
+    otb = get_tree_builder(trie, dims=(2, 2))
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    t.assert_invariants(otb)
+    if isinstance(t, EvalNode):
+        t.assert_invariants(otb)
     assert t.bound == 8
 
     failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)])

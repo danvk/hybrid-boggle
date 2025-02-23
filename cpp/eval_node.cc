@@ -990,7 +990,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     }
     if (num_splits == split_order.size()) {
       record_failure(bound);
-      return false;
+      return false;  // TODO: return value is not meaningful.
     }
 
     int next_to_split = split_order[num_splits];
@@ -1004,6 +1004,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       if (letter > 0) {
         stack_sums = base_sums;
         for (int i = 0; i < stacks.size(); ++i) {
+          // TODO: this might de-allocate, which we don't want.
           stacks[i].resize(stack_top[i]);
         }
       }
