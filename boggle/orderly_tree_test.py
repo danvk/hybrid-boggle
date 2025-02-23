@@ -120,10 +120,11 @@ def test_orderly_bound33():
     t = otb.BuildTree(arena)
     t.assert_invariants(otb)
     assert t.bound > 500
+    print(otb.cell_counts)
 
     # start_s = time.time()
     failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)])
     # print(time.time() - start_s)
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([(512, "stsaseblt")])
-    # assert False
+    assert False

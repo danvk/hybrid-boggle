@@ -131,7 +131,13 @@ class EvalNode:
         self.cache_key = None
         self.cache_value = None
 
-    def add_word(self, choices: Sequence[tuple[int, int]], points: int, arena):
+    def add_word(
+        self,
+        choices: Sequence[tuple[int, int]],
+        points: int,
+        arena,
+        cell_counts: list[int] = None,
+    ):
         """Add a word at the end of a sequence of choices to the tree.
 
         This doesn't update bounds or choice_mask.
@@ -155,6 +161,8 @@ class EvalNode:
             choice_child.letter = CHOICE_NODE
             choice_child.cell = cell
             self.children.append(choice_child)
+            if cell_counts:
+                cell_counts[cell] += 1
             # TODO: could keep self.children sorted
 
         # TODO: binary search
@@ -171,7 +179,7 @@ class EvalNode:
             choice_child.children.append(letter_child)
             choice_child.children.sort(key=lambda c: c.letter)
 
-        letter_child.add_word(remaining_choices, points, arena)
+        letter_child.add_word(remaining_choices, points, arena, cell_counts)
 
     def score_with_forces(self, forces: list[int]) -> int:
         """Requires that set_choice_point_mask() has been called on this tree."""
@@ -607,6 +615,7 @@ class EvalNode:
                 points = base_points
                 for node in stacks[next_to_split]:
                     letter_node = None
+                    # TODO: could maintain pointers / iterators in lockstep rather than scanning
                     for n in node.children:
                         if n.letter == letter:
                             letter_node = n
