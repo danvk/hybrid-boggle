@@ -1004,8 +1004,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       if (letter > 0) {
         stack_sums = base_sums;
         for (int i = 0; i < stacks.size(); ++i) {
-          // TODO: this might de-allocate, which we don't want.
-          stacks[i].resize(stack_top[i]);
+            stacks[i].erase(stacks[i].begin() + stack_top[i], stacks[i].end());
         }
       }
       choices.emplace_back(next_to_split, letter);
