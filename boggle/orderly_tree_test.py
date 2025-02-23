@@ -74,6 +74,7 @@ def test_orderly_bound22(make_trie, get_tree_builder):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
+    print("build tree")
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
     assert t.bound == 8
