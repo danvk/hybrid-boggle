@@ -64,8 +64,8 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) 
     auto score = DoAllDescents(i, 0, dict_, child, arena);
     if (score > 0) {
       details_.max_nomark += score;
-      root_->children_.push_back(child);
-      arena.AddNode(child);
+      // root_->children_.push_back(child);
+      // arena.AddNode(child);
     } else {
       delete child;
     }
@@ -79,7 +79,7 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) 
   // cout << "build tree: " << duration << " ms" << endl;
   auto root = root_;
   root_ = NULL;
-  arena.AddNode(root);
+  // arena.AddNode(root);
   node_cache_.clear();
   return root;
   // return unique_ptr<EvalNode>(root_);
@@ -101,12 +101,12 @@ unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t, Eval
       child = GetCanonicalNode(child);
       if (tscore > 0) {
         max_score = std::max(max_score, tscore);
-        node->children_.push_back(child);
+        // node->children_.push_back(child);
       }
       if (tscore == 0 || child != owned_child) {
         delete owned_child;
       } else {
-        arena.AddNode(owned_child);
+        // arena.AddNode(owned_child);
       }
     }
   }
@@ -134,12 +134,12 @@ unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node
       neighbor = GetCanonicalNode(neighbor);
       if (tscore > 0) {
         score += tscore;
-        node->children_.push_back(neighbor);
+        // node->children_.push_back(neighbor);
       }
       if (tscore == 0 || neighbor != owned_neighbor) {
         delete owned_neighbor;
       } else {
-        arena.AddNode(owned_neighbor);
+        // arena.AddNode(owned_neighbor);
       }
     }
   }

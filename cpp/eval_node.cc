@@ -8,8 +8,13 @@
 
 using namespace std;
 
-inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
-  return a->letter_ < b->letter_;
+
+template<>
+uint32_t Arena<EvalNode>::NewNode() {
+  // TODO: allocate & free a million at once
+  int n = owned_nodes_.size();
+  owned_nodes_.push_back(new EvalNode);
+  return n;
 }
 
 void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena) {
@@ -60,8 +65,11 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* 
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
     choice_child->children_.push_back(letter_child_id);
-    // XXX needs to be closure
-    sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
+    sort(choice_child->children_.begin(), choice_child->children_.end(), [&](int32_t aid, int32_t bid) {
+      auto a = arena.at(aid);
+      auto b = arena.at(bid);
+      return a->letter_ < b->letter_;
+    });
   }
   letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
 

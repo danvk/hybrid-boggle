@@ -45,7 +45,9 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 template <int M, int N>
 const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
-  root_ = new EvalNode();
+  // root_ = new EvalNode();
+  auto root_id = arena.NewNode();
+  root_ = arena.at(root_id);
   root_->letter_ = EvalNode::ROOT_NODE;
   root_->cell_ = 0; // irrelevant
   root_->points_ = 0;
@@ -63,7 +65,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
 
   auto root = root_;
   root_ = NULL;
-  arena.AddNode(root);
+  // arena.AddNode(root);
 
   /*
   cout << "root: " << (uintptr_t)root << endl;

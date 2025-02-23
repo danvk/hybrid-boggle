@@ -39,12 +39,7 @@ class Arena {
   }
 
   // TODO: return a pair?
-  uint32_t NewNode() {
-    // TODO: allocate & free a million at once
-    int n = owned_nodes_.size();
-    owned_nodes_.push_back(new EvalNode);
-    return n;
-  }
+  uint32_t NewNode();
 
   inline T* at(uint32_t n) {
     return owned_nodes_[n];
