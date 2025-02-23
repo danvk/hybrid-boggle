@@ -91,15 +91,19 @@ def test_orderly_bound22_best():
     assert t.bound == 22
 
     failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)])
-    assert set(failures) == {"teas", "teat", "taes", "taet", "rees", "reas", "raes"}
+    assert failures == snapshot(
+        [
+            (18, "seer"),
+            (18, "seat"),
+            (17, "sear"),
+            (18, "saet"),
+            (17, "saer"),
+            (20, "teat"),
+            (20, "taet"),
+        ]
+    )
 
-    # 18 teas
-    # 20 teat
-    # 18 taes
-    # 20 taet
-    # 18 rees
-    # 17 reas
-    # 17 raes
+    # TODO: confirm these via ibuckets
 
 
 def test_orderly_bound33():

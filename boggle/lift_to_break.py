@@ -108,7 +108,7 @@ def main():
     if t.bound > cutoff:
         print("Unbroken boards:")
         for max_t, path in t.max_subtrees():
-            board = "".join(cells[cell][letter] for cell, letter in path)
+            board = "".join(cells[cell][letter] for cell, letter in reversed(path))
             print(f"{max_t.bound} {board}")
 
 

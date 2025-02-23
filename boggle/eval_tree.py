@@ -571,6 +571,16 @@ class EvalNode:
                 stacks[child.cell].append(child)
             return node.points
 
+        def record_failure(bound: int):
+            bd = [None] * len(num_letters)
+            for cell, letter in choices:
+                bd[cell] = cells[cell][letter]
+            board = "".join(bd)
+            indent = "  " * len(num_letters)
+            print(f"{indent}unbreakable board! {bound} {board} {choices=}")
+            nonlocal failures
+            failures.append((bound, board))
+
         def rec(base_points: int, num_splits: int):
             # TODO: this could be much more efficient; track a bound to the top of each stack.
             bound = base_points + sum(
@@ -579,17 +589,11 @@ class EvalNode:
             )
             indent = "  " * num_splits
             print(f"{indent}{num_splits=} {base_points=} {bound=}")
-            if bound < cutoff:
+            if bound <= cutoff:
                 return True  # done!
             if num_splits == len(split_order):
-                bd = [None] * len(num_letters)
-                for cell, letter in choices:
-                    bd[cell] = cells[cell][letter]
-                board = "".join(bd)
-                print(f"{indent}unbreakable board! {board} {choices=}")
-                nonlocal failures
-                failures.append(board)
-                return False  # have an unbreakable board; TODO: which board?
+                record_failure(bound)
+                return False
 
             # need to advance; try each possibility in turn.
             next_to_split = split_order[num_splits]
@@ -615,7 +619,7 @@ class EvalNode:
                 for i, length in enumerate(stack_top):
                     stacks[i] = stacks[i][:length]
 
-        advance(self)
+        assert advance(self) == 0
         rec(0, 0)
         return failures
 
