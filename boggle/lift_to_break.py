@@ -105,6 +105,12 @@ def main():
 
     PrintEvalTreeCounts()
 
+    if t.bound > cutoff:
+        print("Unbroken boards:")
+        for max_t, path in t.max_subtrees():
+            board = "".join(cells[cell][letter] for cell, letter in path)
+            print(f"{max_t.bound} {board}")
+
 
 if __name__ == "__main__":
     main()

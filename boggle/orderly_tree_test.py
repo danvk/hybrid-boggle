@@ -78,6 +78,22 @@ def test_orderly_bound22():
     assert failures == ["adeg", "adeh"]
 
 
+def test_orderly_bound22_best():
+    trie = make_py_trie("testdata/boggle-words-4.txt")
+    board = "st ea ea tr"
+    cells = board.split(" ")
+    # num_letters = [len(cell) for cell in cells]
+    otb = OrderlyTreeBuilder(trie, dims=(2, 2))
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    t = otb.BuildTree(arena)
+    t.assert_invariants(otb)
+    assert t.bound == 8
+
+    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)])
+    assert failures == ["adeg", "adeh"]
+
+
 def test_orderly_bound33():
     trie = make_py_trie("testdata/boggle-words-9.txt")
     board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
