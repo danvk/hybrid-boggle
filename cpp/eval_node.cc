@@ -25,7 +25,8 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* 
   num_choices--;
 
   EvalNode* choice_child = NULL;
-  for (auto c : children_) {
+  for (auto c_id : children_) {
+    auto c = arena.at(c_id);
     if (c->cell_ == cell) {
       choice_child = (EvalNode*)c;
       break;
@@ -33,30 +34,33 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* 
   }
   int old_choice_bound = 0;
   if (!choice_child) {
-    choice_child = new EvalNode;
+    auto choice_child_id = arena.NewNode();
+    auto choice_child = arena.at(choice_child_id);
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
     choice_child->bound_ = 0;
-    arena.AddNode(choice_child);
-    children_.push_back(choice_child);
+    children_.push_back(choice_child_id);
   } else {
     old_choice_bound = choice_child->bound_;
   }
 
   EvalNode* letter_child = NULL;
-  for (auto c : choice_child->children_) {
+  for (auto c_id : choice_child->children_) {
+    auto c = arena.at(c_id);
     if (c->letter_ == letter) {
       letter_child = (EvalNode*)c;
       break;
     }
   }
   if (!letter_child) {
+    auto letter_child_id = arena.NewNode();
+    auto letter_child = arena.at(letter_child_id);
     letter_child = new EvalNode;
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
-    arena.AddNode(letter_child);
-    choice_child->children_.push_back(letter_child);
+    choice_child->children_.push_back(letter_child_id);
+    // XXX needs to be closure
     sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
   }
   letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
@@ -72,71 +76,11 @@ void EvalNode::AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena
   AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
 }
 
-bool EvalNode::StructuralEq(const EvalNode& other) const {
-  if (letter_ != other.letter_ || cell_ != other.cell_) {
-    return false;
-  }
-  if (bound_ != other.bound_) {
-    return false;
-  }
-  if (points_ != other.points_) {
-    return false;
-  }
-  vector<const EvalNode*> nnc, nno;
-  for (auto c : children_) {
-    if (c) nnc.push_back(c);
-  }
-  for (auto c : other.children_) {
-    if (c) nno.push_back(c);
-  }
-  if (nnc.size() != nno.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < nnc.size(); ++i) {
-    if (!nnc[i]->StructuralEq(*nno[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-void EvalNode::PrintJSON() const {
-  cout << "{\"type\": \"";
-  if (letter_ == CHOICE_NODE) {
-    cout << "CHOICE";
-  } else if (letter_ == ROOT_NODE) {
-    cout << "ROOT";
-  } else {
-    cout << (int)cell_ << "=? (" << (int)letter_ << ")";
-  }
-  cout << "\", \"cell\": " << (int)cell_;
-  cout << ", \"bound\": " << bound_;
-  if (points_) {
-    cout << ", \"points\": " << (int)points_;
-  }
-  if (!children_.empty()) {
-    cout << ", \"children\": [";
-    bool has_commad = false;
-    for (auto c : children_) {
-      if (!c) {
-        continue;
-      }
-      if (!has_commad) {
-        has_commad = true;
-      } else {
-        cout << ", ";
-      }
-      c->PrintJSON();
-    }
-    cout << "]";
-  }
-  cout << "}";
-}
-
-int EvalNode::NodeCount() const {
+int EvalNode::NodeCount(EvalNodeArena& arena) const {
   int count = 1;
   for (int i = 0; i < children_.size(); i++) {
-    if (children_[i]) count += children_[i]->NodeCount();
+    auto c = arena.at(children_[i]);
+    if (c) count += c->NodeCount(arena);
   }
   return count;
 }
@@ -146,30 +90,11 @@ unique_ptr<EvalNodeArena> create_eval_node_arena() {
   return unique_ptr<EvalNodeArena>(new EvalNodeArena);
 }
 
-
-template<typename T>
-int Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
-  throw new runtime_error("MarkAndSweep not implemented");
-}
-
-template <typename T>
-T* Arena<T>::NewNode() {
-  throw new runtime_error("not implemented");
-}
-
-template <>
-EvalNode* Arena<EvalNode>::NewNode() {
-  EvalNode* n = new EvalNode;
-  n->letter_ = EvalNode::ROOT_NODE;
-  n->cell_ = 0;
-  AddNode(n);
-  return n;
-}
-
 vector<pair<int, string>> EvalNode::OrderlyBound(
   int cutoff,
   const vector<string>& cells,
-  const vector<int>& split_order
+  const vector<int>& split_order,
+  EvalNodeArena& arena
 ) const {
   vector<vector<const EvalNode*>> stacks(cells.size());
   vector<pair<int, int>> choices;
@@ -178,10 +103,11 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
 
   auto advance = [&](const EvalNode* node, vector<int>& sums) {
     assert(node->letter_ != CHOICE_NODE);
-    for (auto child : node->children_) {
-        assert(child->letter_ == CHOICE_NODE);
-        stacks[child->cell_].push_back(child);
-        sums[child->cell_] += child->bound_;
+    for (auto cid : node->children_) {
+      auto child = arena.at(cid);
+      assert(child->letter_ == CHOICE_NODE);
+      stacks[child->cell_].push_back(child);
+      sums[child->cell_] += child->bound_;
     }
     return node->points_;
   };
@@ -226,7 +152,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       int points = base_points;
       for (auto node : stacks[next_to_split]) {
         const EvalNode* letter_node = nullptr;
-        for (auto n : node->children_) {
+        for (auto nid : node->children_) {
+          auto n = arena.at(nid);
           if (n->letter_ == letter) {
             letter_node = n;
             break;

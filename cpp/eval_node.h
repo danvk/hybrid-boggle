@@ -38,21 +38,17 @@ class Arena {
     return owned_nodes_.size();
   }
 
-  void AddNode(T* node) {
-    // for (auto n : owned_nodes_) {
-    //   if (n == node) {
-    //     cout << "Double add!" << endl;
-    //   }
-    // }
-    owned_nodes_.push_back(node);
+  // TODO: return a pair?
+  uint32_t NewNode() {
+    // TODO: allocate & free a million at once
+    int n = owned_nodes_.size();
+    owned_nodes_.push_back(new EvalNode);
+    return n;
   }
 
-  // For testing
-  T* NewNode();
-
-  // Returns the number of nodes deleted
-  int MarkAndSweep(T* root, uint32_t mark);
-
+  inline T* at(uint32_t n) {
+    return owned_nodes_[n];
+  }
   // friend EvalNode;
 
  private:
@@ -70,9 +66,6 @@ class EvalNode {
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
   void AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena);
 
-  bool StructuralEq(const EvalNode& other) const;
-  void PrintJSON() const;
-
   int8_t letter_;
   int8_t cell_;
 
@@ -82,20 +75,19 @@ class EvalNode {
   // cached computation across all children
   uint32_t bound_;
 
-
   static const int8_t ROOT_NODE = -2;
   static const int8_t CHOICE_NODE = -1;
 
   // These might be the various options on a cell or the various directions.
-  // TODO: the "const" here is increasingly a joke.
-  vector<const EvalNode*> children_;
+  vector<uint32_t> children_;
 
-  int NodeCount() const;
+  int NodeCount(EvalNodeArena& arena) const;
 
   vector<pair<int, string>> OrderlyBound(
     int cutoff,
     const vector<string>& cells,
-    const vector<int>& split_order
+    const vector<int>& split_order,
+    EvalNodeArena& arena
   ) const;
 
 };
