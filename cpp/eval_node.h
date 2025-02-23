@@ -18,7 +18,7 @@ template<typename T>
 class Arena {
  public:
   Arena() {
-    cout << "sizeof(T)=" << sizeof(T) << endl;
+    // cout << "sizeof(T)=" << sizeof(T) << endl;
   }
   ~Arena() {
     FreeTheChildren();
