@@ -980,17 +980,17 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     failures.push_back({bound, board});
   };
 
-  function<bool(int, int, vector<int>&)> rec = [&](int base_points, int num_splits, vector<int>& stack_sums) {
+  function<void(int, int, vector<int>&)> rec = [&](int base_points, int num_splits, vector<int>& stack_sums) {
     int bound = base_points;
     for (int i = num_splits; i < split_order.size(); ++i) {
       bound += stack_sums[split_order[i]];
     }
     if (bound <= cutoff) {
-      return true;  // done!
+      return;  // done!
     }
     if (num_splits == split_order.size()) {
       record_failure(bound);
-      return false;  // TODO: return value is not meaningful.
+      return;
     }
 
     int next_to_split = split_order[num_splits];
@@ -1004,7 +1004,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       if (letter > 0) {
         stack_sums = base_sums;
         for (int i = 0; i < stacks.size(); ++i) {
-            stacks[i].erase(stacks[i].begin() + stack_top[i], stacks[i].end());
+          // TODO: don't do this, just leave garbage on the end.
+          stacks[i].resize(stack_top[i]);
         }
       }
       choices.emplace_back(next_to_split, letter);
@@ -1024,7 +1025,6 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       rec(points, num_splits + 1, stack_sums);
       choices.pop_back();
     }
-    return false;
   };
 
   vector<int> sums(cells.size(), 0);
