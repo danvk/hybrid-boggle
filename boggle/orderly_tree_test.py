@@ -88,10 +88,18 @@ def test_orderly_bound22_best():
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
     t.assert_invariants(otb)
-    assert t.bound == 8
+    assert t.bound == 22
 
-    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)])
-    assert failures == ["adeg", "adeh"]
+    failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)])
+    assert set(failures) == {"teas", "teat", "taes", "taet", "rees", "reas", "raes"}
+
+    # 18 teas
+    # 20 teat
+    # 18 taes
+    # 20 taet
+    # 18 rees
+    # 17 reas
+    # 17 raes
 
 
 def test_orderly_bound33():
