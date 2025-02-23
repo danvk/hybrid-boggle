@@ -238,7 +238,7 @@ class HybridTreeBreaker:
         for board in it:
             n_expanded += 1
             true_score = self.boggler.score(board)
-            print(f"{board}: {tree.bound} -> {true_score}")
+            # print(f"{board}: {tree.bound} -> {true_score}")
             if true_score >= self.best_score:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)
