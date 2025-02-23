@@ -40,13 +40,13 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     )
 
 
-@pytest.mark.parametrize(
-    "make_trie, get_tree_builder",
-    [
-        (make_py_trie, OrderlyTreeBuilder),
-        (Trie.CreateFromFile, cpp_orderly_tree_builder),
-    ],
-)
+OTB_PARAMS = [
+    (make_py_trie, OrderlyTreeBuilder),
+    (Trie.CreateFromFile, cpp_orderly_tree_builder),
+]
+
+
+@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
     board = ". . . . lnrsy e aeiou aeiou ."
@@ -64,13 +64,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     )
 
 
-@pytest.mark.parametrize(
-    "make_trie, get_tree_builder",
-    [
-        (make_py_trie, OrderlyTreeBuilder),
-        (Trie.CreateFromFile, cpp_orderly_tree_builder),
-    ],
-)
+@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
 def test_orderly_bound22(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-4.txt")
     board = "ab cd ef gh"
@@ -88,16 +82,18 @@ def test_orderly_bound22(make_trie, get_tree_builder):
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
-def test_orderly_bound22_best():
-    trie = make_py_trie("testdata/boggle-words-4.txt")
+@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
+def test_orderly_bound22_best(make_trie, get_tree_builder):
+    trie = make_trie("testdata/boggle-words-4.txt")
     board = "st ea ea tr"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = OrderlyTreeBuilder(trie, dims=(2, 2))
+    otb = get_tree_builder(trie, dims=(2, 2))
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    t.assert_invariants(otb)
+    if isinstance(t, EvalNode):
+        t.assert_invariants(otb)
     assert t.bound == 22
 
     failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)])
@@ -116,19 +112,21 @@ def test_orderly_bound22_best():
     # TODO: confirm these via ibuckets
 
 
-def test_orderly_bound33():
-    trie = make_py_trie("testdata/boggle-words-9.txt")
+@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
+def test_orderly_bound33(make_trie, get_tree_builder):
+    trie = make_trie("testdata/boggle-words-9.txt")
     board = "lnrsy chkmpt lnrsy aeiou lnrsy aeiou bdfgjvwxz lnrsy chkmpt"
     # board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = OrderlyTreeBuilder(trie, dims=(3, 3))
+    otb = get_tree_builder(trie, dims=(3, 3))
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    t.assert_invariants(otb)
+    if isinstance(t, EvalNode):
+        t.assert_invariants(otb)
+        print(otb.cell_counts)
     assert t.bound > 500
-    print(otb.cell_counts)
 
     start_s = time.time()
     failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)])
