@@ -33,7 +33,7 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* 
   for (auto c_id : children_) {
     auto c = arena.at(c_id);
     if (c->cell_ == cell) {
-      choice_child = (EvalNode*)c;
+      choice_child = c;
       break;
     }
   }
@@ -54,7 +54,7 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* 
     auto c = arena.at(c_id);
 
     if (c->letter_ == letter) {
-      letter_child = (EvalNode*)c;
+      letter_child = c;
       break;
     }
   }

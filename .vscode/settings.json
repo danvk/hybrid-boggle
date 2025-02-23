@@ -79,7 +79,8 @@
         "algorithm": "cpp",
         "list": "cpp",
         "set": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "cassert": "cpp"
     },
     "python.testing.pytestArgs": [
         "boggle"
