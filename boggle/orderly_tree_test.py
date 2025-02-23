@@ -77,7 +77,7 @@ def test_orderly_bound22():
     assert t.bound == 8
 
     failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)])
-    assert failures == ["adeg", "adeh"]
+    assert failures == [(8, "adeg"), (7, "adeh")]
 
 
 def test_orderly_bound22_best():
