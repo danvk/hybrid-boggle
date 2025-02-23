@@ -873,6 +873,9 @@ class EvalNode:
         # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
+            if self.letter == CHOICE_NODE and len(children) < len(cells[self.cell]):
+                # incomplete set of choices; label them for clarity.
+                attrs = f' [label="{self.children[i].letter}"]'
             # if is_top_max and all_choices:
             #     letter = cells[self.cell][i]
             #     attrs = f' [label="{self.cell}={letter}"]'
