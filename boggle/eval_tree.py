@@ -563,12 +563,14 @@ class EvalNode:
         stacks = [[] for _ in num_letters]
         choices = []  # for tracking unbreakable boards
         failures: list[str] = []
+        # max_lens: list[int] = [0] * len(stacks)
 
         def advance(node: Self):
             assert node.letter != CHOICE_NODE
             for child in node.children:
                 assert child.letter == CHOICE_NODE
                 stacks[child.cell].append(child)
+                # max_lens[child.cell] = max(max_lens[child.cell], len(stacks[child.cell]))
             return node.points
 
         def record_failure(bound: int):
@@ -576,8 +578,8 @@ class EvalNode:
             for cell, letter in choices:
                 bd[cell] = cells[cell][letter]
             board = "".join(bd)
-            indent = "  " * len(num_letters)
-            print(f"{indent}unbreakable board! {bound} {board} {choices=}")
+            # indent = "  " * len(num_letters)
+            # print(f"{indent}unbreakable board! {bound} {board} {choices=}")
             nonlocal failures
             failures.append((bound, board))
 
@@ -587,8 +589,8 @@ class EvalNode:
                 sum(node.bound for node in stacks[cell])
                 for cell in split_order[num_splits:]
             )
-            indent = "  " * num_splits
-            print(f"{indent}{num_splits=} {base_points=} {bound=}")
+            # indent = "  " * num_splits
+            # print(f"{indent}{num_splits=} {base_points=} {bound=}")
             if bound <= cutoff:
                 return True  # done!
             if num_splits == len(split_order):
@@ -598,9 +600,9 @@ class EvalNode:
             # need to advance; try each possibility in turn.
             next_to_split = split_order[num_splits]
             stack_top = [len(stack) for stack in stacks]
-            print(f"{indent}{stack_top=}")
+            # print(f"{indent}{stack_top=}")
             for letter in range(0, num_letters[next_to_split]):
-                print(f"{indent}{next_to_split}={letter}")
+                # print(f"{indent}{next_to_split}={letter}")
                 choices.append((next_to_split, letter))
                 points = base_points
                 for node in stacks[next_to_split]:
@@ -621,6 +623,7 @@ class EvalNode:
 
         assert advance(self) == 0
         rec(0, 0)
+        # print(f"{max_lens=}")
         return failures
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---

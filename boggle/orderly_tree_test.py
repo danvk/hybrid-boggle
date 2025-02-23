@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
@@ -108,7 +110,8 @@ def test_orderly_bound22_best():
 
 def test_orderly_bound33():
     trie = make_py_trie("testdata/boggle-words-9.txt")
-    board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
+    board = "lnrsy chkmpt lnrsy aeiou lnrsy aeiou bdfgjvwxz lnrsy chkmpt"
+    # board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
     otb = OrderlyTreeBuilder(trie, dims=(3, 3))
@@ -118,5 +121,9 @@ def test_orderly_bound33():
     t.assert_invariants(otb)
     assert t.bound > 500
 
+    # start_s = time.time()
     failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)])
-    assert failures == ["streaedlp"]
+    # print(time.time() - start_s)
+    # break_all reports 889 points for this board, but ibucket_solver reports 512
+    assert failures == snapshot([(512, "stsaseblt")])
+    # assert False
