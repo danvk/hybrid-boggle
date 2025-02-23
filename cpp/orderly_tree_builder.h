@@ -48,13 +48,11 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   // root_ = new EvalNode();
   auto root_id = arena.NewNode();
   root_ = arena.at(root_id);
-  cout << "root:" << root_ << endl;
   root_->letter_ = EvalNode::ROOT_NODE;
   root_->cell_ = 0; // irrelevant
   root_->points_ = 0;
   root_->bound_ = 0;
   used_ = 0;
-  cout << "root:" << root_ << endl;
 
   num_letters_.resize(M*N);
   for (int i = 0; i < M*N; i++) {
@@ -64,7 +62,6 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
-  cout << "build tree" << endl;
   auto root = root_;
   root_ = NULL;
   // arena.AddNode(root);
@@ -122,9 +119,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t, EvalNode
     sort(orderly_ptr, orderly_ptr + n, [this](const pair<int, int>& a, const pair<int, int>& b) {
       return cell_to_order_[a.first] < cell_to_order_[b.first];
     });
-    cout << "AddWord" << endl;
     root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
-    cout << "/AddWord" << endl;
   }
 
   used_ ^= (1 << i);

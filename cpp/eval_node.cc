@@ -37,39 +37,30 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* 
       break;
     }
   }
-  cout << "choice_child:" << choice_child << endl;
   int old_choice_bound = 0;
   if (!choice_child) {
     auto choice_child_id = arena.NewNode();
     choice_child = arena.at(choice_child_id);
-    cout << "create cc:" << choice_child_id << " " << choice_child << endl;
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
     choice_child->bound_ = 0;
     children_.push_back(choice_child_id);
-    cout << choice_child->children_.size() << endl;
   } else {
     old_choice_bound = choice_child->bound_;
   }
 
   EvalNode* letter_child = NULL;
-  cout << "iterate" << endl;
-  cout << choice_child->children_.size() << endl;
   for (auto c_id : choice_child->children_) {
-    cout << "  c_id: " << c_id << endl;
     auto c = arena.at(c_id);
 
-    cout << "  c" << c_id << " " << c << endl;
     if (c->letter_ == letter) {
       letter_child = (EvalNode*)c;
       break;
     }
   }
-  cout << "letter_child:" << letter_child << endl;
   if (!letter_child) {
     auto letter_child_id = arena.NewNode();
     letter_child = arena.at(letter_child_id);
-    cout << "create lc:" << letter_child_id << " " << letter_child << endl;
     letter_child = new EvalNode;
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
