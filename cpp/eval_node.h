@@ -66,7 +66,6 @@ unique_ptr<EvalNodeArena> create_eval_node_arena();
 class EvalNode {
  public:
   EvalNode() : points_(0) {}
-  virtual ~EvalNode() {}
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
   void AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena);
@@ -76,18 +75,20 @@ class EvalNode {
 
   int8_t letter_;
   int8_t cell_;
+
+  // points contributed by _this_ node.
+  uint16_t points_;
+
+  // cached computation across all children
+  uint32_t bound_;
+
+
   static const int8_t ROOT_NODE = -2;
   static const int8_t CHOICE_NODE = -1;
 
   // These might be the various options on a cell or the various directions.
   // TODO: the "const" here is increasingly a joke.
   vector<const EvalNode*> children_;
-
-  // cached computation across all children
-  uint32_t bound_;
-
-  // points contributed by _this_ node.
-  uint32_t points_;
 
   int NodeCount() const;
 
