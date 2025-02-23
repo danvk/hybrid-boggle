@@ -64,6 +64,15 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
+
+  cout << "root: " << (uintptr_t)root << endl;
+  auto r = (uintptr_t)root;
+  cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
+  cout << "root->cell_: " << (uintptr_t)&root->cell_ - r << endl;
+  cout << "root->points_: " << (uintptr_t)&root->points_ - r << endl;
+  cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
+  cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
+
   return root;
 }
 
