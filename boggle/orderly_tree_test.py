@@ -127,4 +127,3 @@ def test_orderly_bound33():
     # print(time.time() - start_s)
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([(512, "stsaseblt")])
-    assert False

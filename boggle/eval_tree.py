@@ -573,11 +573,12 @@ class EvalNode:
         failures: list[str] = []
         # max_lens: list[int] = [0] * len(stacks)
 
-        def advance(node: Self):
+        def advance(node: Self, sums: list[int]):
             assert node.letter != CHOICE_NODE
             for child in node.children:
                 assert child.letter == CHOICE_NODE
                 stacks[child.cell].append(child)
+                sums[child.cell] += child.bound
                 # max_lens[child.cell] = max(max_lens[child.cell], len(stacks[child.cell]))
             return node.points
 
@@ -591,11 +592,9 @@ class EvalNode:
             nonlocal failures
             failures.append((bound, board))
 
-        def rec(base_points: int, num_splits: int):
-            # TODO: this could be much more efficient; track a bound to the top of each stack.
+        def rec(base_points: int, num_splits: int, stack_sums: list[int]):
             bound = base_points + sum(
-                sum(node.bound for node in stacks[cell])
-                for cell in split_order[num_splits:]
+                stack_sums[cell] for cell in split_order[num_splits:]
             )
             # indent = "  " * num_splits
             # print(f"{indent}{num_splits=} {base_points=} {bound=}")
@@ -611,6 +610,8 @@ class EvalNode:
             # print(f"{indent}{stack_top=}")
             for letter in range(0, num_letters[next_to_split]):
                 # print(f"{indent}{next_to_split}={letter}")
+                # TODO: don't reallocate this
+                next_sums = [*stack_sums]
                 choices.append((next_to_split, letter))
                 points = base_points
                 for node in stacks[next_to_split]:
@@ -621,17 +622,18 @@ class EvalNode:
                             letter_node = n
                             break
                     if letter_node:
-                        points += advance(letter_node)
+                        points += advance(letter_node, next_sums)
 
-                rec(points, num_splits + 1)
+                rec(points, num_splits + 1, next_sums)
                 # reset the stacks
                 choices.pop()
                 # TODO: track a "top" of each stack and leave the rest as garbage
                 for i, length in enumerate(stack_top):
                     stacks[i] = stacks[i][:length]
 
-        assert advance(self) == 0
-        rec(0, 0)
+        sums = [0] * len(num_letters)
+        assert advance(self, sums) == 0
+        rec(0, 0, sums)
         # print(f"{max_lens=}")
         return failures
 
