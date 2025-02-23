@@ -66,10 +66,6 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) 
       details_.max_nomark += score;
       root_->children_.push_back(child);
       arena.AddNode(child);
-      if (strlen(bd_[i]) > 1) {
-        child->choice_mask_ |= 1 << i;
-      }
-      root_->choice_mask_ |= child->choice_mask_;
     } else {
       delete child;
     }
@@ -106,7 +102,6 @@ unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t, Eval
       if (tscore > 0) {
         max_score = std::max(max_score, tscore);
         node->children_.push_back(child);
-        node->choice_mask_ |= child->choice_mask_;
       }
       if (tscore == 0 || child != owned_child) {
         delete owned_child;
@@ -134,17 +129,12 @@ unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node
       auto neighbor = new EvalNode;
       neighbor->letter_ = EvalNode::CHOICE_NODE;
       neighbor->cell_ = idx;
-      // TODO: optimize
-      if (strlen(bd_[idx]) > 1) {
-        neighbor->choice_mask_ = 1 << idx;
-      }
       auto tscore = DoAllDescents(idx, length, t, neighbor, arena);
       auto owned_neighbor = neighbor;
       neighbor = GetCanonicalNode(neighbor);
       if (tscore > 0) {
         score += tscore;
         node->children_.push_back(neighbor);
-        node->choice_mask_ |= neighbor->choice_mask_;
       }
       if (tscore == 0 || neighbor != owned_neighbor) {
         delete owned_neighbor;
@@ -173,15 +163,6 @@ unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node
 
 template<int M, int N>
 EvalNode* TreeBuilder<M, N>::GetCanonicalNode(EvalNode* node) {
-  if (!dedupe_) {
-    return node;
-  }
-  auto h = node->StructuralHash();
-  auto prev = node_cache_.find(h);
-  if (prev != node_cache_.end()) {
-    return prev->second;
-  }
-  node_cache_[h] = node;
   return node;
 }
 

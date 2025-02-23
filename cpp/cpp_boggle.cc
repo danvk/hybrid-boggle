@@ -111,64 +111,16 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def_readonly("letter", &EvalNode::letter_)
         .def_readonly("cell", &EvalNode::cell_)
         .def_readonly("bound", &EvalNode::bound_)
-        .def_readonly("choice_mask", &EvalNode::choice_mask_)
         .def_readonly("children", &EvalNode::children_)
         .def_readonly("points", &EvalNode::points_)
-        .def("score_with_forces", &EvalNode::ScoreWithForces)
-        .def("recompute_score", &EvalNode::RecomputeScore)
         .def("node_count", &EvalNode::NodeCount)
-        .def("unique_node_count", &EvalNode::UniqueNodeCount)
         .def("add_word", &EvalNode::AddWord)
-        .def("set_computed_fields", &EvalNode::SetComputedFields)
-        // TODO: remove this
-        .def(
-            "force_cell",
-            &EvalNode::ForceCell,
-            py::return_value_policy::reference,
-            py::arg("cell"),
-            py::arg("num_lets"),
-            py::arg("arena"),
-            py::arg("vector_arena"),
-            py::arg("mark"),
-            py::arg("dedupe") = false,
-            py::arg("compress") = false
-        )
-        .def(
-            "lift_choice",
-            &EvalNode::LiftChoice,
-            py::return_value_policy::reference,
-            py::arg("cell"),
-            py::arg("num_lets"),
-            py::arg("arena"),
-            py::arg("mark"),
-            py::arg("dedupe"),
-            py::arg("compress")
-        )
-        .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
-        .def("structural_hash", &EvalNode::StructuralHash)
-        .def("set_choice_point_mask", &EvalNode::SetChoicePointMask)
-        .def("reset_choice_point_mask", &EvalNode::ResetChoicePointMask)
-        .def("filter_below_threshold", &EvalNode::FilterBelowThreshold)
-        .def("orderly_bound", &EvalNode::OrderlyBound)
-        .def("bound_remaining_boards", &EvalNode::BoundRemainingBoards);
+        .def("orderly_bound", &EvalNode::OrderlyBound);
 
     m.def("create_eval_node_arena", &create_eval_node_arena);
     py::class_<EvalNodeArena>(m, "EvalNodeArena")
         .def(py::init())
         .def("free_the_children", &EvalNodeArena::FreeTheChildren)
-        .def("mark_and_sweep", &EvalNodeArena::MarkAndSweep)
         .def("new_node", &EvalNodeArena::NewNode, py::return_value_policy::reference)
         .def("num_nodes", &EvalNodeArena::NumNodes);
-
-    // TODO: remove this once it's not part of a public API.
-    m.def("create_vector_arena", &create_vector_arena);
-    py::class_<VectorArena>(m, "VectorArena")
-        .def(py::init())
-        .def("free_the_children", &VectorArena::FreeTheChildren)
-        .def("num_nodes", &VectorArena::NumNodes);
-
-    // py::class_<Breaker>(m, "Breaker")
-    //     .def(py::init<TreeBuilder<3,4>*, unsigned int>())
-    //     .def("SetBoard", &Breaker::SetBoard)
-    //     .def("Break", &Breaker::Break);
 }
