@@ -614,6 +614,9 @@ class EvalNode:
                 if letter > 0:
                     for i, v in enumerate(base_sums):
                         stack_sums[i] = v
+                    # TODO: track a "top" of each stack and leave the rest as garbage
+                    for i, length in enumerate(stack_top):
+                        stacks[i] = stacks[i][:length]
                 choices.append((next_to_split, letter))
                 points = base_points
                 for node in stacks[next_to_split]:
@@ -629,9 +632,6 @@ class EvalNode:
                 rec(points, num_splits + 1, stack_sums)
                 # reset the stacks
                 choices.pop()
-                # TODO: track a "top" of each stack and leave the rest as garbage
-                for i, length in enumerate(stack_top):
-                    stacks[i] = stacks[i][:length]
 
         sums = [0] * len(num_letters)
         assert advance(self, sums) == 0
