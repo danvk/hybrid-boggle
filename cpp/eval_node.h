@@ -76,10 +76,6 @@ class EvalNode {
 
   int8_t letter_;
   int8_t cell_;
-
-  // points contributed by _this_ node.
-  uint16_t points_;
-
   static const int8_t ROOT_NODE = -2;
   static const int8_t CHOICE_NODE = -1;
 
@@ -89,6 +85,9 @@ class EvalNode {
 
   // cached computation across all children
   uint32_t bound_;
+
+  // points contributed by _this_ node.
+  uint32_t points_;
 
   int NodeCount() const;
 
