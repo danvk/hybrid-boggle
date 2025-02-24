@@ -115,11 +115,6 @@ class EvalNode {
   // Note: using uint16_t here precludes 5x5 Boggle trees
   uint16_t choice_mask_;
 
-  // mutable uint32_t cache_key_;
-  // mutable variant<const EvalNode*, vector<const EvalNode*>*> cache_value_;
-
-  // mutable uint64_t hash_;
-
   int RecomputeScore() const;
   int NodeCount() const;
   unsigned int UniqueNodeCount(uint32_t mark) const;
