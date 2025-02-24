@@ -135,7 +135,7 @@ class EvalNode {
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
-    const vector<pair<int, int>>* preset_cells = NULL
+    const vector<pair<int, int>>* preset_cells
   ) const;
 
  private:

@@ -572,7 +572,7 @@ class EvalNode:
         cutoff: int,
         cells: list[str],
         split_order: Sequence[int],
-        preset_cells: Sequence[tuple[int, int]] = None,
+        preset_cells: Sequence[tuple[int, int]],
     ):
         num_letters = [len(cell) for cell in cells]
         stacks = [[] for _ in num_letters]
@@ -591,7 +591,7 @@ class EvalNode:
 
         def record_failure(bound: int):
             bd = [None] * len(num_letters)
-            for cell, letter in preset_cells or []:
+            for cell, letter in preset_cells:
                 bd[cell] = cells[cell][letter]
             for cell, letter in choices:
                 bd[cell] = cells[cell][letter]
