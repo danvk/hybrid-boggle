@@ -64,6 +64,22 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   auto root = root_;
   root_ = NULL;
   arena.AddNode(root);
+
+  /*
+  // This can be used to investigate the layout of EvalNode.
+  cout << "sizeof(EvalNode) = " << sizeof(EvalNode) << endl;
+  cout << "root: " << (uintptr_t)root << endl;
+  auto r = (uintptr_t)root;
+  cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
+  cout << "root->cell_: " << (uintptr_t)&root->cell_ - r << endl;
+  cout << "root->points_: " << (uintptr_t)&root->points_ - r << endl;
+  cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
+  cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
+  cout << "root->cache_key_: " << (uintptr_t)&root->cache_key_ - r << endl;
+  cout << "root->cache_value_: " << (uintptr_t)&root->cache_value_ - r << endl;
+  cout << "root->hash_: " << (uintptr_t)&root->hash_ - r << endl;
+  */
+
   return root;
 }
 

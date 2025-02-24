@@ -65,7 +65,7 @@ unique_ptr<VectorArena> create_vector_arena();
 class EvalNode {
  public:
   EvalNode() : points_(0), choice_mask_(0), cache_key_(0), hash_(0) {}
-  virtual ~EvalNode() {}
+  ~EvalNode() {}
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
   void AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena);
@@ -102,15 +102,15 @@ class EvalNode {
   static const int8_t ROOT_NODE = -2;
   static const int8_t CHOICE_NODE = -1;
 
-  // These might be the various options on a cell or the various directions.
-  // TODO: the "const" here is increasingly a joke.
-  vector<const EvalNode*> children_;
+  // points contributed by _this_ node.
+  uint16_t points_;
 
   // cached computation across all children
   uint32_t bound_;
 
-  // points contributed by _this_ node.
-  uint32_t points_;
+  // These might be the various options on a cell or the various directions.
+  // TODO: the "const" here is increasingly a joke.
+  vector<const EvalNode*> children_;
 
   // Note: using uint16_t here precludes 5x5 Boggle trees
   uint16_t choice_mask_;
