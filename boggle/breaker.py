@@ -200,24 +200,23 @@ class HybridTreeBreaker:
 
     def switch_to_score(self, tree: EvalNode, level: int, arena) -> None:
         # This reduces the amount of time we use max memory, but it's a ~5% perf hit.
-        # start_s = time.time()
         if self.free_after_lift:
             self.mark += 1
             start_s = time.time()
             self.details_.freed_nodes = arena.mark_and_sweep(tree, self.mark)
             self.details_.free_time_s = time.time() - start_s
         start_s = time.time()
-        # TODO: move this call into bound_remaining_boards()
-        # tree.set_choice_point_mask(self.num_letters)
-        elapsed_s = time.time() - start_s
-        start_s = time.time()
-        # boards_to_test = tree.bound_remaining_boards(
-        #     self.cells, self.best_score, self.split_order
-        # )
-        remainder = tree.orderly_bound(self.best_score, self.cells, self.split_order)
+        boards_to_test = []
+        for t, seq in tree.max_subtrees():
+            forced_cells = {cell for cell, letter in seq}
+            remaining_cells = [
+                cell for cell in self.split_order if cell not in forced_cells
+            ]
+            score_boards = tree.orderly_bound(500, self.cells, remaining_cells, seq)
+            # print(time.time() - start_s, seq, tree.bound, this_failures)
+            boards_to_test += [board for _score, board in score_boards]
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
-        boards_to_test = [board for _score, board in remainder]
 
         if not boards_to_test:
             return
