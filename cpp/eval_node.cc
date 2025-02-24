@@ -16,6 +16,10 @@ inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
   return a->letter_ < b->letter_;
 }
 
+inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
+  return a->cell_ < b->cell_;
+}
+
 void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena) {
   if (!num_choices) {
     points_ += points;
@@ -888,11 +892,14 @@ void merge_choice_collisions_in_place(
     auto next_it = std::next(it);
     while (next_it != choices.end() && (*it)->cell_ == (*next_it)->cell_) {
       *it = merge_trees(*it, *next_it, arena);
-      // TODO: this shifts every element in the vector, so this may be O(N^2)
-      next_it = choices.erase(next_it);
+      *next_it = nullptr;
+      ++next_it;
     }
     ++it;
   }
+
+  // Remove null values from the choices vector.
+  choices.erase(std::remove(choices.begin(), choices.end(), nullptr), choices.end());
 }
 
 vector<pair<int, string>> EvalNode::OrderlyBound(
