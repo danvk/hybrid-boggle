@@ -701,9 +701,9 @@ void BoundRemainingBoardsHelp(
   }
   if (cell == -1) {
     string board(cells.size(), '.');
-    for (int cell = 0; cell < choices.size(); cell++) {
-      auto idx = choices[cell];
-      board[cell] = cells[cell][idx];
+    for (int j = 0; j < choices.size(); j++) {
+      auto idx = choices[j];
+      board[j] = cells[j][idx];
     }
     results.push_back(board);
     return;
@@ -840,11 +840,11 @@ EvalNode* Arena<EvalNode>::NewNode() {
 const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena);
 
 // This relies on a and b being sorted by letter_.
-void merge_choice_children(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena, vector<const EvalNode*>& out) {
-  auto it_a = a->children_.begin();
-  auto it_b = b->children_.begin();
-  const auto& a_end = a->children_.end();
-  const auto& b_end = b->children_.end();
+void merge_choice_children(const EvalNode* na, const EvalNode* nb, EvalNodeArena& arena, vector<const EvalNode*>& out) {
+  auto it_a = na->children_.begin();
+  auto it_b = nb->children_.begin();
+  const auto& a_end = na->children_.end();
+  const auto& b_end = nb->children_.end();
   while (it_a != a_end && it_b != b_end) {
     const auto& a = *it_a;
     if (!a) {
