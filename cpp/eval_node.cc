@@ -1034,7 +1034,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
   };
 
   vector<int> sums(cells.size(), 0);
-  assert(advance(this, sums) == 0);
-  rec(0, 0, sums);
+  auto base_points = advance(this, sums);
+  rec(base_points, 0, sums);
   return failures;
 }

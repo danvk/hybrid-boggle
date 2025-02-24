@@ -643,8 +643,8 @@ class EvalNode:
                 choices.pop()
 
         sums = [0] * len(num_letters)
-        assert advance(self, sums) == 0
-        rec(0, 0, sums)
+        base_points = advance(self, sums)
+        rec(base_points, 0, sums)
         # print(f"{max_lens=}")
         return failures
 
