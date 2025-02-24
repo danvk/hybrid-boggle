@@ -75,11 +75,11 @@ def break_worker(task: str | int):
     dims = args.size // 10, args.size % 10
     classes = parse_classes(args.classes, dims)
     if args.letter_grouping:
-        raise NotImplementedError(
-            "--letter_grouping not yet supported with per-cell classes"
-        )
         letter_map = get_letter_map(args.letter_grouping)
-        classes = [filter_to_canonical(cls, letter_map) for cls in classes]
+        classes = [
+            [filter_to_canonical(cls, letter_map) for cls in cell_classes]
+            for cell_classes in classes
+        ]
         # print(f'Filtered {args.classes} -> {" ".join(classes)}')
 
     if isinstance(task, int):
