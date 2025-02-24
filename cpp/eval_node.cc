@@ -184,27 +184,8 @@ int EvalNode::NodeCount() const {
 }
 
 unsigned int EvalNode::UniqueNodeCount(uint32_t mark) const {
-  if (cache_key_ == mark) {
-    return 0;
-  }
-
-  cache_key_ = mark;
-  unsigned int count = 1;
-  for (auto child : children_) {
-    if (child) {
-      count += child->UniqueNodeCount(mark);
-    }
-  }
-  return count;
-}
-
-void EvalNode::MarkAllWith(uint32_t mark) {
-  cache_key_ = mark;
-  for (auto c : children_) {
-    if (c) {
-      ((EvalNode*)c)->MarkAllWith(mark);
-    }
-  }
+  throw runtime_error("not implemented");
+  return 0;
 }
 
 int EvalNode::RecomputeScore() const {
@@ -272,18 +253,12 @@ EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress) const {
   unordered_map<uint64_t, const EvalNode*> force_cell_cache;
-  force_cell_cache.reserve(2'000'000);  // this is a ~5% speedup vs. not reserving.
   auto out = ForceCellWork(cell, num_lets, arena, vector_arena, mark, dedupe, compress, force_cell_cache);
-  // cout << "force_cell_cache.size = " << force_cell_cache.size() << endl;
   return out;
 }
 
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const {
-  if (cache_key_ == mark) {
-    return cache_value_;
-  }
-
   if (letter_ == EvalNode::CHOICE_NODE && cell_ == cell) {
     // This is the forced cell.
     // We've already tried each possibility, but they may not be aligned.
@@ -300,16 +275,12 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
       }
     }
     vector_arena.AddNode(out);
-    cache_key_ = mark;
-    cache_value_ = {out};
-    return cache_value_;
+    return {out};
   }
 
   if ((choice_mask_ & (1 << cell)) == 0) {
     // There's no relevant choice below us, so we can bottom out.
-    cache_key_ = mark;
-    cache_value_ = {this};
-    return cache_value_;
+    return {this};
   }
 
   vector<variant<const EvalNode*, vector<const EvalNode*>*>> results;
@@ -409,9 +380,7 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
     out->push_back(out_node);
   }
 
-  cache_key_ = mark;
-  cache_value_ = {out};
-  return cache_value_;
+  return {out};
 }
 
 unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
@@ -546,9 +515,6 @@ void hash_combine(std::size_t& seed, const T& v) {
 uint64_t EvalNode::StructuralHash() const {
   static constexpr auto digits = std::numeric_limits<std::size_t>::digits;
   static_assert(digits == 64 || digits == 32);
-  if (hash_) {
-    return hash_;
-  }
   // letter, cell, points, children
   size_t h = 0xb0881e;
   hash_combine(h, letter_);
@@ -560,7 +526,6 @@ uint64_t EvalNode::StructuralHash() const {
       hash_combine(h, c->StructuralHash());
     }
   }
-  hash_ = h;
   return h;
 }
 
@@ -799,28 +764,6 @@ void EvalNode::ResetChoicePointMask() {
 template<typename T>
 int Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
   throw new runtime_error("MarkAndSweep not implemented");
-}
-
-template <>
-int Arena<EvalNode>::MarkAndSweep(EvalNode* root, uint32_t mark) {
-  // Doing this after each LiftChoice() call is a ~10% slowdown.
-  root->MarkAllWith(mark);
-  int num_deleted = 0;
-  for (auto& node : owned_nodes_) {
-    if (node->cache_key_ != mark) {
-      delete node;
-      node = NULL;
-      num_deleted++;
-    }
-  }
-
-  // auto old_size = owned_nodes_.size();
-  // TODO: this could be done in one pass by folding this into the for loop above.
-  auto new_end = std::remove(owned_nodes_.begin(), owned_nodes_.end(), nullptr);
-  owned_nodes_.erase(new_end, owned_nodes_.end());
-
-  // cout << "Deleted " << num_deleted << " nodes, " << old_size << " -> " << owned_nodes_.size() << endl;
-  return num_deleted;
 }
 
 template <typename T>

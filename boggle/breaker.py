@@ -170,7 +170,7 @@ class HybridTreeBreaker:
         start_s = time.time()
         self.mark += 1
         tree = tree.lift_choice(
-            cell, num_lets, arena, self.mark, dedupe=True, compress=True
+            cell, num_lets, arena, self.mark, dedupe=False, compress=True
         )
         self.details_.secs_by_level[level] += time.time() - start_s
         self.details_.bounds[level] = tree.bound

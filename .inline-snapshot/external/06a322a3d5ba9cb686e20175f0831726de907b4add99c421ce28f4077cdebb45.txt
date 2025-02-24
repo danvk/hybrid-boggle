@@ -1,0 +1,24 @@
+ROOT (1) mask=7
+ CHOICE (0 <1) mask=7 points=0
+  b (0=0 0/1) mask=6
+   CHOICE (1 <1) mask=6 points=0
+    a (1=0 0/1) mask=4
+     CHOICE (2 <1) mask=4 points=0
+      n (2=0 1/1) mask=0
+      r (2=1 1/1) mask=0
+    e (1=1 0/1) mask=4
+     CHOICE (2 <1) mask=4 points=0
+      d (2=2 1/1) mask=0
+    i (1=2 0/1) mask=4
+     CHOICE (2 <1) mask=4 points=0
+      d (2=2 1/1) mask=0
+  c (0=1 0/1) mask=6
+   CHOICE (1 <1) mask=6 points=0
+    a (1=0 0/1) mask=4
+     CHOICE (2 <1) mask=4 points=0
+      n (2=0 1/1) mask=0
+  d (0=2 0/1) mask=6
+   CHOICE (1 <1) mask=6 points=0
+    i (1=2 0/1) mask=4
+     CHOICE (2 <1) mask=4 points=0
+      d (2=2 1/1) mask=0
