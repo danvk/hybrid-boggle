@@ -212,7 +212,9 @@ class HybridTreeBreaker:
             remaining_cells = [
                 cell for cell in self.split_order if cell not in forced_cells
             ]
-            score_boards = tree.orderly_bound(500, self.cells, remaining_cells, seq)
+            score_boards = t.orderly_bound(
+                self.best_score, self.cells, remaining_cells, seq
+            )
             # print(time.time() - start_s, seq, tree.bound, this_failures)
             boards_to_test += [board for _score, board in score_boards]
         elapsed_s = time.time() - start_s
