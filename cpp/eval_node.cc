@@ -253,18 +253,12 @@ EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress) const {
   unordered_map<uint64_t, const EvalNode*> force_cell_cache;
-  // force_cell_cache.reserve(2'000'000);  // this is a ~5% speedup vs. not reserving.
   auto out = ForceCellWork(cell, num_lets, arena, vector_arena, mark, dedupe, compress, force_cell_cache);
-  // cout << "force_cell_cache.size = " << force_cell_cache.size() << endl;
   return out;
 }
 
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const {
-  // if (cache_key_ == mark) {
-  //   return cache_value_;
-  // }
-
   if (letter_ == EvalNode::CHOICE_NODE && cell_ == cell) {
     // This is the forced cell.
     // We've already tried each possibility, but they may not be aligned.
@@ -282,16 +276,10 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
     }
     vector_arena.AddNode(out);
     return {out};
-    // cache_key_ = mark;
-    // cache_value_ = {out};
-    // return cache_value_;
   }
 
   if ((choice_mask_ & (1 << cell)) == 0) {
     // There's no relevant choice below us, so we can bottom out.
-    // cache_key_ = mark;
-    // cache_value_ = {this};
-    // return cache_value_;
     return {this};
   }
 
@@ -393,9 +381,6 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
   }
 
   return {out};
-  // cache_key_ = mark;
-  // cache_value_ = {out};
-  // return cache_value_;
 }
 
 unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
@@ -530,9 +515,6 @@ void hash_combine(std::size_t& seed, const T& v) {
 uint64_t EvalNode::StructuralHash() const {
   static constexpr auto digits = std::numeric_limits<std::size_t>::digits;
   static_assert(digits == 64 || digits == 32);
-  // if (hash_) {
-  //   return hash_;
-  // }
   // letter, cell, points, children
   size_t h = 0xb0881e;
   hash_combine(h, letter_);
@@ -544,7 +526,6 @@ uint64_t EvalNode::StructuralHash() const {
       hash_combine(h, c->StructuralHash());
     }
   }
-  // hash_ = h;
   return h;
 }
 
