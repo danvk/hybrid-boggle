@@ -14,10 +14,10 @@ from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
 
 
-# TODO: decide if this really needs to inherit PyBucketBoggler
 class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
     root: EvalNode
+    cell_counts: list[int]
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
@@ -30,6 +30,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         root.points = 0
         self.root = root
         self.used_ = 0
+        self.cell_counts = [0] * len(self.bd_)
 
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, [], arena)
@@ -77,7 +78,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         if t.IsWord():
             word_score = SCORES[length]
             orderly_choices = [*sorted(choices, key=lambda c: self.cell_to_order[c[0]])]
-            self.root.add_word(orderly_choices, word_score, arena)
+            self.root.add_word(orderly_choices, word_score, arena, self.cell_counts)
 
         self.used_ ^= 1 << cell
 

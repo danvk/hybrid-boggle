@@ -123,8 +123,11 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
-        tree = self.etb.BuildTree(arena, dedupe=False)
-        num_nodes = arena.num_nodes()
+        tree = self.etb.BuildTree(arena)
+        if isinstance(tree, EvalNode):
+            num_nodes = tree.node_count()
+        else:
+            num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             self.mark += 1
             print(
@@ -197,20 +200,23 @@ class HybridTreeBreaker:
 
     def switch_to_score(self, tree: EvalNode, level: int, arena) -> None:
         # This reduces the amount of time we use max memory, but it's a ~5% perf hit.
-        # start_s = time.time()
         if self.free_after_lift:
             self.mark += 1
             start_s = time.time()
             self.details_.freed_nodes = arena.mark_and_sweep(tree, self.mark)
             self.details_.free_time_s = time.time() - start_s
         start_s = time.time()
-        # TODO: move this call into bound_remaining_boards()
-        tree.set_choice_point_mask(self.num_letters)
-        elapsed_s = time.time() - start_s
-        start_s = time.time()
-        boards_to_test = tree.bound_remaining_boards(
-            self.cells, self.best_score, self.split_order
-        )
+        boards_to_test = []
+        for t, seq in tree.max_subtrees():
+            forced_cells = {cell for cell, letter in seq}
+            remaining_cells = [
+                cell for cell in self.split_order if cell not in forced_cells
+            ]
+            score_boards = t.orderly_bound(
+                self.best_score, self.cells, remaining_cells, seq
+            )
+            # print(time.time() - start_s, seq, tree.bound, this_failures)
+            boards_to_test += [board for _score, board in score_boards]
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level] += elapsed_s
 
@@ -235,7 +241,7 @@ class HybridTreeBreaker:
         for board in it:
             n_expanded += 1
             true_score = self.boggler.score(board)
-            # print(choices, board, tree.bound, "->", true_score)
+            # print(f"{board}: {tree.bound} -> {true_score}")
             if true_score >= self.best_score:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)

@@ -149,6 +149,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("set_choice_point_mask", &EvalNode::SetChoicePointMask)
         .def("reset_choice_point_mask", &EvalNode::ResetChoicePointMask)
         .def("filter_below_threshold", &EvalNode::FilterBelowThreshold)
+        .def("orderly_bound", &EvalNode::OrderlyBound)
         .def("bound_remaining_boards", &EvalNode::BoundRemainingBoards);
 
     m.def("create_eval_node_arena", &create_eval_node_arena);

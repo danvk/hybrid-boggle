@@ -131,7 +131,13 @@ class EvalNode:
         self.cache_key = None
         self.cache_value = None
 
-    def add_word(self, choices: Sequence[tuple[int, int]], points: int, arena):
+    def add_word(
+        self,
+        choices: Sequence[tuple[int, int]],
+        points: int,
+        arena,
+        cell_counts: list[int] = None,
+    ):
         """Add a word at the end of a sequence of choices to the tree.
 
         This doesn't update bounds or choice_mask.
@@ -155,6 +161,8 @@ class EvalNode:
             choice_child.letter = CHOICE_NODE
             choice_child.cell = cell
             self.children.append(choice_child)
+            if cell_counts:
+                cell_counts[cell] += 1
             # TODO: could keep self.children sorted
 
         # TODO: binary search
@@ -171,7 +179,7 @@ class EvalNode:
             choice_child.children.append(letter_child)
             choice_child.children.sort(key=lambda c: c.letter)
 
-        letter_child.add_word(remaining_choices, points, arena)
+        letter_child.add_word(remaining_choices, points, arena, cell_counts)
 
     def score_with_forces(self, forces: list[int]) -> int:
         """Requires that set_choice_point_mask() has been called on this tree."""
@@ -223,6 +231,7 @@ class EvalNode:
         self,
         cell: int,
         num_lets: int,
+        # TODO: make these required params
         arena=None,
         mark=None,
         dedupe=False,
@@ -558,6 +567,87 @@ class EvalNode:
             if c:
                 self.choice_mask |= c.choice_mask
 
+    def orderly_bound(
+        self,
+        cutoff: int,
+        cells: list[str],
+        split_order: Sequence[int],
+        preset_cells: Sequence[tuple[int, int]],
+    ):
+        num_letters = [len(cell) for cell in cells]
+        stacks = [[] for _ in num_letters]
+        choices = []  # for tracking unbreakable boards
+        failures: list[str] = []
+        # max_lens: list[int] = [0] * len(stacks)
+
+        def advance(node: Self, sums: list[int]):
+            assert node.letter != CHOICE_NODE
+            for child in node.children:
+                assert child.letter == CHOICE_NODE
+                stacks[child.cell].append(child)
+                sums[child.cell] += child.bound
+                # max_lens[child.cell] = max(max_lens[child.cell], len(stacks[child.cell]))
+            return node.points
+
+        def record_failure(bound: int):
+            bd = [None] * len(num_letters)
+            for cell, letter in preset_cells:
+                bd[cell] = cells[cell][letter]
+            for cell, letter in choices:
+                bd[cell] = cells[cell][letter]
+            board = "".join(bd)
+            # indent = "  " * len(num_letters)
+            # print(f"{indent}unbreakable board! {bound} {board} {choices=}")
+            nonlocal failures
+            failures.append((bound, board))
+
+        def rec(base_points: int, num_splits: int, stack_sums: list[int]):
+            bound = base_points + sum(
+                stack_sums[cell] for cell in split_order[num_splits:]
+            )
+            # indent = "  " * num_splits
+            # print(f"{indent}{num_splits=} {base_points=} {bound=}")
+            if bound <= cutoff:
+                return  # done!
+            if num_splits == len(split_order):
+                record_failure(bound)
+                return
+
+            # need to advance; try each possibility in turn.
+            next_to_split = split_order[num_splits]
+            stack_top = [len(stack) for stack in stacks]
+            # print(f"{indent}{stack_top=}")
+            base_sums = [*stack_sums]
+            for letter in range(0, num_letters[next_to_split]):
+                # print(f"{indent}{next_to_split}={letter}")
+                if letter > 0:
+                    for i, v in enumerate(base_sums):
+                        stack_sums[i] = v
+                    # TODO: track a "top" of each stack and leave the rest as garbage
+                    for i, length in enumerate(stack_top):
+                        stacks[i] = stacks[i][:length]
+                choices.append((next_to_split, letter))
+                points = base_points
+                for node in stacks[next_to_split]:
+                    letter_node = None
+                    # TODO: could maintain pointers / iterators in lockstep rather than scanning
+                    for n in node.children:
+                        if n.letter == letter:
+                            letter_node = n
+                            break
+                    if letter_node:
+                        points += advance(letter_node, stack_sums)
+
+                rec(points, num_splits + 1, stack_sums)
+                # reset the stacks
+                choices.pop()
+
+        sums = [0] * len(num_letters)
+        base_points = advance(self, sums)
+        rec(base_points, 0, sums)
+        # print(f"{max_lens=}")
+        return failures
+
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
     def recompute_score(self):
@@ -812,6 +902,9 @@ class EvalNode:
         # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
             attrs = ""
+            if self.letter == CHOICE_NODE and len(children) < len(cells[self.cell]):
+                # incomplete set of choices; label them for clarity.
+                attrs = f' [label="{self.children[i].letter}"]'
             # if is_top_max and all_choices:
             #     letter = cells[self.cell][i]
             #     attrs = f' [label="{self.cell}={letter}"]'

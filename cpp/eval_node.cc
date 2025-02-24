@@ -951,3 +951,90 @@ void merge_choice_collisions_in_place(
     ++it;
   }
 }
+
+vector<pair<int, string>> EvalNode::OrderlyBound(
+  int cutoff,
+  const vector<string>& cells,
+  const vector<int>& split_order,
+  const vector<pair<int, int>>* preset_cells
+) const {
+  vector<vector<const EvalNode*>> stacks(cells.size());
+  vector<pair<int, int>> choices;
+  vector<int> stack_sums(cells.size(), 0);
+  vector<pair<int, string>> failures;
+
+  auto advance = [&](const EvalNode* node, vector<int>& sums) {
+    assert(node->letter_ != CHOICE_NODE);
+    for (auto child : node->children_) {
+        assert(child->letter_ == CHOICE_NODE);
+        stacks[child->cell_].push_back(child);
+        sums[child->cell_] += child->bound_;
+    }
+    return node->points_;
+  };
+
+  auto record_failure = [&](int bound) {
+    string board(cells.size(), '.');
+    if (preset_cells) {
+      for (const auto& choice : *preset_cells) {
+        board[choice.first] = cells[choice.first][choice.second];
+      }
+    }
+    for (const auto& choice : choices) {
+      board[choice.first] = cells[choice.first][choice.second];
+    }
+    failures.push_back({bound, board});
+  };
+
+  function<void(int, int, vector<int>&)> rec = [&](int base_points, int num_splits, vector<int>& stack_sums) {
+    int bound = base_points;
+    for (int i = num_splits; i < split_order.size(); ++i) {
+      bound += stack_sums[split_order[i]];
+    }
+    if (bound <= cutoff) {
+      return;  // done!
+    }
+    if (num_splits == split_order.size()) {
+      record_failure(bound);
+      return;
+    }
+
+    int next_to_split = split_order[num_splits];
+    vector<int> stack_top(stacks.size());
+    for (int i = 0; i < stacks.size(); ++i) {
+      stack_top[i] = stacks[i].size();
+    }
+    vector<int> base_sums = stack_sums;
+
+    for (int letter = 0; letter < cells[next_to_split].size(); ++letter) {
+      if (letter > 0) {
+        stack_sums = base_sums;
+        for (int i = 0; i < stacks.size(); ++i) {
+          // TODO: don't do this, just leave garbage on the end.
+          stacks[i].resize(stack_top[i]);
+        }
+      }
+      choices.emplace_back(next_to_split, letter);
+      int points = base_points;
+      for (auto node : stacks[next_to_split]) {
+        const EvalNode* letter_node = nullptr;
+        for (auto n : node->children_) {
+          if (n->letter_ == letter) {
+            letter_node = n;
+            break;
+          }
+        }
+        if (letter_node) {
+          points += advance(letter_node, stack_sums);
+        }
+      }
+      rec(points, num_splits + 1, stack_sums);
+      choices.pop_back();
+    }
+  };
+
+  vector<int> sums(cells.size(), 0);
+  auto base_points = advance(this, sums);
+  rec(base_points, 0, sums);
+  return failures;
+}
