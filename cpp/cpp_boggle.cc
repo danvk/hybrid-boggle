@@ -79,7 +79,7 @@ PYBIND11_MODULE(cpp_boggle, m)
         .def("Size", &Trie::Size)
         .def("NumNodes", &Trie::NumNodes)
         .def("SetAllMarks", &Trie::SetAllMarks)
-        .def_static("ReverseLookup", py::overload_cast<const Trie*, const Trie*>(&Trie::ReverseLookup))
+        // .def_static("ReverseLookup", py::overload_cast<const Trie*, const Trie*>(&Trie::ReverseLookup))
         .def_static("CreateFromFile", &Trie::CreateFromFile)
         .def_static("CreateFromFileWithGrouping", &Trie::CreateFromFileWithGrouping);
 
@@ -156,7 +156,6 @@ PYBIND11_MODULE(cpp_boggle, m)
     py::class_<EvalNodeArena>(m, "EvalNodeArena")
         .def(py::init())
         .def("free_the_children", &EvalNodeArena::FreeTheChildren)
-        .def("mark_and_sweep", &EvalNodeArena::MarkAndSweep)
         .def("new_node", &EvalNodeArena::NewNode, py::return_value_policy::reference)
         .def("num_nodes", &EvalNodeArena::NumNodes);
 

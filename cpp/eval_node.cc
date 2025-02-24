@@ -184,27 +184,8 @@ int EvalNode::NodeCount() const {
 }
 
 unsigned int EvalNode::UniqueNodeCount(uint32_t mark) const {
-  if (cache_key_ == mark) {
-    return 0;
-  }
-
-  cache_key_ = mark;
-  unsigned int count = 1;
-  for (auto child : children_) {
-    if (child) {
-      count += child->UniqueNodeCount(mark);
-    }
-  }
-  return count;
-}
-
-void EvalNode::MarkAllWith(uint32_t mark) {
-  cache_key_ = mark;
-  for (auto c : children_) {
-    if (c) {
-      ((EvalNode*)c)->MarkAllWith(mark);
-    }
-  }
+  throw runtime_error("not implemented");
+  return 0;
 }
 
 int EvalNode::RecomputeScore() const {
@@ -280,9 +261,9 @@ EvalNode::ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& v
 
 variant<const EvalNode*, vector<const EvalNode*>*>
 EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const {
-  if (cache_key_ == mark) {
-    return cache_value_;
-  }
+  // if (cache_key_ == mark) {
+  //   return cache_value_;
+  // }
 
   if (letter_ == EvalNode::CHOICE_NODE && cell_ == cell) {
     // This is the forced cell.
@@ -300,16 +281,18 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
       }
     }
     vector_arena.AddNode(out);
-    cache_key_ = mark;
-    cache_value_ = {out};
-    return cache_value_;
+    return {out};
+    // cache_key_ = mark;
+    // cache_value_ = {out};
+    // return cache_value_;
   }
 
   if ((choice_mask_ & (1 << cell)) == 0) {
     // There's no relevant choice below us, so we can bottom out.
-    cache_key_ = mark;
-    cache_value_ = {this};
-    return cache_value_;
+    // cache_key_ = mark;
+    // cache_value_ = {this};
+    // return cache_value_;
+    return {this};
   }
 
   vector<variant<const EvalNode*, vector<const EvalNode*>*>> results;
@@ -409,9 +392,10 @@ EvalNode::ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorAren
     out->push_back(out_node);
   }
 
-  cache_key_ = mark;
-  cache_value_ = {out};
-  return cache_value_;
+  return {out};
+  // cache_key_ = mark;
+  // cache_value_ = {out};
+  // return cache_value_;
 }
 
 unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
@@ -799,28 +783,6 @@ void EvalNode::ResetChoicePointMask() {
 template<typename T>
 int Arena<T>::MarkAndSweep(T* root, uint32_t mark) {
   throw new runtime_error("MarkAndSweep not implemented");
-}
-
-template <>
-int Arena<EvalNode>::MarkAndSweep(EvalNode* root, uint32_t mark) {
-  // Doing this after each LiftChoice() call is a ~10% slowdown.
-  root->MarkAllWith(mark);
-  int num_deleted = 0;
-  for (auto& node : owned_nodes_) {
-    if (node->cache_key_ != mark) {
-      delete node;
-      node = NULL;
-      num_deleted++;
-    }
-  }
-
-  // auto old_size = owned_nodes_.size();
-  // TODO: this could be done in one pass by folding this into the for loop above.
-  auto new_end = std::remove(owned_nodes_.begin(), owned_nodes_.end(), nullptr);
-  owned_nodes_.erase(new_end, owned_nodes_.end());
-
-  // cout << "Deleted " << num_deleted << " nodes, " << old_size << " -> " << owned_nodes_.size() << endl;
-  return num_deleted;
 }
 
 template <typename T>
