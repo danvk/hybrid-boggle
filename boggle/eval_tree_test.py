@@ -706,16 +706,16 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("6a973f6cf204*.txt")
+        external("c22dd10a5a11*.txt")
     )
 
     # print(t.to_dot(cells, trie=trie))
 
     lifted_snapshots = snapshot(
         {
-            4: external("db779668b06d*.txt"),
-            6: external("ac4f27094984*.txt"),
-            7: external("c75ded3804d9*.txt"),
+            4: external("a27e4864900e*.txt"),
+            6: external("5cdc2782741d*.txt"),
+            7: external("9905993e0327*.txt"),
         }
     )
 
@@ -761,7 +761,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     #       (see comment about tracking nulls in _into_list)
     t2.reset_choice_point_mask()
     assert outsource(eval_node_to_string(tl, cells)) == snapshot(
-        external("c75ded3804d9*.txt")
+        external("9905993e0327*.txt")
     )
 
 
@@ -980,5 +980,5 @@ def test_add_word(create_arena):
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(root, cells)) == snapshot(
-        external("0d77e0378247*.txt")
+        external("06a322a3d5ba*.txt")
     )

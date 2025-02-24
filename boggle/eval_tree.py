@@ -1115,9 +1115,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     return True
 
 
-def _into_list(
-    node: EvalNode, cells: list[str], lines: list[str], indent="", ids: dict = None
-):
+def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
     line = ""
     if node.letter == ROOT_NODE:
         line = f"{indent}ROOT ({node.bound}) mask={node.choice_mask}"
@@ -1126,17 +1124,10 @@ def _into_list(
     else:
         cell = cells[node.cell][node.letter]
         line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound}) mask={node.choice_mask}"
-    if node in ids:
-        prev_id = ids[node]
-        line += f" (={prev_id})"
-    else:
-        this_id = len(ids)
-        ids[node] = this_id
-        line += f" ({this_id})"
     lines.append(line)
     for child in node.children:
         if child:
-            _into_list(child, cells, lines, " " + indent, ids)
+            _into_list(child, cells, lines, " " + indent)
         # There are some slight discrepancies between C++ and Python trees that
         # are functionally irrelevant but surfaced if you uncomment this:
         # else:
@@ -1144,9 +1135,8 @@ def _into_list(
 
 
 def eval_node_to_string(node: EvalNode, cells: list[str]):
-    ids = {}
     lines = []
-    _into_list(node, cells, lines, indent="", ids=ids)
+    _into_list(node, cells, lines, indent="")
     return "\n".join(lines)
 
 
