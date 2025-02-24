@@ -17,11 +17,6 @@ class EvalNode;
 template<typename T>
 class Arena {
  public:
-  Arena() {
-    cout << "sizeof(T) = " << sizeof(T) << endl;
-    // Init: sizeof(T) = 80
-    // Drop virtual destructor: 72
-  }
   ~Arena() {
     FreeTheChildren();
   }
@@ -110,12 +105,12 @@ class EvalNode {
   // points contributed by _this_ node.
   uint16_t points_;
 
+  // cached computation across all children
+  uint32_t bound_;
+
   // These might be the various options on a cell or the various directions.
   // TODO: the "const" here is increasingly a joke.
   vector<const EvalNode*> children_;
-
-  // cached computation across all children
-  uint32_t bound_;
 
   // Note: using uint16_t here precludes 5x5 Boggle trees
   uint16_t choice_mask_;
