@@ -174,6 +174,23 @@ def test_lift_and_bound(make_trie, get_tree_builder):
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         failures += this_failures
 
+    cell1 = order.pop(0)
+    mark += 1
+    t = t.lift_choice(
+        cell1, len(cells[cell1]), arena, mark, dedupe=False, compress=True
+    )
+    assert t.bound == 714
+    assert t.letter == CHOICE_NODE
+    assert t.cell == cell1
+    assert len(t.children) == len(cells[cell1])
+
+    failures = []
+    for tree, seq in t.max_subtrees():
+        start_s = time.time()
+        this_failures = tree.orderly_bound(500, cells, order, seq)
+        print(time.time() - start_s, seq, tree.bound, this_failures)
+        failures += this_failures
+
     # (same as test_orderly_bound33)
     assert failures == snapshot([(512, "stsaseblt")])
     # assert False
