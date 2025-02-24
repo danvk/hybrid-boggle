@@ -19,6 +19,7 @@ class Arena {
  public:
   Arena() {
     // cout << "sizeof(T)=" << sizeof(T) << endl;
+    owned_nodes_.reserve(1'000'000);
   }
   ~Arena() {
     FreeTheChildren();
