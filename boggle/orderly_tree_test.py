@@ -136,8 +136,8 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     # assert False
 
 
-def test_lift_and_bound():
-    make_trie, get_tree_builder = make_py_trie, OrderlyTreeBuilder
+@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
+def test_lift_and_bound(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
     board = "lnrsy chkmpt lnrsy aeiou lnrsy aeiou bdfgjvwxz lnrsy chkmpt"
     # board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
@@ -169,10 +169,11 @@ def test_lift_and_bound():
 
     failures = []
     for tree, seq in t.max_subtrees():
-        start_s = time.time()
-        failures += tree.orderly_bound(500, cells, order, seq)
-        print(time.time() - start_s, seq, tree.bound, failures)
+        # start_s = time.time()
+        this_failures = tree.orderly_bound(500, cells, order, seq)
+        # print(time.time() - start_s, seq, tree.bound, this_failures)
+        failures += this_failures
 
-    # break_all reports 889 points for this board, but ibucket_solver reports 512
+    # (same as test_orderly_bound33)
     assert failures == snapshot([(512, "stsaseblt")])
     # assert False

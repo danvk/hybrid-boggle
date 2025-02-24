@@ -134,7 +134,8 @@ class EvalNode {
   vector<pair<int, string>> OrderlyBound(
     int cutoff,
     const vector<string>& cells,
-    const vector<int>& split_order
+    const vector<int>& split_order,
+    const vector<pair<int, int>>* preset_cells = NULL
   ) const;
 
  private:

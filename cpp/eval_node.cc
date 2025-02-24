@@ -955,7 +955,8 @@ void merge_choice_collisions_in_place(
 vector<pair<int, string>> EvalNode::OrderlyBound(
   int cutoff,
   const vector<string>& cells,
-  const vector<int>& split_order
+  const vector<int>& split_order,
+  const vector<pair<int, int>>* preset_cells
 ) const {
   vector<vector<const EvalNode*>> stacks(cells.size());
   vector<pair<int, int>> choices;
@@ -974,6 +975,11 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
 
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
+    if (preset_cells) {
+      for (const auto& choice : *preset_cells) {
+        board[choice.first] = cells[choice.first][choice.second];
+      }
+    }
     for (const auto& choice : choices) {
       board[choice.first] = cells[choice.first][choice.second];
     }
