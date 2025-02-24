@@ -231,6 +231,7 @@ class EvalNode:
         self,
         cell: int,
         num_lets: int,
+        # TODO: make these required params
         arena=None,
         mark=None,
         dedupe=False,
@@ -566,7 +567,13 @@ class EvalNode:
             if c:
                 self.choice_mask |= c.choice_mask
 
-    def orderly_bound(self, cutoff: int, cells: list[str], split_order: Sequence[int]):
+    def orderly_bound(
+        self,
+        cutoff: int,
+        cells: list[str],
+        split_order: Sequence[int],
+        preset_cells: Sequence[tuple[int, int]] = None,
+    ):
         num_letters = [len(cell) for cell in cells]
         stacks = [[] for _ in num_letters]
         choices = []  # for tracking unbreakable boards
@@ -584,6 +591,8 @@ class EvalNode:
 
         def record_failure(bound: int):
             bd = [None] * len(num_letters)
+            for cell, letter in preset_cells or []:
+                bd[cell] = cells[cell][letter]
             for cell, letter in choices:
                 bd[cell] = cells[cell][letter]
             board = "".join(bd)
@@ -599,10 +608,10 @@ class EvalNode:
             # indent = "  " * num_splits
             # print(f"{indent}{num_splits=} {base_points=} {bound=}")
             if bound <= cutoff:
-                return True  # done!
+                return  # done!
             if num_splits == len(split_order):
                 record_failure(bound)
-                return False
+                return
 
             # need to advance; try each possibility in turn.
             next_to_split = split_order[num_splits]

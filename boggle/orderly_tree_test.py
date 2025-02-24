@@ -5,7 +5,7 @@ from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_orderly_tree_builder
-from boggle.eval_tree import EvalNode, eval_node_to_string
+from boggle.eval_tree import CHOICE_NODE, EvalNode, eval_node_to_string
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
@@ -131,6 +131,48 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     start_s = time.time()
     failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)])
     print(time.time() - start_s)
+    # break_all reports 889 points for this board, but ibucket_solver reports 512
+    assert failures == snapshot([(512, "stsaseblt")])
+    # assert False
+
+
+def test_lift_and_bound():
+    make_trie, get_tree_builder = make_py_trie, OrderlyTreeBuilder
+    trie = make_trie("testdata/boggle-words-9.txt")
+    board = "lnrsy chkmpt lnrsy aeiou lnrsy aeiou bdfgjvwxz lnrsy chkmpt"
+    # board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
+    cells = board.split(" ")
+    # num_letters = [len(cell) for cell in cells]
+    otb = get_tree_builder(trie, dims=(3, 3))
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    t = otb.BuildTree(arena)
+    if isinstance(t, EvalNode):
+        t.assert_invariants(otb)
+    assert t.bound == 889
+
+    order = [*SPLIT_ORDER[(3, 3)]]
+    cell0 = order.pop(0)
+
+    mark = 1
+    t = t.lift_choice(
+        cell0, len(cells[cell0]), arena, mark, dedupe=False, compress=True
+    )
+
+    assert t.bound == 838
+    assert t.letter == CHOICE_NODE
+    assert t.cell == cell0
+    assert len(t.children) == len(cells[cell0])
+
+    mts = t.max_subtrees()
+    assert len(mts) == len(cells[cell0])
+
+    failures = []
+    for tree, seq in t.max_subtrees():
+        start_s = time.time()
+        failures += tree.orderly_bound(500, cells, order, seq)
+        print(time.time() - start_s, seq, tree.bound, failures)
+
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([(512, "stsaseblt")])
     # assert False
