@@ -701,9 +701,9 @@ void BoundRemainingBoardsHelp(
   }
   if (cell == -1) {
     string board(cells.size(), '.');
-    for (int cell = 0; cell < choices.size(); cell++) {
-      auto idx = choices[cell];
-      board[cell] = cells[cell][idx];
+    for (int j = 0; j < choices.size(); j++) {
+      auto idx = choices[j];
+      board[j] = cells[j][idx];
     }
     results.push_back(board);
     return;
