@@ -546,9 +546,9 @@ void hash_combine(std::size_t& seed, const T& v) {
 uint64_t EvalNode::StructuralHash() const {
   static constexpr auto digits = std::numeric_limits<std::size_t>::digits;
   static_assert(digits == 64 || digits == 32);
-  if (hash_) {
-    return hash_;
-  }
+  // if (hash_) {
+  //   return hash_;
+  // }
   // letter, cell, points, children
   size_t h = 0xb0881e;
   hash_combine(h, letter_);
@@ -560,7 +560,7 @@ uint64_t EvalNode::StructuralHash() const {
       hash_combine(h, c->StructuralHash());
     }
   }
-  hash_ = h;
+  // hash_ = h;
   return h;
 }
 

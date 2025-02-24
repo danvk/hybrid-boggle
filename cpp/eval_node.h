@@ -64,7 +64,7 @@ unique_ptr<VectorArena> create_vector_arena();
 
 class EvalNode {
  public:
-  EvalNode() : points_(0), choice_mask_(0), cache_key_(0), hash_(0) {}
+  EvalNode() : points_(0), choice_mask_(0), cache_key_(0) {}
   ~EvalNode() {}
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
@@ -118,7 +118,7 @@ class EvalNode {
   mutable uint32_t cache_key_;
   mutable variant<const EvalNode*, vector<const EvalNode*>*> cache_value_;
 
-  mutable uint64_t hash_;
+  // mutable uint64_t hash_;
 
   int RecomputeScore() const;
   int NodeCount() const;

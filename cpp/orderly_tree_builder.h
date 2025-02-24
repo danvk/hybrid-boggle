@@ -76,7 +76,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   cout << "root->cache_key_: " << (uintptr_t)&root->cache_key_ - r << endl;
   cout << "root->cache_value_: " << (uintptr_t)&root->cache_value_ - r << endl;
-  cout << "root->hash_: " << (uintptr_t)&root->hash_ - r << endl;
+  // cout << "root->hash_: " << (uintptr_t)&root->hash_ - r << endl;
 
   return root;
 }
