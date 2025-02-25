@@ -154,9 +154,22 @@ const int BoardClassBoggler<4, 4>::NEIGHBORS[4*4][9] = {
   {3, 10, 11, 14},
 };
 
-// poetry run python -m boggle.split_order
+/*[[[cog
+from boggle.split_order import SPLIT_ORDER
+
+for (w, h), split_order in SPLIT_ORDER.items():
+    print(
+        f"""template<>
+const int BoardClassBoggler<{w}, {h}>::SPLIT_ORDER[{w}*{h}] = {{%s}};
+"""
+        % ", ".join(str(x) for x in split_order)
+    )
+]]]*/
 template<>
 const int BoardClassBoggler<2, 2>::SPLIT_ORDER[2*2] = {0, 1, 2, 3};
+
+template<>
+const int BoardClassBoggler<2, 3>::SPLIT_ORDER[2*3] = {0, 1, 2, 3, 4, 5};
 
 template<>
 const int BoardClassBoggler<3, 3>::SPLIT_ORDER[3*3] = {4, 5, 3, 1, 7, 0, 2, 6, 8};
@@ -166,6 +179,8 @@ const int BoardClassBoggler<3, 4>::SPLIT_ORDER[3*4] = {5, 6, 1, 9, 2, 10, 4, 7, 
 
 template<>
 const int BoardClassBoggler<4, 4>::SPLIT_ORDER[4*4] = {5, 6, 9, 10, 1, 13, 2, 14, 4, 7, 8, 11, 0, 12, 3, 15};
+
+//[[[end]]]
 
 
 #endif  // BOARD_CLASS_BOGGLER_H

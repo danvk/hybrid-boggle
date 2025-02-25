@@ -16,6 +16,17 @@ astroid = ["astroid (>=2,<4)"]
 test = ["astroid (>=2,<4)", "pytest", "pytest-cov", "pytest-xdist"]
 
 [[package]]
+name = "cogapp"
+version = "3.4.1"
+description = "Cog: A content generator for executing Python snippets in source files."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "cogapp-3.4.1-py3-none-any.whl", hash = "sha256:1daba7b6c8bb23b733c64833de7aa3a42476c05afba19cff937e1b522216859d"},
+    {file = "cogapp-3.4.1.tar.gz", hash = "sha256:a806d5db9e318a1a2d3fce988008179168e7db13e5e55b19b79763f9bb9d2982"},
+]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -324,4 +335,4 @@ telegram = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13"
-content-hash = "65e12e6777614af455f8579e82596755cdb4f2fc8b47e4e587549f4bba88a85d"
+content-hash = "f06fa4724d0c73d57421efa3eef3917659bb9076d84b5c574bb18facca0d82b1"
