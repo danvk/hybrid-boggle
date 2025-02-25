@@ -909,6 +909,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
 
+  // inline? remove asserts?
   auto advance = [&](const EvalNode* node, vector<int>& sums) {
     assert(node->letter_ != CHOICE_NODE);
     for (auto child : node->children_) {
@@ -952,27 +953,37 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     }
     vector<int> base_sums = stack_sums;
 
+    auto& next_stack = stacks[next_to_split];
+    // TODO: maybe make these pairs of iterators?
+    vector<vector<const EvalNode *>::const_iterator> its;
+    vector<vector<const EvalNode *>::const_iterator> end_its;
+    its.reserve(next_stack.size());
+    end_its.reserve(next_stack.size());
+    for (auto& n : next_stack) {
+      its.push_back(n->children_.begin());
+      end_its.push_back(n->children_.end());
+    }
+
     for (int letter = 0; letter < cells[next_to_split].size(); ++letter) {
       if (letter > 0) {
+        // TODO: it should be possible to avoid this copy with another stack.
         stack_sums = base_sums;
         for (int i = 0; i < stacks.size(); ++i) {
-          // TODO: don't do this, just leave garbage on the end.
+          // This will not de-allocate anything, just reduce size.
+          // https://cplusplus.com/reference/vector/vector/resize/
           stacks[i].resize(stack_top[i]);
         }
       }
       choices.emplace_back(next_to_split, letter);
       int points = base_points;
-      for (auto node : stacks[next_to_split]) {
-        const EvalNode* letter_node = nullptr;
-        for (auto n : node->children_) {
-          if (n->letter_ == letter) {
-            letter_node = n;
-            break;
-          }
+      int n = its.size();
+      for (int i = 0; i < n; i++) {
+        auto it = its[i];
+        auto end = end_its[i];
+        if (it != end && (*it)->letter_ == letter) {
+          points += advance(*it, stack_sums);
         }
-        if (letter_node) {
-          points += advance(letter_node, stack_sums);
-        }
+        ++it;
       }
       rec(points, num_splits + 1, stack_sums);
       choices.pop_back();
