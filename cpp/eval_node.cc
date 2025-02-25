@@ -960,6 +960,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     its.reserve(next_stack.size());
     end_its.reserve(next_stack.size());
     for (auto& n : next_stack) {
+      assert(n->letter_ == CHOICE_NODE);
+      assert(n->cell_ == next_to_split);
       its.push_back(n->children_.begin());
       end_its.push_back(n->children_.end());
     }
@@ -979,7 +981,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       int points = base_points;
       int n = its.size();
       for (int i = 0; i < n; i++) {
-        auto it = its[i];
+        auto& it = its[i];
         auto end = end_its[i];
         if (it != end && (*it)->letter_ == letter) {
           points += advance(*it, stack_sums);
