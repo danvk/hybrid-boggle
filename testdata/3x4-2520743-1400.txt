@@ -24,6 +24,7 @@ Found unbreakable board for 2520743: pansliteserd
 Found unbreakable board for 2520743: perslitesand
 2520743: chkmpt aeiou lnrsy lnrsy lnrsy aeiou chkmpt aeiou lnrsy aeiou lnrsy bdfgjvwxz
 {
+  "id": 2520743,
   "num_reps": 632812500,
   "failures": [
     "cerslatesind",
@@ -53,8 +54,7 @@ Found unbreakable board for 2520743: perslitesand
   "init_nodes": 1960065,
   "total_nodes": 2362581,
   "freed_nodes": 0,
-  "num_filtered": {},
-  "id": 2520743
+  "num_filtered": {}
 }
 Found 12 breaking failure(s):
 cerslatesind
