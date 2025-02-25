@@ -898,6 +898,21 @@ void merge_choice_collisions_in_place(
   choices.erase(std::remove(choices.begin(), choices.end(), nullptr), choices.end());
 }
 
+// block-scope functions cannot be declared inline.
+inline uint16_t advance(
+  const EvalNode* node,
+  vector<int>& sums,
+  vector<vector<const EvalNode*>>& stacks
+) {
+  // assert(node->letter_ != CHOICE_NODE);
+  for (auto child : node->children_) {
+    // assert(child->letter_ == CHOICE_NODE);
+    stacks[child->cell_].push_back(child);
+    sums[child->cell_] += child->bound_;
+  }
+  return node->points_;
+}
+
 vector<pair<int, string>> EvalNode::OrderlyBound(
   int cutoff,
   const vector<string>& cells,
@@ -908,17 +923,6 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
-
-  // inline? remove asserts?
-  auto advance = [&](const EvalNode* node, vector<int>& sums) {
-    assert(node->letter_ != CHOICE_NODE);
-    for (auto child : node->children_) {
-        assert(child->letter_ == CHOICE_NODE);
-        stacks[child->cell_].push_back(child);
-        sums[child->cell_] += child->bound_;
-    }
-    return node->points_;
-  };
 
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
@@ -984,7 +988,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
         auto& it = its[i];
         auto end = end_its[i];
         if (it != end && (*it)->letter_ == letter) {
-          points += advance(*it, stack_sums);
+          points += advance(*it, stack_sums, stacks);
           ++it;
         }
       }
@@ -994,7 +998,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
   };
 
   vector<int> sums(cells.size(), 0);
-  auto base_points = advance(this, sums);
+  auto base_points = advance(this, sums, stacks);
   rec(base_points, 0, sums);
   return failures;
 }
