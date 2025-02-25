@@ -958,16 +958,12 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     vector<int> base_sums = stack_sums;
 
     auto& next_stack = stacks[next_to_split];
-    // TODO: maybe make these pairs of iterators?
-    vector<vector<const EvalNode *>::const_iterator> its;
-    vector<vector<const EvalNode *>::const_iterator> end_its;
+    vector<pair<vector<const EvalNode *>::const_iterator, vector<const EvalNode *>::const_iterator>> its;
     its.reserve(next_stack.size());
-    end_its.reserve(next_stack.size());
     for (auto& n : next_stack) {
       // assert(n->letter_ == CHOICE_NODE);
       // assert(n->cell_ == next_to_split);
-      its.push_back(n->children_.begin());
-      end_its.push_back(n->children_.end());
+      its.push_back({n->children_.begin(), n->children_.end()});
     }
 
     int num_letters = cells[next_to_split].size();
@@ -983,10 +979,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       }
       choices.emplace_back(next_to_split, letter);
       int points = base_points;
-      int n = its.size();
-      for (int i = 0; i < n; i++) {
-        auto& it = its[i];
-        auto end = end_its[i];
+      for (auto& [it, end] : its) {
         if (it != end && (*it)->letter_ == letter) {
           points += advance(*it, stack_sums, stacks);
           ++it;
