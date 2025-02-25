@@ -34,7 +34,7 @@ jobs:
       run: poetry run ruff check
 
     - name: Run cog
-      run: poetry run cog -P --check cpp/board_class_boggler.h
+      run: PYTHONPATH=. poetry run cog -P --check cpp/board_class_boggler.h
 
     - name: Integration test
       run: |
