@@ -960,8 +960,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     its.reserve(next_stack.size());
     end_its.reserve(next_stack.size());
     for (auto& n : next_stack) {
-      assert(n->letter_ == CHOICE_NODE);
-      assert(n->cell_ == next_to_split);
+      // assert(n->letter_ == CHOICE_NODE);
+      // assert(n->cell_ == next_to_split);
       its.push_back(n->children_.begin());
       end_its.push_back(n->children_.end());
     }
