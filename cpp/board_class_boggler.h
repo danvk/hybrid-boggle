@@ -85,6 +85,8 @@ const char* BoardClassBoggler<M, N>::as_string() {
   return board_rep_;
 }
 
+// Update the blocks below via
+// poetry run cog -r -P cpp/board_class_boggler.h
 
 // First entry is the number of neighbors in the list.
 // TODO: make these null-terminated rather than "pascal arrays" (may be faster).
