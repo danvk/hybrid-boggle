@@ -958,7 +958,12 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     vector<int> base_sums = stack_sums;
 
     auto& next_stack = stacks[next_to_split];
-    vector<pair<vector<const EvalNode *>::const_iterator, vector<const EvalNode *>::const_iterator>> its;
+    vector<
+      pair<
+        vector<const EvalNode *>::const_iterator,
+        vector<const EvalNode *>::const_iterator
+      >
+    > its;
     its.reserve(next_stack.size());
     for (auto& n : next_stack) {
       // assert(n->letter_ == CHOICE_NODE);
