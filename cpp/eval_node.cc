@@ -898,6 +898,21 @@ void merge_choice_collisions_in_place(
   choices.erase(std::remove(choices.begin(), choices.end(), nullptr), choices.end());
 }
 
+// block-scope functions cannot be declared inline.
+inline uint16_t advance(
+  const EvalNode* node,
+  vector<int>& sums,
+  vector<vector<const EvalNode*>>& stacks
+) {
+  // assert(node->letter_ != CHOICE_NODE);
+  for (auto child : node->children_) {
+    // assert(child->letter_ == CHOICE_NODE);
+    stacks[child->cell_].push_back(child);
+    sums[child->cell_] += child->bound_;
+  }
+  return node->points_;
+}
+
 vector<pair<int, string>> EvalNode::OrderlyBound(
   int cutoff,
   const vector<string>& cells,
@@ -908,16 +923,6 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
-
-  auto advance = [&](const EvalNode* node, vector<int>& sums) {
-    assert(node->letter_ != CHOICE_NODE);
-    for (auto child : node->children_) {
-        assert(child->letter_ == CHOICE_NODE);
-        stacks[child->cell_].push_back(child);
-        sums[child->cell_] += child->bound_;
-    }
-    return node->points_;
-  };
 
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
@@ -952,26 +957,37 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     }
     vector<int> base_sums = stack_sums;
 
-    for (int letter = 0; letter < cells[next_to_split].size(); ++letter) {
+    auto& next_stack = stacks[next_to_split];
+    vector<
+      pair<
+        vector<const EvalNode *>::const_iterator,
+        vector<const EvalNode *>::const_iterator
+      >
+    > its;
+    its.reserve(next_stack.size());
+    for (auto& n : next_stack) {
+      // assert(n->letter_ == CHOICE_NODE);
+      // assert(n->cell_ == next_to_split);
+      its.push_back({n->children_.begin(), n->children_.end()});
+    }
+
+    int num_letters = cells[next_to_split].size();
+    for (int letter = 0; letter < num_letters; ++letter) {
       if (letter > 0) {
+        // TODO: it should be possible to avoid this copy with another stack.
         stack_sums = base_sums;
         for (int i = 0; i < stacks.size(); ++i) {
-          // TODO: don't do this, just leave garbage on the end.
+          // This will not de-allocate anything, just reduce size.
+          // https://cplusplus.com/reference/vector/vector/resize/
           stacks[i].resize(stack_top[i]);
         }
       }
       choices.emplace_back(next_to_split, letter);
       int points = base_points;
-      for (auto node : stacks[next_to_split]) {
-        const EvalNode* letter_node = nullptr;
-        for (auto n : node->children_) {
-          if (n->letter_ == letter) {
-            letter_node = n;
-            break;
-          }
-        }
-        if (letter_node) {
-          points += advance(letter_node, stack_sums);
+      for (auto& [it, end] : its) {
+        if (it != end && (*it)->letter_ == letter) {
+          points += advance(*it, stack_sums, stacks);
+          ++it;
         }
       }
       rec(points, num_splits + 1, stack_sums);
@@ -980,7 +996,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
   };
 
   vector<int> sums(cells.size(), 0);
-  auto base_points = advance(this, sums);
+  auto base_points = advance(this, sums, stacks);
   rec(base_points, 0, sums);
   return failures;
 }

@@ -101,12 +101,12 @@ def break_worker(task: str | int):
     # times[round(10 * details.elapsed_s) / 10] += 1
     # all_details.append((task, details))
     with open(f"tasks-{me}.ndjson", "a") as out:
-        summary = details.asdict()
+        # It's convenient to have id first when viewing.
+        summary = {"id": task, **details.asdict()}
         if args.omit_times:
             del summary["elapsed_s"]
             del summary["free_time_s"]
             del summary["secs_by_level"]
-        summary["id"] = task
         out.write(json.dumps(summary))
         out.write("\n")
         if args.log_per_board_stats:
