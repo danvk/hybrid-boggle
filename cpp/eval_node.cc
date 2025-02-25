@@ -964,7 +964,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       end_its.push_back(n->children_.end());
     }
 
-    for (int letter = 0; letter < cells[next_to_split].size(); ++letter) {
+    int num_letters = cells[next_to_split].size();
+    for (int letter = 0; letter < num_letters; ++letter) {
       if (letter > 0) {
         // TODO: it should be possible to avoid this copy with another stack.
         stack_sums = base_sums;
@@ -982,8 +983,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
         auto end = end_its[i];
         if (it != end && (*it)->letter_ == letter) {
           points += advance(*it, stack_sums);
+          ++it;
         }
-        ++it;
       }
       rec(points, num_splits + 1, stack_sums);
       choices.pop_back();
