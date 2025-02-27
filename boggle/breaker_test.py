@@ -1,7 +1,9 @@
+from collections import Counter
+
 from inline_snapshot import snapshot
 
 from boggle.boggler import PyBoggler
-from boggle.breaker import HybridTreeBreaker
+from boggle.breaker import HybridBreakDetails, HybridTreeBreaker
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import make_py_trie
 
@@ -9,15 +11,50 @@ from boggle.trie import make_py_trie
 def test_breaker():
     trie = make_py_trie("testdata/boggle-words-4.txt")
     otb = OrderlyTreeBuilder(trie, dims=(2, 2))
-    ATOZ = "".join(chr(x) for x in range(ord("a"), ord("z") + 1))
-    board = " ".join([ATOZ] * 4)
+    buckets = ["bdfgjqvwxz", "aeiou", "lnrsy", "chkmpt"]
+    board = " ".join(buckets[i] for i in (1, 2, 3, 1))
     boggler = PyBoggler(trie, dims=(2, 2))
 
     breaker = HybridTreeBreaker(
-        otb, boggler, (2, 2), 15, switchover_level=2, log_breaker_progress=False
+        otb,
+        boggler,
+        (2, 2),
+        15,
+        switchover_level=2,
+        log_breaker_progress=False,
+        free_after_lift=False,
     )
 
     breaker.SetBoard(board)
     details = breaker.Break()
+    # blank out non-deterministic fields
+    details.secs_by_level = {}
+    details.elapsed_s = 0.0
 
-    assert details == snapshot()
+    # poetry run python -m boggle.exhaustive_search --size 22 15 'aeiou lnrsy chkmpt aeiou' --python
+    # 16 alte
+    # 15 arte
+    # 18 aste
+    # 16 elta
+    # 15 erta
+    # 18 esta
+
+    assert details == snapshot(
+        HybridBreakDetails(
+            num_reps=750,
+            elapsed_s=0.0,
+            failures=["alte", "aste", "elta", "esta"],
+            elim_level=Counter({}),
+            secs_by_level={},
+            sum_union=0,
+            bounds={0: 21, 1: 19},
+            nodes={0: "n/a"},
+            boards_to_test=7,
+            expanded_to_test=7,
+            init_nodes="n/a",
+            total_nodes="n/a",
+            freed_nodes=0,
+            free_time_s=0.0,
+            num_filtered={1: 2},
+        )
+    )
