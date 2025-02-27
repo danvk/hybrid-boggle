@@ -36,6 +36,9 @@ jobs:
     - name: Run cog
       run: PYTHONPATH=. poetry run cog -P --check cpp/board_class_boggler.h
 
+    - name: Run clang-format
+      run: clang-format --dry-run --Werror cpp/*.{h,cc}
+
     - name: Integration test
       run: |
         /usr/bin/time -v ./integration-test.sh

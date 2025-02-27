@@ -16,6 +16,9 @@
         },
         // "editor.wordBasedSuggestions": "off"
     },
+    "[cpp]": {
+        "editor.formatOnSave": true
+    },
     "markdownlint.config": {
         "code-block-style": false
     },
