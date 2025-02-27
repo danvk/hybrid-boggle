@@ -8,7 +8,8 @@
 template <int M, int N>
 class Boggler {
  public:
-  Boggler(Trie* t) : dict_(t), runs_(0) {}
+  Boggler(
+      Trie* t) : dict_(t), runs_(0) {}
 
   int Score(const char* lets);
 
