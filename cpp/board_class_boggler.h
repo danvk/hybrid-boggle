@@ -3,8 +3,9 @@
 #ifndef BOARD_CLASS_BOGGLER_H
 #define BOARD_CLASS_BOGGLER_H
 
-// TODO: templating on M, N probably isn't that helpful here, or on any implementations except BucketBoggler.
-template<int M, int N>
+// TODO: templating on M, N probably isn't that helpful here, or on any
+// implementations except BucketBoggler.
+template <int M, int N>
 class BoardClassBoggler {
  public:
   BoardClassBoggler(Trie* t) : dict_(t), used_(0) {}
@@ -23,18 +24,18 @@ class BoardClassBoggler {
   // evaluate.
   uint64_t NumReps() const;
 
-  static const int NEIGHBORS[M*N][9];
-  static const int SPLIT_ORDER[M*N];
+  static const int NEIGHBORS[M * N][9];
+  static const int SPLIT_ORDER[M * N];
 
-  protected:
-   Trie* dict_;
-   char bd_[M*N][27];  // null-terminated lists of possible letters
-   unsigned int used_;
-   char board_rep_[27*M*N];  // for as_string()
+ protected:
+  Trie* dict_;
+  char bd_[M * N][27];  // null-terminated lists of possible letters
+  unsigned int used_;
+  char board_rep_[27 * M * N];  // for as_string()
 };
 
 // For debugging:
-static const bool PrintWords  = false;
+static const bool PrintWords = false;
 
 template <int M, int N>
 bool BoardClassBoggler<M, N>::ParseBoard(const char* bd) {
@@ -65,22 +66,21 @@ bool BoardClassBoggler<M, N>::ParseBoard(const char* bd) {
 template <int M, int N>
 uint64_t BoardClassBoggler<M, N>::NumReps() const {
   uint64_t reps = 1;
-  for (int i = 0; i < M*N; i++)
-    reps *= strlen(bd_[i]);
+  for (int i = 0; i < M * N; i++) reps *= strlen(bd_[i]);
   return reps;
 }
 
 template <int M, int N>
 const char* BoardClassBoggler<M, N>::as_string() {
   char* c = board_rep_;
-  for (int i=0; i<M*N; i++) {
+  for (int i = 0; i < M * N; i++) {
     if (*bd_[i]) {
       strcpy(c, bd_[i]);
       c += strlen(bd_[i]);
     } else {
       strcpy(c++, ".");
     }
-    *c++ = (i == (M*N-1) ? '\0' : ' ');
+    *c++ = (i == (M * N - 1) ? '\0' : ' ');
   }
   return board_rep_;
 }
@@ -90,6 +90,8 @@ const char* BoardClassBoggler<M, N>::as_string() {
 
 // First entry is the number of neighbors in the list.
 // TODO: make these null-terminated rather than "pascal arrays" (may be faster).
+
+// clang-format off
 
 /*[[[cog
 from boggle.neighbors import NEIGHBORS
@@ -238,5 +240,6 @@ template<>
 const int BoardClassBoggler<4, 4>::SPLIT_ORDER[4*4] = {5, 6, 9, 10, 1, 13, 2, 14, 4, 7, 8, 11, 0, 12, 3, 15};
 //[[[end]]]
 
+// clang-format on
 
 #endif  // BOARD_CLASS_BOGGLER_H

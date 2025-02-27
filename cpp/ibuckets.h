@@ -1,22 +1,24 @@
 // Calculate upper bounds on boggle boards with multiple possible letters on
 // each square. This can be quite CPU-intensive.
 #include <limits.h>
-#include <algorithm>
-#include <iostream>
 #include <string.h>
 
-#include "trie.h"
-#include "constants.h"
+#include <algorithm>
+#include <iostream>
+
 #include "board_class_boggler.h"
+#include "constants.h"
+#include "trie.h"
 
 #ifndef BUCKET_H
 #define BUCKET_H
 
 // See https://www.danvk.org/wp/2009-08-11/some-maxno-mark-examples/
 struct ScoreDetails {
-  int max_nomark;  // select the maximizing letter at each juncture.
-  int sum_union;   // all words that can be found, counting each once.
-  int bailout_cell;  // how many cells were tried before hitting the bailout? -1=no bailout.
+  int max_nomark;    // select the maximizing letter at each juncture.
+  int sum_union;     // all words that can be found, counting each once.
+  int bailout_cell;  // how many cells were tried before hitting the bailout?
+                     // -1=no bailout.
 };
 
 template <int M, int N>
@@ -34,7 +36,8 @@ class BucketBoggler : public BoardClassBoggler<M, N> {
   // Compute an upper bound without any of the costly statistics.
   unsigned int UpperBound(unsigned int bailout_score = INT_MAX);
 
-  // These are "dependent names", see https://stackoverflow.com/a/1528010/388951.
+  // These are "dependent names", see
+  // https://stackoverflow.com/a/1528010/388951.
   using BoardClassBoggler<M, N>::dict_;
   using BoardClassBoggler<M, N>::bd_;
   using BoardClassBoggler<M, N>::used_;
@@ -56,7 +59,7 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
   runs_ = dict_->Mark() + 1;
   dict_->Mark(runs_);
   // TODO: reset marks & runs every 1B calls
-  for (int i = 0; i < M*N; i++) {
+  for (int i = 0; i < M * N; i++) {
     int max_score = DoAllDescents(i, 0, dict_);
     details_.max_nomark += max_score;
     // This is "&&" because we're interested in knowing if we've _failed_ to
@@ -72,12 +75,14 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
 }
 
 template <int M, int N>
-inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx, unsigned int len, Trie* t) {
+inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx,
+                                                       unsigned int len,
+                                                       Trie* t) {
   int max_score = 0;
   for (int j = 0; bd_[idx][j]; j++) {
     int cc = bd_[idx][j] - 'a';
     if (t->StartsWord(cc)) {
-      int tscore = DoDFS(idx, len + (cc==kQ ? 2 : 1), t->Descend(cc));
+      int tscore = DoDFS(idx, len + (cc == kQ ? 2 : 1), t->Descend(cc));
       max_score = std::max(tscore, max_score);
     }
   }
@@ -85,10 +90,14 @@ inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx, unsigne
 }
 
 template <int M, int N>
-unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len,
+                                        Trie* t) {
   fprintf(stderr, "Not implemented for %dx%d\n", M, N);
   exit(1);
 }
+
+// TODO: codegen specialized bogglers
+// clang-format off
 
 // 3x3 Boggle
 
@@ -262,5 +271,7 @@ unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
   used_ ^= (1 << i);
   return score;
 }
+
+// clang-format on
 
 #endif  // BUCKET_H

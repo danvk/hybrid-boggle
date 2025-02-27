@@ -1,8 +1,8 @@
 #ifndef TREE_BUILDER_H
 #define TREE_BUILDER_H
 
-#include "ibuckets.h"
 #include "eval_node.h"
+#include "ibuckets.h"
 
 using namespace std;
 
@@ -13,17 +13,16 @@ class TreeBuilder : public BoardClassBoggler<M, N> {
   TreeBuilder(Trie* t) : BoardClassBoggler<M, N>(t), runs_(0) {}
   virtual ~TreeBuilder() {}
 
-  // These are "dependent names", see https://stackoverflow.com/a/1528010/388951.
+  // These are "dependent names", see
+  // https://stackoverflow.com/a/1528010/388951.
   using BoardClassBoggler<M, N>::dict_;
   using BoardClassBoggler<M, N>::bd_;
   using BoardClassBoggler<M, N>::used_;
 
   /** Build an EvalTree for the current board. */
-  const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe=false);
+  const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe = false);
 
-  unique_ptr<EvalNodeArena> CreateArena() {
-    return create_eval_node_arena();
-  }
+  unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
   int SumUnion() const { return details_.sum_union; }
 
@@ -34,19 +33,22 @@ class TreeBuilder : public BoardClassBoggler<M, N> {
   bool dedupe_;
   unordered_map<uint64_t, EvalNode*> node_cache_;
 
-  unsigned int DoAllDescents(int idx, int length, Trie* t, EvalNode* node, EvalNodeArena& arena);
-  unsigned int DoDFS(int i, int length, Trie* t, EvalNode* node, EvalNodeArena& arena);
+  unsigned int DoAllDescents(int idx, int length, Trie* t, EvalNode* node,
+                             EvalNodeArena& arena);
+  unsigned int DoDFS(int i, int length, Trie* t, EvalNode* node,
+                     EvalNodeArena& arena);
   EvalNode* GetCanonicalNode(EvalNode* node);
 };
 
 // TODO: can this not be a template method?
 template <int M, int N>
-const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
+const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena,
+                                             bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
   root_ = new EvalNode();
 
   root_->letter_ = EvalNode::ROOT_NODE;
-  root_->cell_ = 0; // irrelevant
+  root_->cell_ = 0;  // irrelevant
   root_->points_ = 0;
 
   details_.max_nomark = 0;
@@ -78,7 +80,8 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) 
   root_->bound_ = details_.max_nomark;
   dict_->Mark(runs_);
   // auto finish = chrono::high_resolution_clock::now();
-  // auto duration = chrono::duration_cast<chrono::milliseconds>(finish - start).count();
+  // auto duration = chrono::duration_cast<chrono::milliseconds>(finish -
+  // start).count();
   // TODO: record tree building time
   // cout << "build tree: " << duration << " ms" << endl;
   auto root = root_;
@@ -89,8 +92,10 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) 
   // return unique_ptr<EvalNode>(root_);
 }
 
-template<int M, int N>
-unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t, EvalNode* node, EvalNodeArena& arena) {
+template <int M, int N>
+unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t,
+                                              EvalNode* node,
+                                              EvalNodeArena& arena) {
   unsigned int max_score = 0;
   int n = strlen(bd_[idx]);
 
@@ -100,7 +105,8 @@ unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t, Eval
       auto child = new EvalNode;
       child->cell_ = idx;
       child->letter_ = j;
-      auto tscore = DoDFS(idx, length + (cc == kQ ? 2 : 1), t->Descend(cc), child, arena);
+      auto tscore =
+          DoDFS(idx, length + (cc == kQ ? 2 : 1), t->Descend(cc), child, arena);
       auto owned_child = child;
       child = GetCanonicalNode(child);
       if (tscore > 0) {
@@ -121,8 +127,9 @@ unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t, Eval
   return max_score;
 }
 
-template<int M, int N>
-unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node, EvalNodeArena& arena) {
+template <int M, int N>
+unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t,
+                                      EvalNode* node, EvalNodeArena& arena) {
   unsigned int score = 0;
   used_ ^= (1 << i);
 
@@ -130,7 +137,7 @@ unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node
   auto n_neighbors = neighbors[0];
   for (int j = 1; j <= n_neighbors; j++) {
     auto idx = neighbors[j];
-    if ((used_ & (1<<idx)) == 0) {
+    if ((used_ & (1 << idx)) == 0) {
       auto neighbor = new EvalNode;
       neighbor->letter_ = EvalNode::CHOICE_NODE;
       neighbor->cell_ = idx;
@@ -170,8 +177,7 @@ unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node
   return score;
 }
 
-
-template<int M, int N>
+template <int M, int N>
 EvalNode* TreeBuilder<M, N>::GetCanonicalNode(EvalNode* node) {
   if (!dedupe_) {
     return node;
@@ -185,4 +191,4 @@ EvalNode* TreeBuilder<M, N>::GetCanonicalNode(EvalNode* node) {
   return node;
 }
 
-#endif // TREE_BUILDER_H
+#endif  // TREE_BUILDER_H

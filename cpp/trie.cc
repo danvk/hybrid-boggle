@@ -1,9 +1,11 @@
 #include "trie.h"
-#include <iostream>
+
 #include <stdlib.h>
+
+#include <iostream>
+#include <map>
 #include <queue>
 #include <utility>
-#include <map>
 
 using namespace std;
 
@@ -11,8 +13,7 @@ static inline int idx(char x) { return x - 'a'; }
 
 // Initially, this node is empty
 Trie::Trie() {
-  for (int i=0; i<kNumLetters; i++)
-    children_[i] = NULL;
+  for (int i = 0; i < kNumLetters; i++) children_[i] = NULL;
   is_word_ = false;
   mark_ = 0;
 }
@@ -24,13 +25,12 @@ Trie* Trie::AddWord(const char* wd) {
     return this;
   }
   int c = idx(*wd);
-  if (!StartsWord(c))
-    children_[c] = new Trie;
-  return Descend(c)->AddWord(wd+1);
+  if (!StartsWord(c)) children_[c] = new Trie;
+  return Descend(c)->AddWord(wd + 1);
 }
 
 Trie::~Trie() {
-  for (int i=0; i<kNumLetters; i++) {
+  for (int i = 0; i < kNumLetters; i++) {
     if (children_[i]) delete children_[i];
   }
 }
@@ -38,7 +38,7 @@ Trie::~Trie() {
 size_t Trie::Size() {
   size_t size = 0;
   if (IsWord()) size++;
-  for (int i=0; i<kNumLetters; i++) {
+  for (int i = 0; i < kNumLetters; i++) {
     if (StartsWord(i)) size += Descend(i)->Size();
   }
   return size;
@@ -47,17 +47,16 @@ size_t Trie::Size() {
 size_t Trie::NumNodes() {
   int count = 1;
   for (int i = 0; i < kNumLetters; i++)
-    if (StartsWord(i))
-      count += Descend(i)->NumNodes();
+    if (StartsWord(i)) count += Descend(i)->NumNodes();
   return count;
 }
 
 // static
 bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
-  if (base==child) return true;
-  for (int i=0; i<kNumLetters; i++) {
+  if (base == child) return true;
+  for (int i = 0; i < kNumLetters; i++) {
     if (base->StartsWord(i) && ReverseLookup(base->Descend(i), child, out)) {
-      *out = string(1,'a'+i) + *out;
+      *out = string(1, 'a' + i) + *out;
       return true;
     }
   }
@@ -73,7 +72,7 @@ string Trie::ReverseLookup(const Trie* base, const Trie* child) {
 
 void Trie::SetAllMarks(unsigned mark) {
   if (IsWord()) Mark(mark);
-  for (int i=0; i<kNumLetters; i++) {
+  for (int i = 0; i < kNumLetters; i++) {
     if (StartsWord(i)) Descend(i)->SetAllMarks(mark);
   }
 }
@@ -105,7 +104,8 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   return t;
 }
 
-unique_ptr<Trie> Trie::CreateFromFileWithGrouping(const char* filename, unordered_map<char, char> letter_grouping) {
+unique_ptr<Trie> Trie::CreateFromFileWithGrouping(
+    const char* filename, unordered_map<char, char> letter_grouping) {
   char line[80];
   FILE* f = fopen(filename, "r");
   if (!f) {

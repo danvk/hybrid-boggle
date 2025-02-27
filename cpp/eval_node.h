@@ -2,24 +2,23 @@
 #define EVAL_NODE_H
 
 #include <limits.h>
+
+#include <cassert>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <unordered_map>
 #include <variant>
 #include <vector>
-#include <cassert>
 
 using namespace std;
 
 class EvalNode;
 
-template<typename T>
+template <typename T>
 class Arena {
  public:
-  ~Arena() {
-    FreeTheChildren();
-  }
+  ~Arena() { FreeTheChildren(); }
 
   void FreeTheChildren() {
     // cout << "Freeing " << owned_nodes.size() << " nodes" << endl;
@@ -31,9 +30,7 @@ class Arena {
     owned_nodes_.clear();
   }
 
-  int NumNodes() {
-    return owned_nodes_.size();
-  }
+  int NumNodes() { return owned_nodes_.size(); }
 
   void AddNode(T* node) {
     // for (auto n : owned_nodes_) {
@@ -67,22 +64,28 @@ class EvalNode {
   EvalNode() : points_(0), choice_mask_(0) {}
   ~EvalNode() {}
 
-  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
-  void AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters, int points, EvalNodeArena& arena);
+  void AddWord(vector<pair<int, int>> choices, int points,
+               EvalNodeArena& arena);
+  void AddWordWork(int num_choices, pair<int, int>* choices,
+                   const int* num_letters, int points, EvalNodeArena& arena);
 
   bool StructuralEq(const EvalNode& other) const;
   void PrintJSON() const;
 
   void SetComputedFields(vector<int>& num_letters);
 
-  const EvalNode*
-  LiftChoice(int cell, int num_lets, EvalNodeArena& arena, uint32_t mark, bool dedupe=false, bool compress=false) const;
+  const EvalNode* LiftChoice(int cell, int num_lets, EvalNodeArena& arena,
+                             uint32_t mark, bool dedupe = false,
+                             bool compress = false) const;
 
-  variant<const EvalNode*, vector<const EvalNode*>*>
-  ForceCell(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe=false, bool compress=false) const;
+  variant<const EvalNode*, vector<const EvalNode*>*> ForceCell(
+      int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena,
+      uint32_t mark, bool dedupe = false, bool compress = false) const;
 
-  variant<const EvalNode*, vector<const EvalNode*>*>
-  ForceCellWork(int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena, uint32_t mark, bool dedupe, bool compress, unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const;
+  variant<const EvalNode*, vector<const EvalNode*>*> ForceCellWork(
+      int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena,
+      uint32_t mark, bool dedupe, bool compress,
+      unordered_map<uint64_t, const EvalNode*>& force_cell_cache) const;
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
@@ -119,22 +122,19 @@ class EvalNode {
   int NodeCount() const;
   unsigned int UniqueNodeCount(uint32_t mark) const;
 
-  vector<string> BoundRemainingBoards(
-    vector<string> cells,
-    int cutoff,
-    vector<int> split_order
-  );
+  vector<string> BoundRemainingBoards(vector<string> cells, int cutoff,
+                                      vector<int> split_order);
 
   vector<pair<int, string>> OrderlyBound(
-    int cutoff,
-    const vector<string>& cells,
-    const vector<int>& split_order,
-    const vector<pair<int, int>>* preset_cells
-  ) const;
+      int cutoff, const vector<string>& cells, const vector<int>& split_order,
+      const vector<pair<int, int>>* preset_cells) const;
 
  private:
-  unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask) const;
-  void MaxSubtreesHelp(vector<pair<const EvalNode*, vector<pair<int, int>>>>& out, vector<pair<int, int>> path) const;
+  unsigned int ScoreWithForcesMask(const vector<int>& forces,
+                                   uint16_t choice_mask) const;
+  void MaxSubtreesHelp(
+      vector<pair<const EvalNode*, vector<pair<int, int>>>>& out,
+      vector<pair<int, int>> path) const;
 };
 
 #endif  // EVAL_NODE_H

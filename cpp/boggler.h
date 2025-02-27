@@ -2,8 +2,8 @@
 #ifndef BOGGLER_4
 #define BOGGLER_4
 
-#include "trie.h"
 #include "constants.h"
+#include "trie.h"
 
 template <int M, int N>
 class Boggler {
@@ -14,8 +14,8 @@ class Boggler {
 
   unsigned int NumCells() { return M * N; }
 
-  // Set a cell on the current board. Must have 0 <= x < M, 0 <= y < N and 0 <= c < 26.
-  // These constraints are NOT checked.
+  // Set a cell on the current board. Must have 0 <= x < M, 0 <= y < N and 0 <=
+  // c < 26. These constraints are NOT checked.
   void SetCell(int x, int y, unsigned int c);
   unsigned int Cell(int x, int y) const;
 
@@ -26,7 +26,7 @@ class Boggler {
 
   Trie* dict_;
   unsigned int used_;
-  int bd_[M*N];
+  int bd_[M * N];
   unsigned int score_;
   unsigned int runs_;
 };
@@ -72,20 +72,21 @@ bool Boggler<M, N>::ParseBoard(const char* bd) {
   return true;
 }
 
-
 template <int M, int N>
 unsigned int Boggler<M, N>::InternalScore() {
   runs_ = dict_->Mark() + 1;
   dict_->Mark(runs_);
   used_ = 0;
   score_ = 0;
-  for (int i = 0; i < M*N; i++) {
+  for (int i = 0; i < M * N; i++) {
     int c = bd_[i];
-    if (dict_->StartsWord(c))
-      DoDFS(i, 0, dict_->Descend(c));
+    if (dict_->StartsWord(c)) DoDFS(i, 0, dict_->Descend(c));
   }
   return score_;
 }
+
+// TODO: codegen specialized bogglers
+// clang-format off
 
 // 3x3 Boggle
 
@@ -308,5 +309,7 @@ void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
 
   used_ ^= (1 << i);
 }
+
+// clang-format on
 
 #endif
