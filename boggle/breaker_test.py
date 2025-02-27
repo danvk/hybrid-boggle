@@ -11,8 +11,7 @@ from boggle.trie import make_py_trie
 def test_breaker():
     trie = make_py_trie("testdata/boggle-words-4.txt")
     otb = OrderlyTreeBuilder(trie, dims=(2, 2))
-    buckets = ["bdfgjqvwxz", "aeiou", "lnrsy", "chkmpt"]
-    board = " ".join(buckets[i] for i in (1, 2, 3, 1))
+    board = "aeiou lnrsy chkmpt aeiou"
     boggler = PyBoggler(trie, dims=(2, 2))
 
     breaker = HybridTreeBreaker(
@@ -22,7 +21,6 @@ def test_breaker():
         15,
         switchover_level=2,
         log_breaker_progress=False,
-        free_after_lift=False,
     )
 
     breaker.SetBoard(board)
