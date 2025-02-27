@@ -113,3 +113,6 @@ class TreeBuilder(BoardClassBoggler):
 
     def create_arena(self):
         return create_eval_node_arena_py()
+
+    def create_vector_arena(self):
+        return create_eval_node_arena_py()

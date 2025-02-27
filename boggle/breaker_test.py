@@ -42,10 +42,10 @@ def test_breaker():
             num_reps=750,
             elapsed_s=0.0,
             failures=["alte", "aste", "elta", "esta"],
-            elim_level=Counter({}),
+            elim_level=Counter({2: 2}),
             secs_by_level={},
             sum_union=0,
-            bounds={0: 21, 1: 19},
+            bounds={0: 21},
             nodes={0: "n/a"},
             boards_to_test=7,
             expanded_to_test=7,
@@ -53,6 +53,5 @@ def test_breaker():
             total_nodes="n/a",
             freed_nodes=0,
             free_time_s=0.0,
-            num_filtered={1: 2},
         )
     )

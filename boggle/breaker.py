@@ -56,7 +56,6 @@ class HybridBreakDetails(BreakDetails):
     total_nodes: int
     freed_nodes: int
     free_time_s: float
-    num_filtered: dict[int, int]
 
 
 class HybridTreeBreaker:
@@ -111,7 +110,6 @@ class HybridTreeBreaker:
             init_nodes=0,
             nodes={},
             total_nodes=0,
-            num_filtered={},
             freed_nodes=0,
             free_time_s=0.0,
         )
@@ -171,14 +169,21 @@ class HybridTreeBreaker:
         cell = self.split_order[len(choices)]
         num_lets = len(self.cells[cell])
 
+        # TODO: it's probably faster to re-use this
+        vector_arena = self.etb.create_vector_arena()
         start_s = time.time()
         self.mark += 1
         trees = tree.force_cell(
-            cell, num_lets, arena, self.mark, dedupe=False, compress=True
+            cell,
+            num_lets,
+            arena,
+            vector_arena=vector_arena,
+            mark=self.mark,
+            dedupe=False,
+            compress=True,
         )
         self.details_.secs_by_level[level] += time.time() - start_s
         # self.details_.bounds[level] = tree.bound
-        self.lifted_cells_.append(cell)
 
         if not isinstance(trees, list):
             print("choice was not really a choice")
@@ -213,7 +218,7 @@ class HybridTreeBreaker:
         if self.log_breaker_progress:
             print(f"Found {len(boards_to_test)} to test.")
 
-        self.details_.boards_to_test = len(boards_to_test)
+        self.details_.boards_to_test += len(boards_to_test)
         start_s = time.time()
         it = (
             boards_to_test
@@ -234,6 +239,6 @@ class HybridTreeBreaker:
                 self.details_.failures.append(board)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level + 1] += elapsed_s
-        self.details_.expanded_to_test = n_expanded
+        self.details_.expanded_to_test += n_expanded
         if self.log_breaker_progress and self.rev_letter_grouping:
             print(f"Evaluated {n_expanded} boards.")
