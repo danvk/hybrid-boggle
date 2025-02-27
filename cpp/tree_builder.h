@@ -35,15 +35,13 @@ class TreeBuilder : public BoardClassBoggler<M, N> {
 
   unsigned int DoAllDescents(int idx, int length, Trie* t, EvalNode* node,
                              EvalNodeArena& arena);
-  unsigned int DoDFS(int i, int length, Trie* t, EvalNode* node,
-                     EvalNodeArena& arena);
+  unsigned int DoDFS(int i, int length, Trie* t, EvalNode* node, EvalNodeArena& arena);
   EvalNode* GetCanonicalNode(EvalNode* node);
 };
 
 // TODO: can this not be a template method?
 template <int M, int N>
-const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena,
-                                             bool dedupe) {
+const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
   root_ = new EvalNode();
 
@@ -94,8 +92,7 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena,
 
 template <int M, int N>
 unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t,
-                                              EvalNode* node,
-                                              EvalNodeArena& arena) {
+                                              EvalNode* node, EvalNodeArena& arena) {
   unsigned int max_score = 0;
   int n = strlen(bd_[idx]);
 
@@ -128,8 +125,8 @@ unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t,
 }
 
 template <int M, int N>
-unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t,
-                                      EvalNode* node, EvalNodeArena& arena) {
+unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node,
+                                      EvalNodeArena& arena) {
   unsigned int score = 0;
   used_ ^= (1 << i);
 

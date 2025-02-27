@@ -73,12 +73,10 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("Size", &Trie::Size)
       .def("NumNodes", &Trie::NumNodes)
       .def("SetAllMarks", &Trie::SetAllMarks)
-      .def_static(
-          "ReverseLookup",
-          py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup))
+      .def_static("ReverseLookup",
+                  py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup))
       .def_static("CreateFromFile", &Trie::CreateFromFile)
-      .def_static("CreateFromFileWithGrouping",
-                  &Trie::CreateFromFileWithGrouping);
+      .def_static("CreateFromFileWithGrouping", &Trie::CreateFromFileWithGrouping);
 
   declare_boggler<3, 3>(m, "Boggler33");
   declare_boggler<3, 4>(m, "Boggler34");
@@ -117,17 +115,14 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("unique_node_count", &EvalNode::UniqueNodeCount)
       .def("add_word", &EvalNode::AddWord)
       .def("set_computed_fields", &EvalNode::SetComputedFields)
-      .def("force_cell", &EvalNode::ForceCell,
-           py::return_value_policy::reference, py::arg("cell"),
-           py::arg("num_lets"), py::arg("arena"), py::arg("vector_arena"),
-           py::arg("mark"), py::arg("dedupe") = false,
+      .def("force_cell", &EvalNode::ForceCell, py::return_value_policy::reference,
+           py::arg("cell"), py::arg("num_lets"), py::arg("arena"),
+           py::arg("vector_arena"), py::arg("mark"), py::arg("dedupe") = false,
            py::arg("compress") = false)
-      .def("lift_choice", &EvalNode::LiftChoice,
-           py::return_value_policy::reference, py::arg("cell"),
-           py::arg("num_lets"), py::arg("arena"), py::arg("mark"),
+      .def("lift_choice", &EvalNode::LiftChoice, py::return_value_policy::reference,
+           py::arg("cell"), py::arg("num_lets"), py::arg("arena"), py::arg("mark"),
            py::arg("dedupe"), py::arg("compress"))
-      .def("max_subtrees", &EvalNode::MaxSubtrees,
-           py::return_value_policy::reference)
+      .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
       .def("structural_hash", &EvalNode::StructuralHash)
       .def("set_choice_point_mask", &EvalNode::SetChoicePointMask)
       .def("reset_choice_point_mask", &EvalNode::ResetChoicePointMask)
@@ -139,8 +134,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
       .def("free_the_children", &EvalNodeArena::FreeTheChildren)
-      .def("new_node", &EvalNodeArena::NewNode,
-           py::return_value_policy::reference)
+      .def("new_node", &EvalNodeArena::NewNode, py::return_value_policy::reference)
       .def("num_nodes", &EvalNodeArena::NumNodes);
 
   // TODO: remove this once it's not part of a public API.

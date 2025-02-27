@@ -17,8 +17,7 @@ inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
 }
 
 void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices,
-                           const int* num_letters, int points,
-                           EvalNodeArena& arena) {
+                           const int* num_letters, int points, EvalNodeArena& arena) {
   if (!num_choices) {
     points_ += points;
     bound_ += points;
@@ -64,8 +63,7 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices,
     letter_child->bound_ = 0;
     arena.AddNode(letter_child);
     choice_child->children_.push_back(letter_child);
-    sort(choice_child->children_.begin(), choice_child->children_.end(),
-         SortByLetter);
+    sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
   }
   letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
 
@@ -80,8 +78,7 @@ void EvalNode::AddWordWork(int num_choices, pair<int, int>* choices,
 void EvalNode::AddWord(vector<pair<int, int>> choices, int points,
                        EvalNodeArena& arena) {
   vector<int> num_letters(choices.size(), 1);
-  AddWordWork(choices.size(), choices.data(), num_letters.data(), points,
-              arena);
+  AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
 }
 
 bool EvalNode::StructuralEq(const EvalNode& other) const {
@@ -178,8 +175,7 @@ void EvalNode::SetComputedFields(vector<int>& num_letters) {
 }
 
 const EvalNode* SqueezeChoiceChild(const EvalNode* child);
-bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena,
-                           bool should_merge);
+bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_merge);
 
 int EvalNode::NodeCount() const {
   int count = 1;
@@ -199,8 +195,7 @@ int EvalNode::RecomputeScore() const {
     // Choose the max amongst each possibility.
     int max_score = 0;
     for (int i = 0; i < children_.size(); i++) {
-      if (children_[i])
-        max_score = max(max_score, children_[i]->RecomputeScore());
+      if (children_[i]) max_score = max(max_score, children_[i]->RecomputeScore());
     }
     return max_score;
   } else {
@@ -214,9 +209,8 @@ int EvalNode::RecomputeScore() const {
   }
 }
 
-const EvalNode* EvalNode::LiftChoice(int cell, int num_lets,
-                                     EvalNodeArena& arena, uint32_t mark,
-                                     bool dedupe, bool compress) const {
+const EvalNode* EvalNode::LiftChoice(int cell, int num_lets, EvalNodeArena& arena,
+                                     uint32_t mark, bool dedupe, bool compress) const {
   if (letter_ == CHOICE_NODE && cell_ == cell) {
     // This is already in the right form. Nothing more to do!
     return this;
@@ -261,8 +255,8 @@ variant<const EvalNode*, vector<const EvalNode*>*> EvalNode::ForceCell(
     int cell, int num_lets, EvalNodeArena& arena, VectorArena& vector_arena,
     uint32_t mark, bool dedupe, bool compress) const {
   unordered_map<uint64_t, const EvalNode*> force_cell_cache;
-  auto out = ForceCellWork(cell, num_lets, arena, vector_arena, mark, dedupe,
-                           compress, force_cell_cache);
+  auto out = ForceCellWork(cell, num_lets, arena, vector_arena, mark, dedupe, compress,
+                           force_cell_cache);
   return out;
 }
 
@@ -298,9 +292,8 @@ variant<const EvalNode*, vector<const EvalNode*>*> EvalNode::ForceCellWork(
   results.reserve(children_.size());
   for (auto child : children_) {
     if (child) {
-      results.push_back(child->ForceCellWork(cell, num_lets, arena,
-                                             vector_arena, mark, dedupe,
-                                             compress, force_cell_cache));
+      results.push_back(child->ForceCellWork(cell, num_lets, arena, vector_arena, mark,
+                                             dedupe, compress, force_cell_cache));
     } else {
       // TODO: can this happen? (evidently not)
       results.push_back({(EvalNode*)NULL});
@@ -434,8 +427,7 @@ unsigned int EvalNode::ScoreWithForcesMask(const vector<int>& forces,
     unsigned int score = 0;
     for (const auto& child : children_) {
       if (child) {
-        score =
-            std::max(score, child->ScoreWithForcesMask(forces, choice_mask));
+        score = std::max(score, child->ScoreWithForcesMask(forces, choice_mask));
       }
     }
     return score;
@@ -471,8 +463,7 @@ int EvalNode::FilterBelowThreshold(int min_score) {
   return num_filtered;
 }
 
-vector<pair<const EvalNode*, vector<pair<int, int>>>> EvalNode::MaxSubtrees()
-    const {
+vector<pair<const EvalNode*, vector<pair<int, int>>>> EvalNode::MaxSubtrees() const {
   vector<pair<const EvalNode*, vector<pair<int, int>>>> out;
   vector<pair<int, int>> path;
   MaxSubtreesHelp(out, path);
@@ -583,8 +574,7 @@ bool any_choice_collisions(const vector<const EvalNode*>& choices) {
 
 // Absorb non-choice nodes into this sum node. Operates in-place.
 // Returns a boolean indicating whether any changes were made.
-bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena,
-                           bool should_merge) {
+bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena, bool should_merge) {
   if (node->children_.empty()) {
     return false;
   }
@@ -636,8 +626,7 @@ bool SqueezeSumNodeInPlace(EvalNode* node, EvalNodeArena& arena,
   uint32_t new_points_from_children = 0;
   for (auto c : non_choice) {
     new_points_from_children += c->points_;
-    new_children.insert(new_children.end(), c->children_.begin(),
-                        c->children_.end());
+    new_children.insert(new_children.end(), c->children_.begin(), c->children_.end());
   }
 
   // new_children should be entirely choice nodes now, but there may be new
@@ -669,9 +658,8 @@ unique_ptr<VectorArena> create_vector_arena() {
 }
 
 void BoundRemainingBoardsHelp(const EvalNode* t, const vector<string>& cells,
-                              vector<int>& choices, int cutoff,
-                              vector<int> split_order, int split_order_index,
-                              vector<string>& results) {
+                              vector<int>& choices, int cutoff, vector<int> split_order,
+                              int split_order_index, vector<string>& results) {
   int cell = -1;
   for (auto order : split_order) {
     if (choices[order] == -1) {
@@ -726,8 +714,8 @@ vector<string> EvalNode::BoundRemainingBoards(vector<string> cells, int cutoff,
         remaining_split_order.push_back(order);
       }
     }
-    BoundRemainingBoardsHelp(t, cells, choices, cutoff, remaining_split_order,
-                             0, results);
+    BoundRemainingBoardsHelp(t, cells, choices, cutoff, remaining_split_order, 0,
+                             results);
   }
   return results;
 }
@@ -794,12 +782,11 @@ EvalNode* Arena<EvalNode>::NewNode() {
   return n;
 }
 
-const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b,
-                            EvalNodeArena& arena);
+const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b, EvalNodeArena& arena);
 
 // This relies on a and b being sorted by letter_.
-void merge_choice_children(const EvalNode* na, const EvalNode* nb,
-                           EvalNodeArena& arena, vector<const EvalNode*>& out) {
+void merge_choice_children(const EvalNode* na, const EvalNode* nb, EvalNodeArena& arena,
+                           vector<const EvalNode*>& out) {
   auto it_a = na->children_.begin();
   auto it_b = nb->children_.begin();
   const auto& a_end = na->children_.end();
@@ -846,8 +833,7 @@ const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b,
                             EvalNodeArena& arena) {
   assert(a->cell_ == b->cell_);
 
-  if (a->letter_ == EvalNode::CHOICE_NODE &&
-      b->letter_ == EvalNode::CHOICE_NODE) {
+  if (a->letter_ == EvalNode::CHOICE_NODE && b->letter_ == EvalNode::CHOICE_NODE) {
     vector<const EvalNode*> children;
     merge_choice_children(a, b, arena, children);
 
@@ -870,9 +856,7 @@ const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b,
     vector<const EvalNode*> children = a->children_;
     children.insert(children.end(), b->children_.begin(), b->children_.end());
     sort(children.begin(), children.end(),
-         [](const EvalNode* a, const EvalNode* b) {
-           return a->cell_ < b->cell_;
-         });
+         [](const EvalNode* a, const EvalNode* b) { return a->cell_ < b->cell_; });
 
     EvalNode* n = new EvalNode();
     arena.AddNode(n);
@@ -895,9 +879,8 @@ const EvalNode* merge_trees(const EvalNode* a, const EvalNode* b,
 
 void merge_choice_collisions_in_place(vector<const EvalNode*>& choices,
                                       EvalNodeArena& arena) {
-  sort(
-      choices.begin(), choices.end(),
-      [](const EvalNode* a, const EvalNode* b) { return a->cell_ < b->cell_; });
+  sort(choices.begin(), choices.end(),
+       [](const EvalNode* a, const EvalNode* b) { return a->cell_ < b->cell_; });
 
   auto it = choices.begin();
   while (it != choices.end()) {
@@ -911,8 +894,7 @@ void merge_choice_collisions_in_place(vector<const EvalNode*>& choices,
   }
 
   // Remove null values from the choices vector.
-  choices.erase(std::remove(choices.begin(), choices.end(), nullptr),
-                choices.end());
+  choices.erase(std::remove(choices.begin(), choices.end(), nullptr), choices.end());
 }
 
 // block-scope functions cannot be declared inline.
@@ -948,62 +930,62 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
     failures.push_back({bound, board});
   };
 
-  function<void(int, int, vector<int>&)> rec =
-      [&](int base_points, int num_splits, vector<int>& stack_sums) {
-        int bound = base_points;
-        for (int i = num_splits; i < split_order.size(); ++i) {
-          bound += stack_sums[split_order[i]];
-        }
-        if (bound <= cutoff) {
-          return;  // done!
-        }
-        if (num_splits == split_order.size()) {
-          record_failure(bound);
-          return;
-        }
+  function<void(int, int, vector<int>&)> rec = [&](int base_points, int num_splits,
+                                                   vector<int>& stack_sums) {
+    int bound = base_points;
+    for (int i = num_splits; i < split_order.size(); ++i) {
+      bound += stack_sums[split_order[i]];
+    }
+    if (bound <= cutoff) {
+      return;  // done!
+    }
+    if (num_splits == split_order.size()) {
+      record_failure(bound);
+      return;
+    }
 
-        int next_to_split = split_order[num_splits];
-        vector<int> stack_top(stacks.size());
+    int next_to_split = split_order[num_splits];
+    vector<int> stack_top(stacks.size());
+    for (int i = 0; i < stacks.size(); ++i) {
+      stack_top[i] = stacks[i].size();
+    }
+    vector<int> base_sums = stack_sums;
+
+    auto& next_stack = stacks[next_to_split];
+    vector<pair<vector<const EvalNode*>::const_iterator,
+                vector<const EvalNode*>::const_iterator>>
+        its;
+    its.reserve(next_stack.size());
+    for (auto& n : next_stack) {
+      // assert(n->letter_ == CHOICE_NODE);
+      // assert(n->cell_ == next_to_split);
+      its.push_back({n->children_.begin(), n->children_.end()});
+    }
+
+    int num_letters = cells[next_to_split].size();
+    for (int letter = 0; letter < num_letters; ++letter) {
+      if (letter > 0) {
+        // TODO: it should be possible to avoid this copy with another
+        // stack.
+        stack_sums = base_sums;
         for (int i = 0; i < stacks.size(); ++i) {
-          stack_top[i] = stacks[i].size();
+          // This will not de-allocate anything, just reduce size.
+          // https://cplusplus.com/reference/vector/vector/resize/
+          stacks[i].resize(stack_top[i]);
         }
-        vector<int> base_sums = stack_sums;
-
-        auto& next_stack = stacks[next_to_split];
-        vector<pair<vector<const EvalNode*>::const_iterator,
-                    vector<const EvalNode*>::const_iterator>>
-            its;
-        its.reserve(next_stack.size());
-        for (auto& n : next_stack) {
-          // assert(n->letter_ == CHOICE_NODE);
-          // assert(n->cell_ == next_to_split);
-          its.push_back({n->children_.begin(), n->children_.end()});
+      }
+      choices.emplace_back(next_to_split, letter);
+      int points = base_points;
+      for (auto& [it, end] : its) {
+        if (it != end && (*it)->letter_ == letter) {
+          points += advance(*it, stack_sums, stacks);
+          ++it;
         }
-
-        int num_letters = cells[next_to_split].size();
-        for (int letter = 0; letter < num_letters; ++letter) {
-          if (letter > 0) {
-            // TODO: it should be possible to avoid this copy with another
-            // stack.
-            stack_sums = base_sums;
-            for (int i = 0; i < stacks.size(); ++i) {
-              // This will not de-allocate anything, just reduce size.
-              // https://cplusplus.com/reference/vector/vector/resize/
-              stacks[i].resize(stack_top[i]);
-            }
-          }
-          choices.emplace_back(next_to_split, letter);
-          int points = base_points;
-          for (auto& [it, end] : its) {
-            if (it != end && (*it)->letter_ == letter) {
-              points += advance(*it, stack_sums, stacks);
-              ++it;
-            }
-          }
-          rec(points, num_splits + 1, stack_sums);
-          choices.pop_back();
-        }
-      };
+      }
+      rec(points, num_splits + 1, stack_sums);
+      choices.pop_back();
+    }
+  };
 
   vector<int> sums(cells.size(), 0);
   auto base_points = advance(this, sums, stacks);

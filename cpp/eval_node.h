@@ -64,10 +64,9 @@ class EvalNode {
   EvalNode() : points_(0), choice_mask_(0) {}
   ~EvalNode() {}
 
-  void AddWord(vector<pair<int, int>> choices, int points,
-               EvalNodeArena& arena);
-  void AddWordWork(int num_choices, pair<int, int>* choices,
-                   const int* num_letters, int points, EvalNodeArena& arena);
+  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
+  void AddWordWork(int num_choices, pair<int, int>* choices, const int* num_letters,
+                   int points, EvalNodeArena& arena);
 
   bool StructuralEq(const EvalNode& other) const;
   void PrintJSON() const;
@@ -132,9 +131,8 @@ class EvalNode {
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces,
                                    uint16_t choice_mask) const;
-  void MaxSubtreesHelp(
-      vector<pair<const EvalNode*, vector<pair<int, int>>>>& out,
-      vector<pair<int, int>> path) const;
+  void MaxSubtreesHelp(vector<pair<const EvalNode*, vector<pair<int, int>>>>& out,
+                       vector<pair<int, int>> path) const;
 };
 
 #endif  // EVAL_NODE_H

@@ -37,14 +37,12 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   pair<int, int> choices_[M * N];
   pair<int, int> orderly_choices_[M * N];
 
-  void DoAllDescents(int cell, int n, int length, Trie* t,
-                     EvalNodeArena& arena);
+  void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
 };
 
 template <int M, int N>
-const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena,
-                                                    bool dedupe) {
+const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
   root_ = new EvalNode();
   root_->letter_ = EvalNode::ROOT_NODE;
@@ -82,8 +80,8 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena,
 }
 
 template <int M, int N>
-void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length,
-                                             Trie* t, EvalNodeArena& arena) {
+void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length, Trie* t,
+                                             EvalNodeArena& arena) {
   choices_[n] = {cell, 0};
 
   char* c = &bd_[cell][0];
@@ -126,8 +124,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t,
          [this](const pair<int, int>& a, const pair<int, int>& b) {
            return cell_to_order_[a.first] < cell_to_order_[b.first];
          });
-    root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score,
-                       arena);
+    root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
   }
 
   used_ ^= (1 << i);

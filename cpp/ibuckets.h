@@ -64,8 +64,7 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
     details_.max_nomark += max_score;
     // This is "&&" because we're interested in knowing if we've _failed_ to
     // establish a sufficiently-tight upper bound.
-    if (details_.max_nomark > bailout_score &&
-        details_.sum_union > bailout_score) {
+    if (details_.max_nomark > bailout_score && details_.sum_union > bailout_score) {
       details_.bailout_cell = i;
       break;
     }
@@ -76,8 +75,7 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
 
 template <int M, int N>
 inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx,
-                                                       unsigned int len,
-                                                       Trie* t) {
+                                                       unsigned int len, Trie* t) {
   int max_score = 0;
   for (int j = 0; bd_[idx][j]; j++) {
     int cc = bd_[idx][j] - 'a';
@@ -90,8 +88,7 @@ inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx,
 }
 
 template <int M, int N>
-unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len,
-                                        Trie* t) {
+unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
   fprintf(stderr, "Not implemented for %dx%d\n", M, N);
   exit(1);
 }
