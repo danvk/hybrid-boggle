@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+ColumnLimit: 88
+
+BinPackArguments: false
+BinPackParameters: false
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AlignAfterOpenBracket: BlockIndent
