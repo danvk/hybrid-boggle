@@ -80,8 +80,9 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
 }
 
 template <int M, int N>
-void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length, Trie* t,
-                                             EvalNodeArena& arena) {
+void OrderlyTreeBuilder<M, N>::DoAllDescents(
+    int cell, int n, int length, Trie* t, EvalNodeArena& arena
+) {
   choices_[n] = {cell, 0};
 
   char* c = &bd_[cell][0];
@@ -98,8 +99,9 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(int cell, int n, int length, Trie* 
 }
 
 template <int M, int N>
-void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t,
-                                     EvalNodeArena& arena) {
+void OrderlyTreeBuilder<M, N>::DoDFS(
+    int i, int n, int length, Trie* t, EvalNodeArena& arena
+) {
   used_ ^= (1 << i);
 
   auto& neighbors = BucketBoggler<M, N>::NEIGHBORS[i];
@@ -120,10 +122,13 @@ void OrderlyTreeBuilder<M, N>::DoDFS(int i, int n, int length, Trie* t,
     //       copying.
     pair<int, int>* orderly_ptr = &orderly_choices_[0];
     memcpy(orderly_ptr, &choices_[0], n * sizeof(pair<int, int>));
-    sort(orderly_ptr, orderly_ptr + n,
-         [this](const pair<int, int>& a, const pair<int, int>& b) {
-           return cell_to_order_[a.first] < cell_to_order_[b.first];
-         });
+    sort(
+        orderly_ptr,
+        orderly_ptr + n,
+        [this](const pair<int, int>& a, const pair<int, int>& b) {
+          return cell_to_order_[a.first] < cell_to_order_[b.first];
+        }
+    );
     root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
   }
 

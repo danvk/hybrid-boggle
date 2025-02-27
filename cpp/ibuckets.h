@@ -74,8 +74,9 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
 }
 
 template <int M, int N>
-inline unsigned int BucketBoggler<M, N>::DoAllDescents(unsigned int idx,
-                                                       unsigned int len, Trie* t) {
+inline unsigned int BucketBoggler<M, N>::DoAllDescents(
+    unsigned int idx, unsigned int len, Trie* t
+) {
   int max_score = 0;
   for (int j = 0; bd_[idx][j]; j++) {
     int cc = bd_[idx][j] - 'a';

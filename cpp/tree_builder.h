@@ -33,8 +33,9 @@ class TreeBuilder : public BoardClassBoggler<M, N> {
   bool dedupe_;
   unordered_map<uint64_t, EvalNode*> node_cache_;
 
-  unsigned int DoAllDescents(int idx, int length, Trie* t, EvalNode* node,
-                             EvalNodeArena& arena);
+  unsigned int DoAllDescents(
+      int idx, int length, Trie* t, EvalNode* node, EvalNodeArena& arena
+  );
   unsigned int DoDFS(int i, int length, Trie* t, EvalNode* node, EvalNodeArena& arena);
   EvalNode* GetCanonicalNode(EvalNode* node);
 };
@@ -91,8 +92,9 @@ const EvalNode* TreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) 
 }
 
 template <int M, int N>
-unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t,
-                                              EvalNode* node, EvalNodeArena& arena) {
+unsigned int TreeBuilder<M, N>::DoAllDescents(
+    int idx, int length, Trie* t, EvalNode* node, EvalNodeArena& arena
+) {
   unsigned int max_score = 0;
   int n = strlen(bd_[idx]);
 
@@ -125,8 +127,9 @@ unsigned int TreeBuilder<M, N>::DoAllDescents(int idx, int length, Trie* t,
 }
 
 template <int M, int N>
-unsigned int TreeBuilder<M, N>::DoDFS(int i, int length, Trie* t, EvalNode* node,
-                                      EvalNodeArena& arena) {
+unsigned int TreeBuilder<M, N>::DoDFS(
+    int i, int length, Trie* t, EvalNode* node, EvalNodeArena& arena
+) {
   unsigned int score = 0;
   used_ ^= (1 << i);
 

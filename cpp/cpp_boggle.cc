@@ -32,8 +32,13 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
   // TODO: do I care about buffer_protocol() here?
   py::class_<TB>(m, pyclass_name.c_str(), py::buffer_protocol())
       .def(py::init<Trie *>())
-      .def("BuildTree", &TB::BuildTree, py::return_value_policy::reference,
-           py::arg("arena"), py::arg("dedupe") = false)
+      .def(
+          "BuildTree",
+          &TB::BuildTree,
+          py::return_value_policy::reference,
+          py::arg("arena"),
+          py::arg("dedupe") = false
+      )
       .def("ParseBoard", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
       .def("SumUnion", &TB::SumUnion)
@@ -73,8 +78,10 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("Size", &Trie::Size)
       .def("NumNodes", &Trie::NumNodes)
       .def("SetAllMarks", &Trie::SetAllMarks)
-      .def_static("ReverseLookup",
-                  py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup))
+      .def_static(
+          "ReverseLookup",
+          py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup)
+      )
       .def_static("CreateFromFile", &Trie::CreateFromFile)
       .def_static("CreateFromFileWithGrouping", &Trie::CreateFromFileWithGrouping);
 
@@ -115,13 +122,29 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("unique_node_count", &EvalNode::UniqueNodeCount)
       .def("add_word", &EvalNode::AddWord)
       .def("set_computed_fields", &EvalNode::SetComputedFields)
-      .def("force_cell", &EvalNode::ForceCell, py::return_value_policy::reference,
-           py::arg("cell"), py::arg("num_lets"), py::arg("arena"),
-           py::arg("vector_arena"), py::arg("mark"), py::arg("dedupe") = false,
-           py::arg("compress") = false)
-      .def("lift_choice", &EvalNode::LiftChoice, py::return_value_policy::reference,
-           py::arg("cell"), py::arg("num_lets"), py::arg("arena"), py::arg("mark"),
-           py::arg("dedupe"), py::arg("compress"))
+      .def(
+          "force_cell",
+          &EvalNode::ForceCell,
+          py::return_value_policy::reference,
+          py::arg("cell"),
+          py::arg("num_lets"),
+          py::arg("arena"),
+          py::arg("vector_arena"),
+          py::arg("mark"),
+          py::arg("dedupe") = false,
+          py::arg("compress") = false
+      )
+      .def(
+          "lift_choice",
+          &EvalNode::LiftChoice,
+          py::return_value_policy::reference,
+          py::arg("cell"),
+          py::arg("num_lets"),
+          py::arg("arena"),
+          py::arg("mark"),
+          py::arg("dedupe"),
+          py::arg("compress")
+      )
       .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
       .def("structural_hash", &EvalNode::StructuralHash)
       .def("set_choice_point_mask", &EvalNode::SetChoicePointMask)

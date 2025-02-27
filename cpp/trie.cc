@@ -105,7 +105,8 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
 }
 
 unique_ptr<Trie> Trie::CreateFromFileWithGrouping(
-    const char* filename, unordered_map<char, char> letter_grouping) {
+    const char* filename, unordered_map<char, char> letter_grouping
+) {
   char line[80];
   FILE* f = fopen(filename, "r");
   if (!f) {
