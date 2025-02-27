@@ -23,7 +23,7 @@ class TreeBuilder : public BoardClassBoggler<M, N> {
   const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe = false);
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
-  unique_ptr<VectorNodeArena> CreateVectorArena() { return create_vector_arena(); }
+  unique_ptr<VectorArena> CreateVectorArena() { return create_vector_arena(); }
 
   int SumUnion() const { return details_.sum_union; }
 

@@ -8,6 +8,7 @@ from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import make_py_trie
 
 
+# TODO: set up a C++ version of this
 def test_breaker():
     trie = make_py_trie("testdata/boggle-words-4.txt")
     otb = OrderlyTreeBuilder(trie, dims=(2, 2))
