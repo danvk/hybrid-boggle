@@ -118,6 +118,7 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
+        vector_arena = self.etb.create_vector_arena()
         tree = self.etb.BuildTree(arena)
         if isinstance(tree, EvalNode):
             num_nodes = tree.node_count()
@@ -144,24 +145,34 @@ class HybridTreeBreaker:
         self.details_.init_nodes = arena.num_nodes()
         self.details_.nodes[0] = self.details_.init_nodes
 
-        self.attack_tree(tree, 1, [], arena)
+        self.attack_tree(tree, 1, [], arena, vector_arena)
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
         return self.details_
 
     def attack_tree(
-        self, tree: EvalNode, level: int, choices: list[tuple[int, int]], arena
+        self,
+        tree: EvalNode,
+        level: int,
+        choices: list[tuple[int, int]],
+        arena,
+        vector_arena,
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
         elif level >= self.switchover_level:
             self.switch_to_score(tree, level, choices, arena)
         else:
-            self.force_and_filter(tree, level, choices, arena)
+            self.force_and_filter(tree, level, choices, arena, vector_arena)
 
     def force_and_filter(
-        self, tree: EvalNode, level: int, choices: list[tuple[int, int]], arena
+        self,
+        tree: EvalNode,
+        level: int,
+        choices: list[tuple[int, int]],
+        arena,
+        vector_arena,
     ) -> None:
         # choices list parallels split_order
         assert len(choices) < len(self.cells)
@@ -170,7 +181,6 @@ class HybridTreeBreaker:
         num_lets = len(self.cells[cell])
 
         # TODO: it's probably faster to re-use this
-        vector_arena = self.etb.create_vector_arena()
         start_s = time.time()
         self.mark += 1
         trees = tree.force_cell(
@@ -195,7 +205,7 @@ class HybridTreeBreaker:
         choices.append(None)
         for letter, tree in tagged_trees:
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices, arena)
+            self.attack_tree(tree, level + 1, choices, arena, vector_arena)
         choices.pop()
 
     def switch_to_score(
