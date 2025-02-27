@@ -7,6 +7,7 @@ import sys
 from boggle.args import add_standard_args
 from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
+from boggle.split_order import SPLIT_ORDER
 from boggle.tree_builder import TreeBuilder
 from boggle.trie import make_py_trie
 
@@ -45,6 +46,9 @@ def main():
     # assert_invariants(t, cells)
     # dedupe_subtrees(t)
 
+    t.orderly_bound(1, cells, SPLIT_ORDER[dims], [])
+    node_counts = t.cache_value
+
     mark = 1
 
     # t0 = t.children[0]
@@ -53,7 +57,7 @@ def main():
 
     with open("tree.dot", "w") as out:
         # out.write(t.to_dot(cells, max_depth=2))
-        out.write(t.to_dot(cells, trie=trie))
+        out.write(t.to_dot(cells, trie=trie, node_data=node_counts))
         out.write("\n")
 
     mark += 1

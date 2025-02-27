@@ -128,6 +128,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
         print(otb.cell_counts)
     assert t.bound > 500
 
+    node_counts = t.node_counts()
     start_s = time.time()
     failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
     print(time.time() - start_s)

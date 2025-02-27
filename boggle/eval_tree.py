@@ -580,7 +580,10 @@ class EvalNode:
         failures: list[str] = []
         # max_lens: list[int] = [0] * len(stacks)
 
+        num_visits = Counter[EvalNode]()
+
         def advance(node: Self, sums: list[int]):
+            num_visits[node] += 1
             assert node.letter != CHOICE_NODE
             for child in node.children:
                 assert child.letter == CHOICE_NODE
@@ -646,9 +649,18 @@ class EvalNode:
         base_points = advance(self, sums)
         rec(base_points, 0, sums)
         # print(f"{max_lens=}")
+        self.cache_value = num_visits
         return failures
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def node_counts(self, out=None):
+        if out is None:
+            out = Counter[Self]()
+        out[self] += 1
+        for child in self.children:
+            child.node_counts(out)
+        return out
 
     def recompute_score(self):
         """Should return self.bound. (For debugging/testing)"""
@@ -826,10 +838,16 @@ class EvalNode:
             word_table[node.trie_node] for node in self.all_nodes() if node.trie_node
         ]
 
-    def to_dot(self, cells: list[str], max_depth=100, trie=None) -> str:
+    def to_dot(self, cells: list[str], max_depth=100, trie=None, node_data=None) -> str:
         lookup_table = make_lookup_table(trie) if trie else None
         _root_id, dot = self.to_dot_help(
-            cells, "", {}, self.letter == CHOICE_NODE, max_depth, lookup_table
+            cells,
+            "",
+            {},
+            self.letter == CHOICE_NODE,
+            max_depth,
+            lookup_table,
+            node_data,
         )
         return f"""graph {{
     rankdir=LR;
@@ -840,7 +858,14 @@ class EvalNode:
 """
 
     def to_dot_help(
-        self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
+        self,
+        cells: list[str],
+        prefix,
+        cache,
+        is_top_max,
+        remaining_depth,
+        lookup_table,
+        node_data,
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
         is_dupe = False  # self in cache  # hasattr(self, "flag")
@@ -849,7 +874,10 @@ class EvalNode:
         # if self.letter != CHOICE_NODE:
         #     is_dupe = any_choice_collisions(self.children)
 
-        label = f"{self.bound}"
+        if node_data:
+            label = str(node_data.get(self, "-"))
+        else:
+            label = f"{self.bound}"
         attrs = ""
         if is_dupe:
             attrs = 'color="red"'
@@ -886,6 +914,7 @@ class EvalNode:
                 is_top_max and child.letter == CHOICE_NODE,
                 remaining_depth - 1,
                 lookup_table,
+                node_data,
             )
             for i, child in enumerate(self.children)
             if child
