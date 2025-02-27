@@ -531,7 +531,7 @@ class EvalNode:
 
     def max_subtrees(
         self, out=None, path=None
-    ) -> list[tuple[list[tuple[int, int]], Self]]:
+    ) -> list[tuple[Self, list[tuple[int, int]]]]:
         """Yield all subtrees below a choice node.
 
         Each yielded value is a list of (cell, letter) choices leading down to the tree.
