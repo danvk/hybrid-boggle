@@ -66,5 +66,8 @@ def test_breaker(is_python):
             "total_nodes": 1864,
             "freed_nodes": 0,
             "free_time_s": 0.0,
+            "n_bound": 3,
+            "bound_elim_level": [0, 7, 40, 33],
+            "bound_level": [3, 15, 96, 104],
         }
     )
