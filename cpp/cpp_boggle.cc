@@ -124,6 +124,14 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("add_word", &EvalNode::AddWord)
       .def("set_computed_fields", &EvalNode::SetComputedFields)
       .def(
+          "orderly_force_cell",
+          &EvalNode::OrderlyForceCell,
+          py::return_value_policy::reference,
+          py::arg("cell"),
+          py::arg("num_lets"),
+          py::arg("arena")
+      )
+      .def(
           "force_cell",
           &EvalNode::ForceCell,
           py::return_value_policy::reference,
