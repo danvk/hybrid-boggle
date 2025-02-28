@@ -579,11 +579,14 @@ class EvalNode:
         choices = []  # for tracking unbreakable boards
         failures: list[str] = []
         # max_lens: list[int] = [0] * len(stacks)
+        elim_at_level = [0] * len(cells)
+        visit_at_level = [0] * len(cells)
 
         num_visits = Counter[EvalNode]()
 
-        def advance(node: Self, sums: list[int]):
+        def advance(node: Self, sums: list[int], level: int):
             num_visits[node] += 1
+            visit_at_level[level] += 1
             assert node.letter != CHOICE_NODE
             for child in node.children:
                 assert child.letter == CHOICE_NODE
@@ -611,6 +614,7 @@ class EvalNode:
             # indent = "  " * num_splits
             # print(f"{indent}{num_splits=} {base_points=} {bound=}")
             if bound <= cutoff:
+                elim_at_level[num_splits] += 1
                 return  # done!
             if num_splits == len(split_order):
                 record_failure(bound)
@@ -633,24 +637,23 @@ class EvalNode:
                 points = base_points
                 for node in stacks[next_to_split]:
                     letter_node = None
-                    # TODO: could maintain pointers / iterators in lockstep rather than scanning
                     for n in node.children:
                         if n.letter == letter:
                             letter_node = n
                             break
                     if letter_node:
-                        points += advance(letter_node, stack_sums)
+                        points += advance(letter_node, stack_sums, 1 + num_splits)
 
                 rec(points, num_splits + 1, stack_sums)
                 # reset the stacks
                 choices.pop()
 
         sums = [0] * len(num_letters)
-        base_points = advance(self, sums)
+        base_points = advance(self, sums, 0)
         rec(base_points, 0, sums)
         # print(f"{max_lens=}")
         self.cache_value = num_visits
-        return failures
+        return failures, visit_at_level, elim_at_level
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 

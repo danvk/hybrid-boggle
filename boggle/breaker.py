@@ -56,6 +56,9 @@ class HybridBreakDetails(BreakDetails):
     total_nodes: int
     freed_nodes: int
     free_time_s: float
+    n_bound: int
+    bound_elim_level: list[int]
+    bound_level: list[int]
 
 
 class HybridTreeBreaker:
@@ -112,6 +115,9 @@ class HybridTreeBreaker:
             total_nodes=0,
             freed_nodes=0,
             free_time_s=0.0,
+            n_bound=0,
+            bound_level=[0] * len(self.cells),
+            bound_elim_level=[0] * len(self.cells),
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.elim_ = 0
@@ -214,9 +220,13 @@ class HybridTreeBreaker:
         start_s = time.time()
         remaining_cells = self.split_order[len(choices) :]
         # TODO: make this just return the boards
-        score_boards = tree.orderly_bound(
+        self.details_.n_bound += 1
+        score_boards, bound_level, elim_level = tree.orderly_bound(
             self.best_score, self.cells, remaining_cells, choices
         )
+        for i, ev in enumerate(elim_level):
+            self.details_.bound_elim_level[i] += ev
+            self.details_.bound_level[i] += bound_level[i]
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         boards_to_test = [board for _score, board in score_boards]
         elapsed_s = time.time() - start_s

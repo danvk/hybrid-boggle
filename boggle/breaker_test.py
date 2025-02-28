@@ -54,5 +54,8 @@ def test_breaker():
             total_nodes="n/a",
             freed_nodes=0,
             free_time_s=0.0,
+            n_bound=3,
+            bound_level=[3, 15, 96, 104],
+            bound_elim_level=[0, 7, 40, 33],
         )
     )
