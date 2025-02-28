@@ -116,8 +116,8 @@ class HybridTreeBreaker:
             freed_nodes=0,
             free_time_s=0.0,
             n_bound=0,
-            bound_level=[0] * len(self.cells),
-            bound_elim_level=[0] * len(self.cells),
+            bound_level=[0] * (1 + len(self.cells)),
+            bound_elim_level=[0] * (1 + len(self.cells)),
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.elim_ = 0
