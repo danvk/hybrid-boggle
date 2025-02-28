@@ -16,6 +16,10 @@ inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
   return a->letter_ < b->letter_;
 }
 
+inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
+  return a->cell_ < b->cell_;
+}
+
 void EvalNode::AddWordWork(
     int num_choices,
     pair<int, int>* choices,
@@ -50,6 +54,7 @@ void EvalNode::AddWordWork(
     choice_child->choice_mask_ = num_letters[cell] > 1 ? (1 << cell) : 0;
     arena.AddNode(choice_child);
     children_.push_back(choice_child);
+    sort(children_.begin(), children_.end(), SortByCell);
   } else {
     old_choice_bound = choice_child->bound_;
   }

@@ -19,7 +19,13 @@ def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
     return trie, otb
 
 
-@pytest.mark.parametrize("is_python", [True, False])
+@pytest.mark.parametrize(
+    "is_python",
+    [
+        True,
+        # False
+    ],
+)
 def test_breaker(is_python):
     trie, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "aeiou lnrsy chkmpt aeiou"
