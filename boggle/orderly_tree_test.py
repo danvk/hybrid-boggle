@@ -10,6 +10,7 @@ from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
     eval_node_to_string,
+    merge_orderly_tree_with_choices,
     merge_orderly_trees,
 )
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
@@ -160,9 +161,9 @@ def test_orderly_merge():
     # sum_wrap_t1.children = [t1]
     # sum_wrap_t1.bound = t1.bound
     # sum_wrap_t1.choice_mask = t1.choice_mask
-    m00 = merge_orderly_trees(t0.children[0], [t1], arena)
+    m00 = merge_orderly_tree_with_choices(t0.children[0], [t1], arena)
     assert m00.bound == 21
-    m01 = merge_orderly_trees(t0.children[1], [t1], arena)
+    m01 = merge_orderly_tree_with_choices(t0.children[1], [t1], arena)
     assert m01.bound == 22
 
 

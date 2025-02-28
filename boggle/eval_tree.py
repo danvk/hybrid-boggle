@@ -1314,14 +1314,26 @@ def merge_trees(a: EvalNode, b: EvalNode, arena) -> EvalNode:
     )
 
 
-def merge_orderly_trees(tree: EvalNode, choices: Sequence[EvalNode], arena) -> EvalNode:
+def merge_orderly_tree_with_choices(
+    tree: EvalNode, choices: Sequence[EvalNode], arena
+) -> EvalNode:
     """Merge N orderly trees."""
     assert tree.letter != CHOICE_NODE
     for choice in choices:
         assert choice.letter == CHOICE_NODE
-    children = tree.children + choices
-    merge_choice_collisions_in_place(children, arena)
+    return merge_orderly_trees([tree], choices, arena)
 
+
+def merge_orderly_trees(
+    trees: Sequence[EvalNode], choices: Sequence[EvalNode], arena
+) -> EvalNode:
+    for tree in trees:
+        assert tree.letter != CHOICE_NODE
+    for choice in choices:
+        assert choice.letter == CHOICE_NODE
+
+    children = [t for tree in trees for t in tree.children] + choices
+    merge_orderly_choice_collisions_in_place(children, arena)
     n = EvalNode()
     n.letter = tree.letter
     n.cell = tree.cell
@@ -1332,4 +1344,36 @@ def merge_orderly_trees(tree: EvalNode, choices: Sequence[EvalNode], arena) -> E
     for child in children:
         assert child
         n.choice_mask |= child.choice_mask
+    arena.add_node(n)
     return n
+
+
+def merge_orderly_choice_collisions_in_place(choices: list[EvalNode], arena):
+    for choice in choices:
+        assert choice.letter == CHOICE_NODE
+    choices.sort(key=lambda c: c.cell)
+
+    i = 0
+    n = len(choices)
+    while i < n:
+        j = i + 1
+        while j < n and choices[i].cell == choices[j].cell:
+            j += 1
+        if j > i + 1:
+            # choices[i:j] are all choice nodes for the same cell
+            # we want to merge their children
+            all_trees = [t for tree in choices[i:j] for t in tree.children]
+            choices[i] = merge_orderly_trees(all_trees, [], arena)
+            for k in range(i + 1, j):
+                choices[k] = None
+        i = j
+
+    i = 0
+    j = 0
+    while i < n:
+        if choices[i] is not None:
+            choices[j] = choices[i]
+            j += 1
+        i += 1
+    while len(choices) > j:
+        choices.pop()
