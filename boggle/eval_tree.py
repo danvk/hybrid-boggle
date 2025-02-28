@@ -587,8 +587,9 @@ class EvalNode:
         choices = []  # for tracking unbreakable boards
         failures: list[str] = []
         # max_lens: list[int] = [0] * len(stacks)
-        elim_at_level = [0] * (1 + len(cells))
-        visit_at_level = [0] * (1 + len(cells))
+        n_preset = len(preset_cells)
+        elim_at_level = [0] * (1 + len(cells) - n_preset)
+        visit_at_level = [0] * (1 + len(cells) - n_preset)
 
         num_visits = Counter[EvalNode]()
 

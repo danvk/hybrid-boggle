@@ -225,8 +225,9 @@ class HybridTreeBreaker:
             self.best_score, self.cells, remaining_cells, choices
         )
         for i, ev in enumerate(elim_level):
-            self.details_.bound_elim_level[i] += ev
-            self.details_.bound_level[i] += bound_level[i]
+            bv = bound_level[i]
+            self.details_.bound_elim_level[i + len(choices)] += ev
+            self.details_.bound_level[i + len(choices)] += bv
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         boards_to_test = [board for _score, board in score_boards]
         elapsed_s = time.time() - start_s

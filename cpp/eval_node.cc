@@ -966,8 +966,9 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> EvalNode::OrderlyBoun
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
-  vector<int> elim_at_level(1 + cells.size(), 0);
-  vector<int> visit_at_level(1 + cells.size(), 0);
+  int n_preset = preset_cells ? preset_cells->size() : 0;
+  vector<int> elim_at_level(1 + cells.size() - n_preset, 0);
+  vector<int> visit_at_level(1 + cells.size() - n_preset, 0);
 
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
