@@ -960,22 +960,20 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> EvalNode::OrderlyBoun
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
-    const vector<pair<int, int>>* preset_cells
+    const vector<pair<int, int>>& preset_cells
 ) const {
   vector<vector<const EvalNode*>> stacks(cells.size());
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
-  int n_preset = preset_cells ? preset_cells->size() : 0;
+  int n_preset = preset_cells.size();
   vector<int> elim_at_level(1 + cells.size() - n_preset, 0);
   vector<int> visit_at_level(1 + cells.size() - n_preset, 0);
 
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
-    if (preset_cells) {
-      for (const auto& choice : *preset_cells) {
-        board[choice.first] = cells[choice.first][choice.second];
-      }
+    for (const auto& choice : preset_cells) {
+      board[choice.first] = cells[choice.first][choice.second];
     }
     for (const auto& choice : choices) {
       board[choice.first] = cells[choice.first][choice.second];

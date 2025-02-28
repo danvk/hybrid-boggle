@@ -275,6 +275,7 @@ def letter_node(cell: int, letter: int, points=0, children=None):
 
 def test_merge_eval_trees():
     t = PyTrie()
+    arena = create_eval_node_arena_py()
     # for w in MINI_DICT:
     #     t.AddWord(w)
     board = ". . . . lnrsy aeiou aeiou aeiou . . . ."
@@ -367,12 +368,12 @@ def test_merge_eval_trees():
     # print(t2.to_dot(etb))
 
     # print("t0+t2")
-    m = merge_trees(t0, t2)
+    m = merge_trees(t0, t2, arena)
     assert m.bound == 3
     # print(m.to_dot(etb))
 
     # print("t1+t2")
-    m = merge_trees(t1, t2)
+    m = merge_trees(t1, t2, arena)
     assert m.bound == 2
     # print(m.to_dot(etb))
 
@@ -859,6 +860,7 @@ def test_lift_choice():
 
 
 def test_merge_choice_trees():
+    arena = create_eval_node_arena_py()
     cells = ["abc"]
     num_letters = [len(cell) for cell in cells]
     root = letter_node(
@@ -885,20 +887,21 @@ def test_merge_choice_trees():
     assert root.bound == 6
     # print(root.to_dot(cells))
     # print("---")
-    squeeze_sum_node_in_place(root, True)
+    squeeze_sum_node_in_place(root, arena, True)
     # print(root.to_dot(cells))
     assert root.bound == 5
     assert len(root.children[0].children) == 3
 
 
 def test_squeeze_sum():
+    arena = create_eval_node_arena_py()
     n = letter_node(
         cell=6, letter=0, points=0, children=[letter_node(cell=7, letter=0, points=1)]
     )
     n.bound = 1
     n.children[0].bound = 1
 
-    squeeze_sum_node_in_place(n, True)
+    squeeze_sum_node_in_place(n, arena, True)
     assert n.points == 1
     assert n.children == []
     assert n.bound == 1
@@ -906,6 +909,7 @@ def test_squeeze_sum():
 
 def test_squeeze_sum_with_duplicate_choices():
     cells = ["abc", "de", "fg", "h"]
+    arena = create_eval_node_arena_py()
     num_letters = [len(cell) for cell in cells]
     root = letter_node(
         cell=3,
@@ -954,7 +958,7 @@ def test_squeeze_sum_with_duplicate_choices():
     # print(root.to_dot(cells))
     # print("---")
 
-    squeeze_sum_node_in_place(root, True)
+    squeeze_sum_node_in_place(root, arena, True)
     # print(root.to_dot(cells))
     assert len(root.children) == 3
 
