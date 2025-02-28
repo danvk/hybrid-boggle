@@ -1400,31 +1400,51 @@ def merge_orderly_tree_children(
     a: EvalNode, bc: Sequence[EvalNode], b_points: int, arena: PyArena
 ):
     assert a.letter != CHOICE_NODE
-    # TODO: this could be more efficient if we could assume that sum nodes were sorted.
-    all_children = a.children + bc
-    all_children.sort(key=lambda n: n.cell)
-    out_children = []
-    n = len(all_children)
-    i = 0
-    while i < n:
-        c = all_children[i]
-        assert c.letter == CHOICE_NODE
-        j = i + 1
-        if j < n and all_children[j].cell == c.cell:
-            c2 = all_children[j]
-            assert c2.letter == CHOICE_NODE
-            # The children of c1 and c2 are orderly trees of lower rank.
-            out_children.append(merge_orderly_choice_children(c, c2, arena))
-            i += 1
+    in_a = a
+
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    a_n = len(ac)
+    b_n = len(bc)
+    out = []
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.cell < b.cell:
+            out.append(a)
+            i_a += 1
+        elif b.cell < a.cell:
+            out.append(b)
+            i_b += 1
         else:
-            out_children.append(c)
-        i += 1
+            out.append(merge_orderly_choice_children(a, b, arena))
+            i_a += 1
+            i_b += 1
+
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
 
     n = EvalNode()
-    n.letter = a.letter
-    n.cell = a.cell
-    n.children = out_children
-    n.points = a.points + b_points
+    n.letter = in_a.letter
+    n.cell = in_a.cell
+    n.children = out
+    n.points = in_a.points + b_points
     n.bound = n.points + sum(child.bound for child in n.children)
     n.choice_mask = 0
     for child in n.children:
