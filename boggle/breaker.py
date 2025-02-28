@@ -189,14 +189,10 @@ class HybridTreeBreaker:
         # TODO: it's probably faster to re-use this
         start_s = time.time()
         self.mark += 1
-        trees = tree.force_cell(
+        trees = tree.orderly_force_cell(
             cell,
             num_lets,
             arena,
-            vector_arena=vector_arena,
-            mark=self.mark,
-            dedupe=False,
-            compress=True,
         )
         self.details_.secs_by_level[level] += time.time() - start_s
         # self.details_.bounds[level] = tree.bound

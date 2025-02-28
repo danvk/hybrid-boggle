@@ -737,8 +737,11 @@ class EvalNode:
             if max_index is not None:
                 assert idx > max_index
             max_index = idx
-
-        # TODO: assert that sum nodes are sorted, too?
+        else:
+            # every child of a sum node must be a choice node
+            for child in self.children:
+                assert child.letter == CHOICE_NODE
+            # TODO: assert that sum nodes are sorted, too?
 
         for child in self.children:
             if child:
@@ -971,10 +974,10 @@ class EvalNode:
         #     c.letter == CHOICE_NODE for c in self.children
         # )
 
-        if self.letter != CHOICE_NODE and len(children) == 1 and not self.points:
-            # A sum node with no points and only one child is just a placeholder.
-            # Remove it from the graph to simplify the visualization.
-            return children[0]
+        # if self.letter != CHOICE_NODE and len(children) == 1 and not self.points:
+        #     # A sum node with no points and only one child is just a placeholder.
+        #     # Remove it from the graph to simplify the visualization.
+        #     return children[0]
 
         # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
@@ -1412,6 +1415,7 @@ def merge_orderly_tree(a: EvalNode, b: EvalNode, arena: PyArena):
 
 def merge_orderly_choice_children(a: EvalNode, b: EvalNode, arena: PyArena):
     """Merge two orderly choice nodes for the same cell."""
+    in_a, in_b = a, b
     assert a.letter == CHOICE_NODE
     assert b.letter == CHOICE_NODE
     assert a.cell == b.cell
@@ -1456,11 +1460,11 @@ def merge_orderly_choice_children(a: EvalNode, b: EvalNode, arena: PyArena):
         i_b += 1
 
     n = EvalNode()
-    n.letter = a.letter
-    n.cell = a.cell
+    n.letter = in_a.letter
+    n.cell = in_a.cell
     n.children = out
     n.points = 0
     n.bound = max(child.bound for child in n.children)
-    n.choice_mask = a.choice_mask | b.choice_mask
+    n.choice_mask = in_a.choice_mask | in_b.choice_mask
     arena.add_node(n)
     return n
