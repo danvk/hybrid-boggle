@@ -709,6 +709,22 @@ class EvalNode:
                 return False
         return True
 
+    def assert_orderly(self, split_order: Sequence[int], max_index=None):
+        # If a choice for cell i is a descendant of a choice for cell j, then
+        # it must be that index(split_order, i) > index(split_order, j).
+
+        if self.letter == CHOICE_NODE:
+            idx = split_order.index(self.cell)
+            if max_index is not None:
+                assert idx > max_index
+            max_index = idx
+
+        # TODO: assert that sum nodes are sorted, too?
+
+        for child in self.children:
+            if child:
+                child.assert_orderly(split_order, max_index)
+
     def assert_invariants(self, solver, is_top_max=None):
         """Ensure the tree is well-formed. Some desirable properties:
 
@@ -1314,66 +1330,117 @@ def merge_trees(a: EvalNode, b: EvalNode, arena) -> EvalNode:
     )
 
 
-def merge_orderly_tree_with_choices(
-    tree: EvalNode, choices: Sequence[EvalNode], arena
-) -> EvalNode:
-    """Merge N orderly trees."""
+def split_orderly_tree(tree: EvalNode, arena: PyArena):
+    """Split an orderly(N) into the choice for N and an orderly(N-1) tree.
+
+    Points on the input tree are put on the output tree.
+    """
     assert tree.letter != CHOICE_NODE
-    for choice in choices:
-        assert choice.letter == CHOICE_NODE
-    return merge_orderly_trees([tree], choices, arena)
+    top_choice = tree.children[0]
+    assert top_choice.letter == CHOICE_NODE
 
-
-def merge_orderly_trees(
-    trees: Sequence[EvalNode], choices: Sequence[EvalNode], arena
-) -> EvalNode:
-    for tree in trees:
-        assert tree.letter != CHOICE_NODE
-    for choice in choices:
-        assert choice.letter == CHOICE_NODE
-
-    children = [t for tree in trees for t in tree.children] + choices
-    merge_orderly_choice_collisions_in_place(children, arena)
+    children = tree.children[1:]
     n = EvalNode()
+    arena.add_node(n)
     n.letter = tree.letter
     n.cell = tree.cell
     n.children = children
     n.points = tree.points
-    n.bound = n.points + sum(child.bound for child in children)
+    n.bound = n.points + sum(child.bound for child in children if child)
     n.choice_mask = 0
     for child in children:
-        assert child
+        n.choice_mask |= child.choice_mask
+    return top_choice, n
+
+
+def merge_orderly_tree(a: EvalNode, b: EvalNode, arena: PyArena):
+    """Merge two orderly(N) trees."""
+    assert a.letter != CHOICE_NODE
+    assert b.letter != CHOICE_NODE
+
+    # TODO: this could be more efficient if we could assume that sum nodes were sorted.
+    all_children = a.children + b.children
+    all_children.sort(key=lambda n: n.cell)
+    out_children = []
+    n = len(all_children)
+    i = 0
+    while i < n:
+        c = all_children[i]
+        assert c.letter == CHOICE_NODE
+        j = i + 1
+        if j < n and all_children[j].cell == c.cell:
+            c2 = all_children[j]
+            assert c2.letter == CHOICE_NODE
+            # The children of c1 and c2 are orderly trees of lower rank.
+            out_children.append(merge_orderly_choice_children(c, c2))
+        else:
+            out_children.append(c)
+        i += 1
+
+    n = EvalNode()
+    n.letter = a.letter
+    n.cell = a.cell
+    n.children = out_children
+    n.points = a.points + b.points
+    n.bound = n.points + sum(child.bound for child in n.children)
+    n.choice_mask = 0
+    for child in n.children:
         n.choice_mask |= child.choice_mask
     arena.add_node(n)
     return n
 
 
-def merge_orderly_choice_collisions_in_place(choices: list[EvalNode], arena):
-    for choice in choices:
-        assert choice.letter == CHOICE_NODE
-    choices.sort(key=lambda c: c.cell)
+def merge_orderly_choice_children(a: EvalNode, b: EvalNode, arena: PyArena):
+    """Merge two orderly choice nodes for the same cell."""
+    assert a.letter == CHOICE_NODE
+    assert b.letter == CHOICE_NODE
+    assert a.cell == b.cell
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    bc = b.children
+    a_n = len(ac)
+    b_n = len(bc)
 
-    i = 0
-    n = len(choices)
-    while i < n:
-        j = i + 1
-        while j < n and choices[i].cell == choices[j].cell:
-            j += 1
-        if j > i + 1:
-            # choices[i:j] are all choice nodes for the same cell
-            # we want to merge their children
-            all_trees = [t for tree in choices[i:j] for t in tree.children]
-            choices[i] = merge_orderly_trees(all_trees, [], arena)
-            for k in range(i + 1, j):
-                choices[k] = None
-        i = j
+    out = []
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.letter < b.letter:
+            out.append(a)
+            i_a += 1
+        elif b.letter < a.letter:
+            out.append(b)
+            i_b += 1
+        else:
+            out.append(merge_orderly_tree(a, b, arena))
+            i_a += 1
+            i_b += 1
 
-    i = 0
-    j = 0
-    while i < n:
-        if choices[i] is not None:
-            choices[j] = choices[i]
-            j += 1
-        i += 1
-    while len(choices) > j:
-        choices.pop()
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
+
+    n = EvalNode()
+    n.letter = a.letter
+    n.cell = a.cell
+    n.children = out
+    n.points = 0
+    n.bound = max(child.bound for child in n.children)
+    n.choice_mask = a.choice_mask | b.choice_mask
+    arena.add_node(n)
+    return n

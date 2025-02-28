@@ -10,8 +10,7 @@ from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
     eval_node_to_string,
-    merge_orderly_tree_with_choices,
-    merge_orderly_trees,
+    split_orderly_tree,
 )
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
@@ -138,8 +137,10 @@ def test_orderly_merge():
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
+    split_order = SPLIT_ORDER[(2, 2)]
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
+        t.assert_orderly(split_order)
     assert t.bound == 22
 
     assert t.letter == ROOT_NODE
@@ -154,6 +155,14 @@ def test_orderly_merge():
     assert t1.cell == 1
     assert t1.bound == 5
 
+    choice0, tree1 = split_orderly_tree(t, arena)
+    assert choice0.cell == 0
+    assert choice0.letter == CHOICE_NODE
+    assert tree1.bound == 5
+    tree1.assert_orderly(split_order)
+    for child in choice0.children:
+        child.assert_orderly(split_order)
+
     # these match what you'd get from lifting cell 0
     # sum_wrap_t1 = EvalNode()
     # sum_wrap_t1.cell = 0
@@ -161,10 +170,10 @@ def test_orderly_merge():
     # sum_wrap_t1.children = [t1]
     # sum_wrap_t1.bound = t1.bound
     # sum_wrap_t1.choice_mask = t1.choice_mask
-    m00 = merge_orderly_tree_with_choices(t0.children[0], [t1], arena)
-    assert m00.bound == 21
-    m01 = merge_orderly_tree_with_choices(t0.children[1], [t1], arena)
-    assert m01.bound == 22
+    # m00 = merge_orderly_tree_with_choices(t0.children[0], [t1], arena)
+    # assert m00.bound == 21
+    # m01 = merge_orderly_tree_with_choices(t0.children[1], [t1], arena)
+    # assert m01.bound == 22
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
