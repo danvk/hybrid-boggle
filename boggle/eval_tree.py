@@ -451,12 +451,25 @@ class EvalNode:
         if top_choice.cell != cell:
             return self
 
-        top_choice, subtree = split_orderly_tree(self, arena)
-        out = [subtree] * num_lets
+        non_cell_children = self.children[1:]
+        non_cell_points = self.points
+
+        out = [None] * num_lets
         for child in top_choice.children:
-            if not child:
-                continue
-            out[child.letter] = merge_orderly_tree(child, subtree, arena)
+            out[child.letter] = merge_orderly_tree_children(
+                child, non_cell_children, non_cell_points, arena
+            )
+
+        if non_cell_points and len(top_choice.children) < num_lets:
+            # TODO: this node could be shared with a different tree representation.
+            for i, child in enumerate(out):
+                if not child:
+                    point_node = EvalNode()
+                    point_node.points = point_node.bound = non_cell_points
+                    point_node.cell = cell
+                    point_node.letter = i
+                    arena.add_node(point_node)
+                    out[i] = point_node
         return out
 
     def filter_below_threshold(self, min_score: int) -> int:
@@ -1379,9 +1392,15 @@ def merge_orderly_tree(a: EvalNode, b: EvalNode, arena: PyArena):
     """Merge two orderly(N) trees."""
     assert a.letter != CHOICE_NODE
     assert b.letter != CHOICE_NODE
+    return merge_orderly_tree_children(a, b.children, b.points, arena)
 
+
+def merge_orderly_tree_children(
+    a: EvalNode, bc: Sequence[EvalNode], b_points: int, arena: PyArena
+):
+    assert a.letter != CHOICE_NODE
     # TODO: this could be more efficient if we could assume that sum nodes were sorted.
-    all_children = a.children + b.children
+    all_children = a.children + bc
     all_children.sort(key=lambda n: n.cell)
     out_children = []
     n = len(all_children)
@@ -1404,7 +1423,7 @@ def merge_orderly_tree(a: EvalNode, b: EvalNode, arena: PyArena):
     n.letter = a.letter
     n.cell = a.cell
     n.children = out_children
-    n.points = a.points + b.points
+    n.points = a.points + b_points
     n.bound = n.points + sum(child.bound for child in n.children)
     n.choice_mask = 0
     for child in n.children:
