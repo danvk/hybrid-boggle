@@ -81,7 +81,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         if t.IsWord():
             word_score = SCORES[length]
             orderly_choices = [*sorted(choices, key=lambda c: self.cell_to_order[c[0]])]
-            self.root.add_word(orderly_choices, word_score, arena, self.cell_counts)
+            self.root.add_word(
+                orderly_choices, word_score, self.cell_to_order, arena, self.cell_counts
+            )
 
         self.used_ ^= 1 << cell
 

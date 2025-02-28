@@ -135,6 +135,7 @@ class EvalNode:
         self,
         choices: Sequence[tuple[int, int]],
         points: int,
+        cell_to_order: list[int],
         arena,
         cell_counts: list[int] = None,
     ):
@@ -164,7 +165,7 @@ class EvalNode:
                 cell_counts[cell] += 1
             if arena:
                 arena.add_node(choice_child)
-            self.children.sort(key=lambda c: c.cell)
+            self.children.sort(key=lambda c: cell_to_order[c.cell])
 
         letter_child = None
         for c in choice_child.children:
@@ -180,7 +181,9 @@ class EvalNode:
             if arena:
                 arena.add_node(letter_child)
 
-        letter_child.add_word(remaining_choices, points, arena, cell_counts)
+        letter_child.add_word(
+            remaining_choices, points, cell_to_order, arena, cell_counts
+        )
 
     def score_with_forces(self, forces: list[int]) -> int:
         """Requires that set_choice_point_mask() has been called on this tree."""
@@ -755,7 +758,7 @@ class EvalNode:
                 assert child.letter == CHOICE_NODE
             # sum node children must be sorted by cell (not split_order)
             for a, b in zip(self.children, self.children[1:]):
-                assert a.cell < b.cell
+                assert split_order.index(a.cell) < split_order.index(b.cell)
 
         for child in self.children:
             if child:
