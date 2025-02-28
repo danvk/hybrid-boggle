@@ -43,7 +43,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     if isinstance(t, EvalNode):
         t.assert_invariants(bb)
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("e1e08ef3841e*.txt")
+        external("099fef779a96*.txt")
     )
 
 
@@ -67,7 +67,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         t.assert_invariants(otb)
 
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("7f5b9b263a25*.txt")
+        external("68c6c14a3a89*.txt")
     )
 
 
@@ -195,6 +195,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
         print(otb.cell_counts)
+        t.assert_orderly(SPLIT_ORDER[(3, 3)])
     assert t.bound > 500
 
     # node_counts = t.node_counts()

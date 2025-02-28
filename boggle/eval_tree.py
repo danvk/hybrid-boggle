@@ -150,7 +150,6 @@ class EvalNode:
         (cell, letter) = choices[0]
         remaining_choices = choices[1:]
 
-        # TODO: binary search
         choice_child = None
         for c in self.children:
             if c.cell == cell:
@@ -165,7 +164,7 @@ class EvalNode:
                 cell_counts[cell] += 1
             if arena:
                 arena.add_node(choice_child)
-            # TODO: could keep self.children sorted
+            self.children.sort(key=lambda c: c.cell)
 
         letter_child = None
         for c in choice_child.children:
@@ -754,7 +753,9 @@ class EvalNode:
             # every child of a sum node must be a choice node
             for child in self.children:
                 assert child.letter == CHOICE_NODE
-            # TODO: assert that sum nodes are sorted, too?
+            # sum node children must be sorted by cell (not split_order)
+            for a, b in zip(self.children, self.children[1:]):
+                assert a.cell < b.cell
 
         for child in self.children:
             if child:
