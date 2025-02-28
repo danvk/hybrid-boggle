@@ -10,6 +10,7 @@ from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
     eval_node_to_string,
+    merge_orderly_tree,
     split_orderly_tree,
 )
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
@@ -156,12 +157,17 @@ def test_orderly_merge():
     assert t1.bound == 5
 
     choice0, tree1 = split_orderly_tree(t, arena)
-    assert choice0.cell == 0
-    assert choice0.letter == CHOICE_NODE
+    assert choice0 == t0
     assert tree1.bound == 5
     tree1.assert_orderly(split_order)
     for child in choice0.children:
         child.assert_orderly(split_order)
+
+    m0 = merge_orderly_tree(choice0.children[0], tree1, arena)
+    assert m0.bound == 21
+
+    m1 = merge_orderly_tree(choice0.children[1], tree1, arena)
+    assert m1.bound == 22
 
     # these match what you'd get from lifting cell 0
     # sum_wrap_t1 = EvalNode()

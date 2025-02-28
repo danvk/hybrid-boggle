@@ -1372,7 +1372,8 @@ def merge_orderly_tree(a: EvalNode, b: EvalNode, arena: PyArena):
             c2 = all_children[j]
             assert c2.letter == CHOICE_NODE
             # The children of c1 and c2 are orderly trees of lower rank.
-            out_children.append(merge_orderly_choice_children(c, c2))
+            out_children.append(merge_orderly_choice_children(c, c2, arena))
+            i += 1
         else:
             out_children.append(c)
         i += 1
