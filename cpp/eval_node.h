@@ -147,7 +147,7 @@ class EvalNode {
       vector<string> cells, int cutoff, vector<int> split_order
   );
 
-  vector<pair<int, string>> OrderlyBound(
+  tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
       int cutoff,
       const vector<string>& cells,
       const vector<int>& split_order,

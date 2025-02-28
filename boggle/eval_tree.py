@@ -587,14 +587,13 @@ class EvalNode:
         choices = []  # for tracking unbreakable boards
         failures: list[str] = []
         # max_lens: list[int] = [0] * len(stacks)
-        elim_at_level = [0] * len(cells)
-        visit_at_level = [0] * len(cells)
+        elim_at_level = [0] * (1 + len(cells))
+        visit_at_level = [0] * (1 + len(cells))
 
         num_visits = Counter[EvalNode]()
 
-        def advance(node: Self, sums: list[int], level: int):
+        def advance(node: Self, sums: list[int]):
             num_visits[node] += 1
-            visit_at_level[level] += 1
             assert node.letter != CHOICE_NODE
             for child in node.children:
                 assert child.letter == CHOICE_NODE
@@ -650,14 +649,16 @@ class EvalNode:
                             letter_node = n
                             break
                     if letter_node:
-                        points += advance(letter_node, stack_sums, 1 + num_splits)
+                        visit_at_level[1 + num_splits] += 1
+                        points += advance(letter_node, stack_sums)
 
                 rec(points, num_splits + 1, stack_sums)
                 # reset the stacks
                 choices.pop()
 
         sums = [0] * len(num_letters)
-        base_points = advance(self, sums, 0)
+        visit_at_level[0] += 1
+        base_points = advance(self, sums)
         rec(base_points, 0, sums)
         # print(f"{max_lens=}")
         self.cache_value = num_visits

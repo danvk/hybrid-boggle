@@ -78,7 +78,7 @@ def test_orderly_bound22(make_trie, get_tree_builder):
         t.assert_invariants(otb)
     assert t.bound == 8
 
-    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
+    failures, _, _ = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
@@ -96,7 +96,7 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
         t.assert_invariants(otb)
     assert t.bound == 22
 
-    failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
+    failures, _, _ = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
     assert failures == snapshot(
         [
             (18, "seer"),
@@ -128,9 +128,9 @@ def test_orderly_bound33(make_trie, get_tree_builder):
         print(otb.cell_counts)
     assert t.bound > 500
 
-    node_counts = t.node_counts()
+    # node_counts = t.node_counts()
     start_s = time.time()
-    failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
+    failures, _, _ = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
     print(time.time() - start_s)
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([(512, "stsaseblt")])
@@ -171,7 +171,7 @@ def test_lift_and_bound(make_trie, get_tree_builder):
     failures = []
     for tree, seq in t.max_subtrees():
         # start_s = time.time()
-        this_failures = tree.orderly_bound(500, cells, order, seq)
+        this_failures, _, _ = tree.orderly_bound(500, cells, order, seq)
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         failures += this_failures
 
@@ -188,7 +188,7 @@ def test_lift_and_bound(make_trie, get_tree_builder):
     failures = []
     for tree, seq in t.max_subtrees():
         start_s = time.time()
-        this_failures = tree.orderly_bound(500, cells, order, seq)
+        this_failures, _, _ = tree.orderly_bound(500, cells, order, seq)
         print(time.time() - start_s, seq, tree.bound, this_failures)
         failures += this_failures
 

@@ -956,7 +956,7 @@ inline uint16_t advance(
   return node->points_;
 }
 
-vector<pair<int, string>> EvalNode::OrderlyBound(
+tuple<vector<pair<int, string>>, vector<int>, vector<int>> EvalNode::OrderlyBound(
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
@@ -966,6 +966,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
+  vector<int> elim_at_level(1 + cells.size(), 0);
+  vector<int> visit_at_level(1 + cells.size(), 0);
 
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
@@ -987,6 +989,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
           bound += stack_sums[split_order[i]];
         }
         if (bound <= cutoff) {
+          elim_at_level[num_splits] += 1;
           return;  // done!
         }
         if (num_splits == split_order.size()) {
@@ -1029,6 +1032,7 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
           int points = base_points;
           for (auto& [it, end] : its) {
             if (it != end && (*it)->letter_ == letter) {
+              visit_at_level[1 + num_splits] += 1;
               points += advance(*it, stack_sums, stacks);
               ++it;
             }
@@ -1039,7 +1043,8 @@ vector<pair<int, string>> EvalNode::OrderlyBound(
       };
 
   vector<int> sums(cells.size(), 0);
+  visit_at_level[0] += 1;
   auto base_points = advance(this, sums, stacks);
   rec(base_points, 0, sums);
-  return failures;
+  return {failures, visit_at_level, elim_at_level};
 }
