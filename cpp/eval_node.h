@@ -160,6 +160,9 @@ class EvalNode {
       const vector<pair<int, int>>& preset_cells
   ) const;
 
+  vector<const EvalNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
+      const;
+
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask)
       const;

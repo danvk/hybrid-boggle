@@ -78,7 +78,9 @@ void EvalNode::AddWordWork(
     choice_child->children_.push_back(letter_child);
     sort(choice_child->children_.begin(), choice_child->children_.end(), SortByLetter);
   }
-  letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
+  letter_child->AddWordWork(
+      num_choices, choices, num_letters, points, cell_to_order, arena
+  );
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
@@ -1064,4 +1066,176 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> EvalNode::OrderlyBoun
   auto base_points = advance(this, sums, stacks);
   rec(base_points, 0, sums);
   return {failures, visit_at_level, elim_at_level};
+}
+
+EvalNode* merge_orderly_tree(
+    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
+);
+EvalNode* merge_orderly_tree_children(
+    const EvalNode* a,
+    const vector<const EvalNode*>& bc,
+    int b_points,
+    EvalNodeArena& arena
+);
+EvalNode* merge_orderly_choice_children(
+    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
+);
+
+EvalNode* merge_orderly_choice_children(
+    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
+) {
+  assert(a->letter_ == EvalNode::CHOICE_NODE);
+  assert(b->letter_ == EvalNode::CHOICE_NODE);
+  assert(a->cell_ == b->cell_);
+
+  vector<const EvalNode*> out;
+  auto it_a = a->children_.begin();
+  auto it_b = b->children_.begin();
+  const auto& a_end = a->children_.end();
+  const auto& b_end = b->children_.end();
+
+  while (it_a != a_end && it_b != b_end) {
+    const auto& a_child = *it_a;
+    const auto& b_child = *it_b;
+    if (a_child->letter_ < b_child->letter_) {
+      out.push_back(a_child);
+      ++it_a;
+    } else if (b_child->letter_ < a_child->letter_) {
+      out.push_back(b_child);
+      ++it_b;
+    } else {
+      out.push_back(merge_orderly_tree(a_child, b_child, arena));
+      ++it_a;
+      ++it_b;
+    }
+  }
+
+  while (it_a != a_end) {
+    out.push_back(*it_a);
+    ++it_a;
+  }
+
+  while (it_b != b_end) {
+    out.push_back(*it_b);
+    ++it_b;
+  }
+
+  EvalNode* n = new EvalNode();
+  arena.AddNode(n);
+  n->letter_ = EvalNode::CHOICE_NODE;
+  n->cell_ = a->cell_;
+  n->children_.swap(out);
+  n->points_ = 0;
+  n->bound_ = 0;
+  for (auto child : n->children_) {
+    if (child) {
+      n->bound_ = max(n->bound_, child->bound_);
+    }
+  }
+  n->choice_mask_ = a->choice_mask_ | b->choice_mask_;
+  return n;
+}
+
+EvalNode* merge_orderly_tree_children(
+    const EvalNode* a,
+    const vector<const EvalNode*>& bc,
+    int b_points,
+    EvalNodeArena& arena
+) {
+  assert(a->letter_ != EvalNode::CHOICE_NODE);
+
+  vector<const EvalNode*> out;
+  auto it_a = a->children_.begin();
+  auto it_b = bc.begin();
+  const auto& a_end = a->children_.end();
+  const auto& b_end = bc.end();
+
+  while (it_a != a_end && it_b != b_end) {
+    const auto& a_child = *it_a;
+    const auto& b_child = *it_b;
+    if (a_child->cell_ < b_child->cell_) {
+      out.push_back(a_child);
+      ++it_a;
+    } else if (b_child->cell_ < a_child->cell_) {
+      out.push_back(b_child);
+      ++it_b;
+    } else {
+      out.push_back(merge_orderly_choice_children(a_child, b_child, arena));
+      ++it_a;
+      ++it_b;
+    }
+  }
+
+  while (it_a != a_end) {
+    out.push_back(*it_a);
+    ++it_a;
+  }
+
+  while (it_b != b_end) {
+    out.push_back(*it_b);
+    ++it_b;
+  }
+
+  EvalNode* n = new EvalNode();
+  arena.AddNode(n);
+  n->letter_ = a->letter_;
+  n->cell_ = a->cell_;
+  n->children_.swap(out);
+  n->points_ = a->points_ + b_points;
+  n->bound_ = n->points_;
+  for (auto child : n->children_) {
+    if (child) {
+      n->bound_ += child->bound_;
+    }
+  }
+  n->choice_mask_ = 0;
+  for (auto child : n->children_) {
+    n->choice_mask_ |= child->choice_mask_;
+  }
+  return n;
+}
+
+EvalNode* merge_orderly_tree(
+    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
+) {
+  assert(a->letter_ != EvalNode::CHOICE_NODE);
+  assert(b->letter_ != EvalNode::CHOICE_NODE);
+  return merge_orderly_tree_children(a, b->children_, b->points_, arena);
+}
+
+vector<const EvalNode*> EvalNode::OrderlyForceCell(
+    int cell, int num_lets, EvalNodeArena& arena
+) const {
+  assert(letter_ != CHOICE_NODE);
+  if (children_.empty()) {
+    return {this};
+  }
+  const EvalNode* top_choice = children_[0];
+  assert(top_choice->letter_ == CHOICE_NODE);
+  if (top_choice->cell_ != cell) {
+    return {this};
+  }
+
+  vector<const EvalNode*> non_cell_children(children_.begin() + 1, children_.end());
+  int non_cell_points = points_;
+
+  vector<const EvalNode*> out(num_lets, nullptr);
+  for (const auto& child : top_choice->children_) {
+    out[child->letter_] =
+        merge_orderly_tree_children(child, non_cell_children, non_cell_points, arena);
+  }
+
+  if (non_cell_points && top_choice->children_.size() < num_lets) {
+    for (int i = 0; i < num_lets; ++i) {
+      if (!out[i]) {
+        EvalNode* point_node = new EvalNode();
+        point_node->points_ = point_node->bound_ = non_cell_points;
+        point_node->cell_ = cell;
+        point_node->letter_ = i;
+        arena.AddNode(point_node);
+        out[i] = point_node;
+      }
+    }
+  }
+  return out;
 }
