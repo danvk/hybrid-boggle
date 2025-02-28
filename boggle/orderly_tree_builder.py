@@ -8,6 +8,7 @@ from boggle.dimensional_bogglers import LEN_TO_DIMS, OrderlyTreeBuilders
 from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
+    PyArena,
     create_eval_node_arena_py,
 )
 from boggle.split_order import SPLIT_ORDER
@@ -23,7 +24,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         super().__init__(trie, dims)
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
 
-    def BuildTree(self, arena=None):
+    def BuildTree(self, arena: PyArena = None):
         root = EvalNode()
         root.letter = ROOT_NODE
         root.cell = 0  # irrelevant
@@ -31,6 +32,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.root = root
         self.used_ = 0
         self.cell_counts = [0] * len(self.bd_)
+        if arena:
+            arena.add_node(root)
 
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, [], arena)

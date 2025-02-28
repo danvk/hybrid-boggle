@@ -54,22 +54,22 @@ class PyArena:
     """This class is useless, but it helps maintain the same API as C++."""
 
     def __init__(self):
-        pass
+        self.count = 0
 
     def free_the_children(self):
         pass
 
     def num_nodes(self):
-        return "n/a"
-
-    def mark_and_sweep(self, root, mark):
-        return 0
+        return self.count
 
     def new_node(self):
         n = EvalNode()
         n.letter = ROOT_NODE
         n.cell = 0
         return n
+
+    def add_node(self, node):
+        self.count += 1
 
 
 def create_eval_node_arena_py():
@@ -163,9 +163,10 @@ class EvalNode:
             self.children.append(choice_child)
             if cell_counts:
                 cell_counts[cell] += 1
+            if arena:
+                arena.add_node(choice_child)
             # TODO: could keep self.children sorted
 
-        # TODO: binary search
         letter_child = None
         for c in choice_child.children:
             if c.letter == letter:
@@ -175,9 +176,10 @@ class EvalNode:
             letter_child = EvalNode()
             letter_child.cell = cell
             letter_child.letter = letter
-            # TODO: this could be more efficient
             choice_child.children.append(letter_child)
             choice_child.children.sort(key=lambda c: c.letter)
+            if arena:
+                arena.add_node(letter_child)
 
         letter_child.add_word(remaining_choices, points, arena, cell_counts)
 
@@ -276,6 +278,8 @@ class EvalNode:
         node.choice_mask = 1 << cell
         for child in choices:
             node.choice_mask |= child.choice_mask
+        if arena:
+            arena.add_node(node)
         return node
 
     def force_cell(
@@ -415,9 +419,13 @@ class EvalNode:
                     node = prev
                     # COUNTS["cache hits"] += 1
                 else:
+                    if arena:
+                        arena.add_node(node)
                     any_changes = False
                     if compress and node.letter != CHOICE_NODE:
-                        any_changes = squeeze_sum_node_in_place(node, MERGE_TREES)
+                        any_changes = squeeze_sum_node_in_place(
+                            node, arena, MERGE_TREES
+                        )
 
                     if dedupe:
                         force_cell_cache[h] = node
@@ -1064,7 +1072,7 @@ def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
     return False
 
 
-def merge_choice_collisions_in_place(choices: list[EvalNode]):
+def merge_choice_collisions_in_place(choices: list[EvalNode], arena):
     choices.sort(key=lambda c: c.cell)
 
     i = 0
@@ -1072,7 +1080,7 @@ def merge_choice_collisions_in_place(choices: list[EvalNode]):
     while i < n:
         j = i + 1
         while j < n and choices[i].cell == choices[j].cell:
-            choices[i] = merge_trees(choices[i], choices[j])
+            choices[i] = merge_trees(choices[i], choices[j], arena)
             for k in range(j, n - 1):
                 choices[k] = choices[k + 1]
             n -= 1
@@ -1082,7 +1090,7 @@ def merge_choice_collisions_in_place(choices: list[EvalNode]):
         choices.pop()
 
 
-def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
+def squeeze_sum_node_in_place(node: EvalNode, arena, should_merge=False):
     """Absorb non-choice nodes into this sum node. Operates in-place.
 
     Returns a boolean indicating whether any changes were made.
@@ -1119,7 +1127,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
-        merge_choice_collisions_in_place(choice)
+        merge_choice_collisions_in_place(choice, arena)
 
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
@@ -1136,7 +1144,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     # new_children should be entirely choice nodes now, but there may be new collisions
     # TODO: is it more efficient to do this all at once, before absorbing child nodes?
     if should_merge and any_choice_collisions(new_children):
-        merge_choice_collisions_in_place(new_children)
+        merge_choice_collisions_in_place(new_children, arena)
 
     node.children = new_children
     # We need to take care here not to double-count points for the bound.
@@ -1223,7 +1231,7 @@ def dedupe_subtrees(t: EvalNode):
             node.children[i] = hash_to_node[n.structural_hash()]
 
 
-def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
+def merge_choice_children(a: EvalNode, b: EvalNode, arena, out: list[EvalNode]):
     i_a = 0
     i_b = 0
     ac = a.children
@@ -1247,7 +1255,7 @@ def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
             out.append(b)
             i_b += 1
         else:
-            out.append(merge_trees(a, b))
+            out.append(merge_trees(a, b, arena))
             i_a += 1
             i_b += 1
 
@@ -1264,15 +1272,17 @@ def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
         i_b += 1
 
 
-def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
+def merge_trees(a: EvalNode, b: EvalNode, arena) -> EvalNode:
     assert a.cell == b.cell, f"{a.cell} != {b.cell}"
     COUNTS["merge"] += 1
 
     if a.letter == CHOICE_NODE and b.letter == CHOICE_NODE:
         children = []
-        merge_choice_children(a, b, children)
+        merge_choice_children(a, b, arena, children)
 
         n = EvalNode()
+        if arena:
+            arena.add_node(n)
         n.letter = CHOICE_NODE
         n.cell = a.cell
         n.children = children
@@ -1287,13 +1297,15 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
         children.sort(key=lambda c: c.cell)
 
         n = EvalNode()
+        if arena:
+            arena.add_node(n)
         n.letter = a.letter
         n.cell = a.cell
         n.children = children
         n.points = a.points + b.points
         n.bound = n.points + sum(child.bound for child in children if child)
         n.choice_mask = a.choice_mask | b.choice_mask  # TODO: recalculate?
-        squeeze_sum_node_in_place(n, True)
+        squeeze_sum_node_in_place(n, arena, True)
         return n
     raise ValueError(
         f"Cannot merge CHOICE_NODE with non-choice: {a.cell}: {a.letter}/{b.letter}"

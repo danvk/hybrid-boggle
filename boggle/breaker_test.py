@@ -1,17 +1,29 @@
 from collections import Counter
 
+import pytest
+from cpp_boggle import Trie
 from inline_snapshot import snapshot
 
 from boggle.boggler import PyBoggler
 from boggle.breaker import HybridBreakDetails, HybridTreeBreaker
+from boggle.dimensional_bogglers import cpp_orderly_tree_builder
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import make_py_trie
 
 
-# TODO: set up a C++ version of this
-def test_breaker():
-    trie = make_py_trie("testdata/boggle-words-4.txt")
-    otb = OrderlyTreeBuilder(trie, dims=(2, 2))
+def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
+    if is_python:
+        trie = make_py_trie(dict_file)
+        otb = OrderlyTreeBuilder(trie, dims=(2, 2))
+    else:
+        trie = Trie.CreateFromFile(dict_file)
+        otb = cpp_orderly_tree_builder(trie, dims=(2, 2))
+    return trie, otb
+
+
+@pytest.mark.parametrize("is_python", [True, False])
+def test_breaker(is_python):
+    trie, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "aeiou lnrsy chkmpt aeiou"
     boggler = PyBoggler(trie, dims=(2, 2))
 
@@ -38,24 +50,21 @@ def test_breaker():
     # 15 erta
     # 18 esta
 
-    assert details == snapshot(
-        HybridBreakDetails(
-            num_reps=750,
-            elapsed_s=0.0,
-            failures=["alte", "aste", "elta", "esta"],
-            elim_level=Counter({2: 2}),
-            secs_by_level={},
-            sum_union=0,
-            bounds={0: 21},
-            nodes={0: "n/a"},
-            boards_to_test=7,
-            expanded_to_test=7,
-            init_nodes="n/a",
-            total_nodes="n/a",
-            freed_nodes=0,
-            free_time_s=0.0,
-            n_bound=3,
-            bound_level=[3, 15, 96, 104],
-            bound_elim_level=[0, 7, 40, 33],
-        )
+    assert details.asdict() == snapshot(
+        {
+            "num_reps": 750,
+            "elapsed_s": 0.0,
+            "failures": ["alte", "aste", "elta", "esta"],
+            "elim_level": {2: 2},
+            "secs_by_level": {},
+            "sum_union": 0,
+            "bounds": {0: 21},
+            "nodes": {0: 1186},
+            "boards_to_test": 7,
+            "expanded_to_test": 7,
+            "init_nodes": 1186,
+            "total_nodes": 1864,
+            "freed_nodes": 0,
+            "free_time_s": 0.0,
+        }
     )
