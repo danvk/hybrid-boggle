@@ -1314,9 +1314,22 @@ def merge_trees(a: EvalNode, b: EvalNode, arena) -> EvalNode:
     )
 
 
-def merge_orderly_trees(trees: Sequence[EvalNode], arena) -> EvalNode:
+def merge_orderly_trees(tree: EvalNode, choices: Sequence[EvalNode], arena) -> EvalNode:
     """Merge N orderly trees."""
-    tree = trees[0]
-    for t in trees[1:]:
-        tree = merge_trees(tree, t, arena)
-    return tree
+    assert tree.letter != CHOICE_NODE
+    for choice in choices:
+        assert choice.letter == CHOICE_NODE
+    children = tree.children + choices
+    merge_choice_collisions_in_place(children, arena)
+
+    n = EvalNode()
+    n.letter = tree.letter
+    n.cell = tree.cell
+    n.children = children
+    n.points = tree.points
+    n.bound = n.points + sum(child.bound for child in children)
+    n.choice_mask = 0
+    for child in children:
+        assert child
+        n.choice_mask |= child.choice_mask
+    return n

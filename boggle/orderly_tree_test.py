@@ -154,16 +154,15 @@ def test_orderly_merge():
     assert t1.bound == 5
 
     # these match what you'd get from lifting cell 0
-    sum_wrap_t1 = EvalNode()
-    sum_wrap_t1.cell = 0
-    sum_wrap_t1.letter = t0.children[0].letter
-    sum_wrap_t1.children = [t1]
-    sum_wrap_t1.bound = t1.bound
-    sum_wrap_t1.choice_mask = t1.choice_mask
-    m00 = merge_orderly_trees([t0.children[0], sum_wrap_t1], arena)
+    # sum_wrap_t1 = EvalNode()
+    # sum_wrap_t1.cell = 0
+    # sum_wrap_t1.letter = t0.children[0].letter
+    # sum_wrap_t1.children = [t1]
+    # sum_wrap_t1.bound = t1.bound
+    # sum_wrap_t1.choice_mask = t1.choice_mask
+    m00 = merge_orderly_trees(t0.children[0], [t1], arena)
     assert m00.bound == 21
-    sum_wrap_t1.letter = t0.children[1].letter
-    m01 = merge_orderly_trees([t0.children[1], sum_wrap_t1], arena)
+    m01 = merge_orderly_trees(t0.children[1], [t1], arena)
     assert m01.bound == 22
 
 
