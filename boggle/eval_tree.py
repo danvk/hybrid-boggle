@@ -1402,6 +1402,8 @@ def merge_orderly_tree(a: EvalNode, b: EvalNode, arena: PyArena):
 def merge_orderly_tree_children(
     a: EvalNode, bc: Sequence[EvalNode], b_points: int, arena: PyArena
 ):
+    # TODO: it should be safe to merge bc in-place into a and avoid an allocation.
+    #       might need to be careful with the out.append(b) case.
     assert a.letter != CHOICE_NODE
     in_a = a
 
