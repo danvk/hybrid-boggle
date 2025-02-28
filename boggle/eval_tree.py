@@ -1312,3 +1312,11 @@ def merge_trees(a: EvalNode, b: EvalNode, arena) -> EvalNode:
     raise ValueError(
         f"Cannot merge CHOICE_NODE with non-choice: {a.cell}: {a.letter}/{b.letter}"
     )
+
+
+def merge_orderly_trees(trees: Sequence[EvalNode], arena) -> EvalNode:
+    """Merge N orderly trees."""
+    tree = trees[0]
+    for t in trees[1:]:
+        tree = merge_trees(tree, t, arena)
+    return tree

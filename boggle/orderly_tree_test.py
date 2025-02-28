@@ -5,7 +5,13 @@ from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_orderly_tree_builder
-from boggle.eval_tree import CHOICE_NODE, EvalNode, eval_node_to_string
+from boggle.eval_tree import (
+    CHOICE_NODE,
+    ROOT_NODE,
+    EvalNode,
+    eval_node_to_string,
+    merge_orderly_trees,
+)
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
@@ -110,6 +116,55 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     )
 
     # TODO: confirm these via ibuckets
+
+
+def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
+    if is_python:
+        trie = make_py_trie(dict_file)
+        otb = OrderlyTreeBuilder(trie, dims=dims)
+    else:
+        trie = Trie.CreateFromFile(dict_file)
+        otb = cpp_orderly_tree_builder(trie, dims=dims)
+    return trie, otb
+
+
+def test_orderly_merge():
+    is_python = True
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
+    board = "st ea ea tr"
+    # cells = board.split(" ")
+    # num_letters = [len(cell) for cell in cells]
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    t = otb.BuildTree(arena)
+    if isinstance(t, EvalNode):
+        t.assert_invariants(otb)
+    assert t.bound == 22
+
+    assert t.letter == ROOT_NODE
+    assert len(t.children) == 2
+    t0 = t.children[0]
+    t1 = t.children[1]
+    assert t0.letter == CHOICE_NODE
+    assert t0.cell == 0
+    assert t0.bound == 17
+    assert len(t0.children) == 2
+    assert t1.letter == CHOICE_NODE
+    assert t1.cell == 1
+    assert t1.bound == 5
+
+    # these match what you'd get from lifting cell 0
+    sum_wrap_t1 = EvalNode()
+    sum_wrap_t1.cell = 0
+    sum_wrap_t1.letter = t0.children[0].letter
+    sum_wrap_t1.children = [t1]
+    sum_wrap_t1.bound = t1.bound
+    sum_wrap_t1.choice_mask = t1.choice_mask
+    m00 = merge_orderly_trees([t0.children[0], sum_wrap_t1], arena)
+    assert m00.bound == 21
+    sum_wrap_t1.letter = t0.children[1].letter
+    m01 = merge_orderly_trees([t0.children[1], sum_wrap_t1], arena)
+    assert m01.bound == 22
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)

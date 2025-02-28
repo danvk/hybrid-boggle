@@ -47,7 +47,8 @@ def main():
     # dedupe_subtrees(t)
 
     t.orderly_bound(1, cells, SPLIT_ORDER[dims], [])
-    node_counts = t.cache_value
+    # node_counts = t.cache_value
+    node_counts = None
 
     mark = 1
 
