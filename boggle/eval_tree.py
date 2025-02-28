@@ -440,6 +440,25 @@ class EvalNode:
         self.cache_value = out
         return out
 
+    def orderly_force_cell(
+        self, cell: int, num_lets: int, arena: PyArena
+    ) -> list[Self] | Self:
+        assert self.letter != CHOICE_NODE
+        if not self.children:
+            return self
+        top_choice = self.children[0]
+        assert top_choice.letter == CHOICE_NODE
+        if top_choice.cell != cell:
+            return self
+
+        top_choice, subtree = split_orderly_tree(self, arena)
+        out = [subtree] * num_lets
+        for child in top_choice.children:
+            if not child:
+                continue
+            out[child.letter] = merge_orderly_tree(child, subtree, arena)
+        return out
+
     def filter_below_threshold(self, min_score: int) -> int:
         """Remove choice subtrees with bounds equal to or below min_score.
 

@@ -133,8 +133,8 @@ def test_orderly_merge():
     is_python = True
     _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "st ea ea tr"
-    # cells = board.split(" ")
-    # num_letters = [len(cell) for cell in cells]
+    cells = board.split(" ")
+    num_letters = [len(cell) for cell in cells]
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
@@ -169,17 +169,16 @@ def test_orderly_merge():
     m1 = merge_orderly_tree(choice0.children[1], tree1, arena)
     assert m1.bound == 22
 
-    # these match what you'd get from lifting cell 0
-    # sum_wrap_t1 = EvalNode()
-    # sum_wrap_t1.cell = 0
-    # sum_wrap_t1.letter = t0.children[0].letter
-    # sum_wrap_t1.children = [t1]
-    # sum_wrap_t1.bound = t1.bound
-    # sum_wrap_t1.choice_mask = t1.choice_mask
-    # m00 = merge_orderly_tree_with_choices(t0.children[0], [t1], arena)
-    # assert m00.bound == 21
-    # m01 = merge_orderly_tree_with_choices(t0.children[1], [t1], arena)
-    # assert m01.bound == 22
+    force = t.orderly_force_cell(0, num_letters[0], arena)
+    assert len(force) == 2
+    for c in force:
+        c.assert_orderly(split_order)
+    assert force[0].cell == 0
+    assert force[0].letter == 0
+    assert force[0].bound == 21
+    assert force[1].cell == 0
+    assert force[1].letter == 1
+    assert force[1].bound == 22
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
