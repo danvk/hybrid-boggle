@@ -130,9 +130,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
           return cell_to_order_[a.first] < cell_to_order_[b.first];
         }
     );
-    root_->AddWordWork(
-        n, orderly_choices_, num_letters_.data(), word_score, cell_to_order_, arena
-    );
+    root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
   }
 
   used_ ^= (1 << i);

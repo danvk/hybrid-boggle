@@ -1193,15 +1193,25 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
 ) const {
   assert(letter_ != CHOICE_NODE);
   if (children_.empty()) {
-    return {this};
-  }
-  const EvalNode* top_choice = children_[0];
-  assert(top_choice->letter_ == CHOICE_NODE);
-  if (top_choice->cell_ != cell) {
-    return {this};
+    return {this};  // XXX this is not the same as what Python does
   }
 
-  vector<const EvalNode*> non_cell_children(children_.begin() + 1, children_.end());
+  vector<const EvalNode*> non_cell_children;
+  non_cell_children.reserve(children_.size() - 1);
+  const EvalNode* top_choice = NULL;
+  for (auto& child : children_) {
+    if (child->cell_ == cell) {
+      top_choice = child;
+    } else {
+      non_cell_children.push_back(child);
+    }
+  }
+
+  if (!top_choice->cell_) {
+    return {this};
+  }
+  assert(top_choice->letter_ == CHOICE_NODE);
+
   int non_cell_points = points_;
 
   vector<const EvalNode*> out(num_lets, nullptr);
