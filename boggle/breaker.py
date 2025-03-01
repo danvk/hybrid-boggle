@@ -116,8 +116,8 @@ class HybridTreeBreaker:
             freed_nodes=0,
             free_time_s=0.0,
             n_bound=0,
-            bound_level=[0] * (1 + len(self.cells)),
-            bound_elim_level=[0] * (1 + len(self.cells)),
+            bound_level=[0],  #  * (1 + len(self.cells)),
+            bound_elim_level=[0],  #  * (1 + len(self.cells)),
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.elim_ = 0
@@ -221,10 +221,10 @@ class HybridTreeBreaker:
         score_boards, bound_level, elim_level = tree.orderly_bound(
             self.best_score, self.cells, remaining_cells, choices
         )
-        for i, ev in enumerate(elim_level):
-            bv = bound_level[i]
-            self.details_.bound_elim_level[i + len(choices)] += ev
-            self.details_.bound_level[i + len(choices)] += bv
+        # for i, ev in enumerate(elim_level):
+        #     bv = bound_level[i]
+        #     self.details_.bound_elim_level[i + len(choices)] += ev
+        #     self.details_.bound_level[i + len(choices)] += bv
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         boards_to_test = [board for _score, board in score_boards]
         elapsed_s = time.time() - start_s
