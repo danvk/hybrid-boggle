@@ -217,6 +217,7 @@ class HybridTreeBreaker:
         remaining_cells = self.split_order[len(choices) :]
         # TODO: make this just return the boards
         self.details_.n_bound += 1
+        print(choices, tree.bound)
         score_boards, bound_level, elim_level = tree.orderly_bound(
             self.best_score, self.cells, remaining_cells, choices
         )
