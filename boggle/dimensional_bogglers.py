@@ -10,10 +10,6 @@ from cpp_boggle import (
     OrderlyTreeBuilder33,
     OrderlyTreeBuilder34,
     OrderlyTreeBuilder44,
-    TreeBuilder22,
-    TreeBuilder33,
-    TreeBuilder34,
-    TreeBuilder44,
 )
 
 from boggle.ibuckets import PyBucketBoggler22, PyBucketBoggler23
@@ -26,13 +22,6 @@ BucketBogglers = {
     (3, 3): BucketBoggler33,
     (3, 4): BucketBoggler34,
     (4, 4): BucketBoggler44,
-}
-
-TreeBuilders = {
-    (2, 2): TreeBuilder22,
-    (3, 3): TreeBuilder33,
-    (3, 4): TreeBuilder34,
-    (4, 4): TreeBuilder44,
 }
 
 OrderlyTreeBuilders = {
@@ -50,11 +39,6 @@ def cpp_boggler(t, dims):
 
 def cpp_bucket_boggler(t, dims):
     return BucketBogglers[dims](t)
-
-
-# Matches TreeBuilder
-def cpp_tree_builder(t, dims):
-    return TreeBuilders[dims](t)
 
 
 def cpp_orderly_tree_builder(t, dims):

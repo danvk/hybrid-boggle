@@ -8,7 +8,6 @@ from boggle.args import add_standard_args
 from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
-from boggle.tree_builder import TreeBuilder
 from boggle.trie import make_py_trie
 
 
@@ -19,12 +18,6 @@ def main():
     )
     # TODO: don't set size, we just need the dictionary
     add_standard_args(parser)
-    parser.add_argument(
-        "--tree_builder",
-        choices=("natural", "orderly"),
-        default="orderly",
-        help="Tree builder to use.",
-    )
     parser.add_argument(
         "--compress", action="store_true", help="Compress EvalTree while lifting"
     )
@@ -37,10 +30,7 @@ def main():
 
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
-    if args.tree_builder == "natural":
-        etb = TreeBuilder(trie, dims)
-    else:
-        etb = OrderlyTreeBuilder(trie, dims)
+    etb = OrderlyTreeBuilder(trie, dims)
     etb.ParseBoard(board)
     t = etb.BuildTree()  # dedupe=False)
     # assert_invariants(t, cells)

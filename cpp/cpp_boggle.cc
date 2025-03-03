@@ -10,7 +10,6 @@ using std::vector;
 #include "eval_node.h"
 #include "ibuckets.h"
 #include "orderly_tree_builder.h"
-#include "tree_builder.h"
 #include "trie.h"
 
 // See https://stackoverflow.com/a/47749076/388951
@@ -95,11 +94,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
   declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
   declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
 
-  declare_tree_builder<TreeBuilder<2, 2>>(m, "TreeBuilder22");
-  declare_tree_builder<TreeBuilder<3, 3>>(m, "TreeBuilder33");
-  declare_tree_builder<TreeBuilder<3, 4>>(m, "TreeBuilder34");
-  declare_tree_builder<TreeBuilder<4, 4>>(m, "TreeBuilder44");
-
   declare_tree_builder<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22");
   declare_tree_builder<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33");
   declare_tree_builder<OrderlyTreeBuilder<3, 4>>(m, "OrderlyTreeBuilder34");
@@ -114,7 +108,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readonly("letter", &EvalNode::letter_)
       .def_readonly("cell", &EvalNode::cell_)
       .def_readonly("bound", &EvalNode::bound_)
-      .def_readonly("choice_mask", &EvalNode::choice_mask_)
       .def_readonly("children", &EvalNode::children_)
       .def_readonly("points", &EvalNode::points_)
       .def("score_with_forces", &EvalNode::ScoreWithForces)
@@ -122,7 +115,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("node_count", &EvalNode::NodeCount)
       .def("unique_node_count", &EvalNode::UniqueNodeCount)
       .def("add_word", &EvalNode::AddWord)
-      .def("set_computed_fields", &EvalNode::SetComputedFields)
       .def(
           "orderly_force_cell",
           &EvalNode::OrderlyForceCell,
@@ -131,36 +123,9 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def(
-          "force_cell",
-          &EvalNode::ForceCell,
-          py::return_value_policy::reference,
-          py::arg("cell"),
-          py::arg("num_lets"),
-          py::arg("arena"),
-          py::arg("vector_arena"),
-          py::arg("mark"),
-          py::arg("dedupe") = false,
-          py::arg("compress") = false
-      )
-      .def(
-          "lift_choice",
-          &EvalNode::LiftChoice,
-          py::return_value_policy::reference,
-          py::arg("cell"),
-          py::arg("num_lets"),
-          py::arg("arena"),
-          py::arg("mark"),
-          py::arg("dedupe"),
-          py::arg("compress")
-      )
-      .def("max_subtrees", &EvalNode::MaxSubtrees, py::return_value_policy::reference)
       .def("structural_hash", &EvalNode::StructuralHash)
-      .def("set_choice_point_mask", &EvalNode::SetChoicePointMask)
-      .def("reset_choice_point_mask", &EvalNode::ResetChoicePointMask)
       .def("filter_below_threshold", &EvalNode::FilterBelowThreshold)
-      .def("orderly_bound", &EvalNode::OrderlyBound)
-      .def("bound_remaining_boards", &EvalNode::BoundRemainingBoards);
+      .def("orderly_bound", &EvalNode::OrderlyBound);
 
   m.def("create_eval_node_arena", &create_eval_node_arena);
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
