@@ -258,24 +258,6 @@ class EvalNode:
         self._hash = h
         return h
 
-    def set_computed_fields(self, num_letters: Sequence[int]):
-        for c in self.children:
-            if c:
-                c.set_computed_fields(num_letters)
-
-        if self.letter == CHOICE_NODE:
-            self.choice_mask = 1 << self.cell if num_letters[self.cell] > 1 else 0
-            self.bound = (
-                max(c.bound for c in self.children if c) if self.children else 0
-            )
-        else:
-            self.choice_mask = 0
-            self.bound = self.points + sum(c.bound for c in self.children if c)
-
-        for c in self.children:
-            if c:
-                self.choice_mask |= c.choice_mask
-
     def orderly_bound(
         self,
         cutoff: int,
@@ -639,8 +621,6 @@ class EvalNode:
             "cell": self.cell,
             "bound": self.bound,
         }
-        if self.choice_mask:
-            out["mask"] = [i for i in range(16) if self.choice_mask & (1 << i)]
         if self.points:
             out["points"] = self.points
         if self.trie_node and lookup:
@@ -738,9 +718,6 @@ def split_orderly_tree(tree: EvalNode, arena: PyArena):
     n.children = children
     n.points = tree.points
     n.bound = n.points + sum(child.bound for child in children if child)
-    n.choice_mask = 0
-    for child in children:
-        n.choice_mask |= child.choice_mask
     return top_choice, n
 
 
@@ -803,9 +780,6 @@ def merge_orderly_tree_children(
     n.children = out
     n.points = in_a.points + b_points
     n.bound = n.points + sum(child.bound for child in n.children)
-    n.choice_mask = 0
-    for child in n.children:
-        n.choice_mask |= child.choice_mask
     arena.add_node(n)
     return n
 
@@ -862,6 +836,5 @@ def merge_orderly_choice_children(a: EvalNode, b: EvalNode, arena: PyArena):
     n.children = out
     n.points = 0
     n.bound = max(child.bound for child in n.children)
-    n.choice_mask = in_a.choice_mask | in_b.choice_mask
     arena.add_node(n)
     return n
