@@ -131,20 +131,13 @@ def get_breaker(args) -> BreakingBundle:
     etb = builder(t, dims)
 
     if args.breaker == "hybrid":
-        switchover_level = 2
-        if args.switchover_level is not None:
-            switchover_level = args.switchover_level
-        elif args.switchover_sizes:
-            switchover_level = [
-                tuple(int(x) for x in pair.split(":"))
-                for pair in args.switchover_sizes.split(",")
-            ]
+        switchover_score = args.switchover_score or 2.5 * best_score
         breaker = HybridTreeBreaker(
             etb,
             boggler,
             dims,
             best_score,
-            switchover_level=switchover_level,
+            switchover_score=switchover_score,
             log_breaker_progress=args.log_breaker_progress,
             letter_grouping=args.letter_grouping,
         )
@@ -192,20 +185,13 @@ def main():
         default=4,
         help="Number of partitions to use when breaking a bucket. Only relevant with --breaker=ibuckets.",
     )
-    switchovers = parser.add_mutually_exclusive_group()
-    switchovers.add_argument(
-        "--switchover_level",
+    parser.add_argument(
+        "--switchover_score",
         type=int,
         default=None,
-        help="Depth at which to switch from lifting choices to exhaustively trying them. "
-        "Default is 2, unless you set --switchover_sizes. Only relevant with --breaker=hybrid.",
-    )
-    switchovers.add_argument(
-        "--switchover_sizes",
-        type=str,
-        default=None,
-        help='Initial size -> switchover map. Format is "switch:size,switch:size". For example, '
-        '"2:100,4:1000" would use switchover=0 for 0-99, 2 for 100-999, and 4 for 1000+.',
+        help="When to switch from splitting the tree by forcing cells to evaluating the "
+        "remaining tree with a DFS. Higher values will use less RAM but potentially run "
+        "more slowly. The default is 2.5 * best_score.",
     )
     parser.add_argument(
         "--breaker",

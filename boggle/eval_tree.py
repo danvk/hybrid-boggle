@@ -220,29 +220,6 @@ class EvalNode:
                     out[i] = point_node
         return out
 
-    def filter_below_threshold(self, min_score: int) -> int:
-        """Remove choice subtrees with bounds equal to or below min_score.
-
-        This operates in-place. It only operates on subtrees that are connected
-        to the root exclusively through choice nodes. This won't reduce any bounds,
-        but it will reduce the number of nodes.
-        """
-        # TODO: this would be more efficient to do in force_cell.
-        # this could use the caching system, but it's unlikely that the max trees are cached.
-        if self.letter != CHOICE_NODE:
-            return 0
-        assert self.bound > min_score
-        n_filtered = 0
-        for i, child in enumerate(self.children):
-            if not child:
-                continue
-            if child.bound <= min_score:
-                self.children[i] = None
-                n_filtered += 1
-            else:
-                n_filtered += child.filter_below_threshold(min_score)
-        return n_filtered
-
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
 

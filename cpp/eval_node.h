@@ -79,8 +79,6 @@ class EvalNode {
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
-  int FilterBelowThreshold(int min_score);
-
   uint64_t StructuralHash() const;
 
   int8_t letter_;

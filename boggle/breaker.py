@@ -3,15 +3,14 @@
 This is the 2025 strategy, as described at:
 https://www.danvk.org/2025/02/13/boggle2025.html
 
-This performs several "lift" operations on the tree to synchronize choices across
-subtrees and reduce the bound. After a few of these (the number is the "switchover_level"),
+This performs several "force" operations on the tree to create smaller subtrees and
+reduce the bound. After a few of these (determined by "switchover_score"),
 it stops modifying the tree and does a DFS on the remaining choices until the board class
-is fully broken (this done in "bound_remaining_boards").
+is fully broken.
 
-Lifting uses a lot of memory but can make bound_remaining_boards dramatically faster,
-especially for complex, hard-to-break board classes. On the other hand, lifting too many
-times wastes memory and is slower than bound_remaining_boards. There is a sweet spot for
-each board class.
+Forcing cells uses memory to make the final bounding DFS dramatically faster, especially
+for complex, hard-to-break board classes. On the other hand, forcing too many cells
+wastes memory and is slower than the DFS (orderly_bound).
 """
 
 import dataclasses
@@ -42,14 +41,15 @@ class BreakDetails:
         d = dataclasses.asdict(self)
         d["elim_level"] = dict(self.elim_level.items())
         d["secs_by_level"] = dict(self.secs_by_level.items())
+        d["depth"] = dict(self.depth.items())
         return d
 
 
 @dataclass
 class HybridBreakDetails(BreakDetails):
-    sum_union: int
     bounds: dict[int, int]
     nodes: dict[int, int]
+    depth: dict[int, int]
     boards_to_test: int
     expanded_to_test: int
     init_nodes: int
@@ -57,6 +57,7 @@ class HybridBreakDetails(BreakDetails):
     freed_nodes: int
     free_time_s: float
     n_bound: int
+    n_force: int
 
 
 class HybridTreeBreaker:
@@ -72,9 +73,10 @@ class HybridTreeBreaker:
         dims: tuple[int, int],
         best_score: int,
         *,
-        switchover_level: int | list[tuple[int, int]],
+        switchover_score: int,
         log_breaker_progress: bool,
         letter_grouping: str = "",
+        max_depth=None,
     ):
         self.etb = etb
         self.boggler = ungrouped_boggler
@@ -84,7 +86,8 @@ class HybridTreeBreaker:
         self.orig_reps_ = 0
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
-        self.switchover_level_input = switchover_level
+        self.switchover_score = switchover_score
+        self.switchover_depth = max_depth or (dims[0] * dims[1] - 4)
         self.log_breaker_progress = log_breaker_progress
         self.rev_letter_grouping = (
             reverse_letter_map(get_letter_map(letter_grouping))
@@ -105,15 +108,16 @@ class HybridTreeBreaker:
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
             bounds={},
-            sum_union=0,
             boards_to_test=0,
             expanded_to_test=0,
             init_nodes=0,
+            depth=Counter(),
             nodes={},
             total_nodes=0,
             freed_nodes=0,
             free_time_s=0.0,
             n_bound=0,
+            n_force=0,
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.elim_ = 0
@@ -121,32 +125,16 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena)
-        if isinstance(tree, EvalNode):
-            num_nodes = tree.node_count()
-        else:
-            num_nodes = arena.num_nodes()
+        num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
-            # TODO: this crashes in C++, which no longer has an EvalNode::unique_node_count method.
-            self.mark += 1
-            print(
-                f"root {tree.bound=}, {num_nodes} nodes, {tree.unique_node_count(self.mark)} unique nodes"
-            )
-
-        if isinstance(self.switchover_level_input, int):
-            self.switchover_level = self.switchover_level_input
-        else:
-            self.switchover_level = 0
-            for level, size in self.switchover_level_input:
-                if num_nodes >= size:
-                    self.switchover_level = level
+            print(f"root {tree.bound=}, {num_nodes} nodes")
 
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
-        self.details_.sum_union = self.etb.SumUnion()
         self.details_.init_nodes = arena.num_nodes()
         self.details_.nodes[0] = self.details_.init_nodes
 
-        self.attack_tree(tree, 1, [], arena)
+        self.attack_tree(tree, 1, [])
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
@@ -157,21 +145,19 @@ class HybridTreeBreaker:
         tree: EvalNode,
         level: int,
         choices: list[tuple[int, int]],
-        arena,
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
-        elif level >= self.switchover_level:
-            self.switch_to_score(tree, level, choices, arena)
+        elif tree.bound <= self.switchover_score or level > self.switchover_depth:
+            self.switch_to_score(tree, level, choices)
         else:
-            self.force_and_filter(tree, level, choices, arena)
+            self.force_and_filter(tree, level, choices)
 
     def force_and_filter(
         self,
         tree: EvalNode,
         level: int,
         choices: list[tuple[int, int]],
-        arena,
     ) -> None:
         # choices list parallels split_order
         assert len(choices) < len(self.cells)
@@ -180,7 +166,8 @@ class HybridTreeBreaker:
         num_lets = len(self.cells[cell])
 
         start_s = time.time()
-        self.mark += 1
+        self.details_.n_force += 1
+        arena = self.etb.create_arena()
         trees = tree.orderly_force_cell(
             cell,
             num_lets,
@@ -201,16 +188,17 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # TODO: how does this happen?
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices, arena)
+            self.attack_tree(tree, level + 1, choices)
         choices.pop()
 
     def switch_to_score(
-        self, tree: EvalNode, level: int, choices: list[tuple[int, int]], arena
+        self, tree: EvalNode, level: int, choices: list[tuple[int, int]]
     ) -> None:
         start_s = time.time()
         remaining_cells = self.split_order[len(choices) :]
         # TODO: make this just return the boards
         self.details_.n_bound += 1
+        self.details_.depth[level] += 1
         # print(choices, tree.bound)
         score_boards, bound_level, elim_level = tree.orderly_bound(
             self.best_score, self.cells, remaining_cells, choices
@@ -221,14 +209,15 @@ class HybridTreeBreaker:
         #     self.details_.bound_level[i + len(choices)] += bv
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         boards_to_test = [board for _score, board in score_boards]
-        elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[level] += elapsed_s
+        bound_elapsed_s = time.time() - start_s
+        self.details_.secs_by_level[level] += bound_elapsed_s
 
         if not boards_to_test:
+            if self.log_breaker_progress:
+                print(
+                    f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s"
+                )
             return
-
-        if self.log_breaker_progress:
-            print(f"Found {len(boards_to_test)} to test.")
 
         self.details_.boards_to_test += len(boards_to_test)
         start_s = time.time()
@@ -254,3 +243,8 @@ class HybridTreeBreaker:
         self.details_.expanded_to_test += n_expanded
         if self.log_breaker_progress and self.rev_letter_grouping:
             print(f"Evaluated {n_expanded} boards.")
+
+        if self.log_breaker_progress:
+            print(
+                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {n_expanded} in {elapsed_s:.03}s"
+            )
