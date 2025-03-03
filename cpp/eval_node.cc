@@ -307,6 +307,7 @@ EvalNode* Arena<EvalNode>::NewNode() {
   EvalNode* n = new EvalNode;
   n->letter_ = EvalNode::ROOT_NODE;
   n->cell_ = 0;
+  n->bound_ = 0;
   AddNode(n);
   return n;
 }
