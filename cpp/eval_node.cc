@@ -23,11 +23,13 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
     return this;
   }
 
+  cout << "Exceeded capacity!" << endl;
   EvalNode* clone = arena.NewNodeWithCapcity(capacity_ + 4);
   clone->letter_ = letter_;
   clone->cell_ = cell_;
   clone->points_ = points_;
   clone->num_children_ = num_children_ + 1;
+  cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
   memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
   clone->children_[num_children_] = child;
   return clone;
@@ -130,6 +132,16 @@ void EvalNode::AddWord(
 ) {
   vector<int> num_letters(choices.size(), 1);
   AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
+}
+
+vector<EvalNode*> EvalNode::GetChildren() {
+  vector<EvalNode*> out;
+  cout << "num_children=" << (int)num_children_ << endl;
+  out.reserve(num_children_);
+  for (int i = 0; i < num_children_; i++) {
+    out.push_back(children_[i]);
+  }
+  return out;
 }
 
 bool EvalNode::StructuralEq(const EvalNode& other) const {
@@ -310,6 +322,7 @@ void EvalNodeArena::AddBuffer() {
 
 EvalNode* EvalNodeArena::NewNodeWithCapcity(uint8_t capacity) {
   int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
+  cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
   if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
     AddBuffer();
   }

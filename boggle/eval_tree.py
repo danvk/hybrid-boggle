@@ -327,6 +327,9 @@ class EvalNode:
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
+    def get_children(self):
+        return self.children
+
     def node_counts(self, out=None):
         if out is None:
             out = Counter[Self]()
@@ -647,9 +650,11 @@ def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
         cell = cells[node.cell][node.letter]
         line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound})"
     lines.append(line)
-    for child in node.children:
+    for child in node.get_children():
         if child:
             _into_list(child, cells, lines, " " + indent)
+        else:
+            print("null!")
         # There are some slight discrepancies between C++ and Python trees that
         # are functionally irrelevant but surfaced if you uncomment this:
         # else:

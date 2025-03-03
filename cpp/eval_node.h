@@ -20,7 +20,7 @@ const int EVAL_NODE_ARENA_BUFFER_SIZE = 1'048'576;
 
 class EvalNodeArena {
  public:
-  EvalNodeArena() : num_nodes_(0), tip_(0) {}
+  EvalNodeArena() : num_nodes_(0), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
   ~EvalNodeArena() { FreeTheChildren(); }
 
   void FreeTheChildren() {
@@ -99,6 +99,8 @@ class EvalNode {
       const;
 
   void SetChildrenFromVector(const vector<EvalNode*>& children);
+
+  vector<EvalNode*> GetChildren();
 
  private:
   EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);
