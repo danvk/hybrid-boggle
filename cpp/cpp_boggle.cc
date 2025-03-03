@@ -124,7 +124,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("arena")
       )
       .def("structural_hash", &EvalNode::StructuralHash)
-      .def("filter_below_threshold", &EvalNode::FilterBelowThreshold)
       .def("orderly_bound", &EvalNode::OrderlyBound);
 
   m.def("create_eval_node_arena", &create_eval_node_arena);

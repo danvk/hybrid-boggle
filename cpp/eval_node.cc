@@ -214,27 +214,6 @@ unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   }
 }
 
-int EvalNode::FilterBelowThreshold(int min_score) {
-  if (letter_ != CHOICE_NODE) {
-    return 0;
-  }
-  int num_filtered = 0;
-  for (int i = 0; i < children_.size(); i++) {
-    auto child = children_[i];
-    if (!child) {
-      continue;
-    }
-    if (child->bound_ <= min_score) {
-      children_[i] = NULL;
-      num_filtered++;
-    } else {
-      // This casts away the const-ness.
-      num_filtered += ((EvalNode*)child)->FilterBelowThreshold(min_score);
-    }
-  }
-  return num_filtered;
-}
-
 // Borrowed from Boost.ContainerHash via
 // https://stackoverflow.com/a/78509978/388951
 // https://github.com/boostorg/container_hash/blob/ee5285bfa64843a11e29700298c83a37e3132fcd/include/boost/container_hash/hash.hpp#L471
@@ -566,8 +545,8 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
     }
   }
 
-  if (!top_choice->cell_) {
-    return {this};
+  if (!top_choice) {
+    return {this};  // XXX this is not the same as what Python does
   }
   assert(top_choice->letter_ == CHOICE_NODE);
 

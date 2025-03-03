@@ -160,7 +160,7 @@ class HybridTreeBreaker:
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
-        elif tree.bound <= self.switchover_score:
+        elif tree.bound <= self.switchover_score or level > 12:
             self.switch_to_score(tree, level, choices)
         else:
             self.force_and_filter(tree, level, choices)
@@ -226,12 +226,12 @@ class HybridTreeBreaker:
         if not boards_to_test:
             if self.log_breaker_progress:
                 print(
-                    f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s} s"
+                    f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s"
                 )
             return
 
-        if self.log_breaker_progress:
-            print(f"Found {len(boards_to_test)} to test.")
+        # if self.log_breaker_progress:
+        #     print(f"Found {len(boards_to_test)} to test.")
 
         self.details_.boards_to_test += len(boards_to_test)
         start_s = time.time()
@@ -260,5 +260,5 @@ class HybridTreeBreaker:
 
         if self.log_breaker_progress:
             print(
-                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s}s / test {n_expanded} in {elapsed_s}s"
+                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {n_expanded} in {elapsed_s:.03}s"
             )
