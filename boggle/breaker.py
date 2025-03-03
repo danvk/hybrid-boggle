@@ -41,6 +41,7 @@ class BreakDetails:
         d = dataclasses.asdict(self)
         d["elim_level"] = dict(self.elim_level.items())
         d["secs_by_level"] = dict(self.secs_by_level.items())
+        d["depth"] = dict(self.depth.items())
         return d
 
 
@@ -48,6 +49,7 @@ class BreakDetails:
 class HybridBreakDetails(BreakDetails):
     bounds: dict[int, int]
     nodes: dict[int, int]
+    depth: dict[int, int]
     boards_to_test: int
     expanded_to_test: int
     init_nodes: int
@@ -55,6 +57,7 @@ class HybridBreakDetails(BreakDetails):
     freed_nodes: int
     free_time_s: float
     n_bound: int
+    n_force: int
 
 
 class HybridTreeBreaker:
@@ -73,6 +76,7 @@ class HybridTreeBreaker:
         switchover_score: int,
         log_breaker_progress: bool,
         letter_grouping: str = "",
+        max_depth=None,
     ):
         self.etb = etb
         self.boggler = ungrouped_boggler
@@ -83,7 +87,7 @@ class HybridTreeBreaker:
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
         self.switchover_score = switchover_score
-        self.switchover_depth = dims[0] * dims[1] - 4  # TODO: make this configurable
+        self.switchover_depth = max_depth or (dims[0] * dims[1] - 4)
         self.log_breaker_progress = log_breaker_progress
         self.rev_letter_grouping = (
             reverse_letter_map(get_letter_map(letter_grouping))
@@ -107,11 +111,13 @@ class HybridTreeBreaker:
             boards_to_test=0,
             expanded_to_test=0,
             init_nodes=0,
+            depth=Counter(),
             nodes={},
             total_nodes=0,
             freed_nodes=0,
             free_time_s=0.0,
             n_bound=0,
+            n_force=0,
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.elim_ = 0
@@ -160,7 +166,7 @@ class HybridTreeBreaker:
         num_lets = len(self.cells[cell])
 
         start_s = time.time()
-        self.mark += 1
+        self.details_.n_force += 1
         arena = self.etb.create_arena()
         trees = tree.orderly_force_cell(
             cell,
@@ -192,6 +198,7 @@ class HybridTreeBreaker:
         remaining_cells = self.split_order[len(choices) :]
         # TODO: make this just return the boards
         self.details_.n_bound += 1
+        self.details_.depth[level] += 1
         # print(choices, tree.bound)
         score_boards, bound_level, elim_level = tree.orderly_bound(
             self.best_score, self.cells, remaining_cells, choices

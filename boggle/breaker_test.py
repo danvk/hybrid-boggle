@@ -36,7 +36,8 @@ def test_breaker(is_python):
         boggler,
         (2, 2),
         15,
-        switchover_level=2,
+        switchover_score=20,
+        max_depth=3,
         log_breaker_progress=False,
     )
 
@@ -61,15 +62,16 @@ def test_breaker(is_python):
             "failures": ["alte", "aste", "elta", "esta"],
             "elim_level": {2: 2},
             "secs_by_level": {},
-            "sum_union": 0,
             "bounds": {0: 21},
             "nodes": {0: 1186},
+            "depth": {2: 3},
             "boards_to_test": 7,
             "expanded_to_test": 7,
             "init_nodes": 1186,
-            "total_nodes": 1864,
+            "total_nodes": 1186,
             "freed_nodes": 0,
             "free_time_s": 0.0,
             "n_bound": 3,
+            "n_force": 1,
         }
     )
