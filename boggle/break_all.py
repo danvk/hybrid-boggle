@@ -128,7 +128,7 @@ def get_breaker(args) -> BreakingBundle:
         t, boggler = get_trie_and_boggler_from_args(args)
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
-    etb = builder[(args.python, args.tree_builder)](t, dims)
+    etb = builder(t, dims)
 
     if args.breaker == "hybrid":
         switchover_level = 2
