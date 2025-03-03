@@ -29,6 +29,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         root.letter = ROOT_NODE
         root.cell = 0  # irrelevant
         root.points = 0
+        root.bound = 0
         self.root = root
         self.used_ = 0
         self.cell_counts = [0] * len(self.bd_)
@@ -37,8 +38,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, [], arena)
-        num_letters = [len(cell) for cell in self.bd_]
-        root.set_computed_fields(num_letters)
         self.root = None
         return root
 

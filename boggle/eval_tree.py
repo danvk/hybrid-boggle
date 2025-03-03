@@ -49,6 +49,8 @@ class PyArena:
         n = EvalNode()
         n.letter = ROOT_NODE
         n.cell = 0
+        n.bound = 0
+        n.points = 0
         return n
 
     def add_node(self, node):
@@ -100,6 +102,7 @@ class EvalNode:
         assert self.letter != CHOICE_NODE
         if not choices:
             self.points += points
+            self.bound += points
             return
 
         (cell, letter) = choices[0]
@@ -110,16 +113,20 @@ class EvalNode:
             if c.cell == cell:
                 choice_child = c
                 break
+        old_choice_bound = 0
         if not choice_child:
             choice_child = EvalNode()
             choice_child.letter = CHOICE_NODE
             choice_child.cell = cell
+            choice_child.bound = 0
             self.children.append(choice_child)
             if cell_counts:
                 cell_counts[cell] += 1
             if arena:
                 arena.add_node(choice_child)
             self.children.sort(key=lambda c: c.cell)
+        else:
+            old_choice_bound = choice_child.bound
 
         letter_child = None
         for c in choice_child.children:
@@ -130,12 +137,16 @@ class EvalNode:
             letter_child = EvalNode()
             letter_child.cell = cell
             letter_child.letter = letter
+            letter_child.bound = 0
             choice_child.children.append(letter_child)
             choice_child.children.sort(key=lambda c: c.letter)
             if arena:
                 arena.add_node(letter_child)
 
         letter_child.add_word(remaining_choices, points, arena, cell_counts)
+        if letter_child.bound > old_choice_bound:
+            choice_child.bound = letter_child.bound
+        self.bound += choice_child.bound - old_choice_bound
 
     # TODO: move this to the "debug & test" block
     def score_with_forces(self, forces: list[int]) -> int:
@@ -672,12 +683,12 @@ DOT_FILL_COLORS = [
 def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
     line = ""
     if node.letter == ROOT_NODE:
-        line = f"{indent}ROOT ({node.bound}) mask={node.choice_mask}"
+        line = f"{indent}ROOT ({node.bound})"
     elif node.letter == CHOICE_NODE:
-        line = f"{indent}CHOICE ({node.cell} <{node.bound}) mask={node.choice_mask} points={node.points}"
+        line = f"{indent}CHOICE ({node.cell} <{node.bound}) points={node.points}"
     else:
         cell = cells[node.cell][node.letter]
-        line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound}) mask={node.choice_mask}"
+        line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound})"
     lines.append(line)
     for child in node.children:
         if child:

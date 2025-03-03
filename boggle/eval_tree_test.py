@@ -20,7 +20,6 @@ def test_add_word(create_arena):
     arena = create_arena()
     root = arena.new_node()
     cells = ["bcd", "aei", "nrd"]
-    num_letters = [len(cell) for cell in cells]
     root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
     root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can
     root.add_word([(0, 0), (1, 0), (2, 1)], 1, arena)  # bar
@@ -28,11 +27,9 @@ def test_add_word(create_arena):
     root.add_word([(0, 0), (1, 2), (2, 2)], 1, arena)  # bid
     root.add_word([(0, 2), (1, 2), (2, 2)], 1, arena)  # did
 
-    root.set_computed_fields(num_letters)
-
     # print(root.to_dot(cells))
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(root, cells)) == snapshot(
-        external("06a322a3d5ba*.txt")
+        external("086ccf9f3935*.txt")
     )
