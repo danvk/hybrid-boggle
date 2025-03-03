@@ -27,7 +27,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe = false);
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
-  unique_ptr<VectorArena> CreateVectorArena() { return create_vector_arena(); }
 
   int SumUnion() const { return 0; }
 
@@ -131,7 +130,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     );
     auto new_root =
         root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
-    assert(new_root == root);
+    assert(new_root == root_);
   }
 
   used_ ^= (1 << i);

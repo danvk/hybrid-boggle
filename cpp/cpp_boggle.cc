@@ -42,8 +42,7 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
       .def("as_string", &TB::as_string)
       .def("SumUnion", &TB::SumUnion)
       .def("NumReps", &TB::NumReps)
-      .def("create_arena", &TB::CreateArena)
-      .def("create_vector_arena", &TB::CreateVectorArena);
+      .def("create_arena", &TB::CreateArena);
 }
 
 template <int M, int N>

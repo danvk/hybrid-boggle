@@ -48,7 +48,7 @@ EvalNode* EvalNode::AddWordWork(
   if (!num_choices) {
     points_ += points;
     bound_ += points;
-    return;
+    return this;
   }
 
   auto cell = choices->first;
