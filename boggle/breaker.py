@@ -138,6 +138,8 @@ class HybridTreeBreaker:
                 if num_nodes >= size:
                     self.switchover_level = level
 
+        self.switchover_score = 8_000
+
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.sum_union = self.etb.SumUnion()
@@ -158,7 +160,7 @@ class HybridTreeBreaker:
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
-        elif level >= self.switchover_level:
+        elif tree.bound <= self.switchover_score:
             self.switch_to_score(tree, level, choices)
         else:
             self.force_and_filter(tree, level, choices)
