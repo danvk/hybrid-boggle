@@ -120,7 +120,6 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
-        vector_arena = self.etb.create_vector_arena()
         tree = self.etb.BuildTree(arena)
         if isinstance(tree, EvalNode):
             num_nodes = tree.node_count()
@@ -147,7 +146,7 @@ class HybridTreeBreaker:
         self.details_.init_nodes = arena.num_nodes()
         self.details_.nodes[0] = self.details_.init_nodes
 
-        self.attack_tree(tree, 1, [], arena, vector_arena)
+        self.attack_tree(tree, 1, [], arena)
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
@@ -159,14 +158,13 @@ class HybridTreeBreaker:
         level: int,
         choices: list[tuple[int, int]],
         arena,
-        vector_arena,
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
         elif level >= self.switchover_level:
             self.switch_to_score(tree, level, choices, arena)
         else:
-            self.force_and_filter(tree, level, choices, arena, vector_arena)
+            self.force_and_filter(tree, level, choices, arena)
 
     def force_and_filter(
         self,
@@ -174,7 +172,6 @@ class HybridTreeBreaker:
         level: int,
         choices: list[tuple[int, int]],
         arena,
-        vector_arena,
     ) -> None:
         # choices list parallels split_order
         assert len(choices) < len(self.cells)
@@ -204,7 +201,7 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # TODO: how does this happen?
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices, arena, vector_arena)
+            self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
 
     def switch_to_score(

@@ -15,7 +15,6 @@
             "source.organizeImports.ruff": "always",
         },
         // "editor.wordBasedSuggestions": "off"
-        "editor.inlineSuggest.suppressSuggestions": false
     },
     "[cpp]": {
         "editor.formatOnSave": true
