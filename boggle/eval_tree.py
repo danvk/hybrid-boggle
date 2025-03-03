@@ -98,7 +98,6 @@ class EvalNode:
         cell_counts: list[int] = None,
     ):
         """Add a word at the end of a sequence of choices to the tree."""
-        # TODO: this could update bounds to match the C++
         assert self.letter != CHOICE_NODE
         if not choices:
             self.points += points

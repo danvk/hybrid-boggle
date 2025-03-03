@@ -111,7 +111,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readonly("children", &EvalNode::children_)
       .def_readonly("points", &EvalNode::points_)
       .def("score_with_forces", &EvalNode::ScoreWithForces)
-      .def("recompute_score", &EvalNode::RecomputeScore)
       .def("node_count", &EvalNode::NodeCount)
       .def("unique_node_count", &EvalNode::UniqueNodeCount)
       .def("add_word", &EvalNode::AddWord)
@@ -130,13 +129,10 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
       .def("free_the_children", &EvalNodeArena::FreeTheChildren)
-      .def("new_node", &EvalNodeArena::NewNode, py::return_value_policy::reference)
+      .def(
+          "new_node_with_capacity",
+          &EvalNodeArena::NewNodeWithCapcity,
+          py::return_value_policy::reference
+      )
       .def("num_nodes", &EvalNodeArena::NumNodes);
-
-  // TODO: remove this once it's not part of a public API.
-  m.def("create_vector_arena", &create_vector_arena);
-  py::class_<VectorArena>(m, "VectorArena")
-      .def(py::init())
-      .def("free_the_children", &VectorArena::FreeTheChildren)
-      .def("num_nodes", &VectorArena::NumNodes);
 }

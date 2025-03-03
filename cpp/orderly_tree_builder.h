@@ -45,7 +45,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 template <int M, int N>
 const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
-  root_ = new EvalNode();
+  root_ = arena.NewNodeWithCapcity(M * N);  // this will never be reallocated
   root_->letter_ = EvalNode::ROOT_NODE;
   root_->cell_ = 0;  // irrelevant
   root_->points_ = 0;
@@ -63,7 +63,6 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
 
   auto root = root_;
   root_ = NULL;
-  arena.AddNode(root);
 
   /*
   // This can be used to investigate the layout of EvalNode.
@@ -130,7 +129,9 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
           return cell_to_order_[a.first] < cell_to_order_[b.first];
         }
     );
-    root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
+    auto new_root =
+        root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
+    assert(new_root == root);
   }
 
   used_ ^= (1 << i);

@@ -61,7 +61,7 @@ class HybridBreakDetails(BreakDetails):
 
 
 class HybridTreeBreaker:
-    """This uses force_cell at the top of the tree and score_with_forces at the bottom.
+    """This uses orderly_force_cell at the top of the tree and orderly_bound at the bottom.
 
     This strikes a good balance of allocating memory only when it will save a lot of CPU.
     """
