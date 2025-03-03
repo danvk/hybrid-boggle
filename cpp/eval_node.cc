@@ -8,10 +8,6 @@
 
 using namespace std;
 
-// uint64_t hash_collisions = 0;
-
-static const bool MERGE_TREES = true;
-
 inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
   return a->letter_ < b->letter_;
 }
