@@ -10,7 +10,6 @@ using std::vector;
 #include "eval_node.h"
 #include "ibuckets.h"
 #include "orderly_tree_builder.h"
-#include "tree_builder.h"
 #include "trie.h"
 
 // See https://stackoverflow.com/a/47749076/388951
@@ -94,11 +93,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
   declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
   declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
   declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
-
-  declare_tree_builder<TreeBuilder<2, 2>>(m, "TreeBuilder22");
-  declare_tree_builder<TreeBuilder<3, 3>>(m, "TreeBuilder33");
-  declare_tree_builder<TreeBuilder<3, 4>>(m, "TreeBuilder34");
-  declare_tree_builder<TreeBuilder<4, 4>>(m, "TreeBuilder44");
 
   declare_tree_builder<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22");
   declare_tree_builder<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33");

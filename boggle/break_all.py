@@ -23,13 +23,11 @@ from boggle.breaker import HybridTreeBreaker
 from boggle.dimensional_bogglers import (
     BucketBogglers,
     cpp_orderly_tree_builder,
-    cpp_tree_builder,
 )
 from boggle.ibucket_breaker import IBucketBreaker
 from boggle.ibuckets import PyBucketBoggler
 from boggle.letter_grouping import filter_to_canonical
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
-from boggle.tree_builder import TreeBuilder
 from boggle.trie import PyTrie, get_letter_map
 
 
@@ -39,7 +37,7 @@ class BreakingBundle:
 
     trie: PyTrie
     boggler: PyBoggler
-    etb: TreeBuilder
+    etb: OrderlyTreeBuilder
     breaker: IBucketBreaker | HybridTreeBreaker
     ungrouped_trie: PyTrie
 
@@ -129,13 +127,7 @@ def get_breaker(args) -> BreakingBundle:
     else:
         t, boggler = get_trie_and_boggler_from_args(args)
 
-    # (args.python, args.tree_builder)
-    builder = {
-        (True, "orderly"): OrderlyTreeBuilder,
-        (True, "natural"): TreeBuilder,
-        (False, "orderly"): cpp_orderly_tree_builder,
-        (False, "natural"): cpp_tree_builder,
-    }
+    builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     etb = builder[(args.python, args.tree_builder)](t, dims)
 
     if args.breaker == "hybrid":
@@ -221,12 +213,6 @@ def main():
         choices=("ibuckets", "hybrid"),
         default="hybrid",
         help="Breaking strategy to use.",
-    )
-    parser.add_argument(
-        "--tree_builder",
-        choices=("natural", "orderly"),
-        default="orderly",
-        help="Tree builder to use.",
     )
     parser.add_argument(
         "--break_class",
