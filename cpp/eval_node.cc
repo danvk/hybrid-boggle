@@ -430,7 +430,11 @@ EvalNode* merge_orderly_tree(
     const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
 );
 EvalNode* merge_orderly_tree_children(
-    const EvalNode* a, EvalNode** bc, int num_bc, int b_points, EvalNodeArena& arena
+    const EvalNode* a,
+    EvalNode* const* bc,
+    int num_bc,
+    int b_points,
+    EvalNodeArena& arena
 );
 EvalNode* merge_orderly_choice_children(
     const EvalNode* a, const EvalNode* b, EvalNodeArena& arena

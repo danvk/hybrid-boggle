@@ -18,7 +18,7 @@ from boggle.eval_tree import (
 )
 def test_add_word(create_arena):
     arena = create_arena()
-    root = arena.new_node()
+    root = arena.new_node_with_capacity(4)
     cells = ["bcd", "aei", "nrd"]
     root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
     root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can

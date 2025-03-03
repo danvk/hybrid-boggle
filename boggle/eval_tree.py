@@ -45,12 +45,13 @@ class PyArena:
     def num_nodes(self):
         return self.count
 
-    def new_node(self):
+    def new_node_with_capacity(self, n: int):
         n = EvalNode()
         n.letter = ROOT_NODE
         n.cell = 0
         n.bound = 0
         n.points = 0
+        self.count += 1
         return n
 
     def add_node(self, node):
