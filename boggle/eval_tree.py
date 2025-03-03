@@ -786,7 +786,7 @@ def merge_orderly_tree_children(
 
 def merge_orderly_choice_children(a: EvalNode, b: EvalNode, arena: PyArena):
     """Merge two orderly choice nodes for the same cell."""
-    in_a, in_b = a, b
+    in_a = a
     assert a.letter == CHOICE_NODE
     assert b.letter == CHOICE_NODE
     assert a.cell == b.cell
