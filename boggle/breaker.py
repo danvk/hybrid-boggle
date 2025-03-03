@@ -206,6 +206,8 @@ class HybridTreeBreaker:
 
         choices.append(None)
         for letter, tree in tagged_trees:
+            if not tree:
+                continue  # TODO: how does this happen?
             choices[-1] = (cell, letter)
             self.attack_tree(tree, level + 1, choices, arena, vector_arena)
         choices.pop()
