@@ -764,7 +764,7 @@ class EvalNode:
                 assert child.letter == CHOICE_NODE
             # sum node children must be sorted by cell (not split_order)
             for a, b in zip(self.children, self.children[1:]):
-                assert split_order.index(a.cell) < split_order.index(b.cell)
+                assert a.cell < b.cell
 
         for child in self.children:
             if child:
