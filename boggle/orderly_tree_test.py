@@ -5,7 +5,14 @@ from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_orderly_tree_builder
-from boggle.eval_tree import CHOICE_NODE, EvalNode, eval_node_to_string
+from boggle.eval_tree import (
+    CHOICE_NODE,
+    ROOT_NODE,
+    EvalNode,
+    eval_node_to_string,
+    merge_orderly_tree,
+    split_orderly_tree,
+)
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
@@ -36,7 +43,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     if isinstance(t, EvalNode):
         t.assert_invariants(bb)
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("e1e08ef3841e*.txt")
+        external("099fef779a96*.txt")
     )
 
 
@@ -60,7 +67,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         t.assert_invariants(otb)
 
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("7f5b9b263a25*.txt")
+        external("68c6c14a3a89*.txt")
     )
 
 
@@ -78,7 +85,7 @@ def test_orderly_bound22(make_trie, get_tree_builder):
         t.assert_invariants(otb)
     assert t.bound == 8
 
-    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
+    failures, _, _ = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
@@ -96,7 +103,7 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
         t.assert_invariants(otb)
     assert t.bound == 22
 
-    failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
+    failures, _, _ = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
     assert failures == snapshot(
         [
             (18, "seer"),
@@ -110,6 +117,68 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     )
 
     # TODO: confirm these via ibuckets
+
+
+def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
+    if is_python:
+        trie = make_py_trie(dict_file)
+        otb = OrderlyTreeBuilder(trie, dims=dims)
+    else:
+        trie = Trie.CreateFromFile(dict_file)
+        otb = cpp_orderly_tree_builder(trie, dims=dims)
+    return trie, otb
+
+
+def test_orderly_merge():
+    is_python = True
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
+    board = "st ea ea tr"
+    cells = board.split(" ")
+    num_letters = [len(cell) for cell in cells]
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    t = otb.BuildTree(arena)
+    split_order = SPLIT_ORDER[(2, 2)]
+    if isinstance(t, EvalNode):
+        t.assert_invariants(otb)
+        t.assert_orderly(split_order)
+    assert t.bound == 22
+
+    assert t.letter == ROOT_NODE
+    assert len(t.children) == 2
+    t0 = t.children[0]
+    t1 = t.children[1]
+    assert t0.letter == CHOICE_NODE
+    assert t0.cell == 0
+    assert t0.bound == 17
+    assert len(t0.children) == 2
+    assert t1.letter == CHOICE_NODE
+    assert t1.cell == 1
+    assert t1.bound == 5
+
+    choice0, tree1 = split_orderly_tree(t, arena)
+    assert choice0 == t0
+    assert tree1.bound == 5
+    tree1.assert_orderly(split_order)
+    for child in choice0.children:
+        child.assert_orderly(split_order)
+
+    m0 = merge_orderly_tree(choice0.children[0], tree1, arena)
+    assert m0.bound == 21
+
+    m1 = merge_orderly_tree(choice0.children[1], tree1, arena)
+    assert m1.bound == 22
+
+    force = t.orderly_force_cell(0, num_letters[0], arena)
+    assert len(force) == 2
+    for c in force:
+        c.assert_orderly(split_order)
+    assert force[0].cell == 0
+    assert force[0].letter == 0
+    assert force[0].bound == 21
+    assert force[1].cell == 0
+    assert force[1].letter == 1
+    assert force[1].bound == 22
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
@@ -126,10 +195,12 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
         print(otb.cell_counts)
+        t.assert_orderly(SPLIT_ORDER[(3, 3)])
     assert t.bound > 500
 
+    # node_counts = t.node_counts()
     start_s = time.time()
-    failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
+    failures, _, _ = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
     print(time.time() - start_s)
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([(512, "stsaseblt")])
@@ -170,7 +241,7 @@ def test_lift_and_bound(make_trie, get_tree_builder):
     failures = []
     for tree, seq in t.max_subtrees():
         # start_s = time.time()
-        this_failures = tree.orderly_bound(500, cells, order, seq)
+        this_failures, _, _ = tree.orderly_bound(500, cells, order, seq)
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         failures += this_failures
 
@@ -187,7 +258,7 @@ def test_lift_and_bound(make_trie, get_tree_builder):
     failures = []
     for tree, seq in t.max_subtrees():
         start_s = time.time()
-        this_failures = tree.orderly_bound(500, cells, order, seq)
+        this_failures, _, _ = tree.orderly_bound(500, cells, order, seq)
         print(time.time() - start_s, seq, tree.bound, this_failures)
         failures += this_failures
 

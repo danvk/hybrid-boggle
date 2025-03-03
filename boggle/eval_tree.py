@@ -54,22 +54,22 @@ class PyArena:
     """This class is useless, but it helps maintain the same API as C++."""
 
     def __init__(self):
-        pass
+        self.count = 0
 
     def free_the_children(self):
         pass
 
     def num_nodes(self):
-        return "n/a"
-
-    def mark_and_sweep(self, root, mark):
-        return 0
+        return self.count
 
     def new_node(self):
         n = EvalNode()
         n.letter = ROOT_NODE
         n.cell = 0
         return n
+
+    def add_node(self, node):
+        self.count += 1
 
 
 def create_eval_node_arena_py():
@@ -150,7 +150,6 @@ class EvalNode:
         (cell, letter) = choices[0]
         remaining_choices = choices[1:]
 
-        # TODO: binary search
         choice_child = None
         for c in self.children:
             if c.cell == cell:
@@ -163,9 +162,10 @@ class EvalNode:
             self.children.append(choice_child)
             if cell_counts:
                 cell_counts[cell] += 1
-            # TODO: could keep self.children sorted
+            if arena:
+                arena.add_node(choice_child)
+            self.children.sort(key=lambda c: c.cell)
 
-        # TODO: binary search
         letter_child = None
         for c in choice_child.children:
             if c.letter == letter:
@@ -175,9 +175,10 @@ class EvalNode:
             letter_child = EvalNode()
             letter_child.cell = cell
             letter_child.letter = letter
-            # TODO: this could be more efficient
             choice_child.children.append(letter_child)
             choice_child.children.sort(key=lambda c: c.letter)
+            if arena:
+                arena.add_node(letter_child)
 
         letter_child.add_word(remaining_choices, points, arena, cell_counts)
 
@@ -276,6 +277,8 @@ class EvalNode:
         node.choice_mask = 1 << cell
         for child in choices:
             node.choice_mask |= child.choice_mask
+        if arena:
+            arena.add_node(node)
         return node
 
     def force_cell(
@@ -415,9 +418,13 @@ class EvalNode:
                     node = prev
                     # COUNTS["cache hits"] += 1
                 else:
+                    if arena:
+                        arena.add_node(node)
                     any_changes = False
                     if compress and node.letter != CHOICE_NODE:
-                        any_changes = squeeze_sum_node_in_place(node, MERGE_TREES)
+                        any_changes = squeeze_sum_node_in_place(
+                            node, arena, MERGE_TREES
+                        )
 
                     if dedupe:
                         force_cell_cache[h] = node
@@ -430,6 +437,47 @@ class EvalNode:
             out.append(node)
         self.cache_key = mark
         self.cache_value = out
+        return out
+
+    def orderly_force_cell(
+        self, cell: int, num_lets: int, arena: PyArena
+    ) -> list[Self] | Self:
+        assert self.letter != CHOICE_NODE
+        if not self.children:
+            return self
+        top_choice = None
+        top_choice_idx = None
+        for i, child in enumerate(self.children):
+            if child.cell == cell:
+                top_choice_idx = i
+                top_choice = child
+                break
+
+        if top_choice is None:
+            return self
+
+        assert top_choice.letter == CHOICE_NODE
+
+        non_cell_children = [*self.children]
+        non_cell_children.pop(top_choice_idx)
+        non_cell_points = self.points
+
+        out = [None] * num_lets
+        for child in top_choice.children:
+            out[child.letter] = merge_orderly_tree_children(
+                child, non_cell_children, non_cell_points, arena
+            )
+
+        if non_cell_points and len(top_choice.children) < num_lets:
+            # TODO: this node could be shared with a different tree representation.
+            for i, child in enumerate(out):
+                if not child:
+                    point_node = EvalNode()
+                    point_node.points = point_node.bound = non_cell_points
+                    point_node.cell = cell
+                    point_node.letter = i
+                    arena.add_node(point_node)
+                    out[i] = point_node
         return out
 
     def filter_below_threshold(self, min_score: int) -> int:
@@ -531,7 +579,7 @@ class EvalNode:
 
     def max_subtrees(
         self, out=None, path=None
-    ) -> list[tuple[list[tuple[int, int]], Self]]:
+    ) -> list[tuple[Self, list[tuple[int, int]]]]:
         """Yield all subtrees below a choice node.
 
         Each yielded value is a list of (cell, letter) choices leading down to the tree.
@@ -579,8 +627,14 @@ class EvalNode:
         choices = []  # for tracking unbreakable boards
         failures: list[str] = []
         # max_lens: list[int] = [0] * len(stacks)
+        n_preset = len(preset_cells)
+        elim_at_level = [0] * (1 + len(cells) - n_preset)
+        visit_at_level = [0] * (1 + len(cells) - n_preset)
+
+        num_visits = Counter[EvalNode]()
 
         def advance(node: Self, sums: list[int]):
+            num_visits[node] += 1
             assert node.letter != CHOICE_NODE
             for child in node.children:
                 assert child.letter == CHOICE_NODE
@@ -608,6 +662,7 @@ class EvalNode:
             # indent = "  " * num_splits
             # print(f"{indent}{num_splits=} {base_points=} {bound=}")
             if bound <= cutoff:
+                elim_at_level[num_splits] += 1
                 return  # done!
             if num_splits == len(split_order):
                 record_failure(bound)
@@ -630,12 +685,12 @@ class EvalNode:
                 points = base_points
                 for node in stacks[next_to_split]:
                     letter_node = None
-                    # TODO: could maintain pointers / iterators in lockstep rather than scanning
                     for n in node.children:
                         if n.letter == letter:
                             letter_node = n
                             break
                     if letter_node:
+                        visit_at_level[1 + num_splits] += 1
                         points += advance(letter_node, stack_sums)
 
                 rec(points, num_splits + 1, stack_sums)
@@ -643,12 +698,22 @@ class EvalNode:
                 choices.pop()
 
         sums = [0] * len(num_letters)
+        visit_at_level[0] += 1
         base_points = advance(self, sums)
         rec(base_points, 0, sums)
         # print(f"{max_lens=}")
-        return failures
+        self.cache_value = num_visits
+        return failures, visit_at_level, elim_at_level
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def node_counts(self, out=None):
+        if out is None:
+            out = Counter[Self]()
+        out[self] += 1
+        for child in self.children:
+            child.node_counts(out)
+        return out
 
     def recompute_score(self):
         """Should return self.bound. (For debugging/testing)"""
@@ -683,6 +748,27 @@ class EvalNode:
             if not a.structural_eq(b):
                 return False
         return True
+
+    def assert_orderly(self, split_order: Sequence[int], max_index=None):
+        # If a choice for cell i is a descendant of a choice for cell j, then
+        # it must be that index(split_order, i) > index(split_order, j).
+
+        if self.letter == CHOICE_NODE:
+            idx = split_order.index(self.cell)
+            if max_index is not None:
+                assert idx > max_index
+            max_index = idx
+        else:
+            # every child of a sum node must be a choice node
+            for child in self.children:
+                assert child.letter == CHOICE_NODE
+            # sum node children must be sorted by cell (not split_order)
+            for a, b in zip(self.children, self.children[1:]):
+                assert a.cell < b.cell
+
+        for child in self.children:
+            if child:
+                child.assert_orderly(split_order, max_index)
 
     def assert_invariants(self, solver, is_top_max=None):
         """Ensure the tree is well-formed. Some desirable properties:
@@ -826,10 +912,16 @@ class EvalNode:
             word_table[node.trie_node] for node in self.all_nodes() if node.trie_node
         ]
 
-    def to_dot(self, cells: list[str], max_depth=100, trie=None) -> str:
+    def to_dot(self, cells: list[str], max_depth=100, trie=None, node_data=None) -> str:
         lookup_table = make_lookup_table(trie) if trie else None
         _root_id, dot = self.to_dot_help(
-            cells, "", {}, self.letter == CHOICE_NODE, max_depth, lookup_table
+            cells,
+            "",
+            {},
+            self.letter == CHOICE_NODE,
+            max_depth,
+            lookup_table,
+            node_data,
         )
         return f"""graph {{
     rankdir=LR;
@@ -840,7 +932,14 @@ class EvalNode:
 """
 
     def to_dot_help(
-        self, cells: list[str], prefix, cache, is_top_max, remaining_depth, lookup_table
+        self,
+        cells: list[str],
+        prefix,
+        cache,
+        is_top_max,
+        remaining_depth,
+        lookup_table,
+        node_data,
     ) -> tuple[str, str]:
         """Returns ID of this node plus DOT for its subtree."""
         is_dupe = False  # self in cache  # hasattr(self, "flag")
@@ -849,7 +948,10 @@ class EvalNode:
         # if self.letter != CHOICE_NODE:
         #     is_dupe = any_choice_collisions(self.children)
 
-        label = f"{self.bound}"
+        if node_data:
+            label = str(node_data.get(self, "-"))
+        else:
+            label = f"{self.bound}"
         attrs = ""
         if is_dupe:
             attrs = 'color="red"'
@@ -886,6 +988,7 @@ class EvalNode:
                 is_top_max and child.letter == CHOICE_NODE,
                 remaining_depth - 1,
                 lookup_table,
+                node_data,
             )
             for i, child in enumerate(self.children)
             if child
@@ -894,10 +997,10 @@ class EvalNode:
         #     c.letter == CHOICE_NODE for c in self.children
         # )
 
-        if self.letter != CHOICE_NODE and len(children) == 1 and not self.points:
-            # A sum node with no points and only one child is just a placeholder.
-            # Remove it from the graph to simplify the visualization.
-            return children[0]
+        # if self.letter != CHOICE_NODE and len(children) == 1 and not self.points:
+        #     # A sum node with no points and only one child is just a placeholder.
+        #     # Remove it from the graph to simplify the visualization.
+        #     return children[0]
 
         # print(f"{is_top_max=}, {all_choices=}")
         for i, (child_id, _) in enumerate(children):
@@ -1032,7 +1135,7 @@ def any_choice_collisions(choices: Sequence[EvalNode]) -> bool:
     return False
 
 
-def merge_choice_collisions_in_place(choices: list[EvalNode]):
+def merge_choice_collisions_in_place(choices: list[EvalNode], arena):
     choices.sort(key=lambda c: c.cell)
 
     i = 0
@@ -1040,7 +1143,7 @@ def merge_choice_collisions_in_place(choices: list[EvalNode]):
     while i < n:
         j = i + 1
         while j < n and choices[i].cell == choices[j].cell:
-            choices[i] = merge_trees(choices[i], choices[j])
+            choices[i] = merge_trees(choices[i], choices[j], arena)
             for k in range(j, n - 1):
                 choices[k] = choices[k + 1]
             n -= 1
@@ -1050,7 +1153,7 @@ def merge_choice_collisions_in_place(choices: list[EvalNode]):
         choices.pop()
 
 
-def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
+def squeeze_sum_node_in_place(node: EvalNode, arena, should_merge=False):
     """Absorb non-choice nodes into this sum node. Operates in-place.
 
     Returns a boolean indicating whether any changes were made.
@@ -1087,7 +1190,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
 
     # look for repeated choice cells
     if should_merge and any_choice_collisions(choice):
-        merge_choice_collisions_in_place(choice)
+        merge_choice_collisions_in_place(choice, arena)
 
     # There's something to absorb.
     # if I keep trie nodes, this would be a place to de-dupe them and improve the bound.
@@ -1104,7 +1207,7 @@ def squeeze_sum_node_in_place(node: EvalNode, should_merge=False):
     # new_children should be entirely choice nodes now, but there may be new collisions
     # TODO: is it more efficient to do this all at once, before absorbing child nodes?
     if should_merge and any_choice_collisions(new_children):
-        merge_choice_collisions_in_place(new_children)
+        merge_choice_collisions_in_place(new_children, arena)
 
     node.children = new_children
     # We need to take care here not to double-count points for the bound.
@@ -1191,7 +1294,7 @@ def dedupe_subtrees(t: EvalNode):
             node.children[i] = hash_to_node[n.structural_hash()]
 
 
-def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
+def merge_choice_children(a: EvalNode, b: EvalNode, arena, out: list[EvalNode]):
     i_a = 0
     i_b = 0
     ac = a.children
@@ -1215,7 +1318,7 @@ def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
             out.append(b)
             i_b += 1
         else:
-            out.append(merge_trees(a, b))
+            out.append(merge_trees(a, b, arena))
             i_a += 1
             i_b += 1
 
@@ -1232,15 +1335,17 @@ def merge_choice_children(a: EvalNode, b: EvalNode, out: list[EvalNode]):
         i_b += 1
 
 
-def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
+def merge_trees(a: EvalNode, b: EvalNode, arena) -> EvalNode:
     assert a.cell == b.cell, f"{a.cell} != {b.cell}"
     COUNTS["merge"] += 1
 
     if a.letter == CHOICE_NODE and b.letter == CHOICE_NODE:
         children = []
-        merge_choice_children(a, b, children)
+        merge_choice_children(a, b, arena, children)
 
         n = EvalNode()
+        if arena:
+            arena.add_node(n)
         n.letter = CHOICE_NODE
         n.cell = a.cell
         n.children = children
@@ -1255,14 +1360,162 @@ def merge_trees(a: EvalNode, b: EvalNode) -> EvalNode:
         children.sort(key=lambda c: c.cell)
 
         n = EvalNode()
+        if arena:
+            arena.add_node(n)
         n.letter = a.letter
         n.cell = a.cell
         n.children = children
         n.points = a.points + b.points
         n.bound = n.points + sum(child.bound for child in children if child)
         n.choice_mask = a.choice_mask | b.choice_mask  # TODO: recalculate?
-        squeeze_sum_node_in_place(n, True)
+        squeeze_sum_node_in_place(n, arena, True)
         return n
     raise ValueError(
         f"Cannot merge CHOICE_NODE with non-choice: {a.cell}: {a.letter}/{b.letter}"
     )
+
+
+def split_orderly_tree(tree: EvalNode, arena: PyArena):
+    """Split an orderly(N) into the choice for N and an orderly(N-1) tree.
+
+    Points on the input tree are put on the output tree.
+    """
+    assert tree.letter != CHOICE_NODE
+    top_choice = tree.children[0]
+    assert top_choice.letter == CHOICE_NODE
+
+    children = tree.children[1:]
+    n = EvalNode()
+    arena.add_node(n)
+    n.letter = tree.letter
+    n.cell = tree.cell
+    n.children = children
+    n.points = tree.points
+    n.bound = n.points + sum(child.bound for child in children if child)
+    n.choice_mask = 0
+    for child in children:
+        n.choice_mask |= child.choice_mask
+    return top_choice, n
+
+
+def merge_orderly_tree(a: EvalNode, b: EvalNode, arena: PyArena):
+    """Merge two orderly(N) trees."""
+    assert a.letter != CHOICE_NODE
+    assert b.letter != CHOICE_NODE
+    return merge_orderly_tree_children(a, b.children, b.points, arena)
+
+
+def merge_orderly_tree_children(
+    a: EvalNode, bc: Sequence[EvalNode], b_points: int, arena: PyArena
+):
+    # TODO: it may be safe to merge bc in-place into a and avoid an allocation.
+    #       might need to be careful with the out.append(b) case, though.
+    assert a.letter != CHOICE_NODE
+    in_a = a
+
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    a_n = len(ac)
+    b_n = len(bc)
+    out = []
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.cell < b.cell:
+            out.append(a)
+            i_a += 1
+        elif b.cell < a.cell:
+            out.append(b)
+            i_b += 1
+        else:
+            out.append(merge_orderly_choice_children(a, b, arena))
+            i_a += 1
+            i_b += 1
+
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
+
+    n = EvalNode()
+    n.letter = in_a.letter
+    n.cell = in_a.cell
+    n.children = out
+    n.points = in_a.points + b_points
+    n.bound = n.points + sum(child.bound for child in n.children)
+    n.choice_mask = 0
+    for child in n.children:
+        n.choice_mask |= child.choice_mask
+    arena.add_node(n)
+    return n
+
+
+def merge_orderly_choice_children(a: EvalNode, b: EvalNode, arena: PyArena):
+    """Merge two orderly choice nodes for the same cell."""
+    in_a, in_b = a, b
+    assert a.letter == CHOICE_NODE
+    assert b.letter == CHOICE_NODE
+    assert a.cell == b.cell
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    bc = b.children
+    a_n = len(ac)
+    b_n = len(bc)
+
+    out = []
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.letter < b.letter:
+            out.append(a)
+            i_a += 1
+        elif b.letter < a.letter:
+            out.append(b)
+            i_b += 1
+        else:
+            out.append(merge_orderly_tree(a, b, arena))
+            i_a += 1
+            i_b += 1
+
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
+
+    n = EvalNode()
+    n.letter = in_a.letter
+    n.cell = in_a.cell
+    n.children = out
+    n.points = 0
+    n.bound = max(child.bound for child in n.children)
+    n.choice_mask = in_a.choice_mask | in_b.choice_mask
+    arena.add_node(n)
+    return n

@@ -153,7 +153,6 @@ def get_breaker(args) -> BreakingBundle:
             dims,
             best_score,
             switchover_level=switchover_level,
-            free_after_lift=args.free_after_lift,
             log_breaker_progress=args.log_breaker_progress,
             letter_grouping=args.letter_grouping,
         )
@@ -244,12 +243,6 @@ def main():
         "--resume_from",
         type=str,
         help="Glob pattern of ndjson output files from a previous run.",
-    )
-    parser.add_argument(
-        "--free_after_lift",
-        action="store_true",
-        help="Free memory before bound_remaining_boards in HybridBreaker. "
-        "This is a ~5%% performance hit but may reduce the time that memory is held.",
     )
     parser.add_argument(
         "--log_per_board_stats",

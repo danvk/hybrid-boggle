@@ -147,12 +147,15 @@ class EvalNode {
       vector<string> cells, int cutoff, vector<int> split_order
   );
 
-  vector<pair<int, string>> OrderlyBound(
+  tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
       int cutoff,
       const vector<string>& cells,
       const vector<int>& split_order,
-      const vector<pair<int, int>>* preset_cells
+      const vector<pair<int, int>>& preset_cells
   ) const;
+
+  vector<const EvalNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
+      const;
 
  private:
   unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask)
