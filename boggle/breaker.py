@@ -3,15 +3,14 @@
 This is the 2025 strategy, as described at:
 https://www.danvk.org/2025/02/13/boggle2025.html
 
-This performs several "lift" operations on the tree to synchronize choices across
-subtrees and reduce the bound. After a few of these (the number is the "switchover_level"),
+This performs several "force" operations on the tree to create smaller subtrees and
+reduce the bound. After a few of these (determined by "switchover_score"),
 it stops modifying the tree and does a DFS on the remaining choices until the board class
-is fully broken (this done in "bound_remaining_boards").
+is fully broken.
 
-Lifting uses a lot of memory but can make bound_remaining_boards dramatically faster,
-especially for complex, hard-to-break board classes. On the other hand, lifting too many
-times wastes memory and is slower than bound_remaining_boards. There is a sweet spot for
-each board class.
+Forcing cells uses memory to make the final bounding DFS dramatically faster, especially
+for complex, hard-to-break board classes. On the other hand, forcing too many cells
+wastes memory and is slower than the DFS (orderly_bound).
 """
 
 import dataclasses
@@ -47,7 +46,6 @@ class BreakDetails:
 
 @dataclass
 class HybridBreakDetails(BreakDetails):
-    sum_union: int
     bounds: dict[int, int]
     nodes: dict[int, int]
     boards_to_test: int
@@ -72,7 +70,7 @@ class HybridTreeBreaker:
         dims: tuple[int, int],
         best_score: int,
         *,
-        switchover_level: int | list[tuple[int, int]],
+        switchover_score: int,
         log_breaker_progress: bool,
         letter_grouping: str = "",
     ):
@@ -84,7 +82,8 @@ class HybridTreeBreaker:
         self.orig_reps_ = 0
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
-        self.switchover_level_input = switchover_level
+        self.switchover_score = switchover_score
+        self.switchover_depth = dims[0] * dims[1] - 4  # TODO: make this configurable
         self.log_breaker_progress = log_breaker_progress
         self.rev_letter_grouping = (
             reverse_letter_map(get_letter_map(letter_grouping))
@@ -105,7 +104,6 @@ class HybridTreeBreaker:
             elim_level=Counter(),
             secs_by_level=defaultdict(float),
             bounds={},
-            sum_union=0,
             boards_to_test=0,
             expanded_to_test=0,
             init_nodes=0,
@@ -121,28 +119,12 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena)
-        if isinstance(tree, EvalNode):
-            num_nodes = tree.node_count()
-        else:
-            num_nodes = arena.num_nodes()
+        num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
-            # TODO: this crashes in C++, which no longer has an EvalNode::unique_node_count method.
-            self.mark += 1
             print(f"root {tree.bound=}, {num_nodes} nodes")
-
-        if isinstance(self.switchover_level_input, int):
-            self.switchover_level = self.switchover_level_input
-        else:
-            self.switchover_level = 0
-            for level, size in self.switchover_level_input:
-                if num_nodes >= size:
-                    self.switchover_level = level
-
-        self.switchover_score = 8_000
 
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
-        self.details_.sum_union = self.etb.SumUnion()
         self.details_.init_nodes = arena.num_nodes()
         self.details_.nodes[0] = self.details_.init_nodes
 
@@ -160,7 +142,7 @@ class HybridTreeBreaker:
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
-        elif tree.bound <= self.switchover_score or level > 12:
+        elif tree.bound <= self.switchover_score or level > self.switchover_depth:
             self.switch_to_score(tree, level, choices)
         else:
             self.force_and_filter(tree, level, choices)
@@ -229,9 +211,6 @@ class HybridTreeBreaker:
                     f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s"
                 )
             return
-
-        # if self.log_breaker_progress:
-        #     print(f"Found {len(boards_to_test)} to test.")
 
         self.details_.boards_to_test += len(boards_to_test)
         start_s = time.time()
