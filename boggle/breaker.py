@@ -146,7 +146,7 @@ class HybridTreeBreaker:
         self.details_.init_nodes = arena.num_nodes()
         self.details_.nodes[0] = self.details_.init_nodes
 
-        self.attack_tree(tree, 1, [], arena)
+        self.attack_tree(tree, 1, [])
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
@@ -157,21 +157,19 @@ class HybridTreeBreaker:
         tree: EvalNode,
         level: int,
         choices: list[tuple[int, int]],
-        arena,
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
         elif level >= self.switchover_level:
-            self.switch_to_score(tree, level, choices, arena)
+            self.switch_to_score(tree, level, choices)
         else:
-            self.force_and_filter(tree, level, choices, arena)
+            self.force_and_filter(tree, level, choices)
 
     def force_and_filter(
         self,
         tree: EvalNode,
         level: int,
         choices: list[tuple[int, int]],
-        arena,
     ) -> None:
         # choices list parallels split_order
         assert len(choices) < len(self.cells)
@@ -181,6 +179,7 @@ class HybridTreeBreaker:
 
         start_s = time.time()
         self.mark += 1
+        arena = self.etb.create_arena()
         trees = tree.orderly_force_cell(
             cell,
             num_lets,
@@ -201,11 +200,11 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # TODO: how does this happen?
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices, arena)
+            self.attack_tree(tree, level + 1, choices)
         choices.pop()
 
     def switch_to_score(
-        self, tree: EvalNode, level: int, choices: list[tuple[int, int]], arena
+        self, tree: EvalNode, level: int, choices: list[tuple[int, int]]
     ) -> None:
         start_s = time.time()
         remaining_cells = self.split_order[len(choices) :]
