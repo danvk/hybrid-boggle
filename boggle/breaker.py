@@ -57,8 +57,6 @@ class HybridBreakDetails(BreakDetails):
     freed_nodes: int
     free_time_s: float
     n_bound: int
-    bound_elim_level: list[int]
-    bound_level: list[int]
 
 
 class HybridTreeBreaker:
@@ -116,8 +114,6 @@ class HybridTreeBreaker:
             freed_nodes=0,
             free_time_s=0.0,
             n_bound=0,
-            bound_level=[0],  #  * (1 + len(self.cells)),
-            bound_elim_level=[0],  #  * (1 + len(self.cells)),
         )
         self.mark = 1  # New mark for a fresh EvalTree
         self.elim_ = 0
@@ -186,7 +182,6 @@ class HybridTreeBreaker:
         cell = self.split_order[len(choices)]
         num_lets = len(self.cells[cell])
 
-        # TODO: it's probably faster to re-use this
         start_s = time.time()
         self.mark += 1
         trees = tree.orderly_force_cell(
