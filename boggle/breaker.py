@@ -128,9 +128,7 @@ class HybridTreeBreaker:
         if self.log_breaker_progress:
             # TODO: this crashes in C++, which no longer has an EvalNode::unique_node_count method.
             self.mark += 1
-            print(
-                f"root {tree.bound=}, {num_nodes} nodes, {tree.unique_node_count(self.mark)} unique nodes"
-            )
+            print(f"root {tree.bound=}, {num_nodes} nodes")
 
         if isinstance(self.switchover_level_input, int):
             self.switchover_level = self.switchover_level_input
@@ -220,10 +218,14 @@ class HybridTreeBreaker:
         #     self.details_.bound_level[i + len(choices)] += bv
         # print(time.time() - start_s, seq, tree.bound, this_failures)
         boards_to_test = [board for _score, board in score_boards]
-        elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[level] += elapsed_s
+        bound_elapsed_s = time.time() - start_s
+        self.details_.secs_by_level[level] += bound_elapsed_s
 
         if not boards_to_test:
+            if self.log_breaker_progress:
+                print(
+                    f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s} s"
+                )
             return
 
         if self.log_breaker_progress:
@@ -253,3 +255,8 @@ class HybridTreeBreaker:
         self.details_.expanded_to_test += n_expanded
         if self.log_breaker_progress and self.rev_letter_grouping:
             print(f"Evaluated {n_expanded} boards.")
+
+        if self.log_breaker_progress:
+            print(
+                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s}s / test {n_expanded} in {elapsed_s}s"
+            )
