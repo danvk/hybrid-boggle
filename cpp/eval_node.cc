@@ -495,6 +495,7 @@ EvalNode* merge_orderly_choice_children(
   EvalNode* n = arena.NewNodeWithCapcity(out.size());
   n->letter_ = EvalNode::CHOICE_NODE;
   n->cell_ = a->cell_;
+  // TODO: could avoid this copy with a first pass to determine overlap
   n->SetChildrenFromVector(out);
   n->points_ = 0;
   n->bound_ = 0;
@@ -551,6 +552,7 @@ EvalNode* merge_orderly_tree_children(
   EvalNode* n = arena.NewNodeWithCapcity(out.size());
   n->letter_ = a->letter_;
   n->cell_ = a->cell_;
+  // TODO: could avoid this copy with a first pass to determine overlap
   n->SetChildrenFromVector(out);
   n->points_ = a->points_ + b_points;
   n->bound_ = n->points_;
