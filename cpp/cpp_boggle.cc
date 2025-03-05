@@ -42,8 +42,7 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
       .def("as_string", &TB::as_string)
       .def("SumUnion", &TB::SumUnion)
       .def("NumReps", &TB::NumReps)
-      .def("create_arena", &TB::CreateArena)
-      .def("create_vector_arena", &TB::CreateVectorArena);
+      .def("create_arena", &TB::CreateArena);
 }
 
 template <int M, int N>
@@ -108,13 +107,11 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readonly("letter", &EvalNode::letter_)
       .def_readonly("cell", &EvalNode::cell_)
       .def_readonly("bound", &EvalNode::bound_)
-      .def_readonly("children", &EvalNode::children_)
       .def_readonly("points", &EvalNode::points_)
       .def("score_with_forces", &EvalNode::ScoreWithForces)
-      .def("recompute_score", &EvalNode::RecomputeScore)
       .def("node_count", &EvalNode::NodeCount)
       .def("unique_node_count", &EvalNode::UniqueNodeCount)
-      .def("add_word", &EvalNode::AddWord)
+      .def("add_word", &EvalNode::AddWord, py::return_value_policy::reference)
       .def(
           "orderly_force_cell",
           &EvalNode::OrderlyForceCell,
@@ -124,19 +121,22 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("arena")
       )
       .def("structural_hash", &EvalNode::StructuralHash)
+      .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference)
       .def("orderly_bound", &EvalNode::OrderlyBound);
 
   m.def("create_eval_node_arena", &create_eval_node_arena);
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
       .def("free_the_children", &EvalNodeArena::FreeTheChildren)
-      .def("new_node", &EvalNodeArena::NewNode, py::return_value_policy::reference)
+      .def(
+          "new_node_with_capacity",
+          &EvalNodeArena::NewNodeWithCapacity,
+          py::return_value_policy::reference
+      )
+      .def(
+          "new_root_node_with_capacity",
+          &EvalNodeArena::NewRootNodeWithCapacity,
+          py::return_value_policy::reference
+      )
       .def("num_nodes", &EvalNodeArena::NumNodes);
-
-  // TODO: remove this once it's not part of a public API.
-  m.def("create_vector_arena", &create_vector_arena);
-  py::class_<VectorArena>(m, "VectorArena")
-      .def(py::init())
-      .def("free_the_children", &VectorArena::FreeTheChildren)
-      .def("num_nodes", &VectorArena::NumNodes);
 }

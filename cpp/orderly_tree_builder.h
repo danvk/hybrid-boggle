@@ -27,7 +27,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   const EvalNode* BuildTree(EvalNodeArena& arena, bool dedupe = false);
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
-  unique_ptr<VectorArena> CreateVectorArena() { return create_vector_arena(); }
 
   int SumUnion() const { return 0; }
 
@@ -45,25 +44,20 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 template <int M, int N>
 const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
-  root_ = new EvalNode();
-  root_->letter_ = EvalNode::ROOT_NODE;
-  root_->cell_ = 0;  // irrelevant
-  root_->points_ = 0;
-  root_->bound_ = 0;
+  // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
+  root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
   num_letters_.resize(M * N);
   for (int i = 0; i < M * N; i++) {
     num_letters_[i] = strlen(bd_[i]);
   }
-
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
-
   auto root = root_;
   root_ = NULL;
-  arena.AddNode(root);
+  // arena.PrintStats();
 
   /*
   // This can be used to investigate the layout of EvalNode.
@@ -73,10 +67,11 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
   cout << "root->cell_: " << (uintptr_t)&root->cell_ - r << endl;
   cout << "root->points_: " << (uintptr_t)&root->points_ - r << endl;
+  cout << "root->num_children_: " << (uintptr_t)&root->num_children_ - r << endl;
+  cout << "root->capacity_: " << (uintptr_t)&root->capacity_ - r << endl;
   cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
-
   return root;
 }
 
@@ -130,7 +125,18 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
           return cell_to_order_[a.first] < cell_to_order_[b.first];
         }
     );
-    root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
+    /*
+    cout << "AddWord:";
+    for (int j = 0; j < n; j++) {
+      auto [cell, letter] = orderly_choices_[j];
+      cout << " (" << cell << "=" << letter << "):" << bd_[cell][letter];
+    }
+    cout << endl;
+    */
+    auto new_root =
+        root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
+    // cout << "/AddWord" << endl;
+    assert(new_root == root_);
   }
 
   used_ ^= (1 << i);

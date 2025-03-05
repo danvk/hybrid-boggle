@@ -45,13 +45,17 @@ class PyArena:
     def num_nodes(self):
         return self.count
 
-    def new_node(self):
+    def new_node_with_capacity(self, n: int):
         n = EvalNode()
         n.letter = ROOT_NODE
         n.cell = 0
         n.bound = 0
         n.points = 0
+        self.count += 1
         return n
+
+    def new_root_node_with_capacity(self, n: int):
+        return self.new_node_with_capacity(n)
 
     def add_node(self, node):
         self.count += 1
@@ -98,7 +102,6 @@ class EvalNode:
         cell_counts: list[int] = None,
     ):
         """Add a word at the end of a sequence of choices to the tree."""
-        # TODO: this could update bounds to match the C++
         assert self.letter != CHOICE_NODE
         if not choices:
             self.points += points
@@ -326,6 +329,9 @@ class EvalNode:
         return failures, visit_at_level, elim_at_level
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def get_children(self):
+        return self.children
 
     def node_counts(self, out=None):
         if out is None:
@@ -647,9 +653,11 @@ def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
         cell = cells[node.cell][node.letter]
         line = f"{indent}{cell} ({node.cell}={node.letter} {node.points}/{node.bound})"
     lines.append(line)
-    for child in node.children:
+    for child in node.get_children():
         if child:
             _into_list(child, cells, lines, " " + indent)
+        else:
+            print("null!")
         # There are some slight discrepancies between C++ and Python trees that
         # are functionally irrelevant but surfaced if you uncomment this:
         # else:
@@ -660,6 +668,23 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
     lines = []
     _into_list(node, cells, lines, indent="")
     return "\n".join(lines)
+
+
+def size_stats(
+    node: EvalNode, level=0, num_children=None, num_nodes=None, num_singles=None
+):
+    if num_children is None:
+        num_children = Counter[int]()
+        num_nodes = Counter[int]()
+        num_singles = Counter[int]()
+    children = node.get_children()
+    num_children[level] += len(children)
+    num_nodes[level] += 1
+    if len(children) == 1:
+        num_singles[level] += 1
+    for child in children:
+        size_stats(child, level + 1, num_children, num_nodes, num_singles)
+    return num_children, num_nodes, num_singles
 
 
 def eval_all(node: EvalNode, cells: list[str]):

@@ -61,7 +61,7 @@ class HybridBreakDetails(BreakDetails):
 
 
 class HybridTreeBreaker:
-    """This uses force_cell at the top of the tree and score_with_forces at the bottom.
+    """This uses orderly_force_cell at the top of the tree and orderly_bound at the bottom.
 
     This strikes a good balance of allocating memory only when it will save a lot of CPU.
     """
@@ -125,6 +125,10 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena)
+        # num_children, num_nodes, num_singles = size_stats(tree)
+        # print(num_children)
+        # print(num_singles)
+        # print(num_nodes)
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")

@@ -97,7 +97,7 @@ mark = 1
 def tree_stats(t: EvalNode) -> str:
     global mark
     mark += 1
-    return f"{t.bound=}, {t.node_count()} nodes, {t.unique_node_count(mark)} unique"
+    return f"{t.bound=}, {t.node_count()} nodes"
 
 
 def main():

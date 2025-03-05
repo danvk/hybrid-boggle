@@ -1,5 +1,5 @@
-ROOT (1)
- CHOICE (0 <1) points=0
+ROOT (2)
+ CHOICE (0 <2) points=0
   b (0=0 0/1)
    CHOICE (1 <1) points=0
     a (1=0 0/1)
@@ -17,8 +17,12 @@ ROOT (1)
     a (1=0 0/1)
      CHOICE (2 <1) points=0
       n (2=0 1/1)
-  d (0=2 0/1)
+  d (0=2 0/2)
    CHOICE (1 <1) points=0
     i (1=2 0/1)
      CHOICE (2 <1) points=0
       d (2=2 1/1)
+   CHOICE (2 <1) points=0
+    r (2=1 0/1)
+     CHOICE (1 <1) points=0
+      e (1=1 1/1)

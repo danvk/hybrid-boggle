@@ -15,57 +15,48 @@ using namespace std;
 
 class EvalNode;
 
-template <typename T>
-class Arena {
+// Allocate this much memory at once.
+const int EVAL_NODE_ARENA_BUFFER_SIZE = 1'048'576;
+
+class EvalNodeArena {
  public:
-  ~Arena() { FreeTheChildren(); }
+  EvalNodeArena() : num_nodes_(0), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
+  ~EvalNodeArena() { FreeTheChildren(); }
 
   void FreeTheChildren() {
-    // cout << "Freeing " << owned_nodes.size() << " nodes" << endl;
-    for (auto node : owned_nodes_) {
+    // cout << "Freeing " << buffers_.size() << " buffers" << endl;
+    for (auto buffer : buffers_) {
       // cout << "Freeing " << node << endl;
-      delete node;
+      delete[] buffer;
       // cout << "(done)" << endl;
     }
-    owned_nodes_.clear();
+    buffers_.clear();
   }
 
-  int NumNodes() { return owned_nodes_.size(); }
+  int NumNodes() { return num_nodes_; }
 
-  void AddNode(T* node) {
-    // for (auto n : owned_nodes_) {
-    //   if (n == node) {
-    //     cout << "Double add!" << endl;
-    //   }
-    // }
-    owned_nodes_.push_back(node);
-  }
+  EvalNode* NewNodeWithCapacity(uint8_t capacity);
 
   // For testing
-  T* NewNode();
-
-  // Returns the number of nodes deleted
-  int MarkAndSweep(T* root, uint32_t mark);
-
-  // friend EvalNode;
+  EvalNode* NewRootNodeWithCapacity(uint8_t capacity);
+  void PrintStats();
 
  private:
-  vector<T*> owned_nodes_;
+  void AddBuffer();
+  vector<char*> buffers_;
+  int num_nodes_;
+  int tip_;
 };
 
-typedef Arena<EvalNode> EvalNodeArena;
-typedef Arena<vector<const EvalNode*>> VectorArena;
-
 unique_ptr<EvalNodeArena> create_eval_node_arena();
-unique_ptr<VectorArena> create_vector_arena();
 
 class EvalNode {
  public:
-  EvalNode() : points_(0) {}
+  EvalNode() : points_(0), num_children_(0) {}
   ~EvalNode() {}
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
-  void AddWordWork(
+  EvalNode* AddWordWork(
       int num_choices,
       pair<int, int>* choices,
       const int* num_letters,
@@ -89,14 +80,15 @@ class EvalNode {
   // points contributed by _this_ node.
   uint16_t points_;
 
+  uint8_t num_children_;
+  uint8_t capacity_;
+
   // cached computation across all children
   uint32_t bound_;
 
   // These might be the various options on a cell or the various directions.
-  // TODO: the "const" here is increasingly a joke.
-  vector<const EvalNode*> children_;
+  EvalNode* children_[];
 
-  int RecomputeScore() const;
   int NodeCount() const;
   unsigned int UniqueNodeCount(uint32_t mark) const;
 
@@ -110,9 +102,10 @@ class EvalNode {
   vector<const EvalNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
       const;
 
+  vector<EvalNode*> GetChildren();
+
  private:
-  unsigned int ScoreWithForcesMask(const vector<int>& forces, uint16_t choice_mask)
-      const;
+  EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);
 };
 
 #endif  // EVAL_NODE_H
