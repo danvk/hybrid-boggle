@@ -497,15 +497,7 @@ EvalNode* merge_orderly_choice_children(
       ++it_b;
     }
   }
-  // TODO: this could just be subtraction
-  while (it_a != a_end) {
-    num_children += 1;
-    ++it_a;
-  }
-  while (it_b != b_end) {
-    num_children += 1;
-    ++it_b;
-  }
+  num_children += (a_end - it_a) + (b_end - it_b);
 
   EvalNode* n = arena.NewNodeWithCapacity(num_children);
   n->letter_ = EvalNode::CHOICE_NODE;
@@ -583,15 +575,7 @@ EvalNode* merge_orderly_tree_children(
       ++it_b;
     }
   }
-  // TODO: this could just be subtraction
-  while (it_a != a_end) {
-    num_children += 1;
-    ++it_a;
-  }
-  while (it_b != b_end) {
-    num_children += 1;
-    ++it_b;
-  }
+  num_children += (a_end - it_a) + (b_end - it_b);
 
   EvalNode* n = arena.NewNodeWithCapacity(num_children);
   n->letter_ = a->letter_;
