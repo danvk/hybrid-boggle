@@ -332,6 +332,7 @@ EvalNode* EvalNodeArena::NewNodeWithCapcity(uint8_t capacity) {
   char* buf = &(*buffers_.rbegin())[tip_];
   EvalNode* n = new (buf) EvalNode;
   // TODO: update tip_ to enforce alignment
+  // TODO: probably don't need to set all these fields
   tip_ += size;
   n->letter_ = EvalNode::ROOT_NODE;
   n->cell_ = 0;
