@@ -28,6 +28,7 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   clone->letter_ = letter_;
   clone->cell_ = cell_;
   clone->points_ = points_;
+  clone->bound_ = bound_;
   clone->num_children_ = num_children_ + 1;
   // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
   memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
