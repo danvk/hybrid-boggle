@@ -181,8 +181,8 @@ def test_orderly_merge():
     assert force[1].bound == 22
 
 
-def test_orderly_force22():
-    is_python = True
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_force22(is_python):
     _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "st ea ea tr"
     cells = board.split(" ")
