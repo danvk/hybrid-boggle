@@ -44,7 +44,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 template <int M, int N>
 const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
-  cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
+  // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   root_ = arena.NewNodeWithCapcity(M * N);  // this will never be reallocated
   root_->letter_ = EvalNode::ROOT_NODE;
   root_->cell_ = 0;  // irrelevant
@@ -62,6 +62,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   auto root = root_;
   root_ = NULL;
 
+  /*
   // This can be used to investigate the layout of EvalNode.
   cout << "sizeof(EvalNode) = " << sizeof(EvalNode) << endl;
   cout << "root: " << (uintptr_t)root << endl;
@@ -73,7 +74,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   cout << "root->capacity_: " << (uintptr_t)&root->capacity_ - r << endl;
   cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
-
+  */
   return root;
 }
 
@@ -127,15 +128,17 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
           return cell_to_order_[a.first] < cell_to_order_[b.first];
         }
     );
+    /*
     cout << "AddWord:";
     for (int j = 0; j < n; j++) {
       auto [cell, letter] = orderly_choices_[j];
       cout << " (" << cell << "=" << letter << "):" << bd_[cell][letter];
     }
     cout << endl;
+    */
     auto new_root =
         root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
-    cout << "/AddWord" << endl;
+    // cout << "/AddWord" << endl;
     assert(new_root == root_);
   }
 
