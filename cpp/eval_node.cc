@@ -1,6 +1,7 @@
 #include "eval_node.h"
 
 #include <bit>
+#include <cstring>
 #include <functional>
 #include <limits>
 #include <new>
