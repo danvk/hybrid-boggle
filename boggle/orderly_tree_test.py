@@ -181,6 +181,24 @@ def test_orderly_merge():
     assert force[1].bound == 22
 
 
+def test_orderly_force22():
+    is_python = True
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
+    board = "st ea ea tr"
+    cells = board.split(" ")
+    num_letters = [len(cell) for cell in cells]
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    t = otb.BuildTree(arena)
+    force = t.orderly_force_cell(0, num_letters[0], arena)
+
+    txt = "\n\n".join(
+        f"{i}: " + eval_node_to_string(t, cells) for i, t in enumerate(force)
+    )
+
+    assert outsource(txt) == snapshot(external("3f6cd59206d5*.txt"))
+
+
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
 def test_orderly_bound33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")

@@ -628,7 +628,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
   }
 
   if (non_cell_points && top_choice->num_children_ < num_lets) {
-    // TODO: these could all be the same node.
+    // TODO: these could all be the same node with a different EvalNode layout.
     for (int i = 0; i < num_lets; ++i) {
       if (!out[i]) {
         EvalNode* point_node = arena.NewNodeWithCapcity(0);
