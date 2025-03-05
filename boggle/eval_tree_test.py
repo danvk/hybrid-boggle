@@ -26,6 +26,7 @@ def test_add_word(create_arena):
     root.add_word([(0, 0), (1, 1), (2, 2)], 1, arena)  # bed
     root.add_word([(0, 0), (1, 2), (2, 2)], 1, arena)  # bid
     root.add_word([(0, 2), (1, 2), (2, 2)], 1, arena)  # did
+    # root.add_word([(0, 2), (2, 1), (1, 1)], 1, arena)  # dre
 
     # print(root.to_dot(cells))
 
