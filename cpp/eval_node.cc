@@ -47,11 +47,6 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   return clone;
 }
 
-void EvalNode::SetChildrenFromVector(const vector<EvalNode*>& children) {
-  num_children_ = children.size();
-  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
-}
-
 EvalNode* EvalNode::AddWordWork(
     int num_choices,
     pair<int, int>* choices,
@@ -348,6 +343,15 @@ EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   tip_ += size;
   n->capacity_ = capacity;
   return n;
+}
+
+EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
+  auto root = NewNodeWithCapacity(capacity);
+  root->letter_ = EvalNode::ROOT_NODE;
+  root->cell_ = 0;  // irrelevant
+  root->points_ = 0;
+  root->bound_ = 0;
+  return root;
 }
 
 // block-scope functions cannot be declared inline.

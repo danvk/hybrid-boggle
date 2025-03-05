@@ -37,6 +37,8 @@ class EvalNodeArena {
 
   EvalNode* NewNodeWithCapacity(uint8_t capacity);
 
+  // For testing
+  EvalNode* NewRootNodeWithCapacity(uint8_t capacity);
   void PrintStats();
 
  private:
@@ -99,8 +101,6 @@ class EvalNode {
 
   vector<const EvalNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
       const;
-
-  void SetChildrenFromVector(const vector<EvalNode*>& children);
 
   vector<EvalNode*> GetChildren();
 
