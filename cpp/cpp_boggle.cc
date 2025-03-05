@@ -130,7 +130,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("free_the_children", &EvalNodeArena::FreeTheChildren)
       .def(
           "new_node_with_capacity",
-          &EvalNodeArena::NewNodeWithCapcity,
+          &EvalNodeArena::NewNodeWithCapacity,
           py::return_value_policy::reference
       )
       .def("num_nodes", &EvalNodeArena::NumNodes);

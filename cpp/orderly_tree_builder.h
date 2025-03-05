@@ -45,7 +45,7 @@ template <int M, int N>
 const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
-  root_ = arena.NewNodeWithCapcity(M * N);  // this will never be reallocated
+  root_ = arena.NewNodeWithCapacity(M * N);  // this will never be reallocated
   root_->letter_ = EvalNode::ROOT_NODE;
   root_->cell_ = 0;  // irrelevant
   root_->points_ = 0;

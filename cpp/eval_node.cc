@@ -35,7 +35,7 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   }
   num_reallocs++;
   // cout << "Exceeded capacity!" << endl;
-  EvalNode* clone = arena.NewNodeWithCapcity(capacity_ + 2);
+  EvalNode* clone = arena.NewNodeWithCapacity(capacity_ + 2);
   clone->letter_ = letter_;
   clone->cell_ = cell_;
   clone->points_ = points_;
@@ -82,7 +82,7 @@ EvalNode* EvalNode::AddWordWork(
   EvalNode* new_me = this;
   if (!choice_child) {
     // TODO: 1 could be a function of num_choices
-    choice_child = arena.NewNodeWithCapcity(1);
+    choice_child = arena.NewNodeWithCapacity(1);
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
     choice_child->bound_ = 0;
@@ -102,7 +102,7 @@ EvalNode* EvalNode::AddWordWork(
   }
   if (!letter_child) {
     // TODO: capacity could be a more complex function of num_choices
-    letter_child = arena.NewNodeWithCapcity(num_choices == 1 ? 0 : 1);
+    letter_child = arena.NewNodeWithCapacity(num_choices == 1 ? 0 : 1);
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
@@ -335,7 +335,7 @@ void EvalNodeArena::AddBuffer() {
   tip_ = 0;
 }
 
-EvalNode* EvalNodeArena::NewNodeWithCapcity(uint8_t capacity) {
+EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
   // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
   if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
@@ -509,7 +509,7 @@ EvalNode* merge_orderly_choice_children(
     ++it_b;
   }
 
-  EvalNode* n = arena.NewNodeWithCapcity(out.size());
+  EvalNode* n = arena.NewNodeWithCapacity(out.size());
   n->letter_ = EvalNode::CHOICE_NODE;
   n->cell_ = a->cell_;
   // TODO: could avoid this copy with a first pass to determine overlap
@@ -534,45 +534,77 @@ EvalNode* merge_orderly_tree_children(
 ) {
   assert(a->letter_ != EvalNode::CHOICE_NODE);
 
-  vector<EvalNode*> out;
+  // TODO: factor out this counting
+  int num_children = 0;
   auto it_a = &a->children_[0];
   auto it_b = bc;
   const auto& a_end = it_a + a->num_children_;
   const auto& b_end = it_b + num_bc;
-
   while (it_a != a_end && it_b != b_end) {
     const auto& a_child = *it_a;
     const auto& b_child = *it_b;
     if (a_child->cell_ < b_child->cell_) {
-      out.push_back(a_child);
+      num_children += 1;
       ++it_a;
     } else if (b_child->cell_ < a_child->cell_) {
-      out.push_back(b_child);
+      num_children += 1;
       ++it_b;
     } else {
-      out.push_back(merge_orderly_choice_children(a_child, b_child, arena));
+      num_children += 1;
       ++it_a;
       ++it_b;
     }
   }
 
   while (it_a != a_end) {
-    out.push_back(*it_a);
+    num_children += 1;
     ++it_a;
   }
 
   while (it_b != b_end) {
-    out.push_back(*it_b);
+    num_children += 1;
     ++it_b;
   }
 
-  EvalNode* n = arena.NewNodeWithCapcity(out.size());
+  EvalNode* n = arena.NewNodeWithCapacity(num_children);
   n->letter_ = a->letter_;
   n->cell_ = a->cell_;
-  // TODO: could avoid this copy with a first pass to determine overlap
-  n->SetChildrenFromVector(out);
   n->points_ = a->points_ + b_points;
   n->bound_ = n->points_;
+
+  it_a = &a->children_[0];
+  it_b = bc;
+  int out_i = 0;
+
+  while (it_a != a_end && it_b != b_end) {
+    const auto& a_child = *it_a;
+    const auto& b_child = *it_b;
+    if (a_child->cell_ < b_child->cell_) {
+      n->children_[out_i++] = a_child;
+      ++it_a;
+    } else if (b_child->cell_ < a_child->cell_) {
+      n->children_[out_i++] = b_child;
+      ++it_b;
+    } else {
+      n->children_[out_i++] = merge_orderly_choice_children(a_child, b_child, arena);
+      ++it_a;
+      ++it_b;
+    }
+  }
+
+  while (it_a != a_end) {
+    n->children_[out_i++] = *it_a;
+    ++it_a;
+  }
+
+  while (it_b != b_end) {
+    n->children_[out_i++] = *it_a;
+    ++it_b;
+  }
+  assert(out_i == num_children);
+  n->num_children_ = num_children;
+
+  // TODO: fold this into the previous loop
   for (int i = 0; i < n->num_children_; i++) {
     auto child = n->children_[i];
     if (child) {
@@ -631,7 +663,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
     // TODO: these could all be the same node with a different EvalNode layout.
     for (int i = 0; i < num_lets; ++i) {
       if (!out[i]) {
-        EvalNode* point_node = arena.NewNodeWithCapcity(0);
+        EvalNode* point_node = arena.NewNodeWithCapacity(0);
         point_node->points_ = point_node->bound_ = non_cell_points;
         point_node->cell_ = cell;
         point_node->letter_ = i;

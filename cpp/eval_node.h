@@ -35,7 +35,7 @@ class EvalNodeArena {
 
   int NumNodes() { return num_nodes_; }
 
-  EvalNode* NewNodeWithCapcity(uint8_t capacity);
+  EvalNode* NewNodeWithCapacity(uint8_t capacity);
 
   void PrintStats();
 
