@@ -667,6 +667,18 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
     return "\n".join(lines)
 
 
+def size_stats(node: EvalNode, level=0, num_children=None, num_nodes=None):
+    if num_children is None:
+        num_children = Counter[int]()
+        num_nodes = Counter[int]()
+    children = node.get_children()
+    num_children[level] += len(children)
+    num_nodes[level] += 1
+    for child in children:
+        size_stats(child, level + 1, num_children, num_nodes)
+    return num_children, num_nodes
+
+
 def eval_all(node: EvalNode, cells: list[str]):
     """Evaluate all possible boards.
 

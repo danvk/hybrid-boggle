@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from boggle.boggler import PyBoggler
 from boggle.eval_tree import (
     EvalNode,
+    size_stats,
 )
 from boggle.letter_grouping import get_letter_map, reverse_letter_map, ungroup_letters
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
@@ -125,6 +126,9 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena)
+        num_children, num_nodes = size_stats(tree)
+        print(num_children)
+        print(num_nodes)
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")

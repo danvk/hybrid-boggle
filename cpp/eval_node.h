@@ -24,7 +24,7 @@ class EvalNodeArena {
   ~EvalNodeArena() { FreeTheChildren(); }
 
   void FreeTheChildren() {
-    // cout << "Freeing " << owned_nodes.size() << " nodes" << endl;
+    // cout << "Freeing " << buffers_.size() << " buffers" << endl;
     for (auto buffer : buffers_) {
       // cout << "Freeing " << node << endl;
       delete[] buffer;
