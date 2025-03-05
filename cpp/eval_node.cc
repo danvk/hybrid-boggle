@@ -513,36 +513,46 @@ EvalNode* merge_orderly_choice_children(
     const auto& b_child = *it_b;
     if (a_child->letter_ < b_child->letter_) {
       n->children_[out_i++] = a_child;
+      if (a_child) {
+        n->bound_ = max(n->bound_, a_child->bound_);
+      }
       ++it_a;
     } else if (b_child->letter_ < a_child->letter_) {
       n->children_[out_i++] = b_child;
+      if (b_child) {
+        n->bound_ = max(n->bound_, b_child->bound_);
+      }
       ++it_b;
     } else {
-      n->children_[out_i++] = merge_orderly_tree(a_child, b_child, arena);
+      auto merged = merge_orderly_tree(a_child, b_child, arena);
+      n->children_[out_i++] = merged;
+      if (merged) {
+        n->bound_ = max(n->bound_, merged->bound_);
+      }
       ++it_a;
       ++it_b;
     }
   }
 
-  // TODO: these could be memcpy
   while (it_a != a_end) {
-    n->children_[out_i++] = *it_a;
+    const auto& a_child = *it_a;
+    n->children_[out_i++] = a_child;
+    if (a_child) {
+      n->bound_ = max(n->bound_, a_child->bound_);
+    }
     ++it_a;
   }
   while (it_b != b_end) {
-    n->children_[out_i++] = *it_a;
+    const auto& b_child = *it_b;
+    n->children_[out_i++] = b_child;
+    if (b_child) {
+      n->bound_ = max(n->bound_, b_child->bound_);
+    }
     ++it_b;
   }
   assert(out_i == num_children);
   n->num_children_ = num_children;
 
-  // TODO: fold this into the previous loop
-  for (int i = 0; i < n->num_children_; i++) {
-    auto child = n->children_[i];
-    if (child) {
-      n->bound_ = max(n->bound_, child->bound_);
-    }
-  }
   return n;
 }
 
@@ -592,37 +602,44 @@ EvalNode* merge_orderly_tree_children(
     const auto& b_child = *it_b;
     if (a_child->cell_ < b_child->cell_) {
       n->children_[out_i++] = a_child;
+      if (a_child) {
+        n->bound_ += a_child->bound_;
+      }
       ++it_a;
     } else if (b_child->cell_ < a_child->cell_) {
       n->children_[out_i++] = b_child;
+      if (b_child) {
+        n->bound_ += b_child->bound_;
+      }
       ++it_b;
     } else {
-      n->children_[out_i++] = merge_orderly_choice_children(a_child, b_child, arena);
+      auto merged = merge_orderly_choice_children(a_child, b_child, arena);
+      n->children_[out_i++] = merged;
+      n->bound_ += merged->bound_;
       ++it_a;
       ++it_b;
     }
   }
 
-  // TODO: these could be memcpy
   while (it_a != a_end) {
-    n->children_[out_i++] = *it_a;
+    const auto& a_child = *it_a;
+    n->children_[out_i++] = a_child;
+    if (a_child) {
+      n->bound_ += a_child->bound_;
+    }
     ++it_a;
   }
-
   while (it_b != b_end) {
-    n->children_[out_i++] = *it_a;
+    const auto& b_child = *it_b;
+    n->children_[out_i++] = b_child;
+    if (b_child) {
+      n->bound_ += b_child->bound_;
+    }
     ++it_b;
   }
   assert(out_i == num_children);
   n->num_children_ = num_children;
 
-  // TODO: fold this into the previous loop
-  for (int i = 0; i < n->num_children_; i++) {
-    auto child = n->children_[i];
-    if (child) {
-      n->bound_ += child->bound_;
-    }
-  }
   return n;
 }
 
