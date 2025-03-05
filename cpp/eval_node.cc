@@ -477,45 +477,74 @@ EvalNode* merge_orderly_choice_children(
   assert(b->letter_ == EvalNode::CHOICE_NODE);
   assert(a->cell_ == b->cell_);
 
-  vector<EvalNode*> out;
   auto it_a = &a->children_[0];
   auto it_b = &b->children_[0];
   const auto& a_end = it_a + a->num_children_;
   const auto& b_end = it_b + b->num_children_;
-
+  int num_children = 0;
   while (it_a != a_end && it_b != b_end) {
     const auto& a_child = *it_a;
     const auto& b_child = *it_b;
     if (a_child->letter_ < b_child->letter_) {
-      out.push_back(a_child);
+      num_children++;
       ++it_a;
     } else if (b_child->letter_ < a_child->letter_) {
-      out.push_back(b_child);
+      num_children++;
       ++it_b;
     } else {
-      out.push_back(merge_orderly_tree(a_child, b_child, arena));
+      num_children++;
+      ++it_a;
+      ++it_b;
+    }
+  }
+  // TODO: this could just be subtraction
+  while (it_a != a_end) {
+    num_children += 1;
+    ++it_a;
+  }
+  while (it_b != b_end) {
+    num_children += 1;
+    ++it_b;
+  }
+
+  EvalNode* n = arena.NewNodeWithCapacity(num_children);
+  n->letter_ = EvalNode::CHOICE_NODE;
+  n->cell_ = a->cell_;
+  n->points_ = 0;
+  n->bound_ = 0;
+
+  it_a = &a->children_[0];
+  it_b = &b->children_[0];
+  int out_i = 0;
+  while (it_a != a_end && it_b != b_end) {
+    const auto& a_child = *it_a;
+    const auto& b_child = *it_b;
+    if (a_child->letter_ < b_child->letter_) {
+      n->children_[out_i++] = a_child;
+      ++it_a;
+    } else if (b_child->letter_ < a_child->letter_) {
+      n->children_[out_i++] = b_child;
+      ++it_b;
+    } else {
+      n->children_[out_i++] = merge_orderly_tree(a_child, b_child, arena);
       ++it_a;
       ++it_b;
     }
   }
 
+  // TODO: these could be memcpy
   while (it_a != a_end) {
-    out.push_back(*it_a);
+    n->children_[out_i++] = *it_a;
     ++it_a;
   }
-
   while (it_b != b_end) {
-    out.push_back(*it_b);
+    n->children_[out_i++] = *it_a;
     ++it_b;
   }
+  assert(out_i == num_children);
+  n->num_children_ = num_children;
 
-  EvalNode* n = arena.NewNodeWithCapacity(out.size());
-  n->letter_ = EvalNode::CHOICE_NODE;
-  n->cell_ = a->cell_;
-  // TODO: could avoid this copy with a first pass to determine overlap
-  n->SetChildrenFromVector(out);
-  n->points_ = 0;
-  n->bound_ = 0;
+  // TODO: fold this into the previous loop
   for (int i = 0; i < n->num_children_; i++) {
     auto child = n->children_[i];
     if (child) {
@@ -534,7 +563,6 @@ EvalNode* merge_orderly_tree_children(
 ) {
   assert(a->letter_ != EvalNode::CHOICE_NODE);
 
-  // TODO: factor out this counting
   int num_children = 0;
   auto it_a = &a->children_[0];
   auto it_b = bc;
@@ -555,12 +583,11 @@ EvalNode* merge_orderly_tree_children(
       ++it_b;
     }
   }
-
+  // TODO: this could just be subtraction
   while (it_a != a_end) {
     num_children += 1;
     ++it_a;
   }
-
   while (it_b != b_end) {
     num_children += 1;
     ++it_b;
@@ -592,6 +619,7 @@ EvalNode* merge_orderly_tree_children(
     }
   }
 
+  // TODO: these could be memcpy
   while (it_a != a_end) {
     n->children_[out_i++] = *it_a;
     ++it_a;
