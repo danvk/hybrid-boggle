@@ -80,13 +80,16 @@ EvalNode* EvalNode::AddWordWork(
   }
 
   EvalNode* letter_child = NULL;
-  for (auto c : choice_child->children_) {
+  for (int i = 0; i < choice_child->num_children_; i++) {
+    auto c = choice_child->children_[i];
     if (c->letter_ == letter) {
       letter_child = (EvalNode*)c;
       break;
     }
   }
   if (!letter_child) {
+    cout << "Could not find letter_child for cell=" << (int)cell
+         << " letter=" << (int)letter << endl;
     letter_child = arena.NewNodeWithCapcity(4);
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
@@ -107,6 +110,9 @@ EvalNode* EvalNode::AddWordWork(
         &choice_child->children_[new_me->num_children_],
         SortByLetter
     );
+  } else {
+    cout << "Matched letter_child for cell=" << (int)cell << " letter=" << (int)letter
+         << endl;
   }
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
