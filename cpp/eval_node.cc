@@ -69,6 +69,7 @@ EvalNode* EvalNode::AddWordWork(
   int old_choice_bound = 0;
   EvalNode* new_me = this;
   if (!choice_child) {
+    cout << "Could not find choice_child for cell=" << (int)cell << endl;
     // TODO: 4 should be a function of num_choices
     choice_child = arena.NewNodeWithCapcity(4);
     choice_child->letter_ = CHOICE_NODE;
@@ -78,6 +79,7 @@ EvalNode* EvalNode::AddWordWork(
     sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
   } else {
     old_choice_bound = choice_child->bound_;
+    cout << "Matched choice_child for cell=" << (int)cell << endl;
   }
 
   EvalNode* letter_child = NULL;
@@ -97,7 +99,9 @@ EvalNode* EvalNode::AddWordWork(
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
+    cout << "added choice child" << endl;
     if (new_choice_child != choice_child) {
+      cout << "updating choice child" << endl;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
         if (c->cell_ == cell) {
@@ -106,19 +110,23 @@ EvalNode* EvalNode::AddWordWork(
         }
       }
       choice_child = new_choice_child;
+    } else {
+      cout << "no need to update choice child" << endl;
     }
     sort(
         &choice_child->children_[0],
-        &choice_child->children_[new_me->num_children_],
+        &choice_child->children_[choice_child->num_children_],
         SortByLetter
     );
   } else {
     cout << "Matched letter_child for cell=" << (int)cell << " letter=" << (int)letter
          << endl;
   }
+  cout << "recurse" << endl;
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
   if (new_letter_child != letter_child) {
+    cout << "updating child after recursion" << endl;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
       if (c->letter_ == letter) {
