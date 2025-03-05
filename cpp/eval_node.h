@@ -83,7 +83,7 @@ class EvalNode {
   uint32_t bound_;
 
   // These might be the various options on a cell or the various directions.
-  EvalNode* children_[0];
+  EvalNode* children_[];
 
   int NodeCount() const;
   unsigned int UniqueNodeCount(uint32_t mark) const;

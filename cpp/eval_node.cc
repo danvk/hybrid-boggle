@@ -344,7 +344,8 @@ inline uint16_t advance(
     const EvalNode* node, vector<int>& sums, vector<vector<const EvalNode*>>& stacks
 ) {
   // assert(node->letter_ != CHOICE_NODE);
-  for (auto child : node->children_) {
+  for (int i = 0; i < node->num_children_; i++) {
+    auto child = node->children_[i];
     // assert(child->letter_ == CHOICE_NODE);
     stacks[child->cell_].push_back(child);
     sums[child->cell_] += child->bound_;
@@ -558,7 +559,8 @@ EvalNode* merge_orderly_tree_children(
   n->SetChildrenFromVector(out);
   n->points_ = a->points_ + b_points;
   n->bound_ = n->points_;
-  for (auto child : n->children_) {
+  for (int i = 0; i < n->num_children_; i++) {
+    auto child = n->children_[i];
     if (child) {
       n->bound_ += child->bound_;
     }
