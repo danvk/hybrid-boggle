@@ -37,6 +37,8 @@ class EvalNodeArena {
 
   EvalNode* NewNodeWithCapcity(uint8_t capacity);
 
+  void PrintStats();
+
  private:
   void AddBuffer();
   vector<char*> buffers_;

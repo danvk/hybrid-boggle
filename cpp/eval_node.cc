@@ -17,12 +17,23 @@ inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
   return a->cell_ < b->cell_;
 }
 
+int num_reallocs = 0;
+int num_in_capacity = 0;
+
+void EvalNodeArena::PrintStats() {
+  cout << "num_reallocs: " << num_reallocs << endl;
+  cout << "num_in_capacity: " << num_in_capacity << endl;
+  cout << "num_buffers: " << buffers_.size() << endl;
+  cout << "tip: " << tip_ << endl;
+}
+
 EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   if (num_children_ + 1 <= capacity_) {
     children_[num_children_++] = child;
+    num_in_capacity++;
     return this;
   }
-
+  num_reallocs++;
   // cout << "Exceeded capacity!" << endl;
   EvalNode* clone = arena.NewNodeWithCapcity(capacity_ + 4);
   clone->letter_ = letter_;

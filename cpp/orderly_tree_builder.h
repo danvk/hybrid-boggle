@@ -61,6 +61,7 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   }
   auto root = root_;
   root_ = NULL;
+  arena.PrintStats();
 
   /*
   // This can be used to investigate the layout of EvalNode.
