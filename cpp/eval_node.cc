@@ -35,7 +35,7 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   }
   num_reallocs++;
   // cout << "Exceeded capacity!" << endl;
-  EvalNode* clone = arena.NewNodeWithCapcity(capacity_ + 4);
+  EvalNode* clone = arena.NewNodeWithCapcity(capacity_ + 2);
   clone->letter_ = letter_;
   clone->cell_ = cell_;
   clone->points_ = points_;
@@ -81,8 +81,8 @@ EvalNode* EvalNode::AddWordWork(
   int old_choice_bound = 0;
   EvalNode* new_me = this;
   if (!choice_child) {
-    // TODO: 4 should be a function of num_choices
-    choice_child = arena.NewNodeWithCapcity(4);
+    // TODO: 1 could be a function of num_choices
+    choice_child = arena.NewNodeWithCapcity(1);
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
     choice_child->bound_ = 0;
@@ -101,8 +101,8 @@ EvalNode* EvalNode::AddWordWork(
     }
   }
   if (!letter_child) {
-    // TODO: 4 should be a function of num_choices
-    letter_child = arena.NewNodeWithCapcity(4);
+    // TODO: capacity could be a more complex function of num_choices
+    letter_child = arena.NewNodeWithCapcity(num_choices == 1 ? 0 : 1);
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;

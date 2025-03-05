@@ -667,16 +667,21 @@ def eval_node_to_string(node: EvalNode, cells: list[str]):
     return "\n".join(lines)
 
 
-def size_stats(node: EvalNode, level=0, num_children=None, num_nodes=None):
+def size_stats(
+    node: EvalNode, level=0, num_children=None, num_nodes=None, num_singles=None
+):
     if num_children is None:
         num_children = Counter[int]()
         num_nodes = Counter[int]()
+        num_singles = Counter[int]()
     children = node.get_children()
     num_children[level] += len(children)
     num_nodes[level] += 1
+    if len(children) == 1:
+        num_singles[level] += 1
     for child in children:
-        size_stats(child, level + 1, num_children, num_nodes)
-    return num_children, num_nodes
+        size_stats(child, level + 1, num_children, num_nodes, num_singles)
+    return num_children, num_nodes, num_singles
 
 
 def eval_all(node: EvalNode, cells: list[str]):
