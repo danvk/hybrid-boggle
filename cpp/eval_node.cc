@@ -69,6 +69,7 @@ EvalNode* EvalNode::AddWordWork(
   int old_choice_bound = 0;
   EvalNode* new_me = this;
   if (!choice_child) {
+    // TODO: 4 should be a function of num_choices
     choice_child = arena.NewNodeWithCapcity(4);
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
@@ -88,6 +89,7 @@ EvalNode* EvalNode::AddWordWork(
     }
   }
   if (!letter_child) {
+    // TODO: 4 should be a function of num_choices
     letter_child = arena.NewNodeWithCapcity(4);
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
