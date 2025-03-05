@@ -23,13 +23,13 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
     return this;
   }
 
-  cout << "Exceeded capacity!" << endl;
+  // cout << "Exceeded capacity!" << endl;
   EvalNode* clone = arena.NewNodeWithCapcity(capacity_ + 4);
   clone->letter_ = letter_;
   clone->cell_ = cell_;
   clone->points_ = points_;
   clone->num_children_ = num_children_ + 1;
-  cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
+  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
   memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
   clone->children_[num_children_] = child;
   return clone;
@@ -69,7 +69,6 @@ EvalNode* EvalNode::AddWordWork(
   int old_choice_bound = 0;
   EvalNode* new_me = this;
   if (!choice_child) {
-    cout << "Could not find choice_child for cell=" << (int)cell << endl;
     // TODO: 4 should be a function of num_choices
     choice_child = arena.NewNodeWithCapcity(4);
     choice_child->letter_ = CHOICE_NODE;
@@ -79,7 +78,6 @@ EvalNode* EvalNode::AddWordWork(
     sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
   } else {
     old_choice_bound = choice_child->bound_;
-    cout << "Matched choice_child for cell=" << (int)cell << endl;
   }
 
   EvalNode* letter_child = NULL;
@@ -92,16 +90,12 @@ EvalNode* EvalNode::AddWordWork(
   }
   if (!letter_child) {
     // TODO: 4 should be a function of num_choices
-    cout << "Could not find letter_child for cell=" << (int)cell
-         << " letter=" << (int)letter << endl;
     letter_child = arena.NewNodeWithCapcity(4);
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
-    cout << "added choice child" << endl;
     if (new_choice_child != choice_child) {
-      cout << "updating choice child" << endl;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
         if (c->cell_ == cell) {
@@ -110,23 +104,16 @@ EvalNode* EvalNode::AddWordWork(
         }
       }
       choice_child = new_choice_child;
-    } else {
-      cout << "no need to update choice child" << endl;
     }
     sort(
         &choice_child->children_[0],
         &choice_child->children_[choice_child->num_children_],
         SortByLetter
     );
-  } else {
-    cout << "Matched letter_child for cell=" << (int)cell << " letter=" << (int)letter
-         << endl;
   }
-  cout << "recurse" << endl;
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
   if (new_letter_child != letter_child) {
-    cout << "updating child after recursion" << endl;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
       if (c->letter_ == letter) {
@@ -152,7 +139,6 @@ void EvalNode::AddWord(
 
 vector<EvalNode*> EvalNode::GetChildren() {
   vector<EvalNode*> out;
-  cout << "num_children=" << (int)num_children_ << endl;
   out.reserve(num_children_);
   for (int i = 0; i < num_children_; i++) {
     out.push_back(children_[i]);
@@ -338,7 +324,7 @@ void EvalNodeArena::AddBuffer() {
 
 EvalNode* EvalNodeArena::NewNodeWithCapcity(uint8_t capacity) {
   int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
-  cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
+  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
   if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
     AddBuffer();
   }
