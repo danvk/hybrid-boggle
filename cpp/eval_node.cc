@@ -134,6 +134,7 @@ EvalNode* EvalNode::AddWordWork(
       }
     }
   }
+  letter_child = new_letter_child;
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
