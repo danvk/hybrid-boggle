@@ -336,6 +336,7 @@ void EvalNodeArena::AddBuffer() {
 }
 
 EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
+  num_nodes_++;
   int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
   // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
   if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
