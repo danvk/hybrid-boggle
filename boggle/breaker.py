@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from boggle.boggler import PyBoggler
 from boggle.eval_tree import (
     EvalNode,
-    size_stats,
 )
 from boggle.letter_grouping import get_letter_map, reverse_letter_map, ungroup_letters
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
