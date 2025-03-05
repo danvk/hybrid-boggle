@@ -53,6 +53,16 @@ OTB_PARAMS = [
 ]
 
 
+def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
+    if is_python:
+        trie = make_py_trie(dict_file)
+        otb = OrderlyTreeBuilder(trie, dims=dims)
+    else:
+        trie = Trie.CreateFromFile(dict_file)
+        otb = cpp_orderly_tree_builder(trie, dims=dims)
+    return trie, otb
+
+
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
@@ -71,13 +81,12 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     )
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
-def test_orderly_bound22(make_trie, get_tree_builder):
-    trie = make_trie("testdata/boggle-words-4.txt")
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_bound22(is_python):
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "ab cd ef gh"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = get_tree_builder(trie, dims=(2, 2))
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
@@ -117,16 +126,6 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     )
 
     # TODO: confirm these via ibuckets
-
-
-def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
-    if is_python:
-        trie = make_py_trie(dict_file)
-        otb = OrderlyTreeBuilder(trie, dims=dims)
-    else:
-        trie = Trie.CreateFromFile(dict_file)
-        otb = cpp_orderly_tree_builder(trie, dims=dims)
-    return trie, otb
 
 
 # TODO: test C++ equivalence
