@@ -11,3 +11,5 @@ for raw in wordlists/raw/*.txt; do
 
     echo "$filename: $before -> $after words"
 done
+
+egrep -v -i '[QZXJKVWYFHBU]' wordlists/enable2k.txt > wordlists/enable2k.jpa14.txt

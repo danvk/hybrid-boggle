@@ -40,7 +40,7 @@ poetry run pytest
 To find all the high-scoring 3x3 boards, run:
 
 ```
-$ poetry run python -m boggle.break_all 'bdfgjqvwxz aeiou lnrsy chkmpt' 500 --size 33 --switchover_level=0 --breaker=hybrid --tree_builder orderly
+$ poetry run python -m boggle.break_all 'bdfgjqvwxz aeiou lnrsy chkmpt' 500 --size 33
 Found 262144 total boards in 0.05s.
 ...
 Unable to break board: septalres 503
@@ -52,7 +52,7 @@ Found 56 breaking failure(s):
 ...
 ```
 
-This takes ~12 minutes on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
+This takes ~5 minutes on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
 
 To find high-scoring 4x4 boards, run:
 
@@ -106,6 +106,14 @@ This also takes a `--print_words` flag that will print all the words that can be
 
 The command line tools all take some standard flags like `--dictionary` and `--python`. Run with `--help` to see them.
 
+## Docker image
+
+To build the Docker image for AMD64 on a Mac, run:
+
+    docker buildx build --build-arg GIT_SHA=$(git rev-parse --short HEAD) --platform linux/amd64 .
+
+You can find builds of this image on dockerhub under [danvk/boggle].
+
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
 [33]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
@@ -118,3 +126,4 @@ The command line tools all take some standard flags like `--dictionary` and `--p
 [This post]: https://www.danvk.org/2025/02/13/boggle2025.html
 [pybind11]: https://pybind11.readthedocs.io/en/stable/index.html
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
+[danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general

@@ -42,6 +42,8 @@ Word counts:
 |     twl06.txt | 178691 |    178549 |
 |      yawl.txt | 264097 |    263904 |
 
+There's also `enable2k.jpa14.txt`, which is a filtered version of `enable2k.txt` that only includes the 14 letters approved in [this 2010 blog post]. It has 42,625 words.
+
 [scrabblewords]: https://github.com/scrabblewords/scrabblewords/tree/main/words/North-American
 [ENABLE2K]: https://everything2.com/title/ENABLE+word+list
 [his web site]: https://web.archive.org/web/20070223061843/http://personal.riverusers.com/%7Ethegrendel/software.html
@@ -50,3 +52,4 @@ Word counts:
 [YAWL]: https://github.com/elasticdog/yawl
 [SOWPODS]: https://en.wikipedia.org/wiki/Collins_Scrabble_Words
 [TWL06]: https://www.freescrabbledictionary.com/twl06/
+[this 2010 blog post]: https://web.archive.org/web/20101207194405/http://www.pathcom.com/~vadco/deep.html#acknowledgements:~:text=The%20lexicon%20and%20character%20set%20choices

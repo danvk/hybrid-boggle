@@ -10,4 +10,5 @@ RUN git clone https://github.com/danvk/hybrid-boggle.git && \
     . venv/bin/activate && \
     pip install poetry && \
     poetry install && \
-    ./build.sh
+    ./build.sh && \
+    poetry run pytest
