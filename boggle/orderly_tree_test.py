@@ -1,3 +1,5 @@
+import itertools
+import math
 import time
 
 import pytest
@@ -13,6 +15,7 @@ from boggle.eval_tree import (
     merge_orderly_tree,
     split_orderly_tree,
 )
+from boggle.ibuckets import PyBucketBoggler
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
@@ -225,4 +228,49 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     # assert False
 
 
-# TODO: orderly bound + force
+# Invariants:
+# - eval_all on a tree should yield the same score before and after any amount of forcing.
+# - this score should match what you get from ibuckets
+# - this score should be independent of how you construct the tree
+def test_force_invariants22():
+    is_python = True
+    dims = (2, 2)
+    trie, otb = get_trie_otb("testdata/boggle-words-4.txt", dims, is_python)
+    board = "lnrsy aeiou chkmpt bdfgjvwxz"
+    cells = board.split(" ")
+    num_letters = [len(cell) for cell in cells]
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    t = otb.BuildTree(arena)
+
+    choices_to_trees = {(): t}
+    for i in SPLIT_ORDER[dims]:
+        next_level = {}
+        for prev_choices, tree in choices_to_trees.items():
+            prev_cells = [cell for cell, _letter in prev_choices]
+            assert i not in prev_cells
+            force = tree.orderly_force_cell(i, num_letters[i], arena)
+            assert len(force) == num_letters[i]
+            for letter, t in enumerate(force):
+                seq = prev_choices + ((i, letter),)
+                next_level[seq] = t
+                if t is None:
+                    nc = [*cells]
+                    for c, let in seq:
+                        nc[c] = nc[c][let]
+                    print(seq, " ".join(nc), "-> None")
+        choices_to_trees = next_level
+
+    assert len(choices_to_trees) == math.prod(num_letters)
+
+    ibb = PyBucketBoggler(trie, dims)
+    for idx in itertools.product(*(range(len(cell)) for cell in cells)):
+        i0, i1, i2, i3 = idx
+        bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
+        assert ibb.ParseBoard(bd)
+        ibb.UpperBound(123)
+        score = ibb.Details().max_nomark
+        print(idx, bd, score)
+        t = choices_to_trees[(0, i0), (1, i1), (2, i2), (3, i3)]
+        assert score == (t.bound if t else 0)
+        # print(t.to_string(etb))
