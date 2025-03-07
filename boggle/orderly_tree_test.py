@@ -248,6 +248,7 @@ def test_force_invariants22():
     scores = eval_all(root, cells)
 
     # This forces every possible sequence and evaluates all remaining possibilities.
+    # If we ever get a null value out of a force, it and its desendants become zeroes.
     choices_to_trees = [{(): root}]
     all_scores = [scores]
     for i in range(4):
@@ -282,6 +283,7 @@ def test_force_invariants22():
         all_scores.append(next_scores)
 
     assert len(choices_to_trees[-1]) == math.prod(num_letters)
+    assert len(choices_to_trees) == 5
 
     ibb = PyBucketBoggler(trie, dims)
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
@@ -295,6 +297,7 @@ def test_force_invariants22():
         assert score == all_scores[1][idx]
         assert score == all_scores[2][idx]
         assert score == all_scores[3][idx]
+        assert score == all_scores[4][idx]
 
         t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
         assert score == (t.bound if t else 0)
