@@ -705,10 +705,16 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
           point_node->cell_ = cell;
           point_node->letter_ = i;
           point_node->bound_ = non_cell_points + other_bound;
+          point_node->SetChildrenFromVector(non_cell_children);
           out[i] = point_node;
         }
       }
     }
   }
   return out;
+}
+
+void EvalNode::SetChildrenFromVector(const vector<EvalNode*>& children) {
+  num_children_ = children.size();
+  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
 }
