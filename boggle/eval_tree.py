@@ -208,14 +208,16 @@ class EvalNode:
                 child, non_cell_children, non_cell_points, arena
             )
 
-        if non_cell_points and len(top_choice.children) < num_lets:
-            # TODO: this node could be shared with a different tree representation.
+        if len(top_choice.children) < num_lets:
+            other_bound = sum(c.bound for c in non_cell_children)
             for i, child in enumerate(out):
                 if not child:
                     point_node = EvalNode()
-                    point_node.points = point_node.bound = non_cell_points
+                    point_node.points = non_cell_points
                     point_node.cell = cell
                     point_node.letter = i
+                    point_node.bound = point_node.points + other_bound
+                    point_node.children = non_cell_children
                     arena.add_node(point_node)
                     out[i] = point_node
         return out
