@@ -303,3 +303,28 @@ def test_force_invariants22(is_python):
         t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
         assert score == (t.bound if t else 0)
         # print(t.to_string(etb))
+
+
+def test_force_invariants44():
+    is_python = True
+    dims = (4, 4)
+    # TODO: memoize this with get_py_trie from boggler_test
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    board = "bdfgjqvwxz e s bdfgjqvwxz r r n e e e e h bdfgjqvwxz t e bdfgjqvwxz"
+    cells = board.split(" ")
+    num_letters = [len(cell) for cell in cells]
+
+    arena = otb.create_arena()
+    assert otb.ParseBoard(board)
+    root = otb.BuildTree(arena)
+    assert root.bound == 5463
+
+    scores = eval_all(root, cells)
+
+    ibb = PyBucketBoggler(trie, dims)
+    for idx in itertools.product(*(range(len(cell)) for cell in cells)):
+        bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
+        assert ibb.ParseBoard(bd)
+        ibb.UpperBound(123_456)
+        score = ibb.Details().max_nomark
+        assert score == scores[idx]
