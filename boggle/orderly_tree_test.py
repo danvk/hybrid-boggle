@@ -247,9 +247,10 @@ def test_force_invariants22():
 
     scores = eval_all(root, cells)
 
+    # This forces every possible sequence and evaluates all remaining possibilities.
     choices_to_trees = [{(): root}]
     all_scores = [scores]
-    for i in SPLIT_ORDER[dims]:
+    for i in range(4):
         next_level = {}
         next_scores = {}
         for prev_choices, tree in choices_to_trees[-1].items():
@@ -257,12 +258,14 @@ def test_force_invariants22():
             assert i not in prev_cells
             force = tree.orderly_force_cell(i, num_letters[i], arena)
             assert len(force) == num_letters[i]
+            # use a stand-in value for previously-forced cells
+            remaining_cells = (["."] * (i + 1)) + cells[(i + 1) :]
             for letter, t in enumerate(force):
                 seq = prev_choices + ((i, letter),)
                 assert len(seq) == i + 1
                 next_level[seq] = t
                 assert t is not None
-                letter_scores = eval_all(t, (["."] * (i + 1)) + cells[(i + 1) :])
+                letter_scores = eval_all(t, remaining_cells)
                 letter_seq = tuple(let for cell, let in seq)
                 for score_seq, score in letter_scores.items():
                     next_scores[letter_seq + score_seq[(i + 1) :]] = score
