@@ -210,6 +210,7 @@ class EvalNode:
 
         if len(top_choice.children) < num_lets:
             other_bound = sum(c.bound for c in non_cell_children)
+            # TODO: if other_bound = non_cell_points = 0 then this can be dropped
             for i, child in enumerate(out):
                 if not child:
                     point_node = EvalNode()

@@ -242,12 +242,12 @@ def test_force_invariants22():
     num_letters = [len(cell) for cell in cells]
     otb.ParseBoard(board)
     arena = otb.create_arena()
-    t = otb.BuildTree(arena)
+    root = otb.BuildTree(arena)
     # print(t.to_dot(cells))
 
-    scores = eval_all(t, cells)
+    scores = eval_all(root, cells)
 
-    force0 = t.orderly_force_cell(0, num_letters[0], arena)
+    force0 = root.orderly_force_cell(0, num_letters[0], arena)
     assert len(force0) == num_letters[0]
     scores0 = {}
     for letter, t in enumerate(force0):
@@ -256,7 +256,7 @@ def test_force_invariants22():
             scores0[(letter,) + seq[1:]] = score
 
     force1 = force0[1].orderly_force_cell(1, num_letters[1], arena)
-    print(force1[1].to_dot(cells))
+    # print(force1[1].to_dot(cells))
     force2 = force1[1].orderly_force_cell(2, num_letters[2], arena)
     assert force2[0] is not None
 
@@ -285,26 +285,26 @@ def test_force_invariants22():
             for seq, score in letter_scores.items():
                 scores2[(letter0, letter1, letter2) + seq[3:]] = score
 
-    if False:
-        choices_to_trees = {(): t}
-        for i in SPLIT_ORDER[dims]:
-            next_level = {}
-            for prev_choices, tree in choices_to_trees.items():
-                prev_cells = [cell for cell, _letter in prev_choices]
-                assert i not in prev_cells
-                force = tree.orderly_force_cell(i, num_letters[i], arena)
-                assert len(force) == num_letters[i]
-                for letter, t in enumerate(force):
-                    seq = prev_choices + ((i, letter),)
-                    next_level[seq] = t
-                    if t is None:
-                        nc = [*cells]
-                        for c, let in seq:
-                            nc[c] = nc[c][let]
-                        print(seq, " ".join(nc), "-> None")
-            choices_to_trees = next_level
+    choices_to_trees = [{(): root}]
+    for i in SPLIT_ORDER[dims]:
+        next_level = {}
+        for prev_choices, tree in choices_to_trees[-1].items():
+            prev_cells = [cell for cell, _letter in prev_choices]
+            assert i not in prev_cells
+            force = tree.orderly_force_cell(i, num_letters[i], arena)
+            assert len(force) == num_letters[i]
+            for letter, t in enumerate(force):
+                seq = prev_choices + ((i, letter),)
+                next_level[seq] = t
+                assert t is not None
+                # if t is None:
+                #     nc = [*cells]
+                #     for c, let in seq:
+                #         nc[c] = nc[c][let]
+                #     print(seq, " ".join(nc), "-> None")
+        choices_to_trees.append(next_level)
 
-        assert len(choices_to_trees) == math.prod(num_letters)
+    assert len(choices_to_trees[-1]) == math.prod(num_letters)
 
     ibb = PyBucketBoggler(trie, dims)
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
@@ -319,6 +319,6 @@ def test_force_invariants22():
         assert score == scores1[idx]
         assert score == scores2[idx]
 
-        # t = choices_to_trees[(0, i0), (1, i1), (2, i2), (3, i3)]
-        # assert score == (t.bound if t else 0)
+        t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
+        assert score == (t.bound if t else 0)
         # print(t.to_string(etb))
