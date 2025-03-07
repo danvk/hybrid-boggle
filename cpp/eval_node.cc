@@ -237,11 +237,9 @@ unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   if (letter_ == CHOICE_NODE) {
     auto force = forces[cell_];
     if (force >= 0) {
-      if (points_ & (1 << force)) {
-        unsigned int mask = points_ & ((1 << force) - 1);
-        unsigned int idx = std::popcount(mask);
-        auto child = children_[idx];
-        if (child) {
+      for (int i = 0; i < num_children_; i++) {
+        const auto& child = children_[i];
+        if (child->letter_ == force) {
           return child->ScoreWithForces(forces);
         }
       }
