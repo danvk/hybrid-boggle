@@ -209,6 +209,7 @@ class EvalNode:
             )
 
         if len(top_choice.children) < num_lets:
+            # TODO: if there's >1 of these, this could result in a lot of duplicate work.
             other_bound = sum(c.bound for c in non_cell_children)
             if other_bound > 0 or non_cell_points > 0:
                 for i, child in enumerate(out):

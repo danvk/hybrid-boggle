@@ -245,6 +245,8 @@ def test_force_invariants22(is_python):
     # print(t.to_dot(cells))
 
     scores = eval_all(root, cells)
+    # This keeps the Python & C++ implementations in sync with each other.
+    assert outsource(str(scores)) == snapshot(external("cdc47ced1c1f*.txt"))
 
     # This forces every possible sequence and evaluates all remaining possibilities.
     # If we ever get a null value out of a force, it and its desendants become zeroes.
