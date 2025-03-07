@@ -247,44 +247,6 @@ def test_force_invariants22():
 
     scores = eval_all(root, cells)
 
-    force0 = root.orderly_force_cell(0, num_letters[0], arena)
-    assert len(force0) == num_letters[0]
-    scores0 = {}
-    for letter, t in enumerate(force0):
-        letter_scores = eval_all(t, [cells[0][letter]] + cells[1:])
-        for seq, score in letter_scores.items():
-            scores0[(letter,) + seq[1:]] = score
-
-    force1 = force0[1].orderly_force_cell(1, num_letters[1], arena)
-    # print(force1[1].to_dot(cells))
-    force2 = force1[1].orderly_force_cell(2, num_letters[2], arena)
-    assert force2[0] is not None
-
-    force1s = [
-        t0.orderly_force_cell(1, num_letters[1], arena)
-        for letter, t0 in enumerate(force0)
-    ]
-    scores1 = {}
-    for letter0, force0 in enumerate(force1s):
-        for letter1, t1 in enumerate(force0):
-            letter_scores = eval_all(
-                t1, [cells[0][letter0], cells[1][letter1]] + cells[2:]
-            )
-            for seq, score in letter_scores.items():
-                scores1[(letter0, letter1) + seq[2:]] = score
-
-    force2s = {
-        (letter0, letter1): t1.orderly_force_cell(2, num_letters[2], arena)
-        for letter0, force0 in enumerate(force1s)
-        for letter1, t1 in enumerate(force0)
-    }
-    scores2 = {}
-    for (letter0, letter1), force2 in force2s.items():
-        for letter2, t2 in enumerate(force2):
-            letter_scores = eval_all(t2, [".", ".", "."] + cells[3:])
-            for seq, score in letter_scores.items():
-                scores2[(letter0, letter1, letter2) + seq[3:]] = score
-
     choices_to_trees = [{(): root}]
     all_scores = [scores]
     for i in SPLIT_ORDER[dims]:
@@ -304,11 +266,6 @@ def test_force_invariants22():
                 letter_seq = tuple(let for cell, let in seq)
                 for score_seq, score in letter_scores.items():
                     next_scores[letter_seq + score_seq[(i + 1) :]] = score
-                # if t is None:
-                #     nc = [*cells]
-                #     for c, let in seq:
-                #         nc[c] = nc[c][let]
-                #     print(seq, " ".join(nc), "-> None")
         choices_to_trees.append(next_level)
         assert len(next_scores) == math.prod(num_letters)
         all_scores.append(next_scores)
