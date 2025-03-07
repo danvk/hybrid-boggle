@@ -286,8 +286,10 @@ def test_force_invariants22():
                 scores2[(letter0, letter1, letter2) + seq[3:]] = score
 
     choices_to_trees = [{(): root}]
+    all_scores = [scores]
     for i in SPLIT_ORDER[dims]:
         next_level = {}
+        next_scores = {}
         for prev_choices, tree in choices_to_trees[-1].items():
             prev_cells = [cell for cell, _letter in prev_choices]
             assert i not in prev_cells
@@ -295,14 +297,21 @@ def test_force_invariants22():
             assert len(force) == num_letters[i]
             for letter, t in enumerate(force):
                 seq = prev_choices + ((i, letter),)
+                assert len(seq) == i + 1
                 next_level[seq] = t
                 assert t is not None
+                letter_scores = eval_all(t, (["."] * (i + 1)) + cells[(i + 1) :])
+                letter_seq = tuple(let for cell, let in seq)
+                for score_seq, score in letter_scores.items():
+                    next_scores[letter_seq + score_seq[(i + 1) :]] = score
                 # if t is None:
                 #     nc = [*cells]
                 #     for c, let in seq:
                 #         nc[c] = nc[c][let]
                 #     print(seq, " ".join(nc), "-> None")
         choices_to_trees.append(next_level)
+        assert len(next_scores) == math.prod(num_letters)
+        all_scores.append(next_scores)
 
     assert len(choices_to_trees[-1]) == math.prod(num_letters)
 
@@ -314,10 +323,10 @@ def test_force_invariants22():
         ibb.UpperBound(123)
         score = ibb.Details().max_nomark
         # print(idx, bd, score)
-        assert score == scores[idx]
-        assert score == scores0[idx]
-        assert score == scores1[idx]
-        assert score == scores2[idx]
+        assert score == all_scores[0][idx]
+        assert score == all_scores[1][idx]
+        assert score == all_scores[2][idx]
+        assert score == all_scores[3][idx]
 
         t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
         assert score == (t.bound if t else 0)
