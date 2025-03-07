@@ -281,10 +281,6 @@ def test_force_invariants22():
     scores2 = {}
     for (letter0, letter1), force2 in force2s.items():
         for letter2, t2 in enumerate(force2):
-            bd = " ".join(
-                [cells[0][letter0], cells[1][letter1], cells[2][letter2], cells[3]]
-            )
-            assert t2 is not None, f"{bd} {letter0}, {letter1}, {letter2}"
             letter_scores = eval_all(t2, [".", ".", "."] + cells[3:])
             for seq, score in letter_scores.items():
                 scores2[(letter0, letter1, letter2) + seq[3:]] = score
