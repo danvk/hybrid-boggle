@@ -153,15 +153,12 @@ class EvalNode:
 
     # TODO: move this to the "debug & test" block
     def score_with_forces(self, forces: list[int]) -> int:
-        """Requires that set_choice_point_mask() has been called on this tree."""
+        """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
-                if self.points & (1 << force):
-                    mask = self.points & ((1 << force) - 1)
-                    idx = mask.bit_count()
-                    child = self.children[idx]
-                    if child:
+                for child in self.children:
+                    if child and child.letter == force:
                         return child.score_with_forces(forces)
                 return 0
 
@@ -211,16 +208,20 @@ class EvalNode:
                 child, non_cell_children, non_cell_points, arena
             )
 
-        if non_cell_points and len(top_choice.children) < num_lets:
-            # TODO: this node could be shared with a different tree representation.
-            for i, child in enumerate(out):
-                if not child:
-                    point_node = EvalNode()
-                    point_node.points = point_node.bound = non_cell_points
-                    point_node.cell = cell
-                    point_node.letter = i
-                    arena.add_node(point_node)
-                    out[i] = point_node
+        if len(top_choice.children) < num_lets:
+            # TODO: if there's >1 of these, this could result in a lot of duplicate work.
+            other_bound = sum(c.bound for c in non_cell_children)
+            if other_bound > 0 or non_cell_points > 0:
+                for i, child in enumerate(out):
+                    if not child:
+                        point_node = EvalNode()
+                        point_node.points = non_cell_points
+                        point_node.cell = cell
+                        point_node.letter = i
+                        point_node.bound = point_node.points + other_bound
+                        point_node.children = non_cell_children
+                        arena.add_node(point_node)
+                        out[i] = point_node
         return out
 
     def node_count(self):
@@ -353,6 +354,18 @@ class EvalNode:
             return self.points + sum(
                 child.recompute_score() if child else 0 for child in self.children
             )
+
+    def set_computed_fields(self, num_letters: Sequence[int]):
+        for c in self.children:
+            if c:
+                c.set_computed_fields(num_letters)
+
+        if self.letter == CHOICE_NODE:
+            self.bound = (
+                max(c.bound for c in self.children if c) if self.children else 0
+            )
+        else:
+            self.bound = self.points + sum(c.bound for c in self.children if c)
 
     def structural_eq(self, other: Self) -> bool:
         """Deep structural equality (for debugging)."""
@@ -691,11 +704,8 @@ def eval_all(node: EvalNode, cells: list[str]):
     """Evaluate all possible boards.
 
     This is defined externally to EvalNode so that it can be used with C++ EvalNode, too.
-    If you're going to do anything with the tree after this, make sure to call
-    node.reset_choice_point_mask().
     """
     num_letters = [len(cell) for cell in cells]
-    node.set_choice_point_mask(num_letters)
     indices = [range(n) for n in num_letters]
     return {
         choices: node.score_with_forces(choices)

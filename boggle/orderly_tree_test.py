@@ -1,18 +1,22 @@
+import itertools
+import math
 import time
 
 import pytest
 from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
-from boggle.dimensional_bogglers import cpp_orderly_tree_builder
+from boggle.dimensional_bogglers import cpp_bucket_boggler, cpp_orderly_tree_builder
 from boggle.eval_tree import (
     CHOICE_NODE,
     ROOT_NODE,
     EvalNode,
+    eval_all,
     eval_node_to_string,
     merge_orderly_tree,
     split_orderly_tree,
 )
+from boggle.ibuckets import PyBucketBoggler
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
@@ -225,4 +229,181 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     # assert False
 
 
-# TODO: orderly bound + force
+# Invariants:
+# - eval_all on a tree should yield the same score before and after any amount of forcing.
+# - this score should match what you get from ibuckets
+@pytest.mark.parametrize("is_python", [True, False])
+def test_force_invariants22(is_python):
+    dims = (2, 2)
+    trie, otb = get_trie_otb("testdata/boggle-words-4.txt", dims, is_python)
+    board = "lnrsy aeiou chkmpt bdfgjvwxz"
+    cells = board.split(" ")
+    num_letters = [len(cell) for cell in cells]
+    otb.ParseBoard(board)
+    arena = otb.create_arena()
+    root = otb.BuildTree(arena)
+    # print(t.to_dot(cells))
+
+    scores = eval_all(root, cells)
+    # This keeps the Python & C++ implementations in sync with each other.
+    assert outsource(str(scores)) == snapshot(external("cdc47ced1c1f*.txt"))
+
+    # This forces every possible sequence and evaluates all remaining possibilities.
+    # If we ever get a null value out of a force, it and its desendants become zeroes.
+    choices_to_trees = [{(): root}]
+    all_scores = [scores]
+    for i in range(4):
+        next_level = {}
+        next_scores = {}
+        for prev_choices, tree in choices_to_trees[-1].items():
+            prev_cells = [cell for cell, _letter in prev_choices]
+            assert i not in prev_cells
+            if tree:
+                force = tree.orderly_force_cell(i, num_letters[i], arena)
+            else:
+                force = [None] * num_letters[i]
+            assert len(force) == num_letters[i]
+            # use a stand-in value for previously-forced cells
+            remaining_cells = (["."] * (i + 1)) + cells[(i + 1) :]
+            for letter, t in enumerate(force):
+                seq = prev_choices + ((i, letter),)
+                assert len(seq) == i + 1
+                next_level[seq] = t
+                if t is None:
+                    indices = [range(len(c)) for c in remaining_cells]
+                    letter_scores = {
+                        choice: 0 for choice in itertools.product(*indices)
+                    }
+                else:
+                    letter_scores = eval_all(t, remaining_cells)
+                letter_seq = tuple(let for cell, let in seq)
+                for score_seq, score in letter_scores.items():
+                    next_scores[letter_seq + score_seq[(i + 1) :]] = score
+        choices_to_trees.append(next_level)
+        assert len(next_scores) == math.prod(num_letters)
+        all_scores.append(next_scores)
+
+    assert len(choices_to_trees[-1]) == math.prod(num_letters)
+    assert len(choices_to_trees) == 5
+
+    ibb = PyBucketBoggler(trie, dims)
+    for idx in itertools.product(*(range(len(cell)) for cell in cells)):
+        i0, i1, i2, i3 = idx
+        bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
+        assert ibb.ParseBoard(bd)
+        ibb.UpperBound(123)
+        score = ibb.Details().max_nomark
+        # print(idx, bd, score)
+        assert score == all_scores[0][idx]
+        assert score == all_scores[1][idx]
+        assert score == all_scores[2][idx]
+        assert score == all_scores[3][idx]
+        assert score == all_scores[4][idx]
+
+        t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
+        assert score == (t.bound if t else 0)
+        # print(t.to_string(etb))
+
+
+def test_build_invariants44():
+    is_python = False  # Python is pretty slow for this one.
+    dims = (4, 4)
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    board = "bdfgjqvwxz e s bdfgjqvwxz r r n e e e e h bdfgjqvwxz t e bdfgjqvwxz"
+    cells = board.split(" ")
+
+    arena = otb.create_arena()
+    assert otb.ParseBoard(board)
+    root = otb.BuildTree(arena)
+    assert root.bound == 5463
+
+    # this is a better bound than orderly, for which this is a worst-case scenario
+    ibb = cpp_bucket_boggler(trie, dims)
+    assert ibb.ParseBoard(board)
+    ibb.UpperBound(123_456)
+    ibuckets_score = ibb.Details().max_nomark
+    assert ibuckets_score == 4348
+
+    scores = eval_all(root, cells)
+
+    # the scores converge once you force all the cells
+    best_score = 0
+    for idx in itertools.product(*(range(len(cell)) for cell in cells)):
+        bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
+        assert ibb.ParseBoard(bd)
+        ibb.UpperBound(123_456)
+        score = ibb.Details().max_nomark
+        assert score == scores[idx]
+        best_score = max(score, best_score)
+
+    assert best_score == 2994
+
+
+def test_force_invariants44():
+    is_python = False  # Python is pretty slow for this one.
+    dims = (4, 4)
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    base_board = "bdfgjqvwxz ae hklnrsty bdfgjqvwxz hklnrsty hklnrsty hklnrsty ai ao au ae hklnrsty bdfgjqvwxz hklnrsty ae bdfgjqvwxz"
+
+    base_cells = base_board.split(" ")
+    base_num_letters = [len(cell) for cell in base_cells]
+
+    arena = otb.create_arena()
+    assert otb.ParseBoard(base_board)
+    root = otb.BuildTree(arena)
+    assert root.bound == 17596
+
+    forces = [
+        (5, 0),
+        (6, 1),
+        (9, 1),
+        (10, 1),
+        (1, 1),
+        (13, 6),
+        (2, 5),
+        (14, 1),
+        (4, 4),
+        (7, 1),
+        (8, 1),
+        (11, 0),
+    ]
+
+    t = root
+    cells = [*base_cells]
+    unforced_cells = {*range(16)}
+    for cell, letter in forces:
+        forces = t.orderly_force_cell(cell, base_num_letters[cell], arena)
+        t = forces[letter]
+        cells[cell] = cells[cell][letter]
+        unforced_cells.remove(cell)
+
+    assert t.bound == 329
+    forced_scores = eval_all(t, cells)
+
+    board = " ".join(cells)
+    cells = board.split(" ")
+    assert otb.ParseBoard(board)
+    direct_root = otb.BuildTree(arena)
+
+    # The direct tree's bound is much higher because the cells with single letters
+    # interfere with the other choices and desynchronize them. Despite this, it _is_
+    # the same tree, which eval_all demonstrates.
+    assert direct_root.bound == 569
+    direct_scores = eval_all(direct_root, cells)
+
+    assert forced_scores == direct_scores
+
+    # These scores should all match max_nomark from ibuckets.
+    indices = [base_cells[i].index(c) for i, c in enumerate(cells)]
+    ibb = cpp_bucket_boggler(trie, dims)
+    for seq, root_score in forced_scores.items():
+        for cell in unforced_cells:
+            indices[cell] = seq[cell]
+            cells[cell] = base_cells[cell][seq[cell]]
+        bd = " ".join(cells)
+        assert ibb.ParseBoard(bd)
+        ibb.UpperBound(123_456)
+        ibuckets_score = ibb.Details().max_nomark
+        forced_score = t.score_with_forces(indices)
+        assert forced_score == root_score
+        assert ibuckets_score == root_score

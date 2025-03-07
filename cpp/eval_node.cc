@@ -237,11 +237,9 @@ unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   if (letter_ == CHOICE_NODE) {
     auto force = forces[cell_];
     if (force >= 0) {
-      if (points_ & (1 << force)) {
-        unsigned int mask = points_ & ((1 << force) - 1);
-        unsigned int idx = std::popcount(mask);
-        auto child = children_[idx];
-        if (child) {
+      for (int i = 0; i < num_children_; i++) {
+        const auto& child = children_[i];
+        if (child->letter_ == force) {
           return child->ScoreWithForces(forces);
         }
       }
@@ -690,17 +688,31 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
     );
   }
 
-  if (non_cell_points && top_choice->num_children_ < num_lets) {
-    // TODO: these could all be the same node with a different EvalNode layout.
-    for (int i = 0; i < num_lets; ++i) {
-      if (!out[i]) {
-        EvalNode* point_node = arena.NewNodeWithCapacity(0);
-        point_node->points_ = point_node->bound_ = non_cell_points;
-        point_node->cell_ = cell;
-        point_node->letter_ = i;
-        out[i] = point_node;
+  if (top_choice->num_children_ < num_lets) {
+    int other_bound = 0;
+    for (auto c : non_cell_children) {
+      if (c) {
+        other_bound += c->bound_;
+      }
+    }
+    if (other_bound > 0 || non_cell_points > 0) {
+      for (int i = 0; i < num_lets; ++i) {
+        if (!out[i]) {
+          EvalNode* point_node = arena.NewNodeWithCapacity(non_cell_children.size());
+          point_node->points_ = non_cell_points;
+          point_node->cell_ = cell;
+          point_node->letter_ = i;
+          point_node->bound_ = non_cell_points + other_bound;
+          point_node->SetChildrenFromVector(non_cell_children);
+          out[i] = point_node;
+        }
       }
     }
   }
   return out;
+}
+
+void EvalNode::SetChildrenFromVector(const vector<EvalNode*>& children) {
+  num_children_ = children.size();
+  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
 }
