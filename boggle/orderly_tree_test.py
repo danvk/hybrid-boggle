@@ -232,7 +232,6 @@ def test_orderly_bound33(make_trie, get_tree_builder):
 # Invariants:
 # - eval_all on a tree should yield the same score before and after any amount of forcing.
 # - this score should match what you get from ibuckets
-# - this score should be independent of how you construct the tree
 def test_force_invariants22():
     is_python = True
     dims = (2, 2)
