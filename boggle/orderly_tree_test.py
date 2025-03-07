@@ -247,6 +247,14 @@ def test_force_invariants22():
 
     scores = eval_all(t, cells)
 
+    force0 = t.orderly_force_cell(0, num_letters[0], arena)
+    assert len(force0) == num_letters[0]
+    scores0 = {}
+    for letter, t in enumerate(force0):
+        letter_scores = eval_all(t, [cells[0][letter]] + cells[1:])
+        for seq, score in letter_scores.items():
+            scores0[(letter,) + seq[1:]] = score
+
     if False:
         choices_to_trees = {(): t}
         for i in SPLIT_ORDER[dims]:
@@ -276,7 +284,9 @@ def test_force_invariants22():
         ibb.UpperBound(123)
         score = ibb.Details().max_nomark
         # print(idx, bd, score)
-        assert score == scores[(i0, i1, i2, i3)]
+        assert score == scores[idx]
+        assert score == scores0[idx]
+
         # t = choices_to_trees[(0, i0), (1, i1), (2, i2), (3, i3)]
         # assert score == (t.bound if t else 0)
         # print(t.to_string(etb))
