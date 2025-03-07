@@ -210,17 +210,17 @@ class EvalNode:
 
         if len(top_choice.children) < num_lets:
             other_bound = sum(c.bound for c in non_cell_children)
-            # TODO: if other_bound = non_cell_points = 0 then this can be dropped
-            for i, child in enumerate(out):
-                if not child:
-                    point_node = EvalNode()
-                    point_node.points = non_cell_points
-                    point_node.cell = cell
-                    point_node.letter = i
-                    point_node.bound = point_node.points + other_bound
-                    point_node.children = non_cell_children
-                    arena.add_node(point_node)
-                    out[i] = point_node
+            if other_bound > 0 or non_cell_points > 0:
+                for i, child in enumerate(out):
+                    if not child:
+                        point_node = EvalNode()
+                        point_node.points = non_cell_points
+                        point_node.cell = cell
+                        point_node.letter = i
+                        point_node.bound = point_node.points + other_bound
+                        point_node.children = non_cell_children
+                        arena.add_node(point_node)
+                        out[i] = point_node
         return out
 
     def node_count(self):

@@ -189,7 +189,8 @@ class HybridTreeBreaker:
 
         choices.append(None)
         for letter, tree in tagged_trees:
-            assert tree
+            if not tree:
+                continue  # this can happen on truly dead-end paths
             choices[-1] = (cell, letter)
             self.attack_tree(tree, level + 1, choices)
         choices.pop()
