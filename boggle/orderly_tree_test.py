@@ -229,6 +229,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     # assert False
 
 
+# TODO: run this on C++ code, too
 # Invariants:
 # - eval_all on a tree should yield the same score before and after any amount of forcing.
 # - this score should match what you get from ibuckets

@@ -1,10 +1,15 @@
 import argparse
+import sys
 import time
 
 from boggle.args import add_standard_args, get_trie_from_args
 from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
-from boggle.dimensional_bogglers import LEN_TO_DIMS, OrderlyTreeBuilders
+from boggle.dimensional_bogglers import (
+    LEN_TO_DIMS,
+    OrderlyTreeBuilders,
+    cpp_orderly_tree_builder,
+)
 from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
@@ -105,9 +110,12 @@ def main():
     add_standard_args(parser, python=True)
     parser.add_argument("cutoff", type=int, help="Best known score for filtering.")
     parser.add_argument("board", type=str, help="Board class to lift.")
-    parser.add_argument("--num_lifts", type=int, default=0)
+    parser.add_argument(
+        "lift_cells", type=str, nargs="?", help="Sequence of choices to make"
+    )
     args = parser.parse_args()
     board = args.board
+    lift_cells = eval(args.lift_cells) if args.lift_cells else None
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
@@ -116,12 +124,12 @@ def main():
     # e_arena = etb.create_arena()
     # classic_tree = etb.BuildTree(e_arena, dedupe=True)
 
-    if args.python:
-        otb = OrderlyTreeBuilder(trie, dims)
-    else:
-        otb = OrderlyTreeBuilders[dims](trie)
+    builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
+    otb = builder(trie, dims)
     o_arena = otb.create_arena()
     assert otb.ParseBoard(board)
+    arenas = []
+    arenas.append(o_arena)
     start_s = time.time()
     orderly_tree = otb.BuildTree(o_arena)
     elapsed_s = time.time() - start_s
@@ -132,24 +140,18 @@ def main():
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
 
-    global mark
     t = orderly_tree
-    splits = SPLIT_ORDER[dims]
-    for cell in splits[: args.num_lifts]:
-        print(f"lift {cell}")
-        mark += 1
+    for cell, letter in lift_cells:
+        arena = otb.create_arena()
+        arenas.append(arena)
         start_s = time.time()
-        t = t.lift_choice(
-            cell, len(cells[cell]), o_arena, mark, dedupe=True, compress=True
-        )
+        choices = t.orderly_force_cell(cell, len(cells[cell]), arena)
         elapsed_s = time.time() - start_s
-        if t.bound <= args.cutoff:
-            print(
-                f"{elapsed_s:.02f}s Fully broken! {t.bound} <= {args.cutoff} {tree_stats(t)}"
-            )
-            break
-        t.filter_below_threshold(args.cutoff)
-        print(f"{elapsed_s:.02f}s f -> {tree_stats(t)}")
+        t = choices[letter]
+        print(f"{cell}/{letter} {elapsed_s:.02f}s f -> {tree_stats(t)}")
+
+    # print("")
+    # t.print_json()
 
 
 if __name__ == "__main__":
