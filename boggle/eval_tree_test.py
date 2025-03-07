@@ -3,6 +3,9 @@ from cpp_boggle import create_eval_node_arena
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.eval_tree import (
+    CHOICE_NODE,
+    ROOT_NODE,
+    EvalNode,
     create_eval_node_arena_py,
     eval_node_to_string,
 )
@@ -34,3 +37,47 @@ def test_add_word(create_arena):
     assert outsource(eval_node_to_string(root, cells)) == snapshot(
         external("8cd3c17dadcd*.txt")
     )
+
+
+def choice_node(cell, children):
+    n = EvalNode()
+    n.children = children
+    n.letter = CHOICE_NODE
+    n.cell = cell
+    n.points = 0
+    return n
+
+
+def letter_node(*, cell, letter, points=0, children=[]) -> EvalNode:
+    n = EvalNode()
+    n.letter = letter
+    n.cell = cell
+    n.points = points
+    n.children = children
+    return n
+
+
+def test_orderly_merge():
+    cells = ["abc", "de"]
+    num_letters = [len(c) for c in cells]
+    t0 = choice_node(
+        cell=0,
+        children=[
+            letter_node(cell=0, letter=1, points=1),
+            letter_node(cell=0, letter=2, points=2),
+        ],
+    )
+    t1 = choice_node(
+        cell=1,
+        children=[
+            letter_node(cell=1, letter=0, points=1),
+            letter_node(cell=1, letter=1, points=2),
+        ],
+    )
+    root = letter_node(cell=0, letter=ROOT_NODE, children=[t0, t1])
+    root.set_computed_fields(num_letters)
+    # print(root.to_dot(cells))
+    arena = create_eval_node_arena_py()
+    force = root.orderly_force_cell(0, num_letters[0], arena)
+    assert len(force) == 3
+    assert force[0] is not None

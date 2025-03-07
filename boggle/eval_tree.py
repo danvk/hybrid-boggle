@@ -351,6 +351,18 @@ class EvalNode:
                 child.recompute_score() if child else 0 for child in self.children
             )
 
+    def set_computed_fields(self, num_letters: Sequence[int]):
+        for c in self.children:
+            if c:
+                c.set_computed_fields(num_letters)
+
+        if self.letter == CHOICE_NODE:
+            self.bound = (
+                max(c.bound for c in self.children if c) if self.children else 0
+            )
+        else:
+            self.bound = self.points + sum(c.bound for c in self.children if c)
+
     def structural_eq(self, other: Self) -> bool:
         """Deep structural equality (for debugging)."""
         if self.letter != other.letter or self.cell != other.cell:
