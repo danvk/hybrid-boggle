@@ -311,16 +311,22 @@ def test_build_invariants44():
     trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
     board = "bdfgjqvwxz e s bdfgjqvwxz r r n e e e e h bdfgjqvwxz t e bdfgjqvwxz"
     cells = board.split(" ")
-    num_letters = [len(cell) for cell in cells]
 
     arena = otb.create_arena()
     assert otb.ParseBoard(board)
     root = otb.BuildTree(arena)
     assert root.bound == 5463
 
+    # this is a better bound than orderly, for which this is a worst-case scenario
+    ibb = cpp_bucket_boggler(trie, dims)
+    assert ibb.ParseBoard(board)
+    ibb.UpperBound(123_456)
+    ibuckets_score = ibb.Details().max_nomark
+    assert ibuckets_score == 4348
+
     scores = eval_all(root, cells)
 
-    ibb = cpp_bucket_boggler(trie, dims)
+    # the scores converge once you force all the cells
     best_score = 0
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
@@ -372,11 +378,32 @@ def test_force_invariants44():
         unforced_cells.remove(cell)
 
     assert t.bound == 329
-    scores = eval_all(t, cells)
+    forced_scores = eval_all(t, cells)
+
+    board = " ".join(cells)
+    cells = board.split(" ")
+    assert otb.ParseBoard(board)
+    direct_root = otb.BuildTree(arena)
+
+    # The direct tree's bound is much higher because the cells with single letters
+    # interfere with the other choices and desynchronize them. Despite this, it _is_
+    # the same tree, which eval_all demonstrates.
+    assert direct_root.bound == 569
+    direct_scores = eval_all(direct_root, cells)
+
+    assert forced_scores == direct_scores
+
+    # These scores should all match max_nomark from ibuckets.
     indices = [base_cells[i].index(c) for i, c in enumerate(cells)]
-    for seq, root_score in scores.items():
+    ibb = cpp_bucket_boggler(trie, dims)
+    for seq, root_score in forced_scores.items():
         for cell in unforced_cells:
             indices[cell] = seq[cell]
+            cells[cell] = base_cells[cell][seq[cell]]
+        bd = " ".join(cells)
+        assert ibb.ParseBoard(bd)
+        ibb.UpperBound(123_456)
+        ibuckets_score = ibb.Details().max_nomark
         forced_score = t.score_with_forces(indices)
         assert forced_score == root_score
-        # TODO: assert that this matches the ibuckets score
+        assert ibuckets_score == root_score
