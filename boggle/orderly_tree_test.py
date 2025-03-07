@@ -6,7 +6,7 @@ import pytest
 from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
-from boggle.dimensional_bogglers import cpp_orderly_tree_builder
+from boggle.dimensional_bogglers import cpp_bucket_boggler, cpp_orderly_tree_builder
 from boggle.eval_tree import (
     CHOICE_NODE,
     ROOT_NODE,
@@ -306,9 +306,8 @@ def test_force_invariants22(is_python):
 
 
 def test_force_invariants44():
-    is_python = True
+    is_python = False  # Python is pretty slow for this one.
     dims = (4, 4)
-    # TODO: memoize this with get_py_trie from boggler_test
     trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
     board = "bdfgjqvwxz e s bdfgjqvwxz r r n e e e e h bdfgjqvwxz t e bdfgjqvwxz"
     cells = board.split(" ")
@@ -321,10 +320,14 @@ def test_force_invariants44():
 
     scores = eval_all(root, cells)
 
-    ibb = PyBucketBoggler(trie, dims)
+    ibb = cpp_bucket_boggler(trie, dims)
+    best_score = 0
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
         assert ibb.ParseBoard(bd)
         ibb.UpperBound(123_456)
         score = ibb.Details().max_nomark
         assert score == scores[idx]
+        best_score = max(score, best_score)
+
+    assert best_score == 2994

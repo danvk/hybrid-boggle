@@ -15,6 +15,7 @@ from boggle.eval_tree import (
     EvalNode,
     PyArena,
     create_eval_node_arena_py,
+    eval_all,
 )
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
@@ -148,7 +149,12 @@ def main():
         choices = t.orderly_force_cell(cell, len(cells[cell]), arena)
         elapsed_s = time.time() - start_s
         t = choices[letter]
-        print(f"{cell}/{letter} {elapsed_s:.02f}s f -> {tree_stats(t)}")
+        cells[cell] = cells[cell][letter]
+        bd = " ".join(cells)
+        print(f"{cell}/{letter} {elapsed_s:.02f}s f -> {tree_stats(t)} {bd}")
+
+    # scores = eval_all(t, cells)
+    # print(scores)
 
     # print("")
     # t.print_json()
