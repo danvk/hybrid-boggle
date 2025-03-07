@@ -153,15 +153,12 @@ class EvalNode:
 
     # TODO: move this to the "debug & test" block
     def score_with_forces(self, forces: list[int]) -> int:
-        """Requires that set_choice_point_mask() has been called on this tree."""
+        """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
         if self.letter == CHOICE_NODE:
             force = forces[self.cell]
             if force >= 0:
-                if self.points & (1 << force):
-                    mask = self.points & ((1 << force) - 1)
-                    idx = mask.bit_count()
-                    child = self.children[idx]
-                    if child:
+                for child in self.children:
+                    if child and child.letter == force:
                         return child.score_with_forces(forces)
                 return 0
 
@@ -691,11 +688,8 @@ def eval_all(node: EvalNode, cells: list[str]):
     """Evaluate all possible boards.
 
     This is defined externally to EvalNode so that it can be used with C++ EvalNode, too.
-    If you're going to do anything with the tree after this, make sure to call
-    node.reset_choice_point_mask().
     """
     num_letters = [len(cell) for cell in cells]
-    node.set_choice_point_mask(num_letters)
     indices = [range(n) for n in num_letters]
     return {
         choices: node.score_with_forces(choices)
