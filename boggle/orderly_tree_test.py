@@ -268,6 +268,22 @@ def test_force_invariants22():
             for seq, score in letter_scores.items():
                 scores1[(letter0, letter1) + seq[2:]] = score
 
+    force2s = {
+        (letter0, letter1): t1.orderly_force_cell(2, num_letters[2], arena)
+        for letter0, force0 in enumerate(force1s)
+        for letter1, t1 in enumerate(force0)
+    }
+    scores2 = {}
+    for (letter0, letter1), force2 in force2s.items():
+        for letter2, t2 in enumerate(force2):
+            bd = " ".join(
+                [cells[0][letter0], cells[1][letter1], cells[2][letter2], cells[3]]
+            )
+            assert t2 is not None, bd
+            letter_scores = eval_all(t2, [".", ".", "."] + cells[3:])
+            for seq, score in letter_scores.items():
+                scores2[(letter0, letter1, letter2) + seq[3:]] = score
+
     if False:
         choices_to_trees = {(): t}
         for i in SPLIT_ORDER[dims]:
@@ -300,6 +316,7 @@ def test_force_invariants22():
         assert score == scores[idx]
         assert score == scores0[idx]
         assert score == scores1[idx]
+        assert score == scores2[idx]
 
         # t = choices_to_trees[(0, i0), (1, i1), (2, i2), (3, i3)]
         # assert score == (t.bound if t else 0)
