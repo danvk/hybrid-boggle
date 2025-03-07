@@ -690,15 +690,23 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
     );
   }
 
-  if (non_cell_points && top_choice->num_children_ < num_lets) {
-    // TODO: these could all be the same node with a different EvalNode layout.
-    for (int i = 0; i < num_lets; ++i) {
-      if (!out[i]) {
-        EvalNode* point_node = arena.NewNodeWithCapacity(0);
-        point_node->points_ = point_node->bound_ = non_cell_points;
-        point_node->cell_ = cell;
-        point_node->letter_ = i;
-        out[i] = point_node;
+  if (top_choice->num_children_ < num_lets) {
+    int other_bound = 0;
+    for (auto c : non_cell_children) {
+      if (c) {
+        other_bound += c->bound_;
+      }
+    }
+    if (other_bound > 0 || non_cell_points > 0) {
+      for (int i = 0; i < num_lets; ++i) {
+        if (!out[i]) {
+          EvalNode* point_node = arena.NewNodeWithCapacity(non_cell_children.size());
+          point_node->points_ = non_cell_points;
+          point_node->cell_ = cell;
+          point_node->letter_ = i;
+          point_node->bound_ = non_cell_points + other_bound;
+          out[i] = point_node;
+        }
       }
     }
   }
