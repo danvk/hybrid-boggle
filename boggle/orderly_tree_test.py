@@ -305,7 +305,7 @@ def test_force_invariants22(is_python):
         # print(t.to_string(etb))
 
 
-def test_force_invariants44():
+def test_build_invariants44():
     is_python = False  # Python is pretty slow for this one.
     dims = (4, 4)
     trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
@@ -331,3 +331,52 @@ def test_force_invariants44():
         best_score = max(score, best_score)
 
     assert best_score == 2994
+
+
+def test_force_invariants44():
+    is_python = False  # Python is pretty slow for this one.
+    dims = (4, 4)
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    base_board = "bdfgjqvwxz ae hklnrsty bdfgjqvwxz hklnrsty hklnrsty hklnrsty ai ao au ae hklnrsty bdfgjqvwxz hklnrsty ae bdfgjqvwxz"
+
+    base_cells = base_board.split(" ")
+    base_num_letters = [len(cell) for cell in base_cells]
+
+    arena = otb.create_arena()
+    assert otb.ParseBoard(base_board)
+    root = otb.BuildTree(arena)
+    assert root.bound == 17596
+
+    forces = [
+        (5, 0),
+        (6, 1),
+        (9, 1),
+        (10, 1),
+        (1, 1),
+        (13, 6),
+        (2, 5),
+        (14, 1),
+        (4, 4),
+        (7, 1),
+        (8, 1),
+        (11, 0),
+    ]
+
+    t = root
+    cells = [*base_cells]
+    unforced_cells = {*range(16)}
+    for cell, letter in forces:
+        forces = t.orderly_force_cell(cell, base_num_letters[cell], arena)
+        t = forces[letter]
+        cells[cell] = cells[cell][letter]
+        unforced_cells.remove(cell)
+
+    assert t.bound == 329
+    scores = eval_all(t, cells)
+    indices = [base_cells[i].index(c) for i, c in enumerate(cells)]
+    for seq, root_score in scores.items():
+        for cell in unforced_cells:
+            indices[cell] = seq[cell]
+        forced_score = t.score_with_forces(indices)
+        assert forced_score == root_score
+        # TODO: assert that this matches the ibuckets score

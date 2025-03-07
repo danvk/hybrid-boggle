@@ -1,5 +1,4 @@
 import argparse
-import sys
 import time
 
 from boggle.args import add_standard_args, get_trie_from_args
@@ -7,7 +6,6 @@ from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
-    OrderlyTreeBuilders,
     cpp_orderly_tree_builder,
 )
 from boggle.eval_tree import (
@@ -15,7 +13,6 @@ from boggle.eval_tree import (
     EvalNode,
     PyArena,
     create_eval_node_arena_py,
-    eval_all,
 )
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
