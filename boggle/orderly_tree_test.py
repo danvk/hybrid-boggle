@@ -255,6 +255,11 @@ def test_force_invariants22():
         for seq, score in letter_scores.items():
             scores0[(letter,) + seq[1:]] = score
 
+    force1 = force0[1].orderly_force_cell(1, num_letters[1], arena)
+    print(force1[1].to_dot(cells))
+    force2 = force1[1].orderly_force_cell(2, num_letters[2], arena)
+    assert force2[0] is not None
+
     force1s = [
         t0.orderly_force_cell(1, num_letters[1], arena)
         for letter, t0 in enumerate(force0)
@@ -279,7 +284,7 @@ def test_force_invariants22():
             bd = " ".join(
                 [cells[0][letter0], cells[1][letter1], cells[2][letter2], cells[3]]
             )
-            assert t2 is not None, bd
+            assert t2 is not None, f"{bd} {letter0}, {letter1}, {letter2}"
             letter_scores = eval_all(t2, [".", ".", "."] + cells[3:])
             for seq, score in letter_scores.items():
                 scores2[(letter0, letter1, letter2) + seq[3:]] = score
