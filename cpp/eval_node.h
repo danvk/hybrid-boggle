@@ -4,6 +4,7 @@
 #include <limits.h>
 
 #include <cassert>
+#include <deque>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -20,7 +21,10 @@ const int EVAL_NODE_ARENA_BUFFER_SIZE = 1'048'576;
 
 class EvalNodeArena {
  public:
-  EvalNodeArena() : num_nodes_(0), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
+  EvalNodeArena() : num_nodes_(0), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {
+    // TODO: this is a waste for all but the tree builder
+    available_nodes_.resize(16);
+  }
   ~EvalNodeArena() { FreeTheChildren(); }
 
   void FreeTheChildren() {
@@ -37,6 +41,8 @@ class EvalNodeArena {
 
   EvalNode* NewNodeWithCapacity(uint8_t capacity);
 
+  void ReleaseNode(EvalNode* node);
+
   // For testing
   EvalNode* NewRootNodeWithCapacity(uint8_t capacity);
   void PrintStats();
@@ -44,6 +50,9 @@ class EvalNodeArena {
  private:
   void AddBuffer();
   vector<char*> buffers_;
+  // capacity -> available nodes;
+  // see https://stackoverflow.com/q/6292332/388951 for deque implementation details
+  vector<deque<EvalNode*>> available_nodes_;
   int num_nodes_;
   int tip_;
 };
@@ -106,6 +115,8 @@ class EvalNode {
   vector<EvalNode*> GetChildren();
 
  private:
+  // This must be called with the same arena that was used to create child.
+  // It may trigger a reallocation, in which case it will return a new child node.
   EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);
 };
 

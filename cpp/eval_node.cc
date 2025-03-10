@@ -28,6 +28,10 @@ void EvalNodeArena::PrintStats() {
   cout << "tip: " << tip_ << endl;
 }
 
+void EvalNodeArena::ReleaseNode(EvalNode* node) {
+  available_nodes_[node->capacity_].push_back(node);
+}
+
 EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   if (num_children_ + 1 <= capacity_) {
     children_[num_children_++] = child;
@@ -45,7 +49,45 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
   memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
   clone->children_[num_children_] = child;
+  arena.ReleaseNode(child);
   return clone;
+}
+
+void EvalNodeArena::AddBuffer() {
+  char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
+  buffers_.push_back(buf);
+  tip_ = 0;
+}
+
+EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
+  auto& available = available_nodes_[capacity];
+  if (!available.empty()) {
+    auto node = available.front();
+    available.pop_front();
+    return node;
+  }
+
+  num_nodes_++;
+  int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
+  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
+  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
+    AddBuffer();
+  }
+  char* buf = &(*buffers_.rbegin())[tip_];
+  EvalNode* n = new (buf) EvalNode;
+  // TODO: update tip_ to enforce alignment
+  tip_ += size;
+  n->capacity_ = capacity;
+  return n;
+}
+
+EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
+  auto root = NewNodeWithCapacity(capacity);
+  root->letter_ = EvalNode::ROOT_NODE;
+  root->cell_ = 0;  // irrelevant
+  root->points_ = 0;
+  root->bound_ = 0;
+  return root;
 }
 
 EvalNode* EvalNode::AddWordWork(
@@ -321,36 +363,6 @@ uint64_t EvalNode::StructuralHash() const {
 
 unique_ptr<EvalNodeArena> create_eval_node_arena() {
   return unique_ptr<EvalNodeArena>(new EvalNodeArena);
-}
-
-void EvalNodeArena::AddBuffer() {
-  char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
-  buffers_.push_back(buf);
-  tip_ = 0;
-}
-
-EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
-  num_nodes_++;
-  int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
-  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
-  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
-    AddBuffer();
-  }
-  char* buf = &(*buffers_.rbegin())[tip_];
-  EvalNode* n = new (buf) EvalNode;
-  // TODO: update tip_ to enforce alignment
-  tip_ += size;
-  n->capacity_ = capacity;
-  return n;
-}
-
-EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
-  auto root = NewNodeWithCapacity(capacity);
-  root->letter_ = EvalNode::ROOT_NODE;
-  root->cell_ = 0;  // irrelevant
-  root->points_ = 0;
-  root->bound_ = 0;
-  return root;
 }
 
 // block-scope functions cannot be declared inline.
