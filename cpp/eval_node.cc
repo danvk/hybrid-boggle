@@ -112,6 +112,7 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
   memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
   clone->children_[num_children_] = child;
+  cout << "Replacing " << arena.Index(this) << " with " << arena.Index(clone) << endl;
   arena.ReleaseNode(this);
   return clone;
 }
@@ -146,6 +147,7 @@ EvalNode* EvalNode::AddWordWork(
     choice_child->letter_ = CHOICE_NODE;
     choice_child->cell_ = cell;
     choice_child->bound_ = 0;
+    cout << "AddChild1" << endl;
     new_me = AddChild(choice_child, arena);
     sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
   } else {
@@ -166,6 +168,8 @@ EvalNode* EvalNode::AddWordWork(
     letter_child->cell_ = cell;
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
+    cout << "Adding letter_child " << arena.Index(letter_child) << " "
+         << (int)letter_child->letter_ << " to " << arena.Index(choice_child) << endl;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
       bool patched = false;
@@ -189,11 +193,22 @@ EvalNode* EvalNode::AddWordWork(
         SortByLetter
     );
   }
+
+  cout << "Recursing " << arena.Index(choice_child) << " num_choices=" << num_choices
+       << " letters:";
+  for (int i = 0; i < choice_child->num_children_; i++) {
+    auto& c = choice_child->children_[i];
+    cout << " " << (int)c->letter_ << " (" << arena.Index(c) << ")";
+  }
+  cout << " want " << (int)letter;
+  cout << endl;
+
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, points, arena);
   if (new_letter_child != letter_child) {
-    cout << "patching letter_child " << (int)choice_child->num_children_ << " on "
-         << arena.Index(choice_child) << endl;
+    cout << "patching letter_child " << arena.Index(letter_child) << " -> "
+         << arena.Index(new_letter_child) << " on " << arena.Index(choice_child)
+         << " num_choices=" << num_choices << endl;
     bool patched = false;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
@@ -204,8 +219,8 @@ EvalNode* EvalNode::AddWordWork(
       }
     }
     if (!patched) {
-      cout << "unable to attach new letter child! " << (int)choice_child->num_children_
-           << endl;
+      cout << "unable to attach new letter child to " << arena.Index(choice_child)
+           << "! " << (int)choice_child->num_children_ << endl;
       cout << "letters:";
       for (int i = 0; i < choice_child->num_children_; i++) {
         auto& c = choice_child->children_[i];
@@ -214,9 +229,9 @@ EvalNode* EvalNode::AddWordWork(
       cout << " want " << (int)letter;
       cout << endl;
     }
-    assert(patched);
+    // assert(patched);
+    letter_child = new_letter_child;
   }
-  letter_child = new_letter_child;
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
@@ -229,7 +244,8 @@ void EvalNode::AddWord(
     vector<pair<int, int>> choices, int points, EvalNodeArena& arena
 ) {
   cout << "AddWord" << endl;
-  AddWordWork(choices.size(), choices.data(), points, arena);
+  auto new_me = AddWordWork(choices.size(), choices.data(), points, arena);
+  assert(new_me == this);
 }
 
 vector<EvalNode*> EvalNode::GetChildren() {
