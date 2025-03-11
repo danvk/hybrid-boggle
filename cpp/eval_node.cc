@@ -192,7 +192,8 @@ EvalNode* EvalNode::AddWordWork(
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, points, arena);
   if (new_letter_child != letter_child) {
-    cout << "patching letter_child " << (int)choice_child->num_children_ << endl;
+    cout << "patching letter_child " << (int)choice_child->num_children_ << " on "
+         << arena.Index(choice_child) << endl;
     bool patched = false;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
@@ -203,9 +204,17 @@ EvalNode* EvalNode::AddWordWork(
       }
     }
     if (!patched) {
-      cout << "unable to attach new letter child!" << endl;
+      cout << "unable to attach new letter child! " << (int)choice_child->num_children_
+           << endl;
+      cout << "letters:";
+      for (int i = 0; i < choice_child->num_children_; i++) {
+        auto& c = choice_child->children_[i];
+        cout << " " << (int)c->letter_;
+      }
+      cout << " want " << (int)letter;
+      cout << endl;
     }
-    // assert(patched);
+    assert(patched);
   }
   letter_child = new_letter_child;
 
