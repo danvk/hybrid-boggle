@@ -168,13 +168,19 @@ EvalNode* EvalNode::AddWordWork(
     letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
+      bool patched = false;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
         if (c->cell_ == cell) {
           new_me->children_[i] = new_choice_child;
+          patched = true;
           break;
         }
       }
+      if (!patched) {
+        cout << "unable to attach new choice child!" << endl;
+      }
+      // assert(patched);
       choice_child = new_choice_child;
     }
     sort(
@@ -186,13 +192,20 @@ EvalNode* EvalNode::AddWordWork(
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, points, arena);
   if (new_letter_child != letter_child) {
+    cout << "patching letter_child " << (int)choice_child->num_children_ << endl;
+    bool patched = false;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
       if (c->letter_ == letter) {
         choice_child->children_[i] = new_letter_child;
+        patched = true;
         break;
       }
     }
+    if (!patched) {
+      cout << "unable to attach new letter child!" << endl;
+    }
+    // assert(patched);
   }
   letter_child = new_letter_child;
 
