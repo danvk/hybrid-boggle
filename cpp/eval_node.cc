@@ -30,6 +30,69 @@ void EvalNodeArena::PrintStats() {
 
 void EvalNodeArena::ReleaseNode(EvalNode* node) {
   available_nodes_[node->capacity_].push_back(node);
+  cout << "Released node " << Index(node) << " with capacity " << (int)node->capacity_
+       << " [";
+  for (int i = 0; i < 4; i++) {
+    cout << (i ? ", " : "") << available_nodes_[i].size();
+  }
+  cout << "]" << endl;
+}
+
+void EvalNodeArena::AddBuffer() {
+  char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
+  buffers_.push_back(buf);
+  tip_ = 0;
+}
+
+int EvalNodeArena::Index(const EvalNode* n) {
+  char* cn = (char*)n;
+  for (auto buf : buffers_) {
+    if (cn >= buf && cn <= buf + EVAL_NODE_ARENA_BUFFER_SIZE) {
+      return cn - buf;
+    }
+  }
+  throw runtime_error("not our EvalNode");
+}
+
+EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
+  auto& available = available_nodes_[capacity];
+  if (!available.empty()) {
+    auto node = available.front();
+    available.pop_front();
+    // This mirrors EvalNode::EvalNode()
+    node->points_ = 0;
+    node->num_children_ = 0;
+    cout << "Re-used old node " << Index(node) << " with capacity " << (int)capacity
+         << " [";
+    for (int i = 0; i < 4; i++) {
+      cout << (i ? ", " : "") << available_nodes_[i].size();
+    }
+    cout << "]" << endl;
+    return node;
+  }
+
+  num_nodes_++;
+  int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
+  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
+  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
+    AddBuffer();
+  }
+  char* buf = &(*buffers_.rbegin())[tip_];
+  EvalNode* n = new (buf) EvalNode;
+  // TODO: update tip_ to enforce alignment
+  tip_ += size;
+  n->capacity_ = capacity;
+  cout << "Created new node " << Index(n) << " with capacity " << (int)capacity << endl;
+  return n;
+}
+
+EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
+  auto root = NewNodeWithCapacity(capacity);
+  root->letter_ = EvalNode::ROOT_NODE;
+  root->cell_ = 0;  // irrelevant
+  root->points_ = 0;
+  root->bound_ = 0;
+  return root;
 }
 
 EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
@@ -49,53 +112,12 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
   memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
   clone->children_[num_children_] = child;
-  arena.ReleaseNode(child);
+  arena.ReleaseNode(this);
   return clone;
 }
 
-void EvalNodeArena::AddBuffer() {
-  char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
-  buffers_.push_back(buf);
-  tip_ = 0;
-}
-
-EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
-  auto& available = available_nodes_[capacity];
-  if (!available.empty()) {
-    auto node = available.front();
-    available.pop_front();
-    return node;
-  }
-
-  num_nodes_++;
-  int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
-  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
-  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
-    AddBuffer();
-  }
-  char* buf = &(*buffers_.rbegin())[tip_];
-  EvalNode* n = new (buf) EvalNode;
-  // TODO: update tip_ to enforce alignment
-  tip_ += size;
-  n->capacity_ = capacity;
-  return n;
-}
-
-EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
-  auto root = NewNodeWithCapacity(capacity);
-  root->letter_ = EvalNode::ROOT_NODE;
-  root->cell_ = 0;  // irrelevant
-  root->points_ = 0;
-  root->bound_ = 0;
-  return root;
-}
-
 EvalNode* EvalNode::AddWordWork(
-    int num_choices,
-    pair<int, int>* choices,
-    const int* num_letters,
-    int points,
-    EvalNodeArena& arena
+    int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena
 ) {
   if (!num_choices) {
     points_ += points;
@@ -162,7 +184,7 @@ EvalNode* EvalNode::AddWordWork(
     );
   }
   auto new_letter_child =
-      letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
+      letter_child->AddWordWork(num_choices, choices, points, arena);
   if (new_letter_child != letter_child) {
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
@@ -184,8 +206,8 @@ EvalNode* EvalNode::AddWordWork(
 void EvalNode::AddWord(
     vector<pair<int, int>> choices, int points, EvalNodeArena& arena
 ) {
-  vector<int> num_letters(choices.size(), 1);
-  AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
+  cout << "AddWord" << endl;
+  AddWordWork(choices.size(), choices.data(), points, arena);
 }
 
 vector<EvalNode*> EvalNode::GetChildren() {
@@ -227,7 +249,7 @@ bool EvalNode::StructuralEq(const EvalNode& other) const {
   return true;
 }
 
-void EvalNode::PrintJSON() const {
+void EvalNode::PrintJSON(EvalNodeArena& arena) const {
   cout << "{\"type\": \"";
   if (letter_ == CHOICE_NODE) {
     cout << "CHOICE";
@@ -238,6 +260,7 @@ void EvalNode::PrintJSON() const {
   }
   cout << "\", \"cell\": " << (int)cell_;
   cout << ", \"bound\": " << bound_;
+  cout << ", \"index\": " << arena.Index(this);
   if (points_) {
     cout << ", \"points\": " << (int)points_;
   }
@@ -254,7 +277,7 @@ void EvalNode::PrintJSON() const {
       } else {
         cout << ", ";
       }
-      c->PrintJSON();
+      c->PrintJSON(arena);
     }
     cout << "]";
   }

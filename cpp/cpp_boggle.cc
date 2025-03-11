@@ -120,6 +120,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
+      .def("print_json", &EvalNode::PrintJSON)
       .def("structural_hash", &EvalNode::StructuralHash)
       .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference)
       .def("orderly_bound", &EvalNode::OrderlyBound);

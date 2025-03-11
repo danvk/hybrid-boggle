@@ -24,12 +24,31 @@ def test_add_word(create_arena):
     root = arena.new_root_node_with_capacity(4)
     cells = ["bcd", "aei", "nrd"]
     root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("171760d19d27*.txt")
+    )
     root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("4ece81a3fd47*.txt")
+    )
     root.add_word([(0, 0), (1, 0), (2, 1)], 1, arena)  # bar
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("6e52ea0f2db3*.txt")
+    )
     root.add_word([(0, 0), (1, 1), (2, 2)], 1, arena)  # bed
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("bc9b7d0ea4dc*.txt")
+    )
     root.add_word([(0, 0), (1, 2), (2, 2)], 1, arena)  # bid
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("d646541500a4*.txt")
+    )
     root.add_word([(0, 2), (1, 2), (2, 2)], 1, arena)  # did
+    assert outsource(eval_node_to_string(root, cells)) == snapshot(
+        external("086ccf9f3935*.txt")
+    )
     root.add_word([(0, 2), (2, 1), (1, 1)], 1, arena)  # dre
+    root.print_json(arena)
 
     # print(root.to_dot(cells))
 

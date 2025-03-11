@@ -133,8 +133,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     }
     cout << endl;
     */
-    auto new_root =
-        root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
+    auto new_root = root_->AddWordWork(n, orderly_choices_, word_score, arena);
     // cout << "/AddWord" << endl;
     assert(new_root == root_);
   }

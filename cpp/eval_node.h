@@ -46,6 +46,7 @@ class EvalNodeArena {
   // For testing
   EvalNode* NewRootNodeWithCapacity(uint8_t capacity);
   void PrintStats();
+  int Index(const EvalNode* n);
 
  private:
   void AddBuffer();
@@ -66,15 +67,11 @@ class EvalNode {
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
   EvalNode* AddWordWork(
-      int num_choices,
-      pair<int, int>* choices,
-      const int* num_letters,
-      int points,
-      EvalNodeArena& arena
+      int num_choices, pair<int, int>* choices, int points, EvalNodeArena& arena
   );
 
   bool StructuralEq(const EvalNode& other) const;
-  void PrintJSON() const;
+  void PrintJSON(EvalNodeArena& arena) const;
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
