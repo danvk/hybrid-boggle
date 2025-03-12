@@ -400,6 +400,9 @@ class EvalNode:
             if max_index is not None:
                 assert idx > max_index
             max_index = idx
+            for child in self.children:
+                assert child.letter != CHOICE_NODE
+                assert child.cell == self.cell
         else:
             # every child of a sum node must be a choice node
             for child in self.children:

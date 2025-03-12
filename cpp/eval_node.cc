@@ -400,6 +400,10 @@ void EvalNode::AssertOrderly(const vector<int>& split_order, int max_index) cons
       assert(idx > max_index);
     }
     max_index = idx;
+    for (int i = 0; i < num_children_; i++) {
+      assert(children_[i]->letter_ != CHOICE_NODE);
+      assert(children_[i]->cell_ == cell_);
+    }
   } else {
     // Every child of a sum node must be a choice node
     for (int i = 0; i < num_children_; i++) {
