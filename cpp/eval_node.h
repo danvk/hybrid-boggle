@@ -79,6 +79,8 @@ class EvalNode {
   void SetChildrenFromVector(const vector<EvalNode*>& children);
   uint64_t StructuralHash() const;
 
+  void AssertOrderly(const vector<int>& split_order, int max_index = -1) const;
+
   int8_t letter_;
   int8_t cell_;
   static const int8_t ROOT_NODE = -2;

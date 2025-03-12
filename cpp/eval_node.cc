@@ -393,6 +393,31 @@ uint64_t EvalNode::StructuralHash() const {
   return h;
 }
 
+void EvalNode::AssertOrderly(const vector<int>& split_order, int max_index) const {
+  if (letter_ == CHOICE_NODE) {
+    int idx = find(split_order.begin(), split_order.end(), cell_) - split_order.begin();
+    if (max_index != -1) {
+      assert(idx > max_index);
+    }
+    max_index = idx;
+  } else {
+    // Every child of a sum node must be a choice node
+    for (int i = 0; i < num_children_; i++) {
+      assert(children_[i]->letter_ == CHOICE_NODE);
+    }
+    // Sum node children must be sorted by cell (not split_order)
+    for (int i = 1; i < num_children_; i++) {
+      assert(children_[i - 1]->cell_ < children_[i]->cell_);
+    }
+  }
+
+  for (int i = 0; i < num_children_; i++) {
+    if (children_[i]) {
+      children_[i]->AssertOrderly(split_order, max_index);
+    }
+  }
+}
+
 unique_ptr<EvalNodeArena> create_eval_node_arena() {
   return unique_ptr<EvalNodeArena>(new EvalNodeArena);
 }

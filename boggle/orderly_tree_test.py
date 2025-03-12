@@ -79,6 +79,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     t = otb.BuildTree(arena)
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
+    t.assert_orderly(SPLIT_ORDER[(3, 3)])
 
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
         external("1bc9f74c0682*.txt")
@@ -96,6 +97,7 @@ def test_orderly_bound22(is_python):
     t = otb.BuildTree(arena)
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
+    t.assert_orderly(SPLIT_ORDER[(2, 2)])
     assert t.bound == 8
 
     failures, _, _ = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
@@ -114,6 +116,7 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     t = otb.BuildTree(arena)
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
+    t.assert_orderly(SPLIT_ORDER[(2, 2)])
     assert t.bound == 22
 
     failures, _, _ = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
@@ -145,7 +148,7 @@ def test_orderly_merge():
     split_order = SPLIT_ORDER[(2, 2)]
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
-        t.assert_orderly(split_order)
+    t.assert_orderly(split_order)
     assert t.bound == 22
 
     assert t.letter == ROOT_NODE
@@ -194,6 +197,7 @@ def test_orderly_force22(is_python):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
+    t.assert_orderly(SPLIT_ORDER[(2, 2)])
     force = t.orderly_force_cell(0, num_letters[0], arena)
 
     txt = "\n\n".join(
@@ -201,6 +205,9 @@ def test_orderly_force22(is_python):
     )
 
     assert outsource(txt) == snapshot(external("3f6cd59206d5*.txt"))
+
+    for subtree in force:
+        subtree.assert_orderly(SPLIT_ORDER[(2, 2)])
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
@@ -217,7 +224,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     if isinstance(t, EvalNode):
         t.assert_invariants(otb)
         print(otb.cell_counts)
-        t.assert_orderly(SPLIT_ORDER[(3, 3)])
+    t.assert_orderly(SPLIT_ORDER[(3, 3)])
     assert t.bound > 500
 
     # node_counts = t.node_counts()
@@ -242,6 +249,7 @@ def test_force_invariants22(is_python):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     root = otb.BuildTree(arena)
+    root.assert_orderly(SPLIT_ORDER[dims])
     # print(t.to_dot(cells))
 
     scores = eval_all(root, cells)
@@ -260,6 +268,9 @@ def test_force_invariants22(is_python):
             assert i not in prev_cells
             if tree:
                 force = tree.orderly_force_cell(i, num_letters[i], arena)
+                for subtree in force:
+                    if subtree:
+                        subtree.assert_orderly(SPLIT_ORDER[dims])
             else:
                 force = [None] * num_letters[i]
             assert len(force) == num_letters[i]
@@ -316,6 +327,7 @@ def test_build_invariants44():
     assert otb.ParseBoard(board)
     root = otb.BuildTree(arena)
     assert root.bound == 5463
+    root.assert_orderly(SPLIT_ORDER[dims])
 
     # this is a better bound than orderly, for which this is a worst-case scenario
     ibb = cpp_bucket_boggler(trie, dims)
@@ -352,6 +364,7 @@ def test_force_invariants44():
     assert otb.ParseBoard(base_board)
     root = otb.BuildTree(arena)
     assert root.bound == 17596
+    root.assert_orderly(SPLIT_ORDER[dims])
 
     forces = [
         (5, 0),
@@ -376,6 +389,7 @@ def test_force_invariants44():
         t = forces[letter]
         cells[cell] = cells[cell][letter]
         unforced_cells.remove(cell)
+        t.assert_orderly(SPLIT_ORDER[dims])
 
     assert t.bound == 329
     forced_scores = eval_all(t, cells)

@@ -121,6 +121,12 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("arena")
       )
       .def("print_json", &EvalNode::PrintJSON)
+      .def(
+          "assert_orderly",
+          &EvalNode::AssertOrderly,
+          py::arg("split_order"),
+          py::arg("max_index") = -1
+      )
       .def("structural_hash", &EvalNode::StructuralHash)
       .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference)
       .def("orderly_bound", &EvalNode::OrderlyBound);
