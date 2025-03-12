@@ -125,6 +125,7 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena)
+        tree.assert_orderly(self.split_order)
         # num_children, num_nodes, num_singles = size_stats(tree)
         # print(num_children)
         # print(num_singles)
@@ -178,6 +179,11 @@ class HybridTreeBreaker:
             num_lets,
             arena,
         )
+        # print(f"returned from orderly_force_cell {cell}")
+        for tree in trees:
+            if tree:
+                tree.assert_orderly(self.split_order)
+        print(f"checked invariants after orderly_force_cell {cell}")
         self.details_.secs_by_level[level] += time.time() - start_s
         # self.details_.bounds[level] = tree.bound
 
