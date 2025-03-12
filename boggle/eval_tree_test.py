@@ -48,7 +48,7 @@ def test_add_word(create_arena):
         external("086ccf9f3935*.txt")
     )
     root.add_word([(0, 2), (2, 1), (1, 1)], 1, arena)  # dre
-    root.print_json(arena)
+    # root.print_json(arena)
 
     # print(root.to_dot(cells))
 
