@@ -145,7 +145,10 @@ def break_worker(task: str | int):
     if (
         args.gcs_path and current_time - last_upload_time >= 600
     ):  # 600 seconds = 10 minutes
-        upload_to_gcs(args.gcs_bucket, f"tasks-{me}.ndjson", f"tasks-{me}.ndjson")
+        gcs_bucket, gcs_prefix = parse_gcs_path(args.gcs_path)
+        upload_to_gcs(
+            gcs_bucket, f"tasks-{me}.ndjson", f"{gcs_prefix}/tasks-{me}.ndjson"
+        )
         last_upload_time = current_time
 
     return details.failures
@@ -191,7 +194,7 @@ def get_breaker(args) -> BreakingBundle:
     )
 
 
-def parse_gcs_path(gcs_path):
+def parse_gcs_path(gcs_path: str) -> tuple[str, str]:
     """Parses the GCS path into bucket name and prefix."""
     if not gcs_path.startswith("gs://"):
         raise ValueError("GCS path must start with 'gs://'")
