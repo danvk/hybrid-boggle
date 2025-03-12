@@ -172,10 +172,12 @@ EvalNode* EvalNode::AddWordWork(
          << (int)letter_child->letter_ << " to " << arena.Index(choice_child) << endl;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
+      const auto& old_choice_child = choice_child;
       bool patched = false;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
-        if (c->cell_ == cell) {
+        if (c == old_choice_child) {
+          // TODO: assign through reference
           new_me->children_[i] = new_choice_child;
           patched = true;
           break;
@@ -210,9 +212,10 @@ EvalNode* EvalNode::AddWordWork(
          << arena.Index(new_letter_child) << " on " << arena.Index(choice_child)
          << " num_choices=" << num_choices << endl;
     bool patched = false;
+    const auto& old_letter_child = letter_child;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
-      if (c->letter_ == letter) {
+      if (c == old_letter_child) {
         choice_child->children_[i] = new_letter_child;
         patched = true;
         break;
