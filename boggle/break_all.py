@@ -6,10 +6,12 @@ import itertools
 import json
 import math
 import multiprocessing
+import os
 import random
 import time
 from dataclasses import dataclass
 
+from google.cloud import storage
 from tqdm import tqdm
 
 from boggle.args import (
@@ -50,7 +52,12 @@ def get_process_id():
     return ids[0]
 
 
+# Global variable to track the last upload time
+last_upload_time = None
+
+
 def break_init(args, needs_canonical_filter):
+    global last_upload_time
     bundle = get_breaker(args)
     # See https://stackoverflow.com/a/30816116/388951 for this trick to avoid a global
     break_worker.bundle = bundle
@@ -59,9 +66,31 @@ def break_init(args, needs_canonical_filter):
     me = get_process_id()
     with open(f"tasks-{me}.ndjson", "w"):
         pass
+    last_upload_time = time.time()
+
+
+def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the Google Cloud Storage bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
+
+def download_from_gcs(bucket_name, prefix, local_dir):
+    """Downloads files from the Google Cloud Storage bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix=prefix)
+    for blob in blobs:
+        local_path = f"{local_dir}/{blob.name}"
+        blob.download_to_filename(local_path)
+        print(f"File {blob.name} downloaded to {local_path}.")
 
 
 def break_worker(task: str | int):
+    global last_upload_time
     bundle: BreakingBundle = break_worker.bundle
     breaker = bundle.breaker
     args = break_worker.args
@@ -111,6 +140,14 @@ def break_worker(task: str | int):
             print(f"{task}: {board}")
             print(json.dumps(summary, indent=2))
 
+    # Upload the file to Google Cloud Storage if 10 minutes have passed
+    current_time = time.time()
+    if (
+        args.gcs_path and current_time - last_upload_time >= 600
+    ):  # 600 seconds = 10 minutes
+        upload_to_gcs(args.gcs_bucket, f"tasks-{me}.ndjson", f"tasks-{me}.ndjson")
+        last_upload_time = current_time
+
     return details.failures
 
 
@@ -152,6 +189,16 @@ def get_breaker(args) -> BreakingBundle:
     return BreakingBundle(
         trie=t, etb=etb, boggler=boggler, breaker=breaker, ungrouped_trie=ungrouped_trie
     )
+
+
+def parse_gcs_path(gcs_path):
+    """Parses the GCS path into bucket name and prefix."""
+    if not gcs_path.startswith("gs://"):
+        raise ValueError("GCS path must start with 'gs://'")
+    parts = gcs_path[5:].split("/", 1)
+    bucket_name = parts[0]
+    prefix = parts[1] if len(parts) > 1 else ""
+    return bucket_name, prefix
 
 
 def main():
@@ -231,9 +278,27 @@ def main():
         action="store_true",
         help="Omit times from logging, to get deterministic output.",
     )
+    parser.add_argument(
+        "--gcs_path",
+        type=str,
+        help="Google Cloud Storage path to upload the results, e.g., 'gs://bucket/path'.",
+    )
     args = parser.parse_args()
     if args.random_seed >= 0:
         random.seed(args.random_seed)
+
+    # Parse the GCS path if provided
+    if args.gcs_path:
+        gcs_bucket, gcs_prefix = parse_gcs_path(args.gcs_path)
+    else:
+        gcs_bucket, gcs_prefix = None, None
+
+    # Download existing files from GCS bucket if gcs_path is provided
+    if args.resume_from and gcs_bucket:
+        local_resume_dir = "/tmp/resume_files"
+        os.makedirs(local_resume_dir, exist_ok=True)
+        download_from_gcs(gcs_bucket, gcs_prefix, local_resume_dir)
+        args.resume_from = f"{local_resume_dir}/*"
 
     best_score = args.best_score
     assert best_score > 0
