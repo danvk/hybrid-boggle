@@ -172,6 +172,7 @@ class HybridTreeBreaker:
         start_s = time.time()
         self.details_.n_force += 1
         arena = self.etb.create_arena()
+        print(f"calling orderly_force_cell {cell}")
         trees = tree.orderly_force_cell(
             cell,
             num_lets,

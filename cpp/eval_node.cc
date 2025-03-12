@@ -20,12 +20,19 @@ inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
 
 int num_reallocs = 0;
 int num_in_capacity = 0;
+int num_reuses = 0;
 
 void EvalNodeArena::PrintStats() {
   cout << "num_reallocs: " << num_reallocs << endl;
   cout << "num_in_capacity: " << num_in_capacity << endl;
   cout << "num_buffers: " << buffers_.size() << endl;
   cout << "tip: " << tip_ << endl;
+  cout << "num reuses: " << num_reuses << endl;
+  for (int i = 0; i < 16; i++) {
+    if (!available_nodes_[i].empty()) {
+      cout << "Available cap " << i << ": " << available_nodes_[i].size() << endl;
+    }
+  }
 }
 
 void EvalNodeArena::ReleaseNode(EvalNode* node) {
@@ -57,6 +64,7 @@ EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
     // This mirrors EvalNode::EvalNode()
     node->points_ = 0;
     node->num_children_ = 0;
+    num_reuses++;
     return node;
   }
 
