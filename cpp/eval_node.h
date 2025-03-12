@@ -23,7 +23,7 @@ class EvalNodeArena {
  public:
   EvalNodeArena() : num_nodes_(0), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {
     // TODO: this is a waste for all but the tree builder
-    available_nodes_.resize(16);
+    available_nodes_.resize(32);
   }
   ~EvalNodeArena() { FreeTheChildren(); }
 
