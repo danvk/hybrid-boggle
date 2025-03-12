@@ -147,7 +147,9 @@ def break_worker(task: str | int):
     ):  # 600 seconds = 10 minutes
         gcs_bucket, gcs_prefix = parse_gcs_path(args.gcs_path)
         upload_to_gcs(
-            gcs_bucket, f"tasks-{me}.ndjson", f"{gcs_prefix}/tasks-{me}.ndjson"
+            gcs_bucket,
+            f"tasks-{me}.ndjson",
+            f"{gcs_prefix}/{args.timestamp}.tasks-{me}.ndjson",
         )
         last_upload_time = current_time
 
@@ -289,6 +291,9 @@ def main():
     args = parser.parse_args()
     if args.random_seed >= 0:
         random.seed(args.random_seed)
+
+    # Generate a timestamp for the current run
+    args.timestamp = time.strftime("%Y%m%d-%H%M%S")
 
     # Parse the GCS path if provided
     if args.gcs_path:
