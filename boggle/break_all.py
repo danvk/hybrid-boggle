@@ -10,6 +10,7 @@ import os
 import random
 import time
 from dataclasses import dataclass
+from multiprocessing.util import Finalize
 
 from google.cloud import storage
 from tqdm import tqdm
@@ -67,6 +68,8 @@ def break_init(args, needs_canonical_filter):
     with open(f"tasks-{me}.ndjson", "w"):
         pass
     last_upload_time = time.time()
+    # See https://stackoverflow.com/a/24724452/388951
+    Finalize(None, final_sync, exitpriority=16)
 
 
 def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
@@ -87,6 +90,18 @@ def download_from_gcs(bucket_name, prefix, local_dir):
         local_path = f"{local_dir}/{blob.name}"
         blob.download_to_filename(local_path)
         print(f"File {blob.name} downloaded to {local_path}.")
+
+
+def final_sync():
+    args = break_worker.args
+    me = get_process_id()
+    if args.gcs_path:
+        gcs_bucket, gcs_prefix = parse_gcs_path(args.gcs_path)
+        upload_to_gcs(
+            gcs_bucket,
+            f"tasks-{me}.ndjson",
+            f"{gcs_prefix}/{args.timestamp}.tasks-{me}.ndjson",
+        )
 
 
 def break_worker(task: str | int):
