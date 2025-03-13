@@ -22,9 +22,9 @@ void EvalNodeArena::PrintStats() {
 
 void EvalNodeArena::AddBuffer() {
   if (cur_buffer_ == buffers_.size() - 1) {
-    cout << "AddBuffer" << endl;
     char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
     buffers_.push_back(buf);
+    cout << "AddBuffer " << buffers_.size() << " " << (uintptr_t)buf << endl;
   }
   cur_buffer_++;
   cout << "cur_buffer=" << cur_buffer_ << endl;
@@ -156,13 +156,19 @@ EvalNode* EvalNode::AddWordWork(
     letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
+      const auto& old_choice_child = choice_child;
+      bool patched = false;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
-        if (c->cell_ == cell) {
+        if (c == old_choice_child) {
+          // TODO: assign through reference
           new_me->children_[i] = new_choice_child;
+          patched = true;
           break;
         }
       }
+      // TODO: remove
+      assert(patched);
       choice_child = new_choice_child;
     }
     sort(
@@ -174,15 +180,21 @@ EvalNode* EvalNode::AddWordWork(
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
   if (new_letter_child != letter_child) {
+    const auto& old_letter_child = letter_child;
+    bool patched = false;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
-      if (c->letter_ == letter) {
+      if (c == old_letter_child) {
+        // TODO: assign through reference
         choice_child->children_[i] = new_letter_child;
+        patched = true;
         break;
       }
     }
+    // TODO: remove
+    assert(patched);
+    letter_child = new_letter_child;
   }
-  letter_child = new_letter_child;
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
@@ -376,9 +388,21 @@ inline uint16_t advance(
     const EvalNode* node, vector<int>& sums, vector<vector<const EvalNode*>>& stacks
 ) {
   // assert(node->letter_ != CHOICE_NODE);
+  if ((uintptr_t)node == 0x10000007a) {
+    cout << "It's the node" << endl;
+  }
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
     // assert(child->letter_ == CHOICE_NODE);
+    if ((uintptr_t)child >= 0x100000060 && (uintptr_t)child <= 0x100000080) {
+      cout << "node: " << (uintptr_t)node << " i=" << i
+           << " cap=" << (int)node->capacity_ << " nc=" << (int)node->num_children_
+           << endl;
+    }
+    // if (child->cell_ < 0 || child->cell_ >= stacks.size() ||
+    //     child->cell_ >= sums.size()) {
+    //   cout << "bad cell_=" << (int)child->cell_ << endl;
+    // }
     stacks[child->cell_].push_back(child);
     sums[child->cell_] += child->bound_;
   }

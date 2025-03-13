@@ -12,7 +12,8 @@ cd cpp
 c++ -Wall -shared -std=c++20 -fPIC -march=native \
     -Wno-sign-compare \
     -Wshadow \
-    -O3 \
+    -g \
+    -fsanitize=address \
     $(poetry run python -m pybind11 --includes) \
     cpp_boggle.cc trie.cc eval_node.cc \
     -o ../cpp_boggle$(python3-config --extension-suffix) \

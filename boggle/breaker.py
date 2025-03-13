@@ -175,6 +175,7 @@ class HybridTreeBreaker:
         start_s = time.time()
         self.details_.n_force += 1
         arena_level = arena.save_level()
+        print(f"save level {arena_level}")
         trees = tree.orderly_force_cell(
             cell,
             num_lets,
@@ -197,6 +198,7 @@ class HybridTreeBreaker:
             choices[-1] = (cell, letter)
             self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
+        print(f"reset level {arena_level}")
         arena.reset_level(arena_level)
 
     def switch_to_score(
