@@ -54,11 +54,13 @@ def get_process_id():
 
 
 # Global variable to track the last upload time
-last_upload_time = None
+last_upload_time_secs = None
+
+MAX_GCS_UPLOAD_FREQUENCY_SECS = 10
 
 
 def break_init(args, needs_canonical_filter):
-    global last_upload_time
+    global last_upload_time_secs
     bundle = get_breaker(args)
     # See https://stackoverflow.com/a/30816116/388951 for this trick to avoid a global
     break_worker.bundle = bundle
@@ -67,27 +69,29 @@ def break_init(args, needs_canonical_filter):
     me = get_process_id()
     with open(f"tasks-{me}.ndjson", "w"):
         pass
-    last_upload_time = time.time()
+    last_upload_time_secs = time.time()
     # See https://stackoverflow.com/a/24724452/388951
     Finalize(None, final_sync, exitpriority=16)
 
 
-def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
+def upload_to_gcs(source_file_name: str, gcs_path: str):
     """Uploads a file to the Google Cloud Storage bucket."""
+    gcs_bucket, gcs_prefix = parse_gcs_path(gcs_path)
     storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
+    bucket = storage_client.bucket(gcs_bucket)
+    blob = bucket.blob(gcs_prefix)
     blob.upload_from_filename(source_file_name)
-    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+    print(f"File {source_file_name} uploaded to {gcs_path}.")
 
 
-def download_from_gcs(bucket_name, prefix, local_dir):
+def download_from_gcs(gcs_path: str, local_dir: str):
     """Downloads files from the Google Cloud Storage bucket."""
+    gcs_bucket, gcs_prefix = parse_gcs_path(gcs_path)
     storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix=prefix)
+    bucket = storage_client.bucket(gcs_bucket)
+    blobs = bucket.list_blobs(prefix=gcs_prefix)
     for blob in blobs:
-        local_path = f"{local_dir}/{blob.name}"
+        local_path = f"{local_dir}/{os.path.basename(blob.name)}"
         blob.download_to_filename(local_path)
         print(f"File {blob.name} downloaded to {local_path}.")
 
@@ -96,16 +100,14 @@ def final_sync():
     args = break_worker.args
     me = get_process_id()
     if args.gcs_path:
-        gcs_bucket, gcs_prefix = parse_gcs_path(args.gcs_path)
         upload_to_gcs(
-            gcs_bucket,
             f"tasks-{me}.ndjson",
-            f"{gcs_prefix}/{args.timestamp}.tasks-{me}.ndjson",
+            f"{args.gcs_path}/{args.timestamp}.tasks-{me}.ndjson",
         )
 
 
 def break_worker(task: str | int):
-    global last_upload_time
+    global last_upload_time_secs
     bundle: BreakingBundle = break_worker.bundle
     breaker = bundle.breaker
     args = break_worker.args
@@ -156,17 +158,16 @@ def break_worker(task: str | int):
             print(json.dumps(summary, indent=2))
 
     # Upload the file to Google Cloud Storage if 10 minutes have passed
-    current_time = time.time()
+    current_time_secs = time.time()
     if (
-        args.gcs_path and current_time - last_upload_time >= 600
-    ):  # 600 seconds = 10 minutes
-        gcs_bucket, gcs_prefix = parse_gcs_path(args.gcs_path)
+        args.gcs_path
+        and current_time_secs - last_upload_time_secs >= MAX_GCS_UPLOAD_FREQUENCY_SECS
+    ):
         upload_to_gcs(
-            gcs_bucket,
             f"tasks-{me}.ndjson",
-            f"{gcs_prefix}/{args.timestamp}.tasks-{me}.ndjson",
+            f"{args.gcs_path}/{args.timestamp}.tasks-{me}.ndjson",
         )
-        last_upload_time = current_time
+        last_upload_time_secs = current_time_secs
 
     return details.failures
 
@@ -310,17 +311,12 @@ def main():
     # Generate a timestamp for the current run
     args.timestamp = time.strftime("%Y%m%d-%H%M%S")
 
-    # Parse the GCS path if provided
-    if args.gcs_path:
-        gcs_bucket, gcs_prefix = parse_gcs_path(args.gcs_path)
-    else:
-        gcs_bucket, gcs_prefix = None, None
-
     # Download existing files from GCS bucket if gcs_path is provided
-    if args.resume_from and gcs_bucket:
+    if args.gcs_path:
+        assert not args.resume_from
         local_resume_dir = "/tmp/resume_files"
         os.makedirs(local_resume_dir, exist_ok=True)
-        download_from_gcs(gcs_bucket, gcs_prefix, local_resume_dir)
+        download_from_gcs(args.gcs_path, local_resume_dir)
         args.resume_from = f"{local_resume_dir}/*"
 
     best_score = args.best_score
