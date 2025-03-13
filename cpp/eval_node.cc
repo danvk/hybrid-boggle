@@ -10,14 +10,6 @@
 
 using namespace std;
 
-inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
-  return a->letter_ < b->letter_;
-}
-
-inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
-  return a->cell_ < b->cell_;
-}
-
 int num_reallocs = 0;
 int num_in_capacity = 0;
 
@@ -26,6 +18,63 @@ void EvalNodeArena::PrintStats() {
   cout << "num_in_capacity: " << num_in_capacity << endl;
   cout << "num_buffers: " << buffers_.size() << endl;
   cout << "tip: " << tip_ << endl;
+}
+
+void EvalNodeArena::AddBuffer() {
+  if (cur_buffer_ == buffers_.size() - 1) {
+    char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
+    buffers_.push_back(buf);
+  }
+  cur_buffer_++;
+  tip_ = 0;
+}
+
+EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
+  num_nodes_++;
+  int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
+  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
+  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
+    AddBuffer();
+  }
+  char* buf = &buffers_[cur_buffer_][tip_];
+  EvalNode* n = new (buf) EvalNode;
+  // TODO: update tip_ to enforce alignment
+  tip_ += size;
+  n->capacity_ = capacity;
+  return n;
+}
+
+EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
+  auto root = NewNodeWithCapacity(capacity);
+  root->letter_ = EvalNode::ROOT_NODE;
+  root->cell_ = 0;  // irrelevant
+  root->points_ = 0;
+  root->bound_ = 0;
+  return root;
+}
+
+pair<int, int> EvalNodeArena::SaveLevel() { return {cur_buffer_, tip_}; }
+
+void EvalNodeArena::ResetLevel(pair<int, int> level) {
+  auto [new_cur_buffer, new_tip] = level;
+  assert(new_cur_buffer <= cur_buffer_);
+  if (new_cur_buffer == cur_buffer_) {
+    assert(new_tip <= tip_);
+  }
+  cur_buffer_ = new_cur_buffer;
+  tip_ = new_tip;
+}
+
+unique_ptr<EvalNodeArena> create_eval_node_arena() {
+  return unique_ptr<EvalNodeArena>(new EvalNodeArena);
+}
+
+inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
+  return a->letter_ < b->letter_;
+}
+
+inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
+  return a->cell_ < b->cell_;
 }
 
 EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
@@ -104,13 +153,19 @@ EvalNode* EvalNode::AddWordWork(
     letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
+      const auto& old_choice_child = choice_child;
+      bool patched = false;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
-        if (c->cell_ == cell) {
+        if (c == old_choice_child) {
+          // TODO: assign through reference
           new_me->children_[i] = new_choice_child;
+          patched = true;
           break;
         }
       }
+      // TODO: remove
+      assert(patched);
       choice_child = new_choice_child;
     }
     sort(
@@ -122,15 +177,21 @@ EvalNode* EvalNode::AddWordWork(
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
   if (new_letter_child != letter_child) {
+    const auto& old_letter_child = letter_child;
+    bool patched = false;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
-      if (c->letter_ == letter) {
+      if (c == old_letter_child) {
+        // TODO: assign through reference
         choice_child->children_[i] = new_letter_child;
+        patched = true;
         break;
       }
     }
+    // TODO: remove
+    assert(patched);
+    letter_child = new_letter_child;
   }
-  letter_child = new_letter_child;
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
@@ -319,40 +380,6 @@ uint64_t EvalNode::StructuralHash() const {
   return h;
 }
 
-unique_ptr<EvalNodeArena> create_eval_node_arena() {
-  return unique_ptr<EvalNodeArena>(new EvalNodeArena);
-}
-
-void EvalNodeArena::AddBuffer() {
-  char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
-  buffers_.push_back(buf);
-  tip_ = 0;
-}
-
-EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
-  num_nodes_++;
-  int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
-  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
-  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
-    AddBuffer();
-  }
-  char* buf = &(*buffers_.rbegin())[tip_];
-  EvalNode* n = new (buf) EvalNode;
-  // TODO: update tip_ to enforce alignment
-  tip_ += size;
-  n->capacity_ = capacity;
-  return n;
-}
-
-EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
-  auto root = NewNodeWithCapacity(capacity);
-  root->letter_ = EvalNode::ROOT_NODE;
-  root->cell_ = 0;  // irrelevant
-  root->points_ = 0;
-  root->bound_ = 0;
-  return root;
-}
-
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
     const EvalNode* node, vector<int>& sums, vector<vector<const EvalNode*>>& stacks
@@ -360,7 +387,6 @@ inline uint16_t advance(
   // assert(node->letter_ != CHOICE_NODE);
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
-    // assert(child->letter_ == CHOICE_NODE);
     stacks[child->cell_].push_back(child);
     sums[child->cell_] += child->bound_;
   }
@@ -658,6 +684,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
 ) const {
   assert(letter_ != CHOICE_NODE);
   if (!num_children_) {
+    throw runtime_error("tried to force empty cell");
     return {this};  // XXX this is not the same as what Python does
   }
 
@@ -674,6 +701,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
+    throw runtime_error("tried to force cell without top choice");
     return {this};  // XXX this is not the same as what Python does
   }
   assert(top_choice->letter_ == CHOICE_NODE);
