@@ -56,7 +56,7 @@ def get_process_id():
 # Global variable to track the last upload time
 last_upload_time_secs = None
 
-MAX_GCS_UPLOAD_FREQUENCY_SECS = 10
+MAX_GCS_UPLOAD_FREQUENCY_SECS = 60 * 10
 
 
 def break_init(args, needs_canonical_filter):
