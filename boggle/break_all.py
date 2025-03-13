@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import atexit
 import glob
 import itertools
 import json
@@ -10,7 +11,6 @@ import os
 import random
 import time
 from dataclasses import dataclass
-from multiprocessing.util import Finalize
 
 from google.cloud import storage
 from tqdm import tqdm
@@ -70,8 +70,7 @@ def break_init(args, needs_canonical_filter):
     with open(f"tasks-{me}.ndjson", "w"):
         pass
     last_upload_time_secs = time.time()
-    # See https://stackoverflow.com/a/24724452/388951
-    Finalize(None, final_sync, exitpriority=16)
+    atexit.register(final_sync)
 
 
 def upload_to_gcs(source_file_name: str, gcs_path: str):
@@ -100,6 +99,7 @@ def final_sync():
     args = break_worker.args
     me = get_process_id()
     if args.gcs_path:
+        print(f"Performing final sync to GCS for process {me}")
         upload_to_gcs(
             f"tasks-{me}.ndjson",
             f"{args.gcs_path}/{args.timestamp}.tasks-{me}.ndjson",
@@ -400,6 +400,9 @@ def main():
         print(f"Broke {len(indices)} classes in {end_s-start_s:.02f}s.")
     print(f"Found {len(good_boards)} breaking failure(s):")
     print("\n".join(good_boards))
+
+    pool.close()
+    pool.join()
 
 
 if __name__ == "__main__":
