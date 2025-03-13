@@ -16,8 +16,7 @@ using namespace std;
 class EvalNode;
 
 // Allocate this much memory at once.
-// TODO: increase this
-const int EVAL_NODE_ARENA_BUFFER_SIZE = 1'048'576;
+const int EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
 
 class EvalNodeArena {
  public:
