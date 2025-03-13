@@ -10,14 +10,6 @@
 
 using namespace std;
 
-inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
-  return a->letter_ < b->letter_;
-}
-
-inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
-  return a->cell_ < b->cell_;
-}
-
 int num_reallocs = 0;
 int num_in_capacity = 0;
 
@@ -28,29 +20,14 @@ void EvalNodeArena::PrintStats() {
   cout << "tip: " << tip_ << endl;
 }
 
-EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
-  if (num_children_ + 1 <= capacity_) {
-    children_[num_children_++] = child;
-    num_in_capacity++;
-    return this;
-  }
-  num_reallocs++;
-  // cout << "Exceeded capacity!" << endl;
-  EvalNode* clone = arena.NewNodeWithCapacity(capacity_ + 2);
-  clone->letter_ = letter_;
-  clone->cell_ = cell_;
-  clone->points_ = points_;
-  clone->bound_ = bound_;
-  clone->num_children_ = num_children_ + 1;
-  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
-  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
-  clone->children_[num_children_] = child;
-  return clone;
-}
-
 void EvalNodeArena::AddBuffer() {
-  char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
-  buffers_.push_back(buf);
+  if (cur_buffer_ == buffers_.size() - 1) {
+    cout << "AddBuffer" << endl;
+    char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
+    buffers_.push_back(buf);
+  }
+  cur_buffer_++;
+  cout << "cur_buffer=" << cur_buffer_ << endl;
   tip_ = 0;
 }
 
@@ -78,20 +55,49 @@ EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
   return root;
 }
 
-pair<int, int> EvalNodeArena::SaveLevel() { return {buffers_.size(), tip_}; }
+pair<int, int> EvalNodeArena::SaveLevel() { return {cur_buffer_, tip_}; }
 
 void EvalNodeArena::ResetLevel(pair<int, int> level) {
-  auto [num_buffers, new_tip] = level;
-  assert(num_buffers <= buffers_.size());
-  if (num_buffers == buffers_.size()) {
+  auto [new_cur_buffer, new_tip] = level;
+  assert(new_cur_buffer <= cur_buffer_);
+  if (new_cur_buffer == cur_buffer_) {
     assert(new_tip <= tip_);
   }
-  buffers_.resize(num_buffers);
+  cur_buffer_ = new_cur_buffer;
   tip_ = new_tip;
+  cout << "cur_buffer=" << cur_buffer_ << " tip=" << tip_ << endl;
 }
 
 unique_ptr<EvalNodeArena> create_eval_node_arena() {
   return unique_ptr<EvalNodeArena>(new EvalNodeArena);
+}
+
+inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
+  return a->letter_ < b->letter_;
+}
+
+inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
+  return a->cell_ < b->cell_;
+}
+
+EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
+  if (num_children_ + 1 <= capacity_) {
+    children_[num_children_++] = child;
+    num_in_capacity++;
+    return this;
+  }
+  num_reallocs++;
+  // cout << "Exceeded capacity!" << endl;
+  EvalNode* clone = arena.NewNodeWithCapacity(capacity_ + 2);
+  clone->letter_ = letter_;
+  clone->cell_ = cell_;
+  clone->points_ = points_;
+  clone->bound_ = bound_;
+  clone->num_children_ = num_children_ + 1;
+  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
+  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
+  clone->children_[num_children_] = child;
+  return clone;
 }
 
 EvalNode* EvalNode::AddWordWork(

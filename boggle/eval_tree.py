@@ -45,6 +45,9 @@ class PyArena:
     def num_nodes(self):
         return self.count
 
+    def bytes_allocated(self):
+        return self.count * 32
+
     def new_node_with_capacity(self, n: int):
         n = EvalNode()
         n.letter = ROOT_NODE

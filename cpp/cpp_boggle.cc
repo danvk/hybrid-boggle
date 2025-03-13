@@ -140,5 +140,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       )
       .def("save_level", &EvalNodeArena::SaveLevel)
       .def("reset_level", &EvalNodeArena::ResetLevel)
-      .def("num_nodes", &EvalNodeArena::NumNodes);
+      .def("num_nodes", &EvalNodeArena::NumNodes)
+      .def("bytes_allocated", &EvalNodeArena::BytesAllocated);
 }
