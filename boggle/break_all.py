@@ -379,6 +379,7 @@ def main():
     start_s = time.time()
     good_boards = []
 
+    pool = None
     if args.num_threads > 1:
         pool = multiprocessing.Pool(
             args.num_threads, break_init, (args, needs_canonical_filter)
@@ -401,8 +402,9 @@ def main():
     print(f"Found {len(good_boards)} breaking failure(s):")
     print("\n".join(good_boards))
 
-    pool.close()
-    pool.join()
+    if pool:
+        pool.close()
+        pool.join()
 
 
 if __name__ == "__main__":
