@@ -55,8 +55,8 @@ class HybridBreakDetails(BreakDetails):
     expanded_to_test: int
     init_nodes: int
     total_nodes: int
-    freed_nodes: int
-    free_time_s: float
+    tree_bytes: int
+    total_bytes: int
     n_bound: int
     n_force: int
 
@@ -115,8 +115,8 @@ class HybridTreeBreaker:
             depth=Counter(),
             nodes={},
             total_nodes=0,
-            freed_nodes=0,
-            free_time_s=0.0,
+            tree_bytes=0,
+            total_bytes=0,
             n_bound=0,
             n_force=0,
         )
@@ -137,12 +137,14 @@ class HybridTreeBreaker:
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.init_nodes = arena.num_nodes()
+        self.details_.tree_bytes = arena.bytes_allocated()
         self.details_.nodes[0] = self.details_.init_nodes
 
         self.attack_tree(tree, 1, [], arena)
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
+        self.details_.total_bytes = arena.bytes_allocated()
         return self.details_
 
     def attack_tree(
@@ -175,7 +177,6 @@ class HybridTreeBreaker:
         start_s = time.time()
         self.details_.n_force += 1
         arena_level = arena.save_level()
-        print(f"save level {arena_level}")
         trees = tree.orderly_force_cell(
             cell,
             num_lets,
@@ -198,7 +199,6 @@ class HybridTreeBreaker:
             choices[-1] = (cell, letter)
             self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
-        print(f"reset level {arena_level}")
         arena.reset_level(arena_level)
 
     def switch_to_score(

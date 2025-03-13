@@ -69,8 +69,8 @@ def test_breaker(is_python):
             "expanded_to_test": 7,
             "init_nodes": 1186,
             "total_nodes": 1864,
-            "freed_nodes": 0,
-            "free_time_s": 0.0,
+            "tree_bytes": 37952,
+            "total_bytes": 59648,
             "n_bound": 3,
             "n_force": 1,
         }
