@@ -24,10 +24,8 @@ void EvalNodeArena::AddBuffer() {
   if (cur_buffer_ == buffers_.size() - 1) {
     char* buf = new char[EVAL_NODE_ARENA_BUFFER_SIZE];
     buffers_.push_back(buf);
-    cout << "AddBuffer " << buffers_.size() << " " << (uintptr_t)buf << endl;
   }
   cur_buffer_++;
-  cout << "cur_buffer=" << cur_buffer_ << endl;
   tip_ = 0;
 }
 
@@ -65,7 +63,6 @@ void EvalNodeArena::ResetLevel(pair<int, int> level) {
   }
   cur_buffer_ = new_cur_buffer;
   tip_ = new_tip;
-  cout << "cur_buffer=" << cur_buffer_ << " tip=" << tip_ << endl;
 }
 
 unique_ptr<EvalNodeArena> create_eval_node_arena() {
@@ -388,21 +385,8 @@ inline uint16_t advance(
     const EvalNode* node, vector<int>& sums, vector<vector<const EvalNode*>>& stacks
 ) {
   // assert(node->letter_ != CHOICE_NODE);
-  if ((uintptr_t)node == 0x10000007a) {
-    cout << "It's the node" << endl;
-  }
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
-    // assert(child->letter_ == CHOICE_NODE);
-    if ((uintptr_t)child >= 0x100000060 && (uintptr_t)child <= 0x100000080) {
-      cout << "node: " << (uintptr_t)node << " i=" << i
-           << " cap=" << (int)node->capacity_ << " nc=" << (int)node->num_children_
-           << endl;
-    }
-    // if (child->cell_ < 0 || child->cell_ >= stacks.size() ||
-    //     child->cell_ >= sums.size()) {
-    //   cout << "bad cell_=" << (int)child->cell_ << endl;
-    // }
     stacks[child->cell_].push_back(child);
     sums[child->cell_] += child->bound_;
   }
@@ -700,7 +684,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
 ) const {
   assert(letter_ != CHOICE_NODE);
   if (!num_children_) {
-    cout << "Hit bad code path1" << endl;
+    throw runtime_error("tried to force empty cell");
     return {this};  // XXX this is not the same as what Python does
   }
 
@@ -717,7 +701,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
-    cout << "Hit bad code path2" << endl;
+    throw runtime_error("tried to force cell without top choice");
     return {this};  // XXX this is not the same as what Python does
   }
   assert(top_choice->letter_ == CHOICE_NODE);
