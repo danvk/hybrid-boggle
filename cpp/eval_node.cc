@@ -38,7 +38,7 @@ EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
     AddBuffer();
   }
-  char* buf = &(*buffers_.rbegin())[tip_];
+  char* buf = &buffers_[cur_buffer_][tip_];
   EvalNode* n = new (buf) EvalNode;
   // TODO: update tip_ to enforce alignment
   tip_ += size;
@@ -700,6 +700,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
 ) const {
   assert(letter_ != CHOICE_NODE);
   if (!num_children_) {
+    cout << "Hit bad code path1" << endl;
     return {this};  // XXX this is not the same as what Python does
   }
 
@@ -716,6 +717,7 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
+    cout << "Hit bad code path2" << endl;
     return {this};  // XXX this is not the same as what Python does
   }
   assert(top_choice->letter_ == CHOICE_NODE);
