@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from boggle.boggler import PyBoggler
 from boggle.eval_tree import (
     EvalNode,
+    PyArena,
 )
 from boggle.letter_grouping import get_letter_map, reverse_letter_map, ungroup_letters
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
@@ -138,7 +139,7 @@ class HybridTreeBreaker:
         self.details_.init_nodes = arena.num_nodes()
         self.details_.nodes[0] = self.details_.init_nodes
 
-        self.attack_tree(tree, 1, [])
+        self.attack_tree(tree, 1, [], arena)
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
@@ -149,19 +150,21 @@ class HybridTreeBreaker:
         tree: EvalNode,
         level: int,
         choices: list[tuple[int, int]],
+        arena: PyArena,
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
         elif tree.bound <= self.switchover_score or level > self.switchover_depth:
             self.switch_to_score(tree, level, choices)
         else:
-            self.force_and_filter(tree, level, choices)
+            self.force_and_filter(tree, level, choices, arena)
 
     def force_and_filter(
         self,
         tree: EvalNode,
         level: int,
         choices: list[tuple[int, int]],
+        arena: PyArena,
     ) -> None:
         # choices list parallels split_order
         assert len(choices) < len(self.cells)
@@ -171,7 +174,7 @@ class HybridTreeBreaker:
 
         start_s = time.time()
         self.details_.n_force += 1
-        arena = self.etb.create_arena()
+        arena_level = arena.save_level()
         trees = tree.orderly_force_cell(
             cell,
             num_lets,
@@ -192,8 +195,9 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # this can happen on truly dead-end paths
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices)
+            self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
+        arena.reset_level(arena_level)
 
     def switch_to_score(
         self, tree: EvalNode, level: int, choices: list[tuple[int, int]]

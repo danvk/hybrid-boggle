@@ -37,6 +37,9 @@ class EvalNodeArena {
 
   EvalNode* NewNodeWithCapacity(uint8_t capacity);
 
+  pair<int, int> SaveLevel();
+  void ResetLevel(pair<int, int> level);
+
   // For testing
   EvalNode* NewRootNodeWithCapacity(uint8_t capacity);
   void PrintStats();
@@ -46,6 +49,7 @@ class EvalNodeArena {
   vector<char*> buffers_;
   int num_nodes_;
   int tip_;
+  vector<pair<int, int>> watermarks_;
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();

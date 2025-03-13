@@ -60,6 +60,12 @@ class PyArena:
     def add_node(self, node):
         self.count += 1
 
+    def save_level(self):
+        return (0, 0)
+
+    def reset_level(self, level):
+        pass
+
 
 def create_eval_node_arena_py():
     return PyArena()
