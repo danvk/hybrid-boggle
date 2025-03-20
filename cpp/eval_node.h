@@ -16,11 +16,11 @@ using namespace std;
 class EvalNode;
 
 // Allocate this much memory at once.
-const int EVAL_NODE_ARENA_BUFFER_SIZE = 1'048'576;
+const int EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
 
 class EvalNodeArena {
  public:
-  EvalNodeArena() : num_nodes_(0), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
+  EvalNodeArena() : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
   ~EvalNodeArena() { FreeTheChildren(); }
 
   void FreeTheChildren() {
@@ -34,8 +34,12 @@ class EvalNodeArena {
   }
 
   int NumNodes() { return num_nodes_; }
+  int BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
 
   EvalNode* NewNodeWithCapacity(uint8_t capacity);
+
+  pair<int, int> SaveLevel();
+  void ResetLevel(pair<int, int> level);
 
   // For testing
   EvalNode* NewRootNodeWithCapacity(uint8_t capacity);
@@ -45,7 +49,9 @@ class EvalNodeArena {
   void AddBuffer();
   vector<char*> buffers_;
   int num_nodes_;
+  int cur_buffer_;
   int tip_;
+  vector<pair<int, int>> watermarks_;
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();
