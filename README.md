@@ -8,7 +8,7 @@ These are the best (and best known) boards with the [ENABLE2K word list].
 
 - ✅ 3x3: `streaedlp` 545 points, [proven optimal][33] in 2009.
 - ✅ 3x4: `slpiaentrdes` 1651 points, [proven optimal][34] in 2025.
-- ❓ 4x4: `perslatgsineters` 3625 points, found via simulated annealing, optimality unknown.
+- ✅ 4x4: `perslatgsineters` 3625 points, proven optimal in 2025. (Details coming soon!)
 - ❓ 5x5: `sepesdsracietilmanesligdr`, 10406 points, found via hill climbing, optimality unknown.
 
 ## Methodology
