@@ -20,7 +20,7 @@ R T N
 S E D
 ```
 
-For square boards, you can read them however you like; you'll get the same result.
+For square boards, you can read them however you like; every way is equivalent. For other wordlists, [see below](#results-for-other-wordlists).
 
 ## Methodology
 
