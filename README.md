@@ -131,6 +131,21 @@ The image that was used to exhaustively search for the best 4x4 board was [danvk
 
 Here are the results for different wordlists. See [wordlists/README.md](wordlists/README.md) for background.
 
+  | 3x3 |   | 3x4 |   | 4x4 |   | 5x5
+-- | -- | -- | -- | -- | -- | -- | --
+             | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb**
+**ENABLE2K** | `streaedlp` | `streaedlp` | `perslatesind` | `perslatesind` | `perslatgsineters` | `perslatgsineters` | `sepesdsracietilmanesligdr`
+**NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | ?
+**OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | ?
+**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | ?
+**SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | ?
+**TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `sepesdsracietilmanesligdr`
+
+- "hillclimb" means that this is the best board found using [hill climbing] (`hillclimb.py`).
+- "global" means this is the globally optimal board (`break_all.py`).
+
+If you have a few thousand dollars of compute burning a hole in your pocket and you'd like to fill out the global optimum 4x4 column, please let me know!
+
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
 [33]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
