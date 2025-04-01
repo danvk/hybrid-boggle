@@ -35,8 +35,10 @@ def main():
     t, boggler = get_trie_and_boggler_from_args(args)
 
     w, h = args.size // 10, args.size % 10
+    print(f"Generating {n} {w}x{h} boards...")
     boards = [random_board(w * h) for _ in range(n)]
     total_score = 0
+    print("Scoring boards...")
     start_s = time.time()
     for board in boards:
         total_score += boggler.score(board)
