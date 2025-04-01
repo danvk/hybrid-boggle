@@ -13,7 +13,9 @@ https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
 
 import argparse
 import functools
+import multiprocessing
 import random
+import time
 from collections import Counter
 
 from boggle.anneal import initial_board
@@ -57,9 +59,21 @@ def neighbors(board: str):
     return out
 
 
-def hillclimb(boggler: PyBoggler, dims: tuple[int, int], args):
-    w, h = dims
+def get_process_id():
+    ids = multiprocessing.current_process()._identity
+    if len(ids) == 0:
+        return 1  # single-threaded case
+    assert len(ids) == 1
+    return ids[0]
+
+
+def hillclimb(task: int):
+    random.seed(hillclimb.random_seed + task)
+    args = hillclimb.args
+    w, h = hillclimb.dims
+    boggler = hillclimb.boggler
     num_lets = w * h
+    me = get_process_id()
 
     @functools.cache
     def canonicalize_str(board: str) -> str:
@@ -87,7 +101,7 @@ def hillclimb(boggler: PyBoggler, dims: tuple[int, int], args):
             scores.append((score, n))
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
-        print(f"{num_iter=}: {max(scores)=} {min(scores)=}")
+        print(f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}")
         new_pool = [bd for _, bd in scores]
         if new_pool == pool:
             break
@@ -95,6 +109,20 @@ def hillclimb(boggler: PyBoggler, dims: tuple[int, int], args):
 
     best_score, best_bd = max(scores)
     return best_score, best_bd, num_iter, scores
+
+
+def hillclimb_init(args):
+    hillclimb.args = args
+    trie, boggler = get_trie_and_boggler_from_args(args)
+    hillclimb.trie = trie  # not used directly, but must not be GC'd
+    hillclimb.boggler = boggler
+    if args.random_seed >= 0:
+        hillclimb.random_seed = args.random_seed
+    else:
+        hillclimb.random_seed = time.time()
+
+    w, h = args.size // 10, args.size % 10
+    hillclimb.dims = (w, h)
 
 
 def main():
@@ -130,18 +158,18 @@ def main():
     add_standard_args(parser, random_seed=True, python=True)
 
     args = parser.parse_args()
-
-    if args.random_seed >= 0:
-        random.seed(args.random_seed)
-
-    w, h = args.size // 10, args.size % 10
-
-    _t, boggler = get_trie_and_boggler_from_args(args)
+    pool = None
+    tasks = range(args.num_boards)
+    if args.num_threads > 1:
+        pool = multiprocessing.Pool(args.num_threads, hillclimb_init, (args,))
+        it = pool.imap_unordered(hillclimb, tasks)
+    else:
+        hillclimb_init(args)
+        it = (hillclimb(task) for task in tasks)
 
     best = Counter[tuple[int, str]]()
-    for run in range(args.num_boards):
-        score, board, n, score_boards = hillclimb(boggler, (w, h), args)
-        print(f"{run=} {score} {board} ({n} iterations)")
+    for run, (score, board, n, score_boards) in enumerate(it):
+        print(f"{score} {board} ({n} iterations)")
         best.update(score_boards)
 
     if args.num_boards > 1:
