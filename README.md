@@ -7,9 +7,20 @@ An attempt to find the highest-scoring [Boggle] board, and prove that it's the b
 These are the best (and best known) boards with the [ENABLE2K word list].
 
 - ✅ 3x3: `streaedlp` 545 points, [proven optimal][33] in 2009.
-- ✅ 3x4: `slpiaentrdes` 1651 points, [proven optimal][34] in 2025.
+- ✅ 3x4: `perslatesind` 1651 points, [proven optimal][34] in 2025.
 - ✅ 4x4: `perslatgsineters` 3625 points, proven optimal in 2025. (Details coming soon!)
 - ❓ 5x5: `sepesdsracietilmanesligdr`, 10406 points, found via hill climbing, optimality unknown.
+
+The 3x4 board should be read down columns first:
+
+```
+P L S
+E A I
+R T N
+S E D
+```
+
+For square boards, you can read them however you like; you'll get the same result.
 
 ## Methodology
 
@@ -114,6 +125,12 @@ To build the Docker image for AMD64 on a Mac, run:
 
 You can find builds of this image on dockerhub under [danvk/boggle].
 
+The image that was used to exhaustively search for the best 4x4 board was [danvk/boggle:2025-03-13].
+
+## Results for other wordlists
+
+Here are the results for different wordlists. See [wordlists/README.md](wordlists/README.md) for background.
+
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
 [33]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
@@ -127,3 +144,4 @@ You can find builds of this image on dockerhub under [danvk/boggle].
 [pybind11]: https://pybind11.readthedocs.io/en/stable/index.html
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
 [danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general
+[danvk/boggle:2025-03-13]: https://hub.docker.com/repository/docker/danvk/boggle/tags/2025-03-13/sha256-e6a23b324af22b077af2b7b79ec31e17e668a5e166156818aedea188e791c1e1
