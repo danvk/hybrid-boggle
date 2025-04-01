@@ -12,12 +12,15 @@ https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
 """
 
 import argparse
+import functools
 import random
 from collections import Counter
 
 from boggle.anneal import initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import PyBoggler
+from boggle.dimensional_bogglers import LEN_TO_DIMS
+from boggle.symmetry import canonicalize, list_to_matrix
 from boggle.trie import LETTER_A
 
 
@@ -54,9 +57,18 @@ def neighbors(board: str):
     return out
 
 
-def hillclimb(boggler: PyBoggler, num_lets: int, args):
+def hillclimb(boggler: PyBoggler, dims: tuple[int, int], args):
+    w, h = dims
+    num_lets = w * h
+
+    @functools.cache
+    def canonicalize_str(board: str) -> str:
+        bd = canonicalize(list_to_matrix(board))
+        return "".join(str(x) for row in bd for x in row)
+
     pool = [
-        "".join(chr(x) for x in initial_board(num_lets)) for _ in range(args.pool_size)
+        canonicalize_str("".join(chr(x) for x in initial_board(num_lets)))
+        for _ in range(args.pool_size)
     ]
     score_cache = dict[str, int]()
     for bd in pool:
@@ -67,7 +79,7 @@ def hillclimb(boggler: PyBoggler, num_lets: int, args):
     num_iter = 0
     while True:
         num_iter += 1
-        ns = {n for seed in pool for n in neighbors(seed)}
+        ns = {canonicalize_str(n) for seed in pool for n in neighbors(seed)}
         scores: list[tuple[int, str]] = []
         for n in ns:
             score = score_cache.get(n) or boggler.score(n)
@@ -128,7 +140,7 @@ def main():
 
     best = Counter[tuple[int, str]]()
     for run in range(args.num_boards):
-        score, board, n, score_boards = hillclimb(boggler, w * h, args)
+        score, board, n, score_boards = hillclimb(boggler, (w, h), args)
         print(f"{run=} {score} {board} ({n} iterations)")
         best.update(score_boards)
 
