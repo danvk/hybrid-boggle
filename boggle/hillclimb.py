@@ -169,7 +169,7 @@ def main():
 
     best = Counter[tuple[int, str]]()
     for run, (score, board, n, score_boards) in enumerate(it):
-        print(f"{score} {board} ({n} iterations)")
+        print(f"{run}/{args.num_boards} {score} {board} ({n} iterations)")
         best.update(score_boards)
 
     if args.num_boards > 1:
