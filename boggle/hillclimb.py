@@ -68,7 +68,7 @@ def hillclimb(boggler: PyBoggler, num_lets: int, args):
     while True:
         num_iter += 1
         ns = {n for seed in pool for n in neighbors(seed)}
-        scores = []
+        scores: list[tuple[int, str]] = []
         for n in ns:
             score = score_cache.get(n) or boggler.score(n)
             score_cache[n] = score
@@ -82,7 +82,7 @@ def hillclimb(boggler: PyBoggler, num_lets: int, args):
         pool = new_pool
 
     best_score, best_bd = max(scores)
-    return best_score, best_bd, num_iter
+    return best_score, best_bd, num_iter, scores
 
 
 def main():
@@ -108,6 +108,12 @@ def main():
         default=100,
         help="Keep this many candidates as seeds for the next round.",
     )
+    parser.add_argument(
+        "--num_threads",
+        type=int,
+        default=1,
+        help="Number of concurrent hillclimbing runs to perform.",
+    )
     # TODO: character list
     add_standard_args(parser, random_seed=True, python=True)
 
@@ -120,17 +126,21 @@ def main():
 
     _t, boggler = get_trie_and_boggler_from_args(args)
 
-    best = Counter[str]()
+    best = Counter[tuple[int, str]]()
     for run in range(args.num_boards):
-        score, board, n = hillclimb(boggler, w * h, args)
+        score, board, n, score_boards = hillclimb(boggler, w * h, args)
         print(f"{run=} {score} {board} ({n} iterations)")
-        best[board] = score
+        best.update(score_boards)
 
-    if args.num_boards >= 10:
+    if args.num_boards > 1:
         print("---")
-        print("Top ten boards:")
-        for score, board in best.most_common(10):
-            print(f"{score} {board}")
+        print(f"Top {args.pool_size} boards:")
+        tops = [*best.keys()][: args.pool_size]
+        tops.sort(reverse=True)
+        for score_board in tops:
+            score, board = score_board
+            freq = best[score_board]
+            print(f"{score}\t{board}\t{freq}/{args.num_boards}")
 
 
 if __name__ == "__main__":
