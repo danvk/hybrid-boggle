@@ -15,7 +15,6 @@ import argparse
 import random
 from collections import Counter
 
-
 from boggle.anneal import initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import PyBoggler
@@ -127,7 +126,7 @@ def main():
         print(f"{run=} {score} {board} ({n} iterations)")
         best[board] = score
 
-    if args.num_boards > 10:
+    if args.num_boards >= 10:
         print("---")
         print("Top ten boards:")
         for score, board in best.most_common(10):
