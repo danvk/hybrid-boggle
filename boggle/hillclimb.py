@@ -68,12 +68,14 @@ def get_process_id():
 
 
 def hillclimb(task: int):
-    random.seed(hillclimb.random_seed + task)
+    me = get_process_id()
+    seed = hillclimb.random_seed + task
+    random.seed(seed)
+    print(f"#{me} starting hillclimb with random seed = {seed}")
     args = hillclimb.args
     w, h = hillclimb.dims
     boggler = hillclimb.boggler
     num_lets = w * h
-    me = get_process_id()
 
     @functools.cache
     def canonicalize_str(board: str) -> str:
@@ -175,8 +177,9 @@ def main():
     if args.num_boards > 1:
         print("---")
         print(f"Top {args.pool_size} boards:")
-        tops = [*best.keys()][: args.pool_size]
+        tops = [*best.keys()]
         tops.sort(reverse=True)
+        tops = tops[: args.pool_size]
         for score_board in tops:
             score, board = score_board
             freq = best[score_board]
