@@ -20,8 +20,6 @@ from collections import Counter
 
 from boggle.anneal import initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
-from boggle.boggler import PyBoggler
-from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.symmetry import canonicalize, list_to_matrix
 from boggle.trie import LETTER_A
 
