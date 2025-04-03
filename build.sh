@@ -18,6 +18,8 @@ c++ -Wall -shared -std=c++20 -fPIC -march=native \
     -o ../cpp_boggle$(python3-config --extension-suffix) \
     $EXTRA_FLAGS
 
+c++ -Wall -std=c++20 -march=native -Wno-sign-compare -Wshadow cli.cc trie.cc -o boggle_cli
+
 # TODO: fix the sign-compare warnings
 # For sampling profiling:
 #     -g
