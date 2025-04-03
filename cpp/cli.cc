@@ -25,14 +25,30 @@ int main(int argc, char** argv) {
     std::cerr << "Unable to load dictionary " << dict_file << std::endl;
     return 1;
   }
-  std::cerr << "Loaded " << t->NumNodes() << " nodes" << std::endl;
+  // std::cerr << "Loaded " << t->NumNodes() << " nodes" << std::endl;
 
   unique_ptr<Boggler<4, 4>> boggler(new Boggler<4, 4>(t.get()));
-  int score = boggler->Score(board);
-  if (score == -1) {
-    std::cerr << "Unable to score board " << board << std::endl;
-    return 1;
+  // int score = boggler->Score(board);
+  // if (score == -1) {
+  //   std::cerr << "Unable to score board " << board << std::endl;
+  //   return 1;
+  // }
+  auto words = boggler->FindWords(board);
+  char buf[17];
+  for (auto seq : words) {
+    int i = 0;
+    for (; i < seq.size(); i++) {
+      int idx = seq[i];
+      buf[i] = board[idx];
+    }
+    buf[i] = '\0';
+    std::cout << buf << ":";
+    for (auto idx : seq) {
+      int x = idx / 4;
+      int y = idx % 4;
+      std::cout << " " << x << y;
+    }
+    std::cout << "\n";
   }
-
-  std::cout << board << "\t" << score << std::endl;
+  std::cout << std::endl;
 }
