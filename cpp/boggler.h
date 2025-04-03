@@ -19,11 +19,13 @@ class Boggler {
   void SetCell(int x, int y, unsigned int c);
   unsigned int Cell(int x, int y) const;
 
-  vector<vector<int>> FindWords(const char* lets);
+  vector<vector<int>> FindWords(const char* lets, bool multiboggle);
 
  private:
   void DoDFS(unsigned int i, unsigned int len, Trie* t);
-  void FindWordsDFS(unsigned int i, Trie* t, vector<vector<int>>& out);
+  void FindWordsDFS(
+      unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
+  );
   unsigned int InternalScore();
   bool ParseBoard(const char* bd);
 
@@ -321,7 +323,7 @@ void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
 // clang-format on
 
 template <int M, int N>
-vector<vector<int>> Boggler<M, N>::FindWords(const char* lets) {
+vector<vector<int>> Boggler<M, N>::FindWords(const char* lets, bool multiboggle) {
   seq_.clear();
   seq_.reserve(M * N);
   vector<vector<int>> out;
@@ -337,18 +339,20 @@ vector<vector<int>> Boggler<M, N>::FindWords(const char* lets) {
   for (int i = 0; i < M * N; i++) {
     int c = bd_[i];
     if (dict_->StartsWord(c)) {
-      FindWordsDFS(i, dict_->Descend(c), out);
+      FindWordsDFS(i, dict_->Descend(c), multiboggle, out);
     }
   }
   return out;
 }
 
 template <>
-void Boggler<4, 4>::FindWordsDFS(unsigned int i, Trie* t, vector<vector<int>>& out) {
+void Boggler<4, 4>::FindWordsDFS(
+    unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
+) {
   used_ ^= (1 << i);
   seq_.push_back(i);
   if (t->IsWord()) {
-    if (t->Mark() != runs_) {
+    if (t->Mark() != runs_ || multiboggle) {
       t->Mark(runs_);
       out.push_back(seq_);
     }
@@ -361,7 +365,7 @@ void Boggler<4, 4>::FindWordsDFS(unsigned int i, Trie* t, vector<vector<int>>& o
   if ((used_ & (1 << idx)) == 0) { \
     cc = bd_[idx]; \
     if (t->StartsWord(cc)) { \
-      FindWordsDFS(idx, t->Descend(cc), out); \
+      FindWordsDFS(idx, t->Descend(cc), multiboggle, out); \
     } \
   } \
 } while(0)

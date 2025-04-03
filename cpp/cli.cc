@@ -8,17 +8,24 @@
 #include "trie.h"
 
 void usage_and_die(int argc, char** argv) {
-  fprintf(stderr, "Usage: %s <dictionary> <catdlinemaropets>\n", argv[0]);
+  fprintf(
+      stderr,
+      "Usage: %s <dictionary> <multiboggle=0 or 1> <catdlinemaropets>\n",
+      argv[0]
+  );
   exit(1);
 }
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
+  if (argc != 4) {
     usage_and_die(argc, argv);
   }
 
   auto dict_file = argv[1];
-  auto board = argv[2];
+  auto multiboggle_str = argv[2];
+  auto board = argv[3];
+
+  bool multiboggle = string(multiboggle_str) == "1";
 
   auto t = Trie::CreateFromFile(dict_file);
   if (!t.get()) {
@@ -28,12 +35,7 @@ int main(int argc, char** argv) {
   // std::cerr << "Loaded " << t->NumNodes() << " nodes" << std::endl;
 
   unique_ptr<Boggler<4, 4>> boggler(new Boggler<4, 4>(t.get()));
-  // int score = boggler->Score(board);
-  // if (score == -1) {
-  //   std::cerr << "Unable to score board " << board << std::endl;
-  //   return 1;
-  // }
-  auto words = boggler->FindWords(board);
+  auto words = boggler->FindWords(board, multiboggle);
   char buf[17];
   for (auto seq : words) {
     int i = 0;
@@ -50,5 +52,5 @@ int main(int argc, char** argv) {
     }
     std::cout << "\n";
   }
-  std::cout << std::endl;
+  std::flush(std::cout);
 }
