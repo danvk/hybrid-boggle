@@ -19,9 +19,21 @@
       console.log(output.slice(0, 100));
 
       const trie = Module.Trie.CreateFromFile("/enable2k.txt");
-      console.log(trie);
       console.log(trie.num_nodes());
       console.log(trie.size());
+
+      //                 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      const scores = [0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11];
+      const boggler = new Module.Boggler(trie);
+      const words = boggler.find_words("abcdefghijklmnop", false);
+      let score = 0;
+      for (let i = 0; i < words.size(); i++) {
+        const word = words.get(i);
+        const indices = Array(word.size()).fill(null).map((_, i) => word.get(i));
+        console.log(`Word ${i}`, indices);
+        score += scores[word.size()];
+      }
+      console.log("Score: ", score);
     }
 
     loadWordListIntoFs();

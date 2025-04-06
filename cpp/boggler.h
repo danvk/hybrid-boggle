@@ -19,7 +19,7 @@ class Boggler {
   void SetCell(int x, int y, unsigned int c);
   unsigned int Cell(int x, int y) const;
 
-  vector<vector<int>> FindWords(const char* lets, bool multiboggle);
+  vector<vector<int>> FindWords(const string& lets, bool multiboggle);
 
  private:
   void DoDFS(unsigned int i, unsigned int len, Trie* t);
@@ -323,11 +323,11 @@ void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
 // clang-format on
 
 template <int M, int N>
-vector<vector<int>> Boggler<M, N>::FindWords(const char* lets, bool multiboggle) {
+vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggle) {
   seq_.clear();
   seq_.reserve(M * N);
   vector<vector<int>> out;
-  if (!ParseBoard(lets)) {
+  if (!ParseBoard(lets.c_str())) {
     out.push_back({-1});
     return out;
   }
