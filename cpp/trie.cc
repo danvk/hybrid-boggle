@@ -104,6 +104,10 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   return t;
 }
 
+unique_ptr<Trie> Trie::CreateFromFileStr(const string& filename) {
+  return CreateFromFile(filename.c_str());
+}
+
 unique_ptr<Trie> Trie::CreateFromFileWithGrouping(
     const char* filename, unordered_map<char, char> letter_grouping
 ) {

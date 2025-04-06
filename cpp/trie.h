@@ -33,6 +33,7 @@ class Trie {
   // Returns a pointer to the new Trie node at the end of the word.
   Trie* AddWord(const char* wd);
   static unique_ptr<Trie> CreateFromFile(const char* filename);
+  static unique_ptr<Trie> CreateFromFileStr(const string& filename);
   static unique_ptr<Trie> CreateFromFileWithGrouping(
       const char* filename, unordered_map<char, char> letter_grouping
   );

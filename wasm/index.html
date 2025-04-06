@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<script>
+    var Module = {
+      onRuntimeInitialized: function() {
+        console.log('onRuntimeInitialized');
+      }
+    };
+  </script>
+  <script src="boggle.js"></script>
+  <script>
+    async function loadWordListIntoFs() {
+      const wordlistReq = await fetch("/wordlists/enable2k.txt");
+      const bytes = await wordlistReq.arrayBuffer();
+      console.log('Loaded', bytes.byteLength, 'bytes');
+      const data = new Uint8Array(bytes);
+      Module['FS_createDataFile']('/', 'enable2k.txt', data, true, true, true);
+      const output = Module.FS.readFile('/enable2k.txt', { encoding: 'utf8' })
+      console.log(output.slice(0, 100));
+    }
+
+    loadWordListIntoFs();
+  </script>
+</html>

@@ -1,7 +1,8 @@
 {
     "C_Cpp.default.includePath": [
         "/Users/danvk/.pyenv/versions/3.13.1/include/python3.13",
-        "/Users/danvk/Library/Caches/pypoetry/virtualenvs/hybrid-boggle-Ggb5i6Eo-py3.13/lib/python3.13/site-packages/pybind11/include"
+        "/Users/danvk/Library/Caches/pypoetry/virtualenvs/hybrid-boggle-Ggb5i6Eo-py3.13/lib/python3.13/site-packages/pybind11/include",
+        "/opt/homebrew/Cellar/emscripten/4.0.6/libexec/cache/sysroot/include"
     ],
     // See https://stackoverflow.com/q/76457139/388951
     "ruff.codeAction.disableRuleComment": {
