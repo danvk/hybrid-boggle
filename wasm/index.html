@@ -17,6 +17,11 @@
       Module['FS_createDataFile']('/', 'enable2k.txt', data, true, true, true);
       const output = Module.FS.readFile('/enable2k.txt', { encoding: 'utf8' })
       console.log(output.slice(0, 100));
+
+      const trie = Module.Trie.CreateFromFile("/enable2k.txt");
+      console.log(trie);
+      console.log(trie.num_nodes());
+      console.log(trie.size());
     }
 
     loadWordListIntoFs();
