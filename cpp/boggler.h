@@ -70,6 +70,10 @@ bool Boggler<M, N>::ParseBoard(const char* bd) {
   }
 
   for (unsigned int i = 0; i < expected_len; i++) {
+    if (bd[i] == '.') {
+      bd_[i] = -1;  // explicit "do not go here"; only supported by FindWords()
+      continue;
+    }
     if (bd[i] >= 'A' && bd[i] <= 'Z') {
       fprintf(stderr, "Found uppercase letter '%c'\n", bd[i]);
       return false;
@@ -364,7 +368,7 @@ void Boggler<4, 4>::FindWordsDFS(
 #define HIT(x,y) do { idx = (x) * 4 + y; \
   if ((used_ & (1 << idx)) == 0) { \
     cc = bd_[idx]; \
-    if (t->StartsWord(cc)) { \
+    if (cc != -1 && t->StartsWord(cc)) { \
       FindWordsDFS(idx, t->Descend(cc), multiboggle, out); \
     } \
   } \

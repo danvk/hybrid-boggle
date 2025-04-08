@@ -6,9 +6,9 @@ An attempt to find the highest-scoring [Boggle] board, and prove that it's the b
 
 These are the best (and best known) boards with the [ENABLE2K word list].
 
-- ✅ 3x3: `streaedlp` 545 points, [proven optimal][33] in 2009.
-- ✅ 3x4: `perslatesind` 1651 points, [proven optimal][34] in 2025.
-- ✅ 4x4: `perslatgsineters` 3625 points, proven optimal in 2025. (Details coming soon!)
+- ✅ 3x3: `streaedlp` [545 points], [proven optimal][33] in 2009.
+- ✅ 3x4: `perslatesind` [1651 points], [proven optimal][34] in 2025.
+- ✅ 4x4: `perslatgsineters` [3625 points], proven optimal in 2025. (Details coming soon!)
 - ❓ 5x5: `sepesdsracietilmanesligdr`, 10406 points, found via hill climbing, optimality unknown.
 
 The 3x4 board should be read down columns first:
@@ -160,3 +160,6 @@ If you have a few thousand dollars of compute burning a hole in your pocket and 
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
 [danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general
 [danvk/boggle:2025-03-13]: https://hub.docker.com/repository/docker/danvk/boggle/tags/2025-03-13/sha256-e6a23b324af22b077af2b7b79ec31e17e668a5e166156818aedea188e791c1e1
+[3625 points]: https://www.danvk.org/boggle/?board=perslatgsineters
+[545 points]: https://www.danvk.org/boggle/?board=streaedlp
+[1651 points]: https://www.danvk.org/boggle/?board=perslatesind
