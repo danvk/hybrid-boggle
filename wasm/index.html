@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<script>
+    var Module = {
+      onRuntimeInitialized: function() {
+        console.log('onRuntimeInitialized');
+      }
+    };
+  </script>
+  <script src="boggle.js"></script>
+  <script>
+    async function loadWordListIntoFs() {
+      const wordlistReq = await fetch("/wordlists/enable2k.txt");
+      const bytes = await wordlistReq.arrayBuffer();
+      console.log('Loaded', bytes.byteLength, 'bytes');
+      const data = new Uint8Array(bytes);
+      let startMs = performance.now();
+      Module['FS_createDataFile']('/', 'enable2k.txt', data, true, true, true);
+      let elapsedMs = performance.now() - startMs;
+      console.log('Create file:', elapsedMs, 'ms');
+
+      startMs = performance.now();
+      const trie = Module.Trie.CreateFromFile("/enable2k.txt");
+      elapsedMs = performance.now() - startMs;
+      console.log('create trie', elapsedMs, 'ms');
+
+      // const board = "abcdefghijklmnop";
+      const board = "perslatgsineters";
+
+      //                 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      const scores = [0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11];
+      const boggler = new Module.Boggler(trie);
+      startMs = performance.now();
+      const words = boggler.find_words(board, false);
+      elapsedMs = performance.now() - startMs;
+      console.log('find words', elapsedMs, 'ms');
+
+      let score = 0;
+      for (let i = 0; i < words.size(); i++) {
+        const word = words.get(i);
+        const indices = Array(word.size()).fill(null).map((_, i) => word.get(i));
+        const letters = indices.map(i => board[i]);
+        const wordStr = letters.join('');
+        console.log(`Word ${i}`, wordStr, indices);
+        score += scores[word.size()];
+      }
+      console.log("Score: ", score);
+    }
+
+    loadWordListIntoFs();
+  </script>
+</html>
