@@ -12,8 +12,8 @@ EMSCRIPTEN_BINDINGS(wasm_boggle) {
       .function("size", &Trie::Size)
       .class_function("CreateFromFile", &Trie::CreateFromFileStr);
 
-  register_vector<int>("vector<int>");
-  register_vector<vector<int>>("vector<vector<int>>");
+  register_vector<int>("VectorInt");
+  register_vector<vector<int>>("VectorVectorInt");
 
   using BB = Boggler<4, 4>;
   class_<BB>("Boggler").constructor<Trie*>().function("find_words", &BB::FindWords);
