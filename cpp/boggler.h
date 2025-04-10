@@ -342,7 +342,7 @@ vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggl
   score_ = 0;
   for (int i = 0; i < M * N; i++) {
     int c = bd_[i];
-    if (dict_->StartsWord(c)) {
+    if (c != -1 && dict_->StartsWord(c)) {
       FindWordsDFS(i, dict_->Descend(c), multiboggle, out);
     }
   }

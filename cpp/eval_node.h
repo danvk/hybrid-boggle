@@ -100,8 +100,9 @@ class EvalNode {
       const vector<pair<int, int>>& preset_cells
   ) const;
 
-  vector<const EvalNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
-      const;
+  vector<const EvalNode*> OrderlyForceCell(
+      int cell, int num_lets, EvalNodeArena& arena
+  ) const;
 
   vector<EvalNode*> GetChildren();
 

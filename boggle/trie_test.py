@@ -14,6 +14,7 @@ def test_trie():
     t.AddWord("tea")
     t.AddWord("sea")
     t.AddWord("teapot")
+    assert not t.IsWord()
 
     assert t.Size() == 6
     assert t.FindWord("agriculture") is not None
@@ -40,3 +41,11 @@ def test_trie():
     child = t.FindWord("agriculture")
     assert child is not None
     assert Trie.ReverseLookup(t, child) == "agriculture"
+
+
+def test_load_file():
+    t = Trie.CreateFromFile("testdata/boggle-words-4.txt")
+    assert not t.IsWord()
+
+    assert t.FindWord("wood") is not None
+    assert t.FindWord("woxd") is None
