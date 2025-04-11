@@ -744,3 +744,20 @@ void EvalNode::SetChildrenFromVector(const vector<EvalNode*>& children) {
   num_children_ = children.size();
   memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
 }
+
+pair<map<int, int>, map<int, int>> EvalNode::TreeStats() const {
+  map<int, int> choice, sum;
+  TreeStatsHelp(choice, sum);
+  return {choice, sum};
+}
+
+void EvalNode::TreeStatsHelp(map<int, int>& choice, map<int, int>& sum) const {
+  if (letter_ == CHOICE_NODE) {
+    choice[num_children_] += 1;
+  } else {
+    sum[num_children_] += 1;
+  }
+  for (int i = 0; i < num_children_; i++) {
+    children_[i]->TreeStatsHelp(choice, sum);
+  }
+}

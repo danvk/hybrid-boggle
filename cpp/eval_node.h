@@ -16,7 +16,7 @@ using namespace std;
 class EvalNode;
 
 // Allocate this much memory at once.
-const int EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
+const uint64_t EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
 
 class EvalNodeArena {
  public:
@@ -34,13 +34,7 @@ class EvalNodeArena {
   }
 
   int NumNodes() { return num_nodes_; }
-  int BytesAllocated() {
-    cout << "buffers_.size() = " << buffers_.size() << endl;
-    cout << "EVAL_NODE_ARENA_BUFFER_SIZE = " << EVAL_NODE_ARENA_BUFFER_SIZE << endl;
-    int result = buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE;
-    cout << "buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE = " << result << endl;
-    return result;
-  }
+  uint64_t BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
 
   EvalNode* NewNodeWithCapacity(uint8_t capacity);
 
@@ -117,6 +111,9 @@ class EvalNode {
   ) const;
 
   vector<EvalNode*> GetChildren();
+
+  pair<map<int, int>, map<int, int>> TreeStats() const;
+  void TreeStatsHelp(map<int, int>& choice, map<int, int>& sum) const;
 
  private:
   EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);

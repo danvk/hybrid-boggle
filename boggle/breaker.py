@@ -126,6 +126,7 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena)
+        print(tree.tree_stats())
         # num_children, num_nodes, num_singles = size_stats(tree)
         # print(num_children)
         # print(num_singles)

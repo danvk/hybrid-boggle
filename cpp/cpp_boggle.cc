@@ -121,6 +121,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("arena")
       )
       .def("structural_hash", &EvalNode::StructuralHash)
+      .def("tree_stats", &EvalNode::TreeStats)
       .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference)
       .def("orderly_bound", &EvalNode::OrderlyBound);
 
