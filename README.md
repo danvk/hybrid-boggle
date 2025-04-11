@@ -22,6 +22,8 @@ S E D
 
 For square boards, you can read them however you like; every way is equivalent. For other wordlists, [see below](#results-for-other-wordlists).
 
+To get a feel for Boggle, try the [online Boggle Solver][3625 points], which is an interactive WASM build of part of this repo.
+
 ## Methodology
 
 The general approach is [branch and bound][bnb]:
@@ -35,6 +37,21 @@ The general approach is [branch and bound][bnb]:
   - If `C` contains a single board, then it is a candidate for the best board.
 
 Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations. [This post] describes several of the techniques used to do so in this repo.
+
+Here are the blog posts I've written about this project in 2025:
+
+- [Finding the Globally-Optimal 3x4 Boggle Board][post1]: Explanation of the project and the work I did back in 2009.
+- [New Ideas in 2025][post2]: Explains Multi-Boggle, the EvalTree structure and the basic operations on it.
+- [A Thrilling Insight and the Power of Algorithms][post3]: Explains Orderly Trees, the idea that really broke this problem open.
+- [Following up on an insight][post4]: Explains a incremental improvements that brought 4x4 Boggle in range.
+
+For earlier posts, check out this [2014 compendium].
+
+[post1]: https://www.danvk.org/2025/02/10/boggle34.html
+[post2]: https://www.danvk.org/2025/02/13/boggle2025.html
+[post3]: https://www.danvk.org/2025/02/21/orderly-boggle.html
+[post4]: https://www.danvk.org/2025/04/10/following-insight.html
+[2014 compendium]: https://www.danvk.org/wp/category/boggle/
 
 ## Development and usage
 
@@ -126,6 +143,14 @@ To build the Docker image for AMD64 on a Mac, run:
 You can find builds of this image on dockerhub under [danvk/boggle].
 
 The image that was used to exhaustively search for the best 4x4 board was [danvk/boggle:2025-03-13].
+
+## Guide to the Code
+
+If you're trying to follow the code, here are a few pointers that will help:
+
+- The word lists have been pre-processed to exclude invalid Boggle words and change "qu" to "q". So "quart" will be in the word list as "qart". See [wordlists/README.md](wordlists/README.md) for more.
+- Boggle boards are represented as 1-dimensional arrays. So a 4x4 Boggle board is a 16 character string. For 3x4 boards, which are 12 character strings, you need to read down the columns to get the right board.
+- Generally the Python and C++ code match 1-1. I developed code in Python, wrote tests for it, and then translated it to C++ (sometimes with help from GitHub Copilot). The APIs are identical and they pass the same tests. Most CLI tools let you toggle between the C++ and Python implementations with the `--python` flag.
 
 ## Results for other wordlists
 
