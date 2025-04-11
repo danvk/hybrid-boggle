@@ -17,7 +17,7 @@
         // "editor.wordBasedSuggestions": "off"
     },
     "[cpp]": {
-        "editor.formatOnSave": true
+        "editor.formatOnSave": false
     },
     "markdownlint.config": {
         "code-block-style": false

@@ -41,6 +41,15 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
 };
 
+unsigned get_offset(void * f) {
+  char * arr = (char*)f;
+  int i = 0;
+  while (!arr[i]) i++;
+  return i * sizeof(char);
+}
+
+#define GetOffset(str, field) ({str f; memset(&f, 0, sizeof(f)); f.field = 1; get_offset(&f);})
+
 template <int M, int N>
 const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool dedupe) {
   // auto start = chrono::high_resolution_clock::now();
@@ -63,12 +72,12 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   cout << "sizeof(EvalNode) = " << sizeof(EvalNode) << endl;
   cout << "root: " << (uintptr_t)root << endl;
   auto r = (uintptr_t)root;
-  // cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
-  // cout << "root->cell_: " << (uintptr_t)&root->cell_ - r << endl;
-  // cout << "root->points_: " << (uintptr_t)&root->points_ - r << endl;
-  // cout << "root->num_children_: " << (uintptr_t)&root->num_children_ - r << endl;
-  // cout << "root->capacity_: " << (uintptr_t)&root->capacity_ - r << endl;
-  // cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
+  cout << "root->points_: " << GetOffset(EvalNode, points_) << endl;
+  cout << "root->bound_: " << GetOffset(EvalNode, bound_) << endl;
+  cout << "root->letter_: " << GetOffset(EvalNode, letter_) << endl;
+  cout << "root->num_children_: " << GetOffset(EvalNode, num_children_) << endl;
+  cout << "root->capacity_: " << GetOffset(EvalNode, capacity_) << endl;
+  cout << "root->cell_: " << GetOffset(EvalNode, cell_) << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   return root;
 }

@@ -79,13 +79,14 @@ class EvalNode {
   void SetChildrenFromVector(const vector<EvalNode*>& children);
   uint64_t StructuralHash() const;
 
-  // points contributed by _this_ node.
-  unsigned int points_ : 16;
-
   // cached computation across all children
   unsigned int bound_ : 24;
 
   int letter_ : 8;
+
+  // points contributed by _this_ node.
+  unsigned int points_ : 16;
+
   unsigned int num_children_ : 5;
   unsigned int capacity_ : 5;
   int cell_ : 5;
