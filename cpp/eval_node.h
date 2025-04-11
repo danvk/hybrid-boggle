@@ -34,7 +34,13 @@ class EvalNodeArena {
   }
 
   int NumNodes() { return num_nodes_; }
-  int BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
+  int BytesAllocated() {
+    cout << "buffers_.size() = " << buffers_.size() << endl;
+    cout << "EVAL_NODE_ARENA_BUFFER_SIZE = " << EVAL_NODE_ARENA_BUFFER_SIZE << endl;
+    int result = buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE;
+    cout << "buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE = " << result << endl;
+    return result;
+  }
 
   EvalNode* NewNodeWithCapacity(uint8_t capacity);
 
@@ -106,8 +112,9 @@ class EvalNode {
       const vector<pair<int, int>>& preset_cells
   ) const;
 
-  vector<const EvalNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
-      const;
+  vector<const EvalNode*> OrderlyForceCell(
+      int cell, int num_lets, EvalNodeArena& arena
+  ) const;
 
   vector<EvalNode*> GetChildren();
 
