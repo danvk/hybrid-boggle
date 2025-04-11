@@ -58,7 +58,7 @@ unique_ptr<EvalNodeArena> create_eval_node_arena();
 
 class EvalNode {
  public:
-  EvalNode() : points_(0), num_children_(0) {}
+  EvalNode() : num_children_(0), points_(0) {}
   ~EvalNode() {}
 
   void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
@@ -79,19 +79,19 @@ class EvalNode {
   void SetChildrenFromVector(const vector<EvalNode*>& children);
   uint64_t StructuralHash() const;
 
-  int8_t letter_;
-  int8_t cell_;
-  static const int8_t ROOT_NODE = -2;
-  static const int8_t CHOICE_NODE = -1;
-
   // points contributed by _this_ node.
-  uint16_t points_;
-
-  uint8_t num_children_;
-  uint8_t capacity_;
+  unsigned int points_ : 16;
 
   // cached computation across all children
-  uint32_t bound_;
+  unsigned int bound_ : 24;
+
+  int letter_ : 8;
+  unsigned int num_children_ : 5;
+  unsigned int capacity_ : 5;
+  int cell_ : 5;
+
+  static const int8_t ROOT_NODE = -2;
+  static const int8_t CHOICE_NODE = -1;
 
   // These might be the various options on a cell or the various directions.
   EvalNode* children_[];
@@ -114,6 +114,8 @@ class EvalNode {
 
   pair<map<int, int>, map<int, int>> TreeStats() const;
   void TreeStatsHelp(map<int, int>& choice, map<int, int>& sum) const;
+
+  uint32_t Bound() const { return bound_; }
 
  private:
   EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);

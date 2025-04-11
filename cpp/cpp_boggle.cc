@@ -104,10 +104,10 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
 
   py::class_<EvalNode>(m, "EvalNode")
-      .def_readonly("letter", &EvalNode::letter_)
-      .def_readonly("cell", &EvalNode::cell_)
-      .def_readonly("bound", &EvalNode::bound_)
-      .def_readonly("points", &EvalNode::points_)
+      // .def_readonly("letter", &EvalNode::letter_)
+      // .def_readonly("cell", &EvalNode::cell_)
+      .def_property_readonly("bound", &EvalNode::Bound)
+      // .def_readonly("points", &EvalNode::points_)
       .def("score_with_forces", &EvalNode::ScoreWithForces)
       .def("node_count", &EvalNode::NodeCount)
       .def("unique_node_count", &EvalNode::UniqueNodeCount)

@@ -59,19 +59,17 @@ const EvalNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool d
   root_ = NULL;
   // arena.PrintStats();
 
-  /*
   // This can be used to investigate the layout of EvalNode.
   cout << "sizeof(EvalNode) = " << sizeof(EvalNode) << endl;
   cout << "root: " << (uintptr_t)root << endl;
   auto r = (uintptr_t)root;
-  cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
-  cout << "root->cell_: " << (uintptr_t)&root->cell_ - r << endl;
-  cout << "root->points_: " << (uintptr_t)&root->points_ - r << endl;
-  cout << "root->num_children_: " << (uintptr_t)&root->num_children_ - r << endl;
-  cout << "root->capacity_: " << (uintptr_t)&root->capacity_ - r << endl;
-  cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
+  // cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
+  // cout << "root->cell_: " << (uintptr_t)&root->cell_ - r << endl;
+  // cout << "root->points_: " << (uintptr_t)&root->points_ - r << endl;
+  // cout << "root->num_children_: " << (uintptr_t)&root->num_children_ - r << endl;
+  // cout << "root->capacity_: " << (uintptr_t)&root->capacity_ - r << endl;
+  // cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
-  */
   return root;
 }
 
