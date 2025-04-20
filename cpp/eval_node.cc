@@ -606,10 +606,8 @@ SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& a
 
 void SumNode::SetChildrenFromVector(const vector<ChoiceNode*>& children) {
   num_children_ = children.size();
-  memcpy(&children_[0], &children[0], num_children_ * sizeof(SumNode*));
+  memcpy(&children_[0], &children[0], num_children_ * sizeof(ChoiceNode*));
 }
-
-// ----
 
 vector<const SumNode*> SumNode::OrderlyForceCell(
     int cell, int num_lets, EvalNodeArena& arena
