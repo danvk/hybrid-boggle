@@ -10,11 +10,11 @@
 
 using namespace std;
 
-inline bool SortByLetter(const EvalNode* a, const EvalNode* b) {
+inline bool ENSortByLetter(const EvalNode* a, const EvalNode* b) {
   return a->letter_ < b->letter_;
 }
 
-inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
+inline bool ENSortByCell(const EvalNode* a, const EvalNode* b) {
   return a->cell_ < b->cell_;
 }
 
@@ -128,7 +128,9 @@ EvalNode* EvalNode::AddWordWork(
     choice_child->cell_ = cell;
     choice_child->bound_ = 0;
     new_me = AddChild(choice_child, arena);
-    sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
+    sort(
+        &new_me->children_[0], &new_me->children_[new_me->num_children_], ENSortByCell
+    );
   } else {
     old_choice_bound = choice_child->bound_;
   }
@@ -161,7 +163,7 @@ EvalNode* EvalNode::AddWordWork(
     sort(
         &choice_child->children_[0],
         &choice_child->children_[choice_child->num_children_],
-        SortByLetter
+        ENSortByLetter
     );
   }
   auto new_letter_child =
