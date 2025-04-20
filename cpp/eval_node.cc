@@ -203,6 +203,63 @@ bool EvalNode::StructuralEq(const EvalNode& other) const {
   return true;
 }
 
+bool SumNode::StructuralEq(const SumNode& other) const {
+  if (letter_ != other.letter_) {
+    return false;
+  }
+  if (bound_ != other.bound_) {
+    return false;
+  }
+  if (points_ != other.points_) {
+    return false;
+  }
+  vector<const ChoiceNode*> nnc, nno;
+  for (int i = 0; i < num_children_; i++) {
+    auto c = children_[i];
+    if (c) nnc.push_back(c);
+  }
+  for (int i = 0; i < other.num_children_; i++) {
+    auto c = other.children_[i];
+    if (c) nno.push_back(c);
+  }
+  if (nnc.size() != nno.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < nnc.size(); ++i) {
+    if (!nnc[i]->StructuralEq(*nno[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ChoiceNode::StructuralEq(const ChoiceNode& other) const {
+  if (cell_ != other.cell_) {
+    return false;
+  }
+  if (bound_ != other.bound_) {
+    return false;
+  }
+  vector<const SumNode*> nnc, nno;
+  for (int i = 0; i < num_children_; i++) {
+    auto c = children_[i];
+    if (c) nnc.push_back(c);
+  }
+  for (int i = 0; i < other.num_children_; i++) {
+    auto c = other.children_[i];
+    if (c) nno.push_back(c);
+  }
+  if (nnc.size() != nno.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < nnc.size(); ++i) {
+    if (!nnc[i]->StructuralEq(*nno[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void EvalNode::PrintJSON() const {
   cout << "{\"type\": \"";
   if (letter_ == CHOICE_NODE) {
@@ -336,7 +393,7 @@ ChoiceNode* EvalNodeArena::NewChoiceNodeWithCapacity(uint8_t capacity) {
 
 SumNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
   auto root = NewSumNodeWithCapacity(capacity);
-  root->letter_ = 0;  // irrelevant
+  root->letter_ = EvalNode::ROOT_NODE;  // irrelevant
   root->points_ = 0;
   root->bound_ = 0;
   return root;

@@ -126,6 +126,8 @@ class SumNode {
   uint32_t bound_;
   ChoiceNode* children_[];
 
+  bool StructuralEq(const SumNode& other) const;
+  void PrintJSON() const;
   int NodeCount() const;
   vector<ChoiceNode*> GetChildren();
 
@@ -143,6 +145,8 @@ class ChoiceNode {
   uint32_t bound_;
   SumNode* children_[];
 
+  bool StructuralEq(const ChoiceNode& other) const;
+  void PrintJSON() const;
   int NodeCount() const;
   vector<SumNode*> GetChildren();
 
