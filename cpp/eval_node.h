@@ -142,6 +142,8 @@ class SumNode {
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
+  void SetChildrenFromVector(const vector<ChoiceNode*>& children);
+
   int NodeCount() const;
 
   tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
@@ -149,6 +151,10 @@ class SumNode {
       const vector<string>& cells,
       const vector<int>& split_order,
       const vector<pair<int, int>>& preset_cells
+  ) const;
+
+  vector<const SumNode*> OrderlyForceCell(
+      int cell, int num_lets, EvalNodeArena& arena
   ) const;
 
   vector<ChoiceNode*> GetChildren();

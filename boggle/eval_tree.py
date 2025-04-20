@@ -706,10 +706,10 @@ def _choice_to_list(node: ChoiceNode, cells: list[str], lines: list[str], indent
             print("null!")
 
 
-def eval_node_to_string(node: EvalNode, cells: list[str]):
+def eval_node_to_string(node: EvalNode, cells: list[str], top_cell=None):
     lines = []
     if isinstance(node, (ChoiceNode, SumNode)):
-        _sum_to_list(node, cells, lines, indent="")
+        _sum_to_list(node, cells, lines, indent="", prev_cell=top_cell)
     else:
         _into_list(node, cells, lines, indent="")
     return "\n".join(lines)

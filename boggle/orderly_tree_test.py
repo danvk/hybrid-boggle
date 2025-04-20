@@ -197,7 +197,8 @@ def test_orderly_force22(is_python):
     force = t.orderly_force_cell(0, num_letters[0], arena)
 
     txt = "\n\n".join(
-        f"{i}: " + eval_node_to_string(t, cells) for i, t in enumerate(force)
+        f"{i}: " + eval_node_to_string(t, cells, top_cell=0)
+        for i, t in enumerate(force)
     )
 
     assert outsource(txt) == snapshot(external("3f6cd59206d5*.txt"))

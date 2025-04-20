@@ -736,25 +736,21 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound
   return {failures, visit_at_level, elim_at_level};
 }
 
-EvalNode* merge_orderly_tree(
-    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
-);
-EvalNode* merge_orderly_tree_children(
-    const EvalNode* a,
-    EvalNode* const* bc,
+SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena);
+SumNode* merge_orderly_tree_children(
+    const SumNode* a,
+    ChoiceNode* const* bc,
     int num_bc,
     int b_points,
     EvalNodeArena& arena
 );
-EvalNode* merge_orderly_choice_children(
-    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
+ChoiceNode* merge_orderly_choice_children(
+    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
 );
 
-EvalNode* merge_orderly_choice_children(
-    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
+ChoiceNode* merge_orderly_choice_children(
+    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
 ) {
-  assert(a->letter_ == EvalNode::CHOICE_NODE);
-  assert(b->letter_ == EvalNode::CHOICE_NODE);
   assert(a->cell_ == b->cell_);
 
   auto it_a = &a->children_[0];
@@ -779,10 +775,8 @@ EvalNode* merge_orderly_choice_children(
   }
   num_children += (a_end - it_a) + (b_end - it_b);
 
-  EvalNode* n = arena.NewEvalNodeWithCapacity(num_children);
-  n->letter_ = EvalNode::CHOICE_NODE;
+  auto n = arena.NewChoiceNodeWithCapacity(num_children);
   n->cell_ = a->cell_;
-  n->points_ = 0;
   n->bound_ = 0;
 
   it_a = &a->children_[0];
@@ -836,15 +830,13 @@ EvalNode* merge_orderly_choice_children(
   return n;
 }
 
-EvalNode* merge_orderly_tree_children(
-    const EvalNode* a,
-    EvalNode* const* bc,
+SumNode* merge_orderly_tree_children(
+    const SumNode* a,
+    ChoiceNode* const* bc,
     int num_bc,
     int b_points,
     EvalNodeArena& arena
 ) {
-  assert(a->letter_ != EvalNode::CHOICE_NODE);
-
   int num_children = 0;
   auto it_a = &a->children_[0];
   auto it_b = bc;
@@ -867,9 +859,8 @@ EvalNode* merge_orderly_tree_children(
   }
   num_children += (a_end - it_a) + (b_end - it_b);
 
-  EvalNode* n = arena.NewEvalNodeWithCapacity(num_children);
+  auto n = arena.NewSumNodeWithCapacity(num_children);
   n->letter_ = a->letter_;
-  n->cell_ = a->cell_;
   n->points_ = a->points_ + b_points;
   n->bound_ = n->points_;
 
@@ -923,27 +914,34 @@ EvalNode* merge_orderly_tree_children(
   return n;
 }
 
-EvalNode* merge_orderly_tree(
-    const EvalNode* a, const EvalNode* b, EvalNodeArena& arena
-) {
-  assert(a->letter_ != EvalNode::CHOICE_NODE);
-  assert(b->letter_ != EvalNode::CHOICE_NODE);
+SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena) {
   return merge_orderly_tree_children(
       a, &b->children_[0], b->num_children_, b->points_, arena
   );
 }
 
-vector<const EvalNode*> EvalNode::OrderlyForceCell(
+void EvalNode::SetChildrenFromVector(const vector<EvalNode*>& children) {
+  num_children_ = children.size();
+  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
+}
+
+void SumNode::SetChildrenFromVector(const vector<ChoiceNode*>& children) {
+  num_children_ = children.size();
+  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
+}
+
+// ----
+
+vector<const SumNode*> SumNode::OrderlyForceCell(
     int cell, int num_lets, EvalNodeArena& arena
 ) const {
-  assert(letter_ != CHOICE_NODE);
   if (!num_children_) {
     return {this};  // XXX this is not the same as what Python does
   }
 
-  vector<EvalNode*> non_cell_children;
+  vector<ChoiceNode*> non_cell_children;
   non_cell_children.reserve(num_children_ - 1);
-  const EvalNode* top_choice = NULL;
+  const ChoiceNode* top_choice = NULL;
   for (int i = 0; i < num_children_; i++) {
     auto& child = children_[i];
     if (child->cell_ == cell) {
@@ -956,11 +954,10 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
   if (!top_choice) {
     return {this};  // XXX this is not the same as what Python does
   }
-  assert(top_choice->letter_ == CHOICE_NODE);
 
   int non_cell_points = points_;
 
-  vector<const EvalNode*> out(num_lets, nullptr);
+  vector<const SumNode*> out(num_lets, nullptr);
   for (int i = 0; i < top_choice->num_children_; i++) {
     const auto& child = top_choice->children_[i];
     out[child->letter_] = merge_orderly_tree_children(
@@ -978,10 +975,8 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
     if (other_bound > 0 || non_cell_points > 0) {
       for (int i = 0; i < num_lets; ++i) {
         if (!out[i]) {
-          EvalNode* point_node =
-              arena.NewEvalNodeWithCapacity(non_cell_children.size());
+          auto point_node = arena.NewSumNodeWithCapacity(non_cell_children.size());
           point_node->points_ = non_cell_points;
-          point_node->cell_ = cell;
           point_node->letter_ = i;
           point_node->bound_ = non_cell_points + other_bound;
           point_node->SetChildrenFromVector(non_cell_children);
@@ -991,9 +986,4 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
     }
   }
   return out;
-}
-
-void EvalNode::SetChildrenFromVector(const vector<EvalNode*>& children) {
-  num_children_ = children.size();
-  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
 }
