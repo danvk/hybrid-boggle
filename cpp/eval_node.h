@@ -127,6 +127,7 @@ class SumNode {
   ChoiceNode* children_[];
 
   int NodeCount() const;
+  vector<ChoiceNode*> GetChildren();
 
  private:
 };
@@ -143,6 +144,7 @@ class ChoiceNode {
   SumNode* children_[];
 
   int NodeCount() const;
+  vector<SumNode*> GetChildren();
 
  private:
 };

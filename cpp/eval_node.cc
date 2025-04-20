@@ -155,6 +155,24 @@ vector<EvalNode*> EvalNode::GetChildren() {
   return out;
 }
 
+vector<ChoiceNode*> SumNode::GetChildren() {
+  vector<ChoiceNode*> out;
+  out.reserve(num_children_);
+  for (int i = 0; i < num_children_; i++) {
+    out.push_back(children_[i]);
+  }
+  return out;
+}
+
+vector<SumNode*> ChoiceNode::GetChildren() {
+  vector<SumNode*> out;
+  out.reserve(num_children_);
+  for (int i = 0; i < num_children_; i++) {
+    out.push_back(children_[i]);
+  }
+  return out;
+}
+
 bool EvalNode::StructuralEq(const EvalNode& other) const {
   if (letter_ != other.letter_ || cell_ != other.cell_) {
     return false;
