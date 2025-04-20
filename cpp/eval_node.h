@@ -35,10 +35,14 @@ class EvalNodeArena {
 
   int NumNodes() { return num_nodes_; }
 
-  EvalNode* NewNodeWithCapacity(uint8_t capacity);
+  template <typename T>
+  T* NewNodeWithCapacity(uint8_t capacity);
+
+  SumNode* NewSumNodeWithCapacity(uint8_t capacity);
+  ChoiceNode* NewChoiceNodeWithCapacity(uint8_t capacity);
 
   // For testing
-  EvalNode* NewRootNodeWithCapacity(uint8_t capacity);
+  SumNode* NewRootNodeWithCapacity(uint8_t capacity);
   void PrintStats();
 
  private:
@@ -71,7 +75,6 @@ class EvalNode {
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
   void SetChildrenFromVector(const vector<EvalNode*>& children);
-  uint64_t StructuralHash() const;
 
   int8_t letter_;
   int8_t cell_;
@@ -91,7 +94,6 @@ class EvalNode {
   EvalNode* children_[];
 
   int NodeCount() const;
-  unsigned int UniqueNodeCount(uint32_t mark) const;
 
   tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
       int cutoff,
@@ -100,13 +102,45 @@ class EvalNode {
       const vector<pair<int, int>>& preset_cells
   ) const;
 
-  vector<const EvalNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
-      const;
+  vector<const EvalNode*> OrderlyForceCell(
+      int cell, int num_lets, EvalNodeArena& arena
+  ) const;
 
   vector<EvalNode*> GetChildren();
 
  private:
   EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);
+};
+
+class ChoiceNode;
+
+class SumNode {
+ public:
+  SumNode() : points_(0), num_children_(0) {}
+  ~SumNode() {}
+
+  int8_t letter_;
+  uint16_t points_;
+  uint8_t num_children_;
+  uint8_t capacity_;
+  uint32_t bound_;
+  ChoiceNode* children_[];
+
+ private:
+};
+
+class ChoiceNode {
+ public:
+  ChoiceNode() : num_children_(0) {}
+  ~ChoiceNode() {}
+
+  int8_t cell_;
+  uint8_t num_children_;
+  uint8_t capacity_;
+  uint32_t bound_;
+  SumNode* children_[];
+
+ private:
 };
 
 #endif  // EVAL_NODE_H

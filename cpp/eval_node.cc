@@ -228,11 +228,6 @@ int EvalNode::NodeCount() const {
   return count;
 }
 
-unsigned int EvalNode::UniqueNodeCount(uint32_t mark) const {
-  throw runtime_error("not implemented");
-  return 0;
-}
-
 unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   if (letter_ == CHOICE_NODE) {
     auto force = forces[cell_];
@@ -269,56 +264,6 @@ unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   }
 }
 
-// Borrowed from Boost.ContainerHash via
-// https://stackoverflow.com/a/78509978/388951
-// https://github.com/boostorg/container_hash/blob/ee5285bfa64843a11e29700298c83a37e3132fcd/include/boost/container_hash/hash.hpp#L471
-template <typename T>
-void hash_combine(std::size_t& seed, const T& v) {
-  static constexpr auto digits = std::numeric_limits<std::size_t>::digits;
-  static_assert(digits == 64 || digits == 32);
-
-  if constexpr (digits == 64) {
-    // https://github.com/boostorg/container_hash/blob/ee5285bfa64843a11e29700298c83a37e3132fcd/include/boost/container_hash/detail/hash_mix.hpp#L67
-    std::size_t x = seed + 0x9e3779b9 + std::hash<T>()(v);
-    const std::size_t m = 0xe9846af9b1a615d;
-    x ^= x >> 32;
-    x *= m;
-    x ^= x >> 32;
-    x *= m;
-    x ^= x >> 28;
-    seed = x;
-  } else {  // 32-bits
-    // https://github.com/boostorg/container_hash/blob/ee5285bfa64843a11e29700298c83a37e3132fcd/include/boost/container_hash/detail/hash_mix.hpp#L88
-    std::size_t x = seed + 0x9e3779b9 + std::hash<T>()(v);
-    const std::size_t m1 = 0x21f0aaad;
-    const std::size_t m2 = 0x735a2d97;
-    x ^= x >> 16;
-    x *= m1;
-    x ^= x >> 15;
-    x *= m2;
-    x ^= x >> 15;
-    seed = x;
-  }
-}
-
-uint64_t EvalNode::StructuralHash() const {
-  static constexpr auto digits = std::numeric_limits<std::size_t>::digits;
-  static_assert(digits == 64 || digits == 32);
-  // letter, cell, points, children
-  size_t h = 0xb0881e;
-  hash_combine(h, letter_);
-  hash_combine(h, cell_);
-  hash_combine(h, points_);
-  // TODO: bound_? choice_mask_?
-  for (int i = 0; i < num_children_; i++) {
-    const auto& c = children_[i];
-    if (c) {
-      hash_combine(h, c->StructuralHash());
-    }
-  }
-  return h;
-}
-
 unique_ptr<EvalNodeArena> create_eval_node_arena() {
   return unique_ptr<EvalNodeArena>(new EvalNodeArena);
 }
@@ -329,25 +274,33 @@ void EvalNodeArena::AddBuffer() {
   tip_ = 0;
 }
 
-EvalNode* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
+template <typename T>
+T* EvalNodeArena::NewNodeWithCapacity<T>(uint8_t capacity) {
   num_nodes_++;
-  int size = sizeof(EvalNode) + capacity * sizeof(EvalNode::children_[0]);
+  int size = sizeof(T) + capacity * sizeof(T::children_[0]);
   // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
   if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
     AddBuffer();
   }
   char* buf = &(*buffers_.rbegin())[tip_];
-  EvalNode* n = new (buf) EvalNode;
+  T* n = new (buf) T;
   // TODO: update tip_ to enforce alignment
   tip_ += size;
   n->capacity_ = capacity;
   return n;
 }
 
-EvalNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
-  auto root = NewNodeWithCapacity(capacity);
-  root->letter_ = EvalNode::ROOT_NODE;
-  root->cell_ = 0;  // irrelevant
+SumNode* EvalNodeArena::NewSumNodeWithCapacity(uint8_t capacity) {
+  return NewNodeWithCapacity<SumNode>(capacity);
+}
+
+ChoiceNode* EvalNodeArena::NewChoiceNodeWithCapacity(uint8_t capacity) {
+  return NewNodeWithCapacity<ChoiceNode>(capacity);
+}
+
+SumNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
+  auto root = NewSumNodeWithCapacity(capacity);
+  root->letter_ = 0;  // irrelevant
   root->points_ = 0;
   root->bound_ = 0;
   return root;
