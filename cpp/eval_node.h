@@ -78,7 +78,6 @@ class SumNode {
 
   static const int8_t ROOT_NODE = -2;
 
-  bool StructuralEq(const SumNode& other) const;
   void PrintJSON() const;
 
   void CopyFrom(SumNode& other);
@@ -118,7 +117,6 @@ class ChoiceNode {
   uint32_t bound_;
   SumNode* children_[];
 
-  bool StructuralEq(const ChoiceNode& other) const;
   void PrintJSON() const;
 
   void CopyFrom(ChoiceNode& other);
