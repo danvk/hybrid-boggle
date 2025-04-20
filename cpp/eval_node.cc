@@ -603,25 +603,23 @@ SumNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
 
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
-    const EvalNode* node, vector<int>& sums, vector<vector<const EvalNode*>>& stacks
+    const SumNode* node, vector<int>& sums, vector<vector<const ChoiceNode*>>& stacks
 ) {
-  // assert(node->letter_ != CHOICE_NODE);
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
-    // assert(child->letter_ == CHOICE_NODE);
     stacks[child->cell_].push_back(child);
     sums[child->cell_] += child->bound_;
   }
   return node->points_;
 }
 
-tuple<vector<pair<int, string>>, vector<int>, vector<int>> EvalNode::OrderlyBound(
+tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound(
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
     const vector<pair<int, int>>& preset_cells
 ) const {
-  vector<vector<const EvalNode*>> stacks(cells.size());
+  vector<vector<const ChoiceNode*>> stacks(cells.size());
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
@@ -663,7 +661,7 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> EvalNode::OrderlyBoun
         vector<int> base_sums = stack_sums;
 
         auto& next_stack = stacks[next_to_split];
-        vector<pair<EvalNode* const*, EvalNode* const*>> its;
+        vector<pair<SumNode* const*, SumNode* const*>> its;
         its.reserve(next_stack.size());
         for (auto& n : next_stack) {
           // assert(n->letter_ == CHOICE_NODE);
@@ -674,8 +672,7 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> EvalNode::OrderlyBoun
         int num_letters = cells[next_to_split].size();
         for (int letter = 0; letter < num_letters; ++letter) {
           if (letter > 0) {
-            // TODO: it should be possible to avoid this copy with another
-            // stack.
+            // TODO: it should be possible to avoid this copy with another stack.
             stack_sums = base_sums;
             for (int i = 0; i < stacks.size(); ++i) {
               // This will not de-allocate anything, just reduce size.

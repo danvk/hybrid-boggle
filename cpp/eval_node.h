@@ -139,6 +139,14 @@ class SumNode {
   bool StructuralEq(const SumNode& other) const;
   void PrintJSON() const;
   int NodeCount() const;
+
+  tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
+      int cutoff,
+      const vector<string>& cells,
+      const vector<int>& split_order,
+      const vector<pair<int, int>>& preset_cells
+  ) const;
+
   vector<ChoiceNode*> GetChildren();
   SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
 

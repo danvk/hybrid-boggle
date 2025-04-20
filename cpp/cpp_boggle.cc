@@ -119,8 +119,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference)
-      .def("orderly_bound", &EvalNode::OrderlyBound);
+      .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference);
 
   py::class_<SumNode>(m, "SumNode")
       .def_readonly("letter", &SumNode::letter_)
@@ -128,7 +127,8 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readonly("points", &SumNode::points_)
       .def("node_count", &SumNode::NodeCount)
       .def("add_word", &SumNode::AddWord, py::return_value_policy::reference)
-      .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference);
+      .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
+      .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_readonly("bound", &ChoiceNode::bound_)
