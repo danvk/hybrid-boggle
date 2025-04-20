@@ -294,6 +294,60 @@ void EvalNode::PrintJSON() const {
   cout << "}";
 }
 
+void SumNode::PrintJSON() const {
+  cout << "{\"type\": \"";
+  if (letter_ == EvalNode::ROOT_NODE) {
+    cout << "ROOT";
+  } else {
+    cout << (int)letter_;
+  }
+  cout << ", \"bound\": " << bound_;
+  if (points_) {
+    cout << ", \"points\": " << (int)points_;
+  }
+  if (num_children_) {
+    cout << ", \"children\": [";
+    bool has_commad = false;
+    for (int i = 0; i < num_children_; i++) {
+      const auto& c = children_[i];
+      if (!c) {
+        continue;
+      }
+      if (!has_commad) {
+        has_commad = true;
+      } else {
+        cout << ", ";
+      }
+      c->PrintJSON();
+    }
+    cout << "]";
+  }
+  cout << "}";
+}
+
+void ChoiceNode::PrintJSON() const {
+  cout << "{\"type\": \"CHOICE\", \"cell\": " << (int)cell_;
+  cout << ", \"bound\": " << bound_;
+  if (num_children_) {
+    cout << ", \"children\": [";
+    bool has_commad = false;
+    for (int i = 0; i < num_children_; i++) {
+      const auto& c = children_[i];
+      if (!c) {
+        continue;
+      }
+      if (!has_commad) {
+        has_commad = true;
+      } else {
+        cout << ", ";
+      }
+      c->PrintJSON();
+    }
+    cout << "]";
+  }
+  cout << "}";
+}
+
 int EvalNode::NodeCount() const {
   int count = 1;
   for (int i = 0; i < num_children_; i++) {
