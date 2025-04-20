@@ -85,8 +85,16 @@ def hillclimb(task: int):
         for _ in range(args.pool_size)
     ]
     score_cache = dict[str, int]()
+
+    def get_score(bd: str):
+        score = boggler.score(bd)
+        if score > 3512:
+            score = 1000
+        score_cache[bd] = score
+        return score
+
     for bd in pool:
-        score_cache[bd] = boggler.score(bd)
+        get_score(bd)
 
     best_score = max(score_cache.values())
 
@@ -96,8 +104,7 @@ def hillclimb(task: int):
         ns = {canonicalize_str(n) for seed in pool for n in neighbors(seed)}
         scores: list[tuple[int, str]] = []
         for n in ns:
-            score = score_cache.get(n) or boggler.score(n)
-            score_cache[n] = score
+            score = score_cache.get(n) or get_score(n)
             scores.append((score, n))
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
