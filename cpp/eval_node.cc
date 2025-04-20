@@ -176,6 +176,94 @@ EvalNode* EvalNode::AddWordWork(
   return new_me;
 }
 
+SumNode* SumNode::AddWordWork(
+    int num_choices,
+    pair<int, int>* choices,
+    const int* num_letters,
+    int points,
+    EvalNodeArena& arena
+) {
+  if (!num_choices) {
+    points_ += points;
+    bound_ += points;
+    return this;
+  }
+
+  auto cell = choices->first;
+  auto letter = choices->second;
+  choices++;
+  num_choices--;
+
+  ChoiceNode* choice_child = NULL;
+  for (int i = 0; i < num_children_; i++) {
+    const auto& c = children_[i];
+    if (c->cell_ == cell) {
+      choice_child = c;
+      break;
+    }
+  }
+  int old_choice_bound = 0;
+  SumNode* new_me = this;
+  if (!choice_child) {
+    choice_child = arena.NewChoiceNodeWithCapacity(1);
+    choice_child->cell_ = cell;
+    choice_child->bound_ = 0;
+    new_me = AddChild(choice_child, arena);
+    sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
+  } else {
+    old_choice_bound = choice_child->bound_;
+  }
+
+  // TODO: might be cleaner to call a helper on ChoiceNode here
+  SumNode* letter_child = NULL;
+  for (int i = 0; i < choice_child->num_children_; i++) {
+    auto c = choice_child->children_[i];
+    if (c->letter_ == letter) {
+      letter_child = c;
+      break;
+    }
+  }
+  if (!letter_child) {
+    letter_child = arena.NewSumNodeWithCapacity(num_choices == 1 ? 0 : 1);
+    letter_child->letter_ = letter;
+    letter_child->bound_ = 0;
+    auto new_choice_child = choice_child->AddChild(letter_child, arena);
+    if (new_choice_child != choice_child) {
+      for (int i = 0; i < new_me->num_children_; i++) {
+        const auto& c = new_me->children_[i];
+        if (c->cell_ == cell) {
+          new_me->children_[i] = new_choice_child;
+          break;
+        }
+      }
+      choice_child = new_choice_child;
+    }
+    sort(
+        &choice_child->children_[0],
+        &choice_child->children_[choice_child->num_children_],
+        SortByLetter
+    );
+  }
+  auto new_letter_child =
+      letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
+  if (new_letter_child != letter_child) {
+    for (int i = 0; i < choice_child->num_children_; i++) {
+      auto& c = choice_child->children_[i];
+      if (c->letter_ == letter) {
+        choice_child->children_[i] = new_letter_child;
+        break;
+      }
+    }
+  }
+  letter_child = new_letter_child;
+
+  if (letter_child->bound_ > old_choice_bound) {
+    choice_child->bound_ = letter_child->bound_;
+  }
+  new_me->bound_ += (choice_child->bound_ - old_choice_bound);
+  return new_me;
+}
+
 void EvalNode::AddWord(
     vector<pair<int, int>> choices, int points, EvalNodeArena& arena
 ) {
@@ -184,15 +272,6 @@ void EvalNode::AddWord(
 }
 
 void SumNode::AddWord(
-    vector<pair<int, int>> choices, int points, EvalNodeArena& arena
-) {
-  vector<int> num_letters(choices.size(), 1);
-  auto r =
-      AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
-  assert(r == this);
-}
-
-void ChoiceNode::AddWord(
     vector<pair<int, int>> choices, int points, EvalNodeArena& arena
 ) {
   vector<int> num_letters(choices.size(), 1);
@@ -492,6 +571,10 @@ T* EvalNodeArena::NewNodeWithCapacity<T>(uint8_t capacity) {
   return n;
 }
 
+EvalNode* EvalNodeArena::NewEvalNodeWithCapacity(uint8_t capacity) {
+  return NewNodeWithCapacity<EvalNode>(capacity);
+}
+
 SumNode* EvalNodeArena::NewSumNodeWithCapacity(uint8_t capacity) {
   return NewNodeWithCapacity<SumNode>(capacity);
 }
@@ -654,7 +737,7 @@ EvalNode* merge_orderly_choice_children(
   }
   num_children += (a_end - it_a) + (b_end - it_b);
 
-  EvalNode* n = arena.NewNodeWithCapacity(num_children);
+  EvalNode* n = arena.NewEvalNodeWithCapacity(num_children);
   n->letter_ = EvalNode::CHOICE_NODE;
   n->cell_ = a->cell_;
   n->points_ = 0;
@@ -742,7 +825,7 @@ EvalNode* merge_orderly_tree_children(
   }
   num_children += (a_end - it_a) + (b_end - it_b);
 
-  EvalNode* n = arena.NewNodeWithCapacity(num_children);
+  EvalNode* n = arena.NewEvalNodeWithCapacity(num_children);
   n->letter_ = a->letter_;
   n->cell_ = a->cell_;
   n->points_ = a->points_ + b_points;
@@ -853,7 +936,8 @@ vector<const EvalNode*> EvalNode::OrderlyForceCell(
     if (other_bound > 0 || non_cell_points > 0) {
       for (int i = 0; i < num_lets; ++i) {
         if (!out[i]) {
-          EvalNode* point_node = arena.NewNodeWithCapacity(non_cell_children.size());
+          EvalNode* point_node =
+              arena.NewEvalNodeWithCapacity(non_cell_children.size());
           point_node->points_ = non_cell_points;
           point_node->cell_ = cell;
           point_node->letter_ = i;

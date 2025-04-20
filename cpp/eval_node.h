@@ -38,6 +38,7 @@ class EvalNodeArena {
   template <typename T>
   T* NewNodeWithCapacity(uint8_t capacity);
 
+  EvalNode* NewEvalNodeWithCapacity(uint8_t capacity);
   SumNode* NewSumNodeWithCapacity(uint8_t capacity);
   ChoiceNode* NewChoiceNodeWithCapacity(uint8_t capacity);
 
@@ -139,24 +140,15 @@ class SumNode {
   void PrintJSON() const;
   int NodeCount() const;
   vector<ChoiceNode*> GetChildren();
+  SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
 
  private:
-  SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
 };
 
 class ChoiceNode {
  public:
   ChoiceNode() : num_children_(0) {}
   ~ChoiceNode() {}
-
-  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
-  ChoiceNode* AddWordWork(
-      int num_choices,
-      pair<int, int>* choices,
-      const int* num_letters,
-      int points,
-      EvalNodeArena& arena
-  );
 
   int8_t cell_;
   uint8_t num_children_;
@@ -168,9 +160,9 @@ class ChoiceNode {
   void PrintJSON() const;
   int NodeCount() const;
   vector<SumNode*> GetChildren();
+  ChoiceNode* AddChild(SumNode* child, EvalNodeArena& arena);
 
  private:
-  ChoiceNode* AddChild(SumNode* child, EvalNodeArena& arena);
 };
 
 #endif  // EVAL_NODE_H
