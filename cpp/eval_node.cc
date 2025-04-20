@@ -39,8 +39,8 @@ void ChoiceNode::CopyFrom(ChoiceNode& other) {
   bound_ = other.bound_;
 }
 
-template <typename Node, typename Child>
-Node* AddChildImpl(Node* n, Child* child, EvalNodeArena& arena) {
+template <typename Node>
+Node* AddChildImpl(Node* n, decltype(Node::children_[0]) child, EvalNodeArena& arena) {
   if (n->num_children_ + 1 <= n->capacity_) {
     n->children_[n->num_children_++] = child;
     num_in_capacity++;
