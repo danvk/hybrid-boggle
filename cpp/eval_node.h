@@ -132,6 +132,7 @@ class SumNode {
   vector<ChoiceNode*> GetChildren();
 
  private:
+  SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
 };
 
 class ChoiceNode {
@@ -151,6 +152,7 @@ class ChoiceNode {
   vector<SumNode*> GetChildren();
 
  private:
+  ChoiceNode* AddChild(SumNode* child, EvalNodeArena& arena);
 };
 
 #endif  // EVAL_NODE_H

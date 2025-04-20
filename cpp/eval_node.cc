@@ -48,6 +48,43 @@ EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
   return clone;
 }
 
+SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
+  if (num_children_ + 1 <= capacity_) {
+    children_[num_children_++] = child;
+    num_in_capacity++;
+    return this;
+  }
+  num_reallocs++;
+  // cout << "Exceeded capacity!" << endl;
+  SumNode* clone = arena.NewSumNodeWithCapacity(capacity_ + 2);
+  clone->letter_ = letter_;
+  clone->points_ = points_;
+  clone->bound_ = bound_;
+  clone->num_children_ = num_children_ + 1;
+  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
+  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
+  clone->children_[num_children_] = child;
+  return clone;
+}
+
+ChoiceNode* ChoiceNode::AddChild(SumNode* child, EvalNodeArena& arena) {
+  if (num_children_ + 1 <= capacity_) {
+    children_[num_children_++] = child;
+    num_in_capacity++;
+    return this;
+  }
+  num_reallocs++;
+  // cout << "Exceeded capacity!" << endl;
+  ChoiceNode* clone = arena.NewChoiceNodeWithCapacity(capacity_ + 2);
+  clone->cell_ = cell_;
+  clone->bound_ = bound_;
+  clone->num_children_ = num_children_ + 1;
+  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
+  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
+  clone->children_[num_children_] = child;
+  return clone;
+}
+
 EvalNode* EvalNode::AddWordWork(
     int num_choices,
     pair<int, int>* choices,
