@@ -14,6 +14,8 @@
 using namespace std;
 
 class EvalNode;
+class ChoiceNode;
+class SumNode;
 
 // Allocate this much memory at once.
 const int EVAL_NODE_ARENA_BUFFER_SIZE = 1'048'576;
@@ -112,8 +114,6 @@ class EvalNode {
  private:
   EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);
 };
-
-class ChoiceNode;
 
 class SumNode {
  public:

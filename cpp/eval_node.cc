@@ -18,6 +18,14 @@ inline bool SortByCell(const EvalNode* a, const EvalNode* b) {
   return a->cell_ < b->cell_;
 }
 
+inline bool SortByLetter(const SumNode* a, const SumNode* b) {
+  return a->letter_ < b->letter_;
+}
+
+inline bool SortByCell(const ChoiceNode* a, const ChoiceNode* b) {
+  return a->cell_ < b->cell_;
+}
+
 int num_reallocs = 0;
 int num_in_capacity = 0;
 
