@@ -81,6 +81,8 @@ class SumNode {
   bool StructuralEq(const SumNode& other) const;
   void PrintJSON() const;
 
+  void CopyFrom(SumNode& other);
+
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
@@ -118,6 +120,8 @@ class ChoiceNode {
 
   bool StructuralEq(const ChoiceNode& other) const;
   void PrintJSON() const;
+
+  void CopyFrom(ChoiceNode& other);
 
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 

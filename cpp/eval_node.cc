@@ -28,41 +28,43 @@ void EvalNodeArena::PrintStats() {
   cout << "tip: " << tip_ << endl;
 }
 
-SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
-  if (num_children_ + 1 <= capacity_) {
-    children_[num_children_++] = child;
+void SumNode::CopyFrom(SumNode& other) {
+  letter_ = other.letter_;
+  points_ = other.points_;
+  bound_ = other.bound_;
+}
+
+void ChoiceNode::CopyFrom(ChoiceNode& other) {
+  cell_ = other.cell_;
+  bound_ = other.bound_;
+}
+
+template <typename Node, typename Child>
+Node* AddChildImpl(Node* n, Child* child, EvalNodeArena& arena) {
+  if (n->num_children_ + 1 <= n->capacity_) {
+    n->children_[n->num_children_++] = child;
     num_in_capacity++;
-    return this;
+    return n;
   }
   num_reallocs++;
   // cout << "Exceeded capacity!" << endl;
-  SumNode* clone = arena.NewSumNodeWithCapacity(capacity_ + 2);
-  clone->letter_ = letter_;
-  clone->points_ = points_;
-  clone->bound_ = bound_;
-  clone->num_children_ = num_children_ + 1;
+  Node* clone = arena.NewNodeWithCapacity<Node>(n->capacity_ + 2);
+  clone->CopyFrom(*n);
+  clone->num_children_ = n->num_children_ + 1;
   // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
-  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
-  clone->children_[num_children_] = child;
+  memcpy(
+      &clone->children_[0], &n->children_[0], n->num_children_ * sizeof(n->children_[0])
+  );
+  clone->children_[n->num_children_] = child;
   return clone;
 }
 
+SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
+  return AddChildImpl(this, child, arena);
+}
+
 ChoiceNode* ChoiceNode::AddChild(SumNode* child, EvalNodeArena& arena) {
-  if (num_children_ + 1 <= capacity_) {
-    children_[num_children_++] = child;
-    num_in_capacity++;
-    return this;
-  }
-  num_reallocs++;
-  // cout << "Exceeded capacity!" << endl;
-  ChoiceNode* clone = arena.NewChoiceNodeWithCapacity(capacity_ + 2);
-  clone->cell_ = cell_;
-  clone->bound_ = bound_;
-  clone->num_children_ = num_children_ + 1;
-  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
-  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
-  clone->children_[num_children_] = child;
-  return clone;
+  return AddChildImpl(this, child, arena);
 }
 
 SumNode* SumNode::AddWordWork(
