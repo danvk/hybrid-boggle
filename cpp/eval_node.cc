@@ -164,22 +164,22 @@ void SumNode::AddWord(
   assert(r == this);
 }
 
-vector<ChoiceNode*> SumNode::GetChildren() {
-  vector<ChoiceNode*> out;
-  out.reserve(num_children_);
-  for (int i = 0; i < num_children_; i++) {
-    out.push_back(children_[i]);
+template <typename Node, typename Child>
+vector<Child*> GetChildrenImpl(Node& n) {
+  vector<Child*> out;
+  out.reserve(n.num_children_);
+  for (int i = 0; i < n.num_children_; i++) {
+    out.push_back(n.children_[i]);
   }
   return out;
 }
 
+vector<ChoiceNode*> SumNode::GetChildren() {
+  return GetChildrenImpl<SumNode, ChoiceNode>(*this);
+}
+
 vector<SumNode*> ChoiceNode::GetChildren() {
-  vector<SumNode*> out;
-  out.reserve(num_children_);
-  for (int i = 0; i < num_children_; i++) {
-    out.push_back(children_[i]);
-  }
-  return out;
+  return GetChildrenImpl<ChoiceNode, SumNode>(*this);
 }
 
 bool SumNode::StructuralEq(const SumNode& other) const {
