@@ -26,6 +26,8 @@ import itertools
 from collections import Counter
 from typing import Self, Sequence
 
+from cpp_boggle import ChoiceNode, SumNode
+
 from boggle.board_class_boggler import BoardClassBoggler
 from boggle.trie import make_lookup_table
 
@@ -677,9 +679,39 @@ def _into_list(node: EvalNode, cells: list[str], lines: list[str], indent=""):
         #     lines.append(f"{indent} null")
 
 
+def _sum_to_list(
+    node: SumNode, cells: list[str], lines: list[str], indent="", prev_cell=None
+):
+    line = ""
+    if node.letter == ROOT_NODE:
+        line = f"{indent}ROOT ({node.bound})"
+    else:
+        cell = cells[prev_cell][node.letter]
+        line = f"{indent}{cell} ({prev_cell}={node.letter} {node.points}/{node.bound})"
+    lines.append(line)
+    for child in node.get_children():
+        if child:
+            _choice_to_list(child, cells, lines, " " + indent)
+        else:
+            print("null!")
+
+
+def _choice_to_list(node: ChoiceNode, cells: list[str], lines: list[str], indent=""):
+    line = f"{indent}CHOICE ({node.cell} <{node.bound}) points=0"
+    lines.append(line)
+    for child in node.get_children():
+        if child:
+            _sum_to_list(child, cells, lines, " " + indent, prev_cell=node.cell)
+        else:
+            print("null!")
+
+
 def eval_node_to_string(node: EvalNode, cells: list[str]):
     lines = []
-    _into_list(node, cells, lines, indent="")
+    if isinstance(node, (ChoiceNode, SumNode)):
+        _sum_to_list(node, cells, lines, indent="")
+    else:
+        _into_list(node, cells, lines, indent="")
     return "\n".join(lines)
 
 
