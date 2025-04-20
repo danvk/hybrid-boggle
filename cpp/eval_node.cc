@@ -566,7 +566,7 @@ void EvalNodeArena::AddBuffer() {
 }
 
 template <typename T>
-T* EvalNodeArena::NewNodeWithCapacity<T>(uint8_t capacity) {
+T* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   num_nodes_++;
   int size = sizeof(T) + capacity * sizeof(T::children_[0]);
   // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
