@@ -119,6 +119,15 @@ class SumNode {
   SumNode() : points_(0), num_children_(0) {}
   ~SumNode() {}
 
+  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
+  SumNode* AddWordWork(
+      int num_choices,
+      pair<int, int>* choices,
+      const int* num_letters,
+      int points,
+      EvalNodeArena& arena
+  );
+
   int8_t letter_;
   uint16_t points_;
   uint8_t num_children_;
@@ -139,6 +148,15 @@ class ChoiceNode {
  public:
   ChoiceNode() : num_children_(0) {}
   ~ChoiceNode() {}
+
+  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
+  ChoiceNode* AddWordWork(
+      int num_choices,
+      pair<int, int>* choices,
+      const int* num_letters,
+      int points,
+      EvalNodeArena& arena
+  );
 
   int8_t cell_;
   uint8_t num_children_;

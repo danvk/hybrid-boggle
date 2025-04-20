@@ -183,6 +183,24 @@ void EvalNode::AddWord(
   AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
 }
 
+void SumNode::AddWord(
+    vector<pair<int, int>> choices, int points, EvalNodeArena& arena
+) {
+  vector<int> num_letters(choices.size(), 1);
+  auto r =
+      AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
+  assert(r == this);
+}
+
+void ChoiceNode::AddWord(
+    vector<pair<int, int>> choices, int points, EvalNodeArena& arena
+) {
+  vector<int> num_letters(choices.size(), 1);
+  auto r =
+      AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
+  assert(r == this);
+}
+
 vector<EvalNode*> EvalNode::GetChildren() {
   vector<EvalNode*> out;
   out.reserve(num_children_);
