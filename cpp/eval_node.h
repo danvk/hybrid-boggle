@@ -138,6 +138,10 @@ class SumNode {
 
   bool StructuralEq(const SumNode& other) const;
   void PrintJSON() const;
+
+  // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
+  unsigned int ScoreWithForces(const vector<int>& forces) const;
+
   int NodeCount() const;
 
   tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
@@ -166,6 +170,10 @@ class ChoiceNode {
 
   bool StructuralEq(const ChoiceNode& other) const;
   void PrintJSON() const;
+
+  // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
+  unsigned int ScoreWithForces(const vector<int>& forces) const;
+
   int NodeCount() const;
   vector<SumNode*> GetChildren();
   ChoiceNode* AddChild(SumNode* child, EvalNodeArena& arena);

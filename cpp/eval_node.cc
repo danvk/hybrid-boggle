@@ -555,6 +555,41 @@ unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   }
 }
 
+unsigned int SumNode::ScoreWithForces(const vector<int>& forces) const {
+  unsigned int score = points_;
+  for (int i = 0; i < num_children_; i++) {
+    const auto& child = children_[i];
+    if (child) {
+      score += child->ScoreWithForces(forces);
+    }
+  }
+  return score;
+}
+
+unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
+  // If this cell is forced, apply the force.
+  auto force = forces[cell_];
+  if (force >= 0) {
+    for (int i = 0; i < num_children_; i++) {
+      const auto& child = children_[i];
+      if (child->letter_ == force) {
+        return child->ScoreWithForces(forces);
+      }
+    }
+    return 0;
+  }
+
+  // Otherwise, this is the same as regular scoring.
+  unsigned int score = 0;
+  for (int i = 0; i < num_children_; i++) {
+    const auto& child = children_[i];
+    if (child) {
+      score = std::max(score, child->ScoreWithForces(forces));
+    }
+  }
+  return score;
+}
+
 unique_ptr<EvalNodeArena> create_eval_node_arena() {
   return unique_ptr<EvalNodeArena>(new EvalNodeArena);
 }

@@ -128,6 +128,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("node_count", &SumNode::NodeCount)
       .def("add_word", &SumNode::AddWord, py::return_value_policy::reference)
       .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
+      .def("score_with_forces", &SumNode::ScoreWithForces)
       .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
