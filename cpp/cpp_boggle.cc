@@ -56,9 +56,6 @@ void declare_boggler(py::module &m, const string &pyclass_name) {
       .def("set_cell", &BB::SetCell);
 }
 
-// PYBIND11_MAKE_OPAQUE(EvalNode);
-// PYBIND11_MAKE_OPAQUE(vector<EvalNode*>);
-
 PYBIND11_MODULE(cpp_boggle, m) {
   m.doc() = "C++ Boggle Solving Tools";
 
@@ -103,16 +100,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readwrite("sum_union", &ScoreDetails::sum_union)
       .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
 
-  py::class_<EvalNode>(m, "EvalNode")
-      .def_readonly("letter", &EvalNode::letter_)
-      .def_readonly("cell", &EvalNode::cell_)
-      .def_readonly("bound", &EvalNode::bound_)
-      .def_readonly("points", &EvalNode::points_)
-      .def("score_with_forces", &EvalNode::ScoreWithForces)
-      .def("node_count", &EvalNode::NodeCount)
-      .def("add_word", &EvalNode::AddWord, py::return_value_policy::reference)
-      .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference);
-
   py::class_<SumNode>(m, "SumNode")
       .def_readonly("letter", &SumNode::letter_)
       .def_readonly("bound", &SumNode::bound_)
@@ -143,11 +130,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
       .def("free_the_children", &EvalNodeArena::FreeTheChildren)
-      .def(
-          "new_node_with_capacity",
-          &EvalNodeArena::NewEvalNodeWithCapacity,
-          py::return_value_policy::reference
-      )
       .def(
           "new_root_node_with_capacity",
           &EvalNodeArena::NewRootNodeWithCapacity,

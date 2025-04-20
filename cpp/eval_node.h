@@ -13,7 +13,6 @@
 
 using namespace std;
 
-class EvalNode;
 class ChoiceNode;
 class SumNode;
 
@@ -40,7 +39,6 @@ class EvalNodeArena {
   template <typename T>
   T* NewNodeWithCapacity(uint8_t capacity);
 
-  EvalNode* NewEvalNodeWithCapacity(uint8_t capacity);
   SumNode* NewSumNodeWithCapacity(uint8_t capacity);
   ChoiceNode* NewChoiceNodeWithCapacity(uint8_t capacity);
 
@@ -56,64 +54,6 @@ class EvalNodeArena {
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();
-
-class EvalNode {
- public:
-  EvalNode() : points_(0), num_children_(0) {}
-  ~EvalNode() {}
-
-  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
-  EvalNode* AddWordWork(
-      int num_choices,
-      pair<int, int>* choices,
-      const int* num_letters,
-      int points,
-      EvalNodeArena& arena
-  );
-
-  bool StructuralEq(const EvalNode& other) const;
-  void PrintJSON() const;
-
-  // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
-  unsigned int ScoreWithForces(const vector<int>& forces) const;
-
-  void SetChildrenFromVector(const vector<EvalNode*>& children);
-
-  int8_t letter_;
-  int8_t cell_;
-  static const int8_t ROOT_NODE = -2;
-  static const int8_t CHOICE_NODE = -1;
-
-  // points contributed by _this_ node.
-  uint16_t points_;
-
-  uint8_t num_children_;
-  uint8_t capacity_;
-
-  // cached computation across all children
-  uint32_t bound_;
-
-  // These might be the various options on a cell or the various directions.
-  EvalNode* children_[];
-
-  int NodeCount() const;
-
-  tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
-      int cutoff,
-      const vector<string>& cells,
-      const vector<int>& split_order,
-      const vector<pair<int, int>>& preset_cells
-  ) const;
-
-  vector<const EvalNode*> OrderlyForceCell(
-      int cell, int num_lets, EvalNodeArena& arena
-  ) const;
-
-  vector<EvalNode*> GetChildren();
-
- private:
-  EvalNode* AddChild(EvalNode* child, EvalNodeArena& arena);
-};
 
 class SumNode {
  public:
@@ -135,6 +75,8 @@ class SumNode {
   uint8_t capacity_;
   uint32_t bound_;
   ChoiceNode* children_[];
+
+  static const int8_t ROOT_NODE = -2;
 
   bool StructuralEq(const SumNode& other) const;
   void PrintJSON() const;
@@ -177,7 +119,6 @@ class ChoiceNode {
   bool StructuralEq(const ChoiceNode& other) const;
   void PrintJSON() const;
 
-  // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
   int NodeCount() const;

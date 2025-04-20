@@ -10,14 +10,6 @@
 
 using namespace std;
 
-inline bool ENSortByLetter(const EvalNode* a, const EvalNode* b) {
-  return a->letter_ < b->letter_;
-}
-
-inline bool ENSortByCell(const EvalNode* a, const EvalNode* b) {
-  return a->cell_ < b->cell_;
-}
-
 inline bool SortByLetter(const SumNode* a, const SumNode* b) {
   return a->letter_ < b->letter_;
 }
@@ -34,26 +26,6 @@ void EvalNodeArena::PrintStats() {
   cout << "num_in_capacity: " << num_in_capacity << endl;
   cout << "num_buffers: " << buffers_.size() << endl;
   cout << "tip: " << tip_ << endl;
-}
-
-EvalNode* EvalNode::AddChild(EvalNode* child, EvalNodeArena& arena) {
-  if (num_children_ + 1 <= capacity_) {
-    children_[num_children_++] = child;
-    num_in_capacity++;
-    return this;
-  }
-  num_reallocs++;
-  // cout << "Exceeded capacity!" << endl;
-  EvalNode* clone = arena.NewEvalNodeWithCapacity(capacity_ + 2);
-  clone->letter_ = letter_;
-  clone->cell_ = cell_;
-  clone->points_ = points_;
-  clone->bound_ = bound_;
-  clone->num_children_ = num_children_ + 1;
-  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
-  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
-  clone->children_[num_children_] = child;
-  return clone;
 }
 
 SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
@@ -91,99 +63,6 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, EvalNodeArena& arena) {
   memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
   clone->children_[num_children_] = child;
   return clone;
-}
-
-EvalNode* EvalNode::AddWordWork(
-    int num_choices,
-    pair<int, int>* choices,
-    const int* num_letters,
-    int points,
-    EvalNodeArena& arena
-) {
-  if (!num_choices) {
-    points_ += points;
-    bound_ += points;
-    return this;
-  }
-
-  auto cell = choices->first;
-  auto letter = choices->second;
-  choices++;
-  num_choices--;
-
-  EvalNode* choice_child = NULL;
-  for (int i = 0; i < num_children_; i++) {
-    const auto& c = children_[i];
-    if (c->cell_ == cell) {
-      choice_child = (EvalNode*)c;
-      break;
-    }
-  }
-  int old_choice_bound = 0;
-  EvalNode* new_me = this;
-  if (!choice_child) {
-    // TODO: 1 could be a function of num_choices
-    choice_child = arena.NewEvalNodeWithCapacity(1);
-    choice_child->letter_ = CHOICE_NODE;
-    choice_child->cell_ = cell;
-    choice_child->bound_ = 0;
-    new_me = AddChild(choice_child, arena);
-    sort(
-        &new_me->children_[0], &new_me->children_[new_me->num_children_], ENSortByCell
-    );
-  } else {
-    old_choice_bound = choice_child->bound_;
-  }
-
-  EvalNode* letter_child = NULL;
-  for (int i = 0; i < choice_child->num_children_; i++) {
-    auto c = choice_child->children_[i];
-    if (c->letter_ == letter) {
-      letter_child = (EvalNode*)c;
-      break;
-    }
-  }
-  if (!letter_child) {
-    // TODO: capacity could be a more complex function of num_choices
-    letter_child = arena.NewEvalNodeWithCapacity(num_choices == 1 ? 0 : 1);
-    letter_child->cell_ = cell;
-    letter_child->letter_ = letter;
-    letter_child->bound_ = 0;
-    auto new_choice_child = choice_child->AddChild(letter_child, arena);
-    if (new_choice_child != choice_child) {
-      for (int i = 0; i < new_me->num_children_; i++) {
-        const auto& c = new_me->children_[i];
-        if (c->cell_ == cell) {
-          new_me->children_[i] = new_choice_child;
-          break;
-        }
-      }
-      choice_child = new_choice_child;
-    }
-    sort(
-        &choice_child->children_[0],
-        &choice_child->children_[choice_child->num_children_],
-        ENSortByLetter
-    );
-  }
-  auto new_letter_child =
-      letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
-  if (new_letter_child != letter_child) {
-    for (int i = 0; i < choice_child->num_children_; i++) {
-      auto& c = choice_child->children_[i];
-      if (c->letter_ == letter) {
-        choice_child->children_[i] = new_letter_child;
-        break;
-      }
-    }
-  }
-  letter_child = new_letter_child;
-
-  if (letter_child->bound_ > old_choice_bound) {
-    choice_child->bound_ = letter_child->bound_;
-  }
-  new_me->bound_ += (choice_child->bound_ - old_choice_bound);
-  return new_me;
 }
 
 SumNode* SumNode::AddWordWork(
@@ -274,13 +153,6 @@ SumNode* SumNode::AddWordWork(
   return new_me;
 }
 
-void EvalNode::AddWord(
-    vector<pair<int, int>> choices, int points, EvalNodeArena& arena
-) {
-  vector<int> num_letters(choices.size(), 1);
-  AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
-}
-
 void SumNode::AddWord(
     vector<pair<int, int>> choices, int points, EvalNodeArena& arena
 ) {
@@ -288,15 +160,6 @@ void SumNode::AddWord(
   auto r =
       AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
   assert(r == this);
-}
-
-vector<EvalNode*> EvalNode::GetChildren() {
-  vector<EvalNode*> out;
-  out.reserve(num_children_);
-  for (int i = 0; i < num_children_; i++) {
-    out.push_back(children_[i]);
-  }
-  return out;
 }
 
 vector<ChoiceNode*> SumNode::GetChildren() {
@@ -315,36 +178,6 @@ vector<SumNode*> ChoiceNode::GetChildren() {
     out.push_back(children_[i]);
   }
   return out;
-}
-
-bool EvalNode::StructuralEq(const EvalNode& other) const {
-  if (letter_ != other.letter_ || cell_ != other.cell_) {
-    return false;
-  }
-  if (bound_ != other.bound_) {
-    return false;
-  }
-  if (points_ != other.points_) {
-    return false;
-  }
-  vector<const EvalNode*> nnc, nno;
-  for (int i = 0; i < num_children_; i++) {
-    auto c = children_[i];
-    if (c) nnc.push_back(c);
-  }
-  for (int i = 0; i < other.num_children_; i++) {
-    auto c = other.children_[i];
-    if (c) nno.push_back(c);
-  }
-  if (nnc.size() != nno.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < nnc.size(); ++i) {
-    if (!nnc[i]->StructuralEq(*nno[i])) {
-      return false;
-    }
-  }
-  return true;
 }
 
 bool SumNode::StructuralEq(const SumNode& other) const {
@@ -404,43 +237,9 @@ bool ChoiceNode::StructuralEq(const ChoiceNode& other) const {
   return true;
 }
 
-void EvalNode::PrintJSON() const {
-  cout << "{\"type\": \"";
-  if (letter_ == CHOICE_NODE) {
-    cout << "CHOICE";
-  } else if (letter_ == ROOT_NODE) {
-    cout << "ROOT";
-  } else {
-    cout << (int)cell_ << "=? (" << (int)letter_ << ")";
-  }
-  cout << "\", \"cell\": " << (int)cell_;
-  cout << ", \"bound\": " << bound_;
-  if (points_) {
-    cout << ", \"points\": " << (int)points_;
-  }
-  if (num_children_) {
-    cout << ", \"children\": [";
-    bool has_commad = false;
-    for (int i = 0; i < num_children_; i++) {
-      const auto& c = children_[i];
-      if (!c) {
-        continue;
-      }
-      if (!has_commad) {
-        has_commad = true;
-      } else {
-        cout << ", ";
-      }
-      c->PrintJSON();
-    }
-    cout << "]";
-  }
-  cout << "}";
-}
-
 void SumNode::PrintJSON() const {
   cout << "{\"type\": \"";
-  if (letter_ == EvalNode::ROOT_NODE) {
+  if (letter_ == SumNode::ROOT_NODE) {
     cout << "ROOT";
   } else {
     cout << (int)letter_;
@@ -492,15 +291,6 @@ void ChoiceNode::PrintJSON() const {
   cout << "}";
 }
 
-int EvalNode::NodeCount() const {
-  int count = 1;
-  for (int i = 0; i < num_children_; i++) {
-    const auto& c = children_[i];
-    if (c) count += c->NodeCount();
-  }
-  return count;
-}
-
 int SumNode::NodeCount() const {
   int count = 1;
   for (int i = 0; i < num_children_; i++) {
@@ -517,42 +307,6 @@ int ChoiceNode::NodeCount() const {
     if (c) count += c->NodeCount();
   }
   return count;
-}
-
-unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
-  if (letter_ == CHOICE_NODE) {
-    auto force = forces[cell_];
-    if (force >= 0) {
-      for (int i = 0; i < num_children_; i++) {
-        const auto& child = children_[i];
-        if (child->letter_ == force) {
-          return child->ScoreWithForces(forces);
-        }
-      }
-      return 0;
-    }
-  }
-
-  // Otherwise, this is the same as regular scoring
-  if (letter_ == CHOICE_NODE) {
-    unsigned int score = 0;
-    for (int i = 0; i < num_children_; i++) {
-      const auto& child = children_[i];
-      if (child) {
-        score = std::max(score, child->ScoreWithForces(forces));
-      }
-    }
-    return score;
-  } else {
-    unsigned int score = points_;
-    for (int i = 0; i < num_children_; i++) {
-      const auto& child = children_[i];
-      if (child) {
-        score += child->ScoreWithForces(forces);
-      }
-    }
-    return score;
-  }
 }
 
 unsigned int SumNode::ScoreWithForces(const vector<int>& forces) const {
@@ -616,10 +370,6 @@ T* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   return n;
 }
 
-EvalNode* EvalNodeArena::NewEvalNodeWithCapacity(uint8_t capacity) {
-  return NewNodeWithCapacity<EvalNode>(capacity);
-}
-
 SumNode* EvalNodeArena::NewSumNodeWithCapacity(uint8_t capacity) {
   return NewNodeWithCapacity<SumNode>(capacity);
 }
@@ -630,7 +380,7 @@ ChoiceNode* EvalNodeArena::NewChoiceNodeWithCapacity(uint8_t capacity) {
 
 SumNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
   auto root = NewSumNodeWithCapacity(capacity);
-  root->letter_ = EvalNode::ROOT_NODE;  // irrelevant
+  root->letter_ = SumNode::ROOT_NODE;  // irrelevant
   root->points_ = 0;
   root->bound_ = 0;
   return root;
@@ -920,14 +670,9 @@ SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& a
   );
 }
 
-void EvalNode::SetChildrenFromVector(const vector<EvalNode*>& children) {
-  num_children_ = children.size();
-  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
-}
-
 void SumNode::SetChildrenFromVector(const vector<ChoiceNode*>& children) {
   num_children_ = children.size();
-  memcpy(&children_[0], &children[0], num_children_ * sizeof(EvalNode*));
+  memcpy(&children_[0], &children[0], num_children_ * sizeof(SumNode*));
 }
 
 // ----
