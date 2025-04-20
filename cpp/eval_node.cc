@@ -182,6 +182,27 @@ vector<SumNode*> ChoiceNode::GetChildren() {
   return GetChildrenImpl<ChoiceNode, SumNode>(*this);
 }
 
+template <typename Node>
+void PrintJSONChildren(Node& n) {
+  if (n.num_children_) {
+    cout << ", \"children\": [";
+    bool has_commad = false;
+    for (int i = 0; i < n.num_children_; i++) {
+      const auto& c = n.children_[i];
+      if (!c) {
+        continue;
+      }
+      if (!has_commad) {
+        has_commad = true;
+      } else {
+        cout << ", ";
+      }
+      c->PrintJSON();
+    }
+    cout << "]";
+  }
+}
+
 void SumNode::PrintJSON() const {
   cout << "{\"type\": \"";
   if (letter_ == SumNode::ROOT_NODE) {
@@ -193,46 +214,14 @@ void SumNode::PrintJSON() const {
   if (points_) {
     cout << ", \"points\": " << (int)points_;
   }
-  if (num_children_) {
-    cout << ", \"children\": [";
-    bool has_commad = false;
-    for (int i = 0; i < num_children_; i++) {
-      const auto& c = children_[i];
-      if (!c) {
-        continue;
-      }
-      if (!has_commad) {
-        has_commad = true;
-      } else {
-        cout << ", ";
-      }
-      c->PrintJSON();
-    }
-    cout << "]";
-  }
+  PrintJSONChildren(*this);
   cout << "}";
 }
 
 void ChoiceNode::PrintJSON() const {
   cout << "{\"type\": \"CHOICE\", \"cell\": " << (int)cell_;
   cout << ", \"bound\": " << bound_;
-  if (num_children_) {
-    cout << ", \"children\": [";
-    bool has_commad = false;
-    for (int i = 0; i < num_children_; i++) {
-      const auto& c = children_[i];
-      if (!c) {
-        continue;
-      }
-      if (!has_commad) {
-        has_commad = true;
-      } else {
-        cout << ", ";
-      }
-      c->PrintJSON();
-    }
-    cout << "]";
-  }
+  PrintJSONChildren(*this);
   cout << "}";
 }
 
