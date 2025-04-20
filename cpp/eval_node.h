@@ -126,6 +126,8 @@ class SumNode {
   uint32_t bound_;
   ChoiceNode* children_[];
 
+  int NodeCount() const;
+
  private:
 };
 
@@ -139,6 +141,8 @@ class ChoiceNode {
   uint8_t capacity_;
   uint32_t bound_;
   SumNode* children_[];
+
+  int NodeCount() const;
 
  private:
 };

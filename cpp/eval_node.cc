@@ -228,6 +228,24 @@ int EvalNode::NodeCount() const {
   return count;
 }
 
+int SumNode::NodeCount() const {
+  int count = 1;
+  for (int i = 0; i < num_children_; i++) {
+    const auto& c = children_[i];
+    if (c) count += c->NodeCount();
+  }
+  return count;
+}
+
+int ChoiceNode::NodeCount() const {
+  int count = 1;
+  for (int i = 0; i < num_children_; i++) {
+    const auto& c = children_[i];
+    if (c) count += c->NodeCount();
+  }
+  return count;
+}
+
 unsigned int EvalNode::ScoreWithForces(const vector<int>& forces) const {
   if (letter_ == CHOICE_NODE) {
     auto force = forces[cell_];
