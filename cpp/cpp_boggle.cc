@@ -122,13 +122,29 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference)
       .def("orderly_bound", &EvalNode::OrderlyBound);
 
+  py::class_<SumNode>(m, "SumNode")
+      .def_readonly("letter", &SumNode::letter_)
+      .def_readonly("bound", &SumNode::bound_)
+      .def_readonly("points", &SumNode::points_)
+      .def("node_count", &SumNode::NodeCount)
+      .def("add_word", &SumNode::AddWord, py::return_value_policy::reference)
+      .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference);
+
+  py::class_<ChoiceNode>(m, "ChoiceNode")
+      .def_readonly("bound", &ChoiceNode::bound_)
+      .def_readonly("cell", &ChoiceNode::cell_)
+      .def("node_count", &ChoiceNode::NodeCount)
+      .def(
+          "get_children", &ChoiceNode::GetChildren, py::return_value_policy::reference
+      );
+
   m.def("create_eval_node_arena", &create_eval_node_arena);
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
       .def("free_the_children", &EvalNodeArena::FreeTheChildren)
       .def(
           "new_node_with_capacity",
-          &EvalNodeArena::NewNodeWithCapacity,
+          &EvalNodeArena::NewEvalNodeWithCapacity,
           py::return_value_policy::reference
       )
       .def(
