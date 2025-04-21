@@ -19,9 +19,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 
 from boggle.boggler import PyBoggler
-from boggle.eval_tree import (
-    EvalNode,
-)
+from boggle.eval_node import SumNode
 from boggle.letter_grouping import get_letter_map, reverse_letter_map, ungroup_letters
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
@@ -146,7 +144,7 @@ class HybridTreeBreaker:
 
     def attack_tree(
         self,
-        tree: EvalNode,
+        tree: SumNode,
         level: int,
         choices: list[tuple[int, int]],
     ) -> None:
@@ -159,7 +157,7 @@ class HybridTreeBreaker:
 
     def force_and_filter(
         self,
-        tree: EvalNode,
+        tree: SumNode,
         level: int,
         choices: list[tuple[int, int]],
     ) -> None:
@@ -196,7 +194,7 @@ class HybridTreeBreaker:
         choices.pop()
 
     def switch_to_score(
-        self, tree: EvalNode, level: int, choices: list[tuple[int, int]]
+        self, tree: SumNode, level: int, choices: list[tuple[int, int]]
     ) -> None:
         start_s = time.time()
         remaining_cells = self.split_order[len(choices) :]
