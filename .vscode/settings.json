@@ -83,7 +83,8 @@
         "algorithm": "cpp",
         "list": "cpp",
         "set": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "cfenv": "cpp"
     },
     "python.testing.pytestArgs": [
         "boggle"

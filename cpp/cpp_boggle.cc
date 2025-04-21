@@ -6,6 +6,7 @@ namespace py = pybind11;
 using std::string;
 using std::vector;
 
+#include "arena.h"
 #include "boggler.h"
 #include "eval_node.h"
 #include "ibuckets.h"
