@@ -104,16 +104,11 @@ def tree_stats(t: SumNode) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Lift all the way to breaking")
+    parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
-    parser.add_argument("cutoff", type=int, help="Best known score for filtering.")
-    parser.add_argument("board", type=str, help="Board class to lift.")
-    parser.add_argument(
-        "lift_cells", type=str, nargs="?", help="Sequence of choices to make"
-    )
+    parser.add_argument("board", type=str, help="Board class to bound.")
     args = parser.parse_args()
     board = args.board
-    lift_cells = eval(args.lift_cells) if args.lift_cells else None
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
