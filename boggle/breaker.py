@@ -66,7 +66,7 @@ class HybridTreeBreaker:
     def __init__(
         self,
         etb: OrderlyTreeBuilder,
-        ungrouped_boggler: PyBoggler,
+        boggler: PyBoggler,
         dims: tuple[int, int],
         best_score: int,
         *,
@@ -75,7 +75,7 @@ class HybridTreeBreaker:
         max_depth=None,
     ):
         self.etb = etb
-        self.boggler = ungrouped_boggler
+        self.boggler = boggler
         self.best_score = best_score
         self.details_ = None
         self.elim_ = 0
@@ -216,18 +216,7 @@ class HybridTreeBreaker:
 
         self.details_.boards_to_test += len(boards_to_test)
         start_s = time.time()
-        it = (
-            boards_to_test
-            if not self.rev_letter_grouping
-            else (
-                b
-                for board in boards_to_test
-                for b in ungroup_letters(board, self.rev_letter_grouping)
-            )
-        )
-        n_expanded = 0
-        for board in it:
-            n_expanded += 1
+        for board in boards_to_test:
             true_score = self.boggler.score(board)
             # print(f"{board}: {tree.bound} -> {true_score}")
             if true_score >= self.best_score:
@@ -235,11 +224,8 @@ class HybridTreeBreaker:
                 self.details_.failures.append(board)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level + 1] += elapsed_s
-        self.details_.expanded_to_test += n_expanded
-        if self.log_breaker_progress and self.rev_letter_grouping:
-            print(f"Evaluated {n_expanded} boards.")
 
         if self.log_breaker_progress:
             print(
-                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {n_expanded} in {elapsed_s:.03}s"
+                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s"
             )

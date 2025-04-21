@@ -40,7 +40,6 @@ class BreakingBundle:
     boggler: PyBoggler
     etb: OrderlyTreeBuilder
     breaker: IBucketBreaker | HybridTreeBreaker
-    ungrouped_trie: PyTrie
 
 
 def get_process_id():
@@ -168,8 +167,6 @@ def get_breaker(args) -> BreakingBundle:
     dims = args.size // 10, args.size % 10
     best_score = args.best_score
 
-    # With grouping, HybridTreeBreaker needs an ungrouped boggler but a grouped Trie.
-    ungrouped_trie = None
     t, boggler = get_trie_and_boggler_from_args(args)
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
@@ -193,9 +190,7 @@ def get_breaker(args) -> BreakingBundle:
         breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
     else:
         raise ValueError(args.breaker)
-    return BreakingBundle(
-        trie=t, etb=etb, boggler=boggler, breaker=breaker, ungrouped_trie=ungrouped_trie
-    )
+    return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
 
 
 def parse_gcs_path(gcs_path: str) -> tuple[str, str]:
