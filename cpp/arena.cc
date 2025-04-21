@@ -17,22 +17,6 @@ void EvalNodeArena::AddBuffer() {
   tip_ = 0;
 }
 
-template <typename T>
-T* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
-  num_nodes_++;
-  int size = sizeof(T) + capacity * sizeof(T::children_[0]);
-  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
-  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
-    AddBuffer();
-  }
-  char* buf = &(*buffers_.rbegin())[tip_];
-  T* n = new (buf) T;
-  // TODO: update tip_ to enforce alignment
-  tip_ += size;
-  n->capacity_ = capacity;
-  return n;
-}
-
 SumNode* EvalNodeArena::NewSumNodeWithCapacity(uint8_t capacity) {
   return NewNodeWithCapacity<SumNode>(capacity);
 }

@@ -14,7 +14,7 @@ c++ -Wall -shared -std=c++20 -fPIC -march=native \
     -Wshadow \
     -O3 \
     $(poetry run python -m pybind11 --includes) \
-    cpp_boggle.cc trie.cc eval_node.cc \
+    cpp_boggle.cc trie.cc arena.cc eval_node.cc \
     -o ../cpp_boggle$(python3-config --extension-suffix) \
     $EXTRA_FLAGS
 
