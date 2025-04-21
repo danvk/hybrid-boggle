@@ -126,8 +126,6 @@ def main():
     options = Options()
     options.max_stall = args.max_stall
     options.swap_ratio = args.swap_ratio
-    if args.letter_grouping:
-        options.letter_map = get_letter_map(args.letter_grouping)
 
     if args.random_seed >= 0:
         random.seed(args.random_seed)
