@@ -138,24 +138,6 @@ def main():
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
 
-    t = orderly_tree
-    for cell, letter in lift_cells:
-        arena = otb.create_arena()
-        arenas.append(arena)
-        start_s = time.time()
-        choices = t.orderly_force_cell(cell, len(cells[cell]), arena)
-        elapsed_s = time.time() - start_s
-        t = choices[letter]
-        cells[cell] = cells[cell][letter]
-        bd = " ".join(cells)
-        print(f"{cell}/{letter} {elapsed_s:.02f}s f -> {tree_stats(t)} {bd}")
-
-    # scores = eval_all(t, cells)
-    # print(scores)
-
-    # print("")
-    # t.print_json()
-
 
 if __name__ == "__main__":
     main()
