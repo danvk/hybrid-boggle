@@ -3,17 +3,9 @@ from cpp_boggle import create_eval_node_arena
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.arena import create_eval_node_arena_py
-from boggle.eval_tree import (
-    CHOICE_NODE,
-    ROOT_NODE,
-    EvalNode,
-    eval_node_to_string,
-)
+from boggle.eval_node import ROOT_NODE, ChoiceNode, SumNode, eval_node_to_string
 
-# TODO: make an orderly version of these invariant tests
-# Invariants:
-# - Each lift should produce a choice tree that matches max-nomark for directly evaluating the tree.
-# - This should remain true for all combinations of compress + dedupe
+# There are more thorough tests in orderly_tree_test.py
 
 
 @pytest.mark.parametrize(
@@ -40,18 +32,15 @@ def test_add_word(create_arena):
 
 
 def choice_node(cell, children):
-    n = EvalNode()
+    n = ChoiceNode()
     n.children = children
-    n.letter = CHOICE_NODE
     n.cell = cell
-    n.points = 0
     return n
 
 
-def letter_node(*, cell, letter, points=0, children=[]) -> EvalNode:
-    n = EvalNode()
+def letter_node(*, letter, points=0, children=[]) -> SumNode:
+    n = SumNode()
     n.letter = letter
-    n.cell = cell
     n.points = points
     n.children = children
     return n
@@ -63,18 +52,18 @@ def test_orderly_merge():
     t0 = choice_node(
         cell=0,
         children=[
-            letter_node(cell=0, letter=1, points=1),
-            letter_node(cell=0, letter=2, points=2),
+            letter_node(letter=1, points=1),
+            letter_node(letter=2, points=2),
         ],
     )
     t1 = choice_node(
         cell=1,
         children=[
-            letter_node(cell=1, letter=0, points=1),
-            letter_node(cell=1, letter=1, points=2),
+            letter_node(letter=0, points=1),
+            letter_node(letter=1, points=2),
         ],
     )
-    root = letter_node(cell=0, letter=ROOT_NODE, children=[t0, t1])
+    root = letter_node(letter=ROOT_NODE, children=[t0, t1])
     root.set_computed_fields(num_letters)
     # print(root.to_dot(cells))
     arena = create_eval_node_arena_py()
