@@ -262,8 +262,17 @@ class SumNode:
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
 
-    def to_json(self, solver: BoardClassBoggler | None, max_depth=100, lookup=None):
-        raise NotImplementedError()
+    def to_json(self, max_depth=100):
+        out = {
+            "type": "ROOT" if self.letter == ROOT_NODE else "SUM",
+            "letter": self.letter,
+            "bound": self.bound,
+        }
+        if self.points:
+            out["points"] = self.points
+        if self.children:
+            out["children"] = [c.to_json(max_depth - 1) for c in self.children if c]
+        return out
 
 
 class ChoiceNode:
@@ -348,8 +357,15 @@ class ChoiceNode:
         # Call this on SumNode instead.
         raise NotImplementedError()
 
-    def to_json(self, solver: BoardClassBoggler | None, max_depth=100, lookup=None):
-        raise NotImplementedError()
+    def to_json(self, max_depth=100):
+        out = {
+            "type": "CHOICE",
+            "cell": self.cell,
+            "bound": self.bound,
+        }
+        if self.children:
+            out["children"] = [c.to_json(max_depth - 1) for c in self.children if c]
+        return out
 
 
 def _sum_to_list(

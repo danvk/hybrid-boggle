@@ -196,8 +196,9 @@ void SumNode::PrintJSON() const {
   if (letter_ == SumNode::ROOT_NODE) {
     cout << "ROOT";
   } else {
-    cout << (int)letter_;
+    cout << "SUM";
   }
+  cout << "\", \"letter\": " << (int)letter_;
   cout << ", \"bound\": " << bound_;
   if (points_) {
     cout << ", \"points\": " << (int)points_;
