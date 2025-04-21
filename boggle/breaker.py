@@ -18,6 +18,7 @@ import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
+from boggle.arena import PyArena
 from boggle.boggler import PyBoggler
 from boggle.eval_node import SumNode
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
@@ -50,8 +51,8 @@ class HybridBreakDetails(BreakDetails):
     boards_to_test: int
     init_nodes: int
     total_nodes: int
-    freed_nodes: int
-    free_time_s: float
+    tree_bytes: int
+    total_bytes: int
     n_bound: int
     n_force: int
 
@@ -103,8 +104,8 @@ class HybridTreeBreaker:
             depth=Counter(),
             nodes={},
             total_nodes=0,
-            freed_nodes=0,
-            free_time_s=0.0,
+            tree_bytes=0,
+            total_bytes=0,
             n_bound=0,
             n_force=0,
         )
@@ -125,12 +126,14 @@ class HybridTreeBreaker:
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.init_nodes = arena.num_nodes()
+        self.details_.tree_bytes = arena.bytes_allocated()
         self.details_.nodes[0] = self.details_.init_nodes
 
-        self.attack_tree(tree, 1, [])
+        self.attack_tree(tree, 1, [], arena)
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
+        self.details_.total_bytes = arena.bytes_allocated()
         return self.details_
 
     def attack_tree(
@@ -138,19 +141,21 @@ class HybridTreeBreaker:
         tree: SumNode,
         level: int,
         choices: list[tuple[int, int]],
+        arena: PyArena,
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
         elif tree.bound <= self.switchover_score or level > self.switchover_depth:
             self.switch_to_score(tree, level, choices)
         else:
-            self.force_and_filter(tree, level, choices)
+            self.force_and_filter(tree, level, choices, arena)
 
     def force_and_filter(
         self,
         tree: SumNode,
         level: int,
         choices: list[tuple[int, int]],
+        arena: PyArena,
     ) -> None:
         # choices list parallels split_order
         assert len(choices) < len(self.cells)
@@ -160,7 +165,7 @@ class HybridTreeBreaker:
 
         start_s = time.time()
         self.details_.n_force += 1
-        arena = self.etb.create_arena()
+        arena_level = arena.save_level()
         trees = tree.orderly_force_cell(
             cell,
             num_lets,
@@ -181,8 +186,9 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # this can happen on truly dead-end paths
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices)
+            self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
+        arena.reset_level(arena_level)
 
     def switch_to_score(
         self, tree: SumNode, level: int, choices: list[tuple[int, int]]

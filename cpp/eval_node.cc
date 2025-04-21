@@ -108,13 +108,18 @@ SumNode* SumNode::AddWordWork(
     letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
+      const auto& old_choice_child = choice_child;
+      bool patched = false;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
-        if (c->cell_ == cell) {
+        if (c == old_choice_child) {
+          // TODO: assign through reference
           new_me->children_[i] = new_choice_child;
+          patched = true;
           break;
         }
       }
+      assert(patched);  // TODO: remove
       choice_child = new_choice_child;
     }
     sort(
@@ -126,15 +131,20 @@ SumNode* SumNode::AddWordWork(
   auto new_letter_child =
       letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
   if (new_letter_child != letter_child) {
+    const auto& old_letter_child = letter_child;
+    bool patched = false;
     for (int i = 0; i < choice_child->num_children_; i++) {
       auto& c = choice_child->children_[i];
-      if (c->letter_ == letter) {
+      if (c == old_letter_child) {
+        // TODO: assign through reference
         choice_child->children_[i] = new_letter_child;
+        patched = true;
         break;
       }
     }
+    assert(patched);  // TODO: remove
+    letter_child = new_letter_child;
   }
-  letter_child = new_letter_child;
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
@@ -560,7 +570,8 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     int cell, int num_lets, EvalNodeArena& arena
 ) const {
   if (!num_children_) {
-    return {this};  // XXX this is not the same as what Python does
+    throw runtime_error("tried to force empty cell");
+    return {this};
   }
 
   vector<ChoiceNode*> non_cell_children;
@@ -576,7 +587,8 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
-    return {this};  // XXX this is not the same as what Python does
+    throw runtime_error("tried to force cell without top choice");
+    return {this};
   }
 
   int non_cell_points = points_;

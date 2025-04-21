@@ -135,5 +135,8 @@ PYBIND11_MODULE(cpp_boggle, m) {
           &EvalNodeArena::NewRootNodeWithCapacity,
           py::return_value_policy::reference
       )
-      .def("num_nodes", &EvalNodeArena::NumNodes);
+      .def("save_level", &EvalNodeArena::SaveLevel)
+      .def("reset_level", &EvalNodeArena::ResetLevel)
+      .def("num_nodes", &EvalNodeArena::NumNodes)
+      .def("bytes_allocated", &EvalNodeArena::BytesAllocated);
 }
