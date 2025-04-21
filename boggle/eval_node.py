@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import Self, Sequence
 
 from boggle.arena import PyArena
@@ -100,7 +101,77 @@ class SumNode:
         split_order: Sequence[int],
         preset_cells: Sequence[tuple[int, int]],
     ):
-        raise NotImplementedError()
+        num_letters = [len(cell) for cell in cells]
+        stacks: list[list[ChoiceNode]] = [[] for _ in num_letters]
+        choices = []  # for tracking unbreakable boards
+        failures: list[str] = []
+        # max_lens: list[int] = [0] * len(stacks)
+        n_preset = len(preset_cells)
+        elim_at_level = [0] * (1 + len(cells) - n_preset)
+        visit_at_level = [0] * (1 + len(cells) - n_preset)
+
+        num_visits = Counter[Self]()
+
+        def advance(node: Self, sums: list[int]):
+            num_visits[node] += 1
+            for child in node.children:
+                stacks[child.cell].append(child)
+                sums[child.cell] += child.bound
+            return node.points
+
+        def record_failure(bound: int):
+            bd = [None] * len(num_letters)
+            for cell, letter in preset_cells:
+                bd[cell] = cells[cell][letter]
+            for cell, letter in choices:
+                bd[cell] = cells[cell][letter]
+            board = "".join(bd)
+            nonlocal failures
+            failures.append((bound, board))
+
+        def rec(base_points: int, num_splits: int, stack_sums: list[int]):
+            bound = base_points + sum(
+                stack_sums[cell] for cell in split_order[num_splits:]
+            )
+            if bound <= cutoff:
+                elim_at_level[num_splits] += 1
+                return  # done!
+            if num_splits == len(split_order):
+                record_failure(bound)
+                return
+
+            # need to advance; try each possibility in turn.
+            next_to_split = split_order[num_splits]
+            stack_top = [len(stack) for stack in stacks]
+            base_sums = [*stack_sums]
+            for letter in range(0, num_letters[next_to_split]):
+                if letter > 0:
+                    for i, v in enumerate(base_sums):
+                        stack_sums[i] = v
+                    for i, length in enumerate(stack_top):
+                        stacks[i] = stacks[i][:length]
+                choices.append((next_to_split, letter))
+                points = base_points
+                for node in stacks[next_to_split]:
+                    letter_node = None
+                    for n in node.children:
+                        if n.letter == letter:
+                            letter_node = n
+                            break
+                    if letter_node:
+                        visit_at_level[1 + num_splits] += 1
+                        points += advance(letter_node, stack_sums)
+
+                rec(points, num_splits + 1, stack_sums)
+                # reset the stacks
+                choices.pop()
+
+        sums = [0] * len(num_letters)
+        visit_at_level[0] += 1
+        base_points = advance(self, sums)
+        rec(base_points, 0, sums)
+        self.num_visits = num_visits  # for visualizing backtracking behavior
+        return failures, visit_at_level, elim_at_level
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
@@ -116,7 +187,7 @@ class SumNode:
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
         raise NotImplementedError()
 
-    def assert_invariants(self, solver, is_top_max=None):
+    def assert_invariants(self, solver):
         raise NotImplementedError()
 
     def to_string(self, cells: list[str]):
@@ -178,7 +249,7 @@ class ChoiceNode:
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
         raise NotImplementedError()
 
-    def assert_invariants(self, solver, is_top_max=None):
+    def assert_invariants(self, solver):
         raise NotImplementedError()
 
     def to_string(self, cells: list[str]):
