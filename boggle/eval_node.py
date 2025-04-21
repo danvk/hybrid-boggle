@@ -1,3 +1,4 @@
+import itertools
 from collections import Counter
 from typing import Self, Sequence
 
@@ -383,6 +384,19 @@ def eval_node_to_string(node: SumNode, cells: list[str], top_cell=None):
     lines = []
     _sum_to_list(node, cells, lines, indent="", prev_cell=top_cell)
     return "\n".join(lines)
+
+
+def eval_all(node: SumNode, cells: list[str]):
+    """Evaluate all possible boards.
+
+    This is defined externally to SumNode so that it can be used with C++ nodes, too.
+    """
+    num_letters = [len(cell) for cell in cells]
+    indices = [range(n) for n in num_letters]
+    return {
+        choices: node.score_with_forces(choices)
+        for choices in itertools.product(*indices)
+    }
 
 
 # TODO: delete this function, it's only used in one test

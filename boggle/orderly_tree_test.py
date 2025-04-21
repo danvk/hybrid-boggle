@@ -11,12 +11,10 @@ from boggle.eval_node import (
     ROOT_NODE,
     ChoiceNode,
     SumNode,
+    eval_all,
     eval_node_to_string,
     merge_orderly_tree,
     split_orderly_tree,
-)
-from boggle.eval_tree import (
-    eval_all,
 )
 from boggle.ibuckets import PyBucketBoggler
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
