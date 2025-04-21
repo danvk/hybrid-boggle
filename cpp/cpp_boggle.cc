@@ -102,7 +102,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
 
   py::class_<SumNode>(m, "SumNode")
       .def_readonly("letter", &SumNode::letter_)
-      .def_readonly("bound", &SumNode::bound_)
+      .def_property_readonly("bound", &SumNode::Bound)
       .def_readonly("points", &SumNode::points_)
       .def("node_count", &SumNode::NodeCount)
       .def("add_word", &SumNode::AddWord, py::return_value_policy::reference)
