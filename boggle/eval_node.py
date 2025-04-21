@@ -88,8 +88,44 @@ class SumNode:
 
     def orderly_force_cell(
         self, cell: int, num_lets: int, arena: PyArena
-    ) -> list[Self] | Self:
-        raise NotImplementedError()
+    ) -> list[Self]:
+        if not self.children:
+            return [self]
+        top_choice = None
+        top_choice_idx = None
+        for i, child in enumerate(self.children):
+            if child.cell == cell:
+                top_choice_idx = i
+                top_choice = child
+                break
+
+        if top_choice is None:
+            return [self]
+
+        non_cell_children = [*self.children]
+        non_cell_children.pop(top_choice_idx)
+        non_cell_points = self.points
+
+        out = [None] * num_lets
+        for child in top_choice.children:
+            out[child.letter] = merge_orderly_tree_children(
+                child, non_cell_children, non_cell_points, arena
+            )
+
+        if len(top_choice.children) < num_lets:
+            # TODO: if there's >1 of these, this could result in a lot of duplicate work.
+            other_bound = sum(c.bound for c in non_cell_children)
+            if other_bound > 0 or non_cell_points > 0:
+                for i, child in enumerate(out):
+                    if not child:
+                        point_node = SumNode()
+                        point_node.points = non_cell_points
+                        point_node.letter = i
+                        point_node.bound = point_node.points + other_bound
+                        point_node.children = non_cell_children
+                        arena.add_node(point_node)
+                        out[i] = point_node
+        return out
 
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
@@ -308,6 +344,7 @@ class ChoiceNode:
                 child.assert_invariants(solver)
 
     def to_string(self, cells: list[str]):
+        # Call this on SumNode instead.
         raise NotImplementedError()
 
     def to_json(self, solver: BoardClassBoggler | None, max_depth=100, lookup=None):
@@ -346,3 +383,135 @@ def eval_node_to_string(node: SumNode, cells: list[str], top_cell=None):
     lines = []
     _sum_to_list(node, cells, lines, indent="", prev_cell=top_cell)
     return "\n".join(lines)
+
+
+# TODO: delete this function, it's only used in one test
+def split_orderly_tree(tree: SumNode, arena: PyArena):
+    """Split an orderly(N) into the choice for N and an orderly(N-1) tree.
+
+    Points on the input tree are put on the output tree.
+    """
+    top_choice = tree.children[0]
+
+    children = tree.children[1:]
+    n = SumNode()
+    arena.add_node(n)
+    n.letter = tree.letter
+    n.children = children
+    n.points = tree.points
+    n.bound = n.points + sum(child.bound for child in children if child)
+    return top_choice, n
+
+
+def merge_orderly_tree(a: SumNode, b: SumNode, arena: PyArena) -> SumNode:
+    """Merge two orderly(N) trees."""
+    return merge_orderly_tree_children(a, b.children, b.points, arena)
+
+
+def merge_orderly_tree_children(
+    a: SumNode, bc: Sequence[ChoiceNode], b_points: int, arena: PyArena
+) -> SumNode:
+    # TODO: it may be safe to merge bc in-place into a and avoid an allocation.
+    #       might need to be careful with the out.append(b) case, though.
+    in_a = a
+
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    a_n = len(ac)
+    b_n = len(bc)
+    out = []
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.cell < b.cell:
+            out.append(a)
+            i_a += 1
+        elif b.cell < a.cell:
+            out.append(b)
+            i_b += 1
+        else:
+            out.append(merge_orderly_choice_children(a, b, arena))
+            i_a += 1
+            i_b += 1
+
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
+
+    n = SumNode()
+    n.letter = in_a.letter
+    n.children = out
+    n.points = in_a.points + b_points
+    n.bound = n.points + sum(child.bound for child in n.children)
+    arena.add_node(n)
+    return n
+
+
+def merge_orderly_choice_children(
+    a: ChoiceNode, b: ChoiceNode, arena: PyArena
+) -> ChoiceNode:
+    """Merge two orderly choice nodes for the same cell."""
+    in_a = a
+    assert a.cell == b.cell
+    i_a = 0
+    i_b = 0
+    ac = a.children
+    bc = b.children
+    a_n = len(ac)
+    b_n = len(bc)
+
+    out = []
+    while i_a < a_n and i_b < b_n:
+        a = ac[i_a]
+        if not a:
+            i_a += 1
+            continue
+        b = bc[i_b]
+        if not b:
+            i_b += 1
+            continue
+        if a.letter < b.letter:
+            out.append(a)
+            i_a += 1
+        elif b.letter < a.letter:
+            out.append(b)
+            i_b += 1
+        else:
+            out.append(merge_orderly_tree(a, b, arena))
+            i_a += 1
+            i_b += 1
+
+    while i_a < a_n:
+        a = ac[i_a]
+        if a:
+            out.append(a)
+        i_a += 1
+
+    while i_b < b_n:
+        b = bc[i_b]
+        if b:
+            out.append(b)
+        i_b += 1
+
+    n = ChoiceNode()
+    n.cell = in_a.cell
+    n.children = out
+    n.points = 0
+    n.bound = max(child.bound for child in n.children)
+    arena.add_node(n)
+    return n
