@@ -56,8 +56,9 @@ Found unbreakable board for 2520743: perslitesand
   },
   "boards_to_test": 8078,
   "init_nodes": 2641103,
-  "total_nodes": 2641103,
-  "freed_nodes": 0,
+  "total_nodes": 4053634,
+  "tree_bytes": 67108864,
+  "total_bytes": 134217728,
   "n_bound": 53,
   "n_force": 12
 }
