@@ -11,6 +11,8 @@
 #include <variant>
 #include <vector>
 
+#include "arena.h"
+
 using namespace std;
 
 class EvalNodeArena;

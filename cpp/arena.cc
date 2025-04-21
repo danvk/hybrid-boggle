@@ -2,12 +2,7 @@
 
 #include "eval_node.h"
 
-int num_reallocs = 0;
-int num_in_capacity = 0;
-
 void EvalNodeArena::PrintStats() {
-  cout << "num_reallocs: " << num_reallocs << endl;
-  cout << "num_in_capacity: " << num_in_capacity << endl;
   cout << "num_buffers: " << buffers_.size() << endl;
   cout << "tip: " << tip_ << endl;
 }

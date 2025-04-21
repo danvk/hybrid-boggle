@@ -8,8 +8,6 @@
 #include <variant>
 #include <vector>
 
-#include "arena.h"
-
 using namespace std;
 
 inline bool SortByLetter(const SumNode* a, const SumNode* b) {
@@ -35,10 +33,8 @@ template <typename Node>
 Node* AddChildImpl(Node* n, decltype(Node::children_[0]) child, EvalNodeArena& arena) {
   if (n->num_children_ + 1 <= n->capacity_) {
     n->children_[n->num_children_++] = child;
-    num_in_capacity++;
     return n;
   }
-  num_reallocs++;
   // cout << "Exceeded capacity!" << endl;
   Node* clone = arena.NewNodeWithCapacity<Node>(n->capacity_ + 2);
   clone->CopyFrom(*n);
