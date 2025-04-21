@@ -101,6 +101,10 @@ class SumNode:
         split_order: Sequence[int],
         preset_cells: Sequence[tuple[int, int]],
     ):
+        """Find individual high-scoring boards in this tree without creating new nodes.
+
+        See https://www.danvk.org/2025/04/10/following-insight.html#orderly-bound
+        """
         num_letters = [len(cell) for cell in cells]
         stacks: list[list[ChoiceNode]] = [[] for _ in num_letters]
         choices = []  # for tracking unbreakable boards
@@ -188,7 +192,25 @@ class SumNode:
         raise NotImplementedError()
 
     def assert_invariants(self, solver):
-        raise NotImplementedError()
+        """Ensure the tree is well-formed. Some desirable properties:
+
+        - node.bound is correct (checked shallowly)
+        - choice node children are mutually-exclusive
+        - choice node children are sorted
+        - no duplicate choice children for sum nodes
+        """
+        bound = self.points
+        seen_choices = set[int]()
+        for child in self.children:
+            assert child
+            bound += child.bound
+            assert child.cell not in seen_choices
+            seen_choices.add(child.cell)
+        assert bound == self.bound
+
+        for child in self.children:
+            if child:
+                child.assert_invariants(solver)
 
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
@@ -250,7 +272,24 @@ class ChoiceNode:
         raise NotImplementedError()
 
     def assert_invariants(self, solver):
-        raise NotImplementedError()
+        # choice nodes _may_ have non-null children, but the rest must be sorted.
+        nnc = [c for c in self.children if c]
+        for a, b in zip(nnc, nnc[1:]):
+            assert a.letter < b.letter
+        if len(self.children) == len(solver.bd_[self.cell]) and all(
+            c for c in self.children
+        ):
+            for i, c in enumerate(self.children):
+                assert c.letter == i
+        bound = 0
+        for child in self.children:
+            if child:
+                bound = max(bound, child.bound)
+        assert bound == self.bound
+
+        for child in self.children:
+            if child:
+                child.assert_invariants(solver)
 
     def to_string(self, cells: list[str]):
         raise NotImplementedError()

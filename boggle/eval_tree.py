@@ -325,7 +325,7 @@ class EvalNode:
             if child:
                 child.assert_orderly(split_order, max_index)
 
-    def assert_invariants(self, solver, is_top_max=None):
+    def assert_invariants(self, solver):
         """Ensure the tree is well-formed. Some desirable properties:
 
         - Choice nodes do not have points.
@@ -334,20 +334,11 @@ class EvalNode:
         - choice node children are sorted
         - no duplicate choice children for sum nodes
         """
-        if is_top_max is None:
-            is_top_max = self.letter == CHOICE_NODE
         if self.letter == CHOICE_NODE:
-            if not hasattr(self, "points") or self.points == 0:
-                pass
-            else:
-                pass  # TODO: assert that child mask is set properly.
-            if is_top_max and all(c and c.letter == CHOICE_NODE for c in self.children):
-                pass
-            else:
-                # choice nodes _may_ have non-null children, but the rest must be sorted.
-                nnc = [c for c in self.children if c]
-                for a, b in zip(nnc, nnc[1:]):
-                    assert a.letter < b.letter
+            # choice nodes _may_ have non-null children, but the rest must be sorted.
+            nnc = [c for c in self.children if c]
+            for a, b in zip(nnc, nnc[1:]):
+                assert a.letter < b.letter
             if len(self.children) == len(solver.bd_[self.cell]) and all(
                 c for c in self.children
             ):

@@ -44,7 +44,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     cells = board.split(" ")
     assert bb.ParseBoard(board)
     t = bb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, (EvalNode, SumNode)):
         t.assert_invariants(bb)
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
         external("d7687d76c39b*.txt")
@@ -77,7 +77,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, (EvalNode, SumNode)):
         t.assert_invariants(otb)
 
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
@@ -94,7 +94,7 @@ def test_orderly_bound22(is_python):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, (EvalNode, SumNode)):
         t.assert_invariants(otb)
     assert t.bound == 8
 
@@ -112,7 +112,7 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, (EvalNode, SumNode)):
         t.assert_invariants(otb)
     assert t.bound == 22
 
@@ -143,7 +143,7 @@ def test_orderly_merge():
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
     split_order = SPLIT_ORDER[(2, 2)]
-    if isinstance(t, EvalNode):
+    if isinstance(t, (EvalNode, SumNode)):
         t.assert_invariants(otb)
         t.assert_orderly(split_order)
     assert t.bound == 22
@@ -216,7 +216,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, (EvalNode, SumNode)):
         t.assert_invariants(otb)
         print(otb.cell_counts)
         t.assert_orderly(SPLIT_ORDER[(3, 3)])
