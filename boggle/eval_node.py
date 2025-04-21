@@ -189,7 +189,17 @@ class SumNode:
         self.bound = self.points + sum(c.bound for c in self.children if c)
 
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
-        raise NotImplementedError()
+        """Ensure that the tree is "orderly" in the following sense:
+
+        If a choice for cell i is a descendant of a choice for cell j, then
+        it must be that index(split_order, i) > index(split_order, j).
+        """
+        # sum node children must be sorted by cell (not split_order)
+        for a, b in zip(self.children, self.children[1:]):
+            assert a.cell < b.cell
+        for child in self.children:
+            if child:
+                child.assert_orderly(split_order, max_index)
 
     def assert_invariants(self, solver):
         """Ensure the tree is well-formed. Some desirable properties:
@@ -269,7 +279,13 @@ class ChoiceNode:
         self.bound = max(c.bound for c in self.children if c) if self.children else 0
 
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
-        raise NotImplementedError()
+        idx = split_order.index(self.cell)
+        if max_index is not None:
+            assert idx > max_index
+        max_index = idx
+        for child in self.children:
+            if child:
+                child.assert_orderly(split_order, max_index)
 
     def assert_invariants(self, solver):
         # choice nodes _may_ have non-null children, but the rest must be sorted.
