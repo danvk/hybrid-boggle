@@ -1,3 +1,26 @@
+"""A tree representing the evaluation of a class of Boggle boards.
+
+See https://www.danvk.org/2025/02/13/boggle2025.html#the-evaluation-tree
+
+There are two types of nodes: sum and choice:
+
+- Sum nodes sum points across their children. This models how you can move in any
+  direction to extend a word, or start words from any cell on the board.
+- Choice nodes reflect a choice that must be made, namely which letter to choose for
+  a cell in the board class. To get a bound, we can take the max across any
+  choice, but this is imprecise because the same choice can appear in many subtrees
+  and our choices won't be synchronized across those subtrees.
+
+The children of sum nodes are choice nodes, and vice versa.
+The root of the tree is always a sum node.
+
+You can use node.bound to get the current upper bound for any subtree.
+
+To reduce the bound, you can "force" a choice on a cell to get a subtree
+for each possibility for that cell. This has the effect of merging other
+choices and reducing the bound.
+"""
+
 import itertools
 from collections import Counter
 from typing import Self, Sequence
@@ -34,6 +57,7 @@ class SumNode:
         arena: PyArena,
         cell_counts: list[int] = None,
     ):
+        """Add a word to this tree. choices is a list of (cell, letter index) tuples."""
         if not choices:
             self.points += points
             self.bound += points
@@ -80,15 +104,11 @@ class SumNode:
             choice_child.bound = letter_child.bound
         self.bound += choice_child.bound - old_choice_bound
 
-    def score_with_forces(self, forces: list[int]) -> int:
-        """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
-        return self.points + sum(
-            child.score_with_forces(forces) if child else 0 for child in self.children
-        )
-
     def orderly_force_cell(
         self, cell: int, num_lets: int, arena: PyArena
     ) -> list[Self]:
+        """Return trees for each possible choice for cell."""
+        # See https://www.danvk.org/2025/04/10/following-insight.html#lift--orderly-force--merge
         if not self.children:
             return [self]
         top_choice = None
@@ -126,9 +146,6 @@ class SumNode:
                         arena.add_node(point_node)
                         out[i] = point_node
         return out
-
-    def node_count(self):
-        return 1 + sum(child.node_count() for child in self.children if child)
 
     def orderly_bound(
         self,
@@ -218,6 +235,15 @@ class SumNode:
     def get_children(self):
         return self.children
 
+    def node_count(self):
+        return 1 + sum(child.node_count() for child in self.children if child)
+
+    def score_with_forces(self, forces: list[int]) -> int:
+        """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
+        return self.points + sum(
+            child.score_with_forces(forces) if child else 0 for child in self.children
+        )
+
     def set_computed_fields(self, num_letters: Sequence[int]):
         for c in self.children:
             if c:
@@ -287,6 +313,14 @@ class ChoiceNode:
     def __init__(self):
         self.children = []
 
+    # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def get_children(self):
+        return self.children
+
+    def node_count(self):
+        return 1 + sum(child.node_count() for child in self.children if child)
+
     def score_with_forces(self, forces: list[int]) -> int:
         """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
         force = forces[self.cell]
@@ -303,19 +337,6 @@ class ChoiceNode:
             if self.children
             else 0
         )
-
-    def orderly_force_cell(
-        self, cell: int, num_lets: int, arena: PyArena
-    ) -> list[Self] | Self:
-        raise NotImplementedError()
-
-    def node_count(self):
-        return 1 + sum(child.node_count() for child in self.children if child)
-
-    # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
-
-    def get_children(self):
-        return self.children
 
     def set_computed_fields(self, num_letters: Sequence[int]):
         for c in self.children:
