@@ -104,16 +104,11 @@ def tree_stats(t: SumNode) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Lift all the way to breaking")
+    parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
-    parser.add_argument("cutoff", type=int, help="Best known score for filtering.")
-    parser.add_argument("board", type=str, help="Board class to lift.")
-    parser.add_argument(
-        "lift_cells", type=str, nargs="?", help="Sequence of choices to make"
-    )
+    parser.add_argument("board", type=str, help="Board class to bound.")
     args = parser.parse_args()
     board = args.board
-    lift_cells = eval(args.lift_cells) if args.lift_cells else None
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
@@ -137,24 +132,6 @@ def main():
 
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
-
-    t = orderly_tree
-    for cell, letter in lift_cells:
-        arena = otb.create_arena()
-        arenas.append(arena)
-        start_s = time.time()
-        choices = t.orderly_force_cell(cell, len(cells[cell]), arena)
-        elapsed_s = time.time() - start_s
-        t = choices[letter]
-        cells[cell] = cells[cell][letter]
-        bd = " ".join(cells)
-        print(f"{cell}/{letter} {elapsed_s:.02f}s f -> {tree_stats(t)} {bd}")
-
-    # scores = eval_all(t, cells)
-    # print(scores)
-
-    # print("")
-    # t.print_json()
 
 
 if __name__ == "__main__":
