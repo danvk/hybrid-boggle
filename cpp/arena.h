@@ -17,11 +17,11 @@ class ChoiceNode;
 class SumNode;
 
 // Allocate this much memory at once.
-const int EVAL_NODE_ARENA_BUFFER_SIZE = 1'048'576;
+const uint64_t EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
 
 class EvalNodeArena {
  public:
-  EvalNodeArena() : num_nodes_(0), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
+  EvalNodeArena() : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
   ~EvalNodeArena() { FreeTheChildren(); }
 
   void FreeTheChildren() {
@@ -35,6 +35,10 @@ class EvalNodeArena {
   }
 
   int NumNodes() { return num_nodes_; }
+  uint64_t BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
+
+  pair<int, int> SaveLevel();
+  void ResetLevel(pair<int, int> level);
 
   template <typename T>
   T* NewNodeWithCapacity(uint8_t capacity);
@@ -50,7 +54,9 @@ class EvalNodeArena {
   void AddBuffer();
   vector<char*> buffers_;
   int num_nodes_;
+  int cur_buffer_;
   int tip_;
+  vector<pair<int, int>> watermarks_;
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();
@@ -63,7 +69,7 @@ T* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
     AddBuffer();
   }
-  char* buf = &(*buffers_.rbegin())[tip_];
+  char* buf = &buffers_[cur_buffer_][tip_];
   T* n = new (buf) T;
   // TODO: update tip_ to enforce alignment
   tip_ += size;

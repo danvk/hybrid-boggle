@@ -139,7 +139,6 @@ def break_worker(task: str | int):
         summary = {"id": task, **details.asdict()}
         if args.omit_times:
             del summary["elapsed_s"]
-            del summary["free_time_s"]
             del summary["secs_by_level"]
         out.write(json.dumps(summary))
         out.write("\n")
