@@ -18,7 +18,6 @@ from tqdm import tqdm
 from boggle.args import (
     add_standard_args,
     get_trie_and_boggler_from_args,
-    get_trie_from_args,
 )
 from boggle.board_id import from_board_id, is_canonical_board_id, parse_classes
 from boggle.boggler import PyBoggler
@@ -30,7 +29,7 @@ from boggle.dimensional_bogglers import (
 from boggle.ibucket_breaker import IBucketBreaker
 from boggle.ibuckets import PyBucketBoggler
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
-from boggle.trie import PyTrie, get_letter_map
+from boggle.trie import PyTrie
 
 
 @dataclass
