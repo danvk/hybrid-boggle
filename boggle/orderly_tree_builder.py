@@ -1,3 +1,12 @@
+"""Build an EvalTree in an "orderly" fashion.
+
+This means that cells always appear in a set order, e.g. center outwards.
+This typically produces much smaller trees with much tigher bounds than
+the "natural" trees produced by a DFS over the board class.
+
+See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
+"""
+
 import argparse
 import time
 
@@ -9,17 +18,14 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_tree import (
-    ROOT_NODE,
-    EvalNode,
-)
+from boggle.eval_node import ROOT_NODE, SumNode
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
 
 
 class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
-    root: EvalNode
+    root: SumNode
     cell_counts: list[int]
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
@@ -27,9 +33,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
 
     def BuildTree(self, arena: PyArena = None):
-        root = EvalNode()
+        root = SumNode()
         root.letter = ROOT_NODE
-        root.cell = 0  # irrelevant
         root.points = 0
         root.bound = 0
         self.root = root
@@ -47,7 +52,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         # This _could_ be computed if there were a need.
         return 0
 
-    # TODO: rename these methods
     def DoAllDescents(
         self, cell: int, length: int, t: PyTrie, choices: list[tuple[int, int]], arena
     ):
@@ -89,14 +93,11 @@ class OrderlyTreeBuilder(BoardClassBoggler):
     def create_arena(self):
         return create_eval_node_arena_py()
 
-    def create_vector_arena(self):
-        return create_eval_node_arena_py()
-
 
 mark = 1
 
 
-def tree_stats(t: EvalNode) -> str:
+def tree_stats(t: SumNode) -> str:
     global mark
     mark += 1
     return f"{t.bound=}, {t.node_count()} nodes"

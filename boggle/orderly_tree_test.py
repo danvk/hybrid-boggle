@@ -7,12 +7,12 @@ from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_bucket_boggler, cpp_orderly_tree_builder
+from boggle.eval_node import ChoiceNode, SumNode, eval_node_to_string
 from boggle.eval_tree import (
     CHOICE_NODE,
     ROOT_NODE,
     EvalNode,
     eval_all,
-    eval_node_to_string,
     merge_orderly_tree,
     split_orderly_tree,
 )
@@ -148,15 +148,16 @@ def test_orderly_merge():
         t.assert_orderly(split_order)
     assert t.bound == 22
 
+    assert isinstance(t, SumNode)
     assert t.letter == ROOT_NODE
     assert len(t.children) == 2
     t0 = t.children[0]
     t1 = t.children[1]
-    assert t0.letter == CHOICE_NODE
+    assert isinstance(t0, ChoiceNode)
     assert t0.cell == 0
     assert t0.bound == 17
     assert len(t0.children) == 2
-    assert t1.letter == CHOICE_NODE
+    assert isinstance(t1, ChoiceNode)
     assert t1.cell == 1
     assert t1.bound == 5
 

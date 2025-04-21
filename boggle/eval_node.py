@@ -1,0 +1,222 @@
+from typing import Self, Sequence
+
+from boggle.arena import PyArena
+from boggle.board_class_boggler import BoardClassBoggler
+
+ROOT_NODE = -2
+
+
+class SumNode:
+    letter: int
+    """Which choice of letter on the cell does this represent? (0-based).
+
+    For the root node of a tree, this may be set to ROOT_NODE.
+    """
+
+    points: int
+    """Points provided by _this_ node, not children."""
+
+    bound: int
+    """Upper bound on the number of points available in this subtree."""
+
+    children: list["ChoiceNode"]
+    """The children to sum, sorted by child.cell."""
+
+    def __init__(self):
+        self.children = []
+        self.points = 0
+
+    def add_word(
+        self,
+        choices: Sequence[tuple[int, int]],
+        points: int,
+        arena: PyArena,
+        cell_counts: list[int] = None,
+    ):
+        if not choices:
+            self.points += points
+            self.bound += points
+            return
+
+        (cell, letter) = choices[0]
+        remaining_choices = choices[1:]
+
+        choice_child = None
+        for c in self.children:
+            if c.cell == cell:
+                choice_child = c
+                break
+        old_choice_bound = 0
+        if not choice_child:
+            choice_child = ChoiceNode()
+            choice_child.cell = cell
+            choice_child.bound = 0
+            self.children.append(choice_child)
+            if cell_counts:
+                cell_counts[cell] += 1
+            if arena:
+                arena.add_node(choice_child)
+            self.children.sort(key=lambda c: c.cell)
+        else:
+            old_choice_bound = choice_child.bound
+
+        letter_child = None
+        for c in choice_child.children:
+            if c.letter == letter:
+                letter_child = c
+                break
+        if not letter_child:
+            letter_child = SumNode()
+            letter_child.letter = letter
+            letter_child.bound = 0
+            choice_child.children.append(letter_child)
+            choice_child.children.sort(key=lambda c: c.letter)
+            if arena:
+                arena.add_node(letter_child)
+
+        letter_child.add_word(remaining_choices, points, arena, cell_counts)
+        if letter_child.bound > old_choice_bound:
+            choice_child.bound = letter_child.bound
+        self.bound += choice_child.bound - old_choice_bound
+
+    def score_with_forces(self, forces: list[int]) -> int:
+        """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
+        return self.points + sum(
+            child.score_with_forces(forces) if child else 0 for child in self.children
+        )
+
+    def orderly_force_cell(
+        self, cell: int, num_lets: int, arena: PyArena
+    ) -> list[Self] | Self:
+        raise NotImplementedError()
+
+    def node_count(self):
+        return 1 + sum(child.node_count() for child in self.children if child)
+
+    def orderly_bound(
+        self,
+        cutoff: int,
+        cells: list[str],
+        split_order: Sequence[int],
+        preset_cells: Sequence[tuple[int, int]],
+    ):
+        raise NotImplementedError()
+
+    # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def get_children(self):
+        return self.children
+
+    def set_computed_fields(self, num_letters: Sequence[int]):
+        for c in self.children:
+            if c:
+                c.set_computed_fields(num_letters)
+        self.bound = self.points + sum(c.bound for c in self.children if c)
+
+    def assert_orderly(self, split_order: Sequence[int], max_index=None):
+        raise NotImplementedError()
+
+    def assert_invariants(self, solver, is_top_max=None):
+        raise NotImplementedError()
+
+    def to_string(self, cells: list[str]):
+        return eval_node_to_string(self, cells)
+
+    def to_json(self, solver: BoardClassBoggler | None, max_depth=100, lookup=None):
+        raise NotImplementedError()
+
+
+class ChoiceNode:
+    cell: int
+    """Which cell does this represent on the Boggle board?"""
+
+    bound: int
+    """Upper bound on the number of points available in this subtree."""
+
+    children: list[SumNode]
+    """For choice nodes: the choices, ordered by child.letter."""
+
+    def __init__(self):
+        self.children = []
+
+    def score_with_forces(self, forces: list[int]) -> int:
+        """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
+        force = forces[self.cell]
+        if force >= 0:
+            for child in self.children:
+                if child and child.letter == force:
+                    return child.score_with_forces(forces)
+            return 0
+        return (
+            max(
+                child.score_with_forces(forces) if child else 0
+                for child in self.children
+            )
+            if self.children
+            else 0
+        )
+
+    def orderly_force_cell(
+        self, cell: int, num_lets: int, arena: PyArena
+    ) -> list[Self] | Self:
+        raise NotImplementedError()
+
+    def node_count(self):
+        return 1 + sum(child.node_count() for child in self.children if child)
+
+    # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
+
+    def get_children(self):
+        return self.children
+
+    def set_computed_fields(self, num_letters: Sequence[int]):
+        for c in self.children:
+            if c:
+                c.set_computed_fields(num_letters)
+        self.bound = max(c.bound for c in self.children if c) if self.children else 0
+
+    def assert_orderly(self, split_order: Sequence[int], max_index=None):
+        raise NotImplementedError()
+
+    def assert_invariants(self, solver, is_top_max=None):
+        raise NotImplementedError()
+
+    def to_string(self, cells: list[str]):
+        raise NotImplementedError()
+
+    def to_json(self, solver: BoardClassBoggler | None, max_depth=100, lookup=None):
+        raise NotImplementedError()
+
+
+def _sum_to_list(
+    node: SumNode, cells: list[str], lines: list[str], indent="", prev_cell=None
+):
+    line = ""
+    if node.letter == ROOT_NODE:
+        line = f"{indent}ROOT ({node.bound})"
+    else:
+        cell = cells[prev_cell][node.letter]
+        line = f"{indent}{cell} ({prev_cell}={node.letter} {node.points}/{node.bound})"
+    lines.append(line)
+    for child in node.get_children():
+        if child:
+            _choice_to_list(child, cells, lines, " " + indent)
+        else:
+            print("null!")
+
+
+def _choice_to_list(node: ChoiceNode, cells: list[str], lines: list[str], indent=""):
+    line = f"{indent}CHOICE ({node.cell} <{node.bound}) points=0"
+    lines.append(line)
+    for child in node.get_children():
+        if child:
+            _sum_to_list(child, cells, lines, " " + indent, prev_cell=node.cell)
+        else:
+            print("null!")
+
+
+def eval_node_to_string(node: SumNode, cells: list[str], top_cell=None):
+    # This is defined externally so that it works with both C++ and Python implementations.
+    lines = []
+    _sum_to_list(node, cells, lines, indent="", prev_cell=top_cell)
+    return "\n".join(lines)

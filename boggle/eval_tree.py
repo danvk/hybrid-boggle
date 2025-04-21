@@ -197,18 +197,6 @@ class EvalNode:
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
 
-    def unique_node_count(self, mark):
-        return sum(1 for _ in self.all_nodes_unique(mark))
-
-    def structural_hash(self) -> int:
-        if hasattr(self, "_hash"):
-            return getattr(self, "_hash")
-        text = f"{self.letter} {self.cell} {self.points} "
-        text += " ".join((str(c.structural_hash()) if c else "") for c in self.children)
-        h = hash(text)
-        self._hash = h
-        return h
-
     def orderly_bound(
         self,
         cutoff: int,
@@ -304,27 +292,6 @@ class EvalNode:
     def get_children(self):
         return self.children
 
-    def node_counts(self, out=None):
-        if out is None:
-            out = Counter[Self]()
-        out[self] += 1
-        for child in self.children:
-            child.node_counts(out)
-        return out
-
-    def recompute_score(self):
-        """Should return self.bound. (For debugging/testing)"""
-        if self.letter == CHOICE_NODE:
-            return (
-                max(child.recompute_score() if child else 0 for child in self.children)
-                if self.children
-                else 0
-            )
-        else:
-            return self.points + sum(
-                child.recompute_score() if child else 0 for child in self.children
-            )
-
     def set_computed_fields(self, num_letters: Sequence[int]):
         for c in self.children:
             if c:
@@ -336,27 +303,6 @@ class EvalNode:
             )
         else:
             self.bound = self.points + sum(c.bound for c in self.children if c)
-
-    def structural_eq(self, other: Self) -> bool:
-        """Deep structural equality (for debugging)."""
-        if self.letter != other.letter or self.cell != other.cell:
-            return False
-        if self.bound != other.bound:
-            return False
-        if self.points != other.points:
-            return False
-        nnc = [c for c in self.children if c]
-        nno = [c for c in other.children if c]
-        if len(nnc) != len(nno):
-            return False
-        for a, b in zip(nnc, nno):
-            if a == b:
-                continue
-            if a is None or b is None:
-                return False
-            if not a.structural_eq(b):
-                return False
-        return True
 
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
         # If a choice for cell i is a descendant of a choice for cell j, then
@@ -432,41 +378,6 @@ class EvalNode:
 
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
-
-    def check_consistency(self):
-        assert self.bound == self.recompute_score()
-        for child in self.children:
-            if child:
-                child.check_consistency()
-
-    def print_words(self, solver: BoardClassBoggler, prefix=""):
-        if self.letter >= 0:
-            char = solver.bd_[self.cell][self.letter]
-            prefix += char
-            if self.points:
-                print(f" + {self.points}: {prefix}")
-        for child in self.children:
-            if child:
-                child.print_words(solver, prefix)
-
-    def choice_cells(self) -> set[int]:
-        out = set()
-        if self.letter == CHOICE_NODE:
-            out.add(self.cell)
-        for child in self.children:
-            if child:
-                out.update(child.choice_cells())
-        return out
-
-    def choice_letters(self, out=None) -> set[tuple[int, int]]:
-        """All letters on each cell that lead to points."""
-        if out is None:
-            out = set()
-        if self.letter >= 0:
-            out.add((self.cell, self.letter))
-        for child in self.children:
-            child.choice_letters(out)
-        return out
 
     def to_dot(self, cells: list[str], max_depth=100, trie=None, node_data=None) -> str:
         lookup_table = make_lookup_table(trie) if trie else None
