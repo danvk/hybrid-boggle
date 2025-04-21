@@ -18,7 +18,6 @@ from tqdm import tqdm
 from boggle.args import (
     add_standard_args,
     get_trie_and_boggler_from_args,
-    get_trie_from_args,
 )
 from boggle.board_id import from_board_id, is_canonical_board_id, parse_classes
 from boggle.boggler import PyBoggler
@@ -29,9 +28,8 @@ from boggle.dimensional_bogglers import (
 )
 from boggle.ibucket_breaker import IBucketBreaker
 from boggle.ibuckets import PyBucketBoggler
-from boggle.letter_grouping import filter_to_canonical
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
-from boggle.trie import PyTrie, get_letter_map
+from boggle.trie import PyTrie
 
 
 @dataclass
@@ -42,7 +40,6 @@ class BreakingBundle:
     boggler: PyBoggler
     etb: OrderlyTreeBuilder
     breaker: IBucketBreaker | HybridTreeBreaker
-    ungrouped_trie: PyTrie
 
 
 def get_process_id():
@@ -118,13 +115,6 @@ def break_worker(task: str | int):
     assert best_score > 0
     dims = args.size // 10, args.size % 10
     classes = parse_classes(args.classes, dims)
-    if args.letter_grouping:
-        letter_map = get_letter_map(args.letter_grouping)
-        classes = [
-            [filter_to_canonical(cls, letter_map) for cls in cell_classes]
-            for cell_classes in classes
-        ]
-        # print(f'Filtered {args.classes} -> {" ".join(classes)}')
 
     if isinstance(task, int):
         if needs_canonical_filter and not is_canonical_board_id(
@@ -177,13 +167,7 @@ def get_breaker(args) -> BreakingBundle:
     dims = args.size // 10, args.size % 10
     best_score = args.best_score
 
-    # With grouping, HybridTreeBreaker needs an ungrouped boggler but a grouped Trie.
-    ungrouped_trie = None
-    if args.letter_grouping:
-        ungrouped_trie, boggler = get_trie_and_boggler_from_args(args, no_grouping=True)
-        t = get_trie_from_args(args)
-    else:
-        t, boggler = get_trie_and_boggler_from_args(args)
+    t, boggler = get_trie_and_boggler_from_args(args)
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     etb = builder(t, dims)
@@ -197,7 +181,6 @@ def get_breaker(args) -> BreakingBundle:
             best_score,
             switchover_score=switchover_score,
             log_breaker_progress=args.log_breaker_progress,
-            letter_grouping=args.letter_grouping,
         )
     elif args.breaker == "ibuckets":
         if args.python:
@@ -207,9 +190,7 @@ def get_breaker(args) -> BreakingBundle:
         breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
     else:
         raise ValueError(args.breaker)
-    return BreakingBundle(
-        trie=t, etb=etb, boggler=boggler, breaker=breaker, ungrouped_trie=ungrouped_trie
-    )
+    return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
 
 
 def parse_gcs_path(gcs_path: str) -> tuple[str, str]:
