@@ -1,6 +1,7 @@
 import argparse
 import time
 
+from boggle.arena import PyArena, create_eval_node_arena_py
 from boggle.args import add_standard_args, get_trie_from_args
 from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
@@ -11,8 +12,6 @@ from boggle.dimensional_bogglers import (
 from boggle.eval_tree import (
     ROOT_NODE,
     EvalNode,
-    PyArena,
-    create_eval_node_arena_py,
 )
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie

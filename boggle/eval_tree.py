@@ -7,19 +7,18 @@ There are two types of nodes: sum and choice:
 - Sum nodes sum points across their children. This models how you can move in any direction
   to extend a word, or start words from any cell on the board.
 - Choice nodes reflect a choice that must be made, namely which letter to choose for
-  a cell for a board in the board class. To get a bound, we can take the max across any
+  a cell in the board class. To get a bound, we can take the max across any
   choice, but this is imprecise because the same choice can appear in many subtrees and
   our choices won't be synchronized across those subtrees.
 
-You can use node.bound to get the current upper bound for any subtree.
-To reduce the bound, you can "lift" a choice on a cell to the top of the subtree, thus
-synchronizing it across all subtrees. This comes at the cost of allocating new nodes.
+The children of sum nodes are choice nodes, and vice versa.
+The root of the tree is always a sum node.
 
-It's a battle to keep tree operations from blowing up the number of nodes too much.
-There are two ways to shrink the tree: compression and deduplication. Compression
-restructures the tree into an equivalent but more compact representation, and de-
-duplication replaces structurally equivalent nodes with references to the same object.
-These are both described in the blog post linked above.
+You can use node.bound to get the current upper bound for any subtree.
+
+To reduce the bound, you can "force" a choice on a cell to get a subtree
+for each possibility for that cell. This has the effect of merging other
+choices and reducing the bound.
 """
 
 import itertools
@@ -28,43 +27,12 @@ from typing import Self, Sequence
 
 from cpp_boggle import ChoiceNode, SumNode
 
+from boggle.arena import PyArena
 from boggle.board_class_boggler import BoardClassBoggler
 from boggle.trie import make_lookup_table
 
 ROOT_NODE = -2
 CHOICE_NODE = -1
-
-
-class PyArena:
-    """This class is useless, but it helps maintain the same API as C++."""
-
-    def __init__(self):
-        self.count = 0
-
-    def free_the_children(self):
-        pass
-
-    def num_nodes(self):
-        return self.count
-
-    def new_node_with_capacity(self, n: int):
-        n = EvalNode()
-        n.letter = ROOT_NODE
-        n.cell = 0
-        n.bound = 0
-        n.points = 0
-        self.count += 1
-        return n
-
-    def new_root_node_with_capacity(self, n: int):
-        return self.new_node_with_capacity(n)
-
-    def add_node(self, node):
-        self.count += 1
-
-
-def create_eval_node_arena_py():
-    return PyArena()
 
 
 cache_count = 1

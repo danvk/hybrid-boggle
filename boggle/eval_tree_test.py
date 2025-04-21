@@ -2,11 +2,11 @@ import pytest
 from cpp_boggle import create_eval_node_arena
 from inline_snapshot import external, outsource, snapshot
 
+from boggle.arena import create_eval_node_arena_py
 from boggle.eval_tree import (
     CHOICE_NODE,
     ROOT_NODE,
     EvalNode,
-    create_eval_node_arena_py,
     eval_node_to_string,
 )
 
