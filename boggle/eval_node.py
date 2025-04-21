@@ -3,7 +3,6 @@ from collections import Counter
 from typing import Self, Sequence
 
 from boggle.arena import PyArena
-from boggle.board_class_boggler import BoardClassBoggler
 
 ROOT_NODE = -2
 
