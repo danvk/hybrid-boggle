@@ -31,11 +31,11 @@ class SumNode {
       EvalNodeArena& arena
   );
 
+  uint32_t bound_ : 24;
   int8_t letter_;
   uint16_t points_;
   uint8_t num_children_;
   uint8_t capacity_;
-  uint32_t bound_;
   ChoiceNode* children_[];
 
   static const int8_t ROOT_NODE = -2;
@@ -51,6 +51,7 @@ class SumNode {
   void SetChildrenFromVector(const vector<ChoiceNode*>& children);
 
   int NodeCount() const;
+  uint32_t Bound() const { return bound_; }
 
   tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
       int cutoff,
