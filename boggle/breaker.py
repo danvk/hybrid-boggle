@@ -48,7 +48,6 @@ class HybridBreakDetails(BreakDetails):
     nodes: dict[int, int]
     depth: dict[int, int]
     boards_to_test: int
-    expanded_to_test: int
     init_nodes: int
     total_nodes: int
     freed_nodes: int
@@ -100,7 +99,6 @@ class HybridTreeBreaker:
             secs_by_level=defaultdict(float),
             bounds={},
             boards_to_test=0,
-            expanded_to_test=0,
             init_nodes=0,
             depth=Counter(),
             nodes={},

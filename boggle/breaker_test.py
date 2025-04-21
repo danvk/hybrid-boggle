@@ -66,7 +66,6 @@ def test_breaker(is_python):
             "nodes": {0: 1186},
             "depth": {2: 3},
             "boards_to_test": 7,
-            "expanded_to_test": 7,
             "init_nodes": 1186,
             "total_nodes": 1186,
             "freed_nodes": 0,
