@@ -60,9 +60,9 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
+  /*
   cout << "sizeof(SumNode) = " << sizeof(SumNode) << endl;
   cout << "sizeof(ChoiceNode) = " << sizeof(ChoiceNode) << endl;
-  /*
   cout << "root: " << (uintptr_t)root << endl;
   auto r = (uintptr_t)root;
   cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
