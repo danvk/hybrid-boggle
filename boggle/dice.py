@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 
 DICE = [
@@ -34,24 +35,29 @@ def count_boggle_arrangements(grid):
     used = [False] * 16
     count = 0
 
-    def backtrack(pos):
+    def backtrack(pos, mult):
         nonlocal count
         if pos == 16:
-            count += 1
+            count += mult
             return
 
+        # TODO: this doesn't consider that a letter could be on the same die multiple times
         letter = grid[pos].lower()
         for die_index in LETTER_TO_DICE.get(letter, []):
             if not used[die_index]:
                 used[die_index] = True
-                backtrack(pos + 1)
+                backtrack(pos + 1, mult * DICE[die_index].count(letter))
                 used[die_index] = False
 
-    backtrack(0)
+    backtrack(0, 1)
     return count
 
 
-# Example usage:
-# Replace this with your actual grid string (16 letters, row-wise)
-grid = "perslatgsineters"  # Make sure it's 16 letters
-print(count_boggle_arrangements(grid))
+def main():
+    for grid in sys.argv[1:]:
+        assert len(grid) == 16
+        print(grid, count_boggle_arrangements(grid))
+
+
+if __name__ == "__main__":
+    main()
