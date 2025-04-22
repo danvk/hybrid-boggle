@@ -97,7 +97,9 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
 
   unique_ptr<Trie> t(new Trie);
   while (!feof(f) && fscanf(f, "%s", line)) {
-    t->AddWord(line);
+    if (BogglifyWord(line)) {
+      t->AddWord(line);
+    }
   }
   fclose(f);
 
@@ -106,4 +108,26 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
 
 unique_ptr<Trie> Trie::CreateFromFileStr(const string& filename) {
   return CreateFromFile(filename.c_str());
+}
+
+/* static */ bool Trie::IsBoggleWord(const char* wd) {
+  int size = strlen(wd);
+  if (size < 3) return false;
+  for (int i = 0; i < size; ++i) {
+    int c = wd[i];
+    if (c < 'a' || c > 'z') return false;
+    if (c == 'q' && (i + 1 >= size || wd[1 + i] != 'u')) return false;
+  }
+  return true;
+}
+
+/* static */ bool Trie::BogglifyWord(char* word) {
+  if (!IsBoggleWord(word)) return false;
+  int src, dst;
+  for (src = 0, dst = 0; word[src]; src++, dst++) {
+    word[dst] = word[src];
+    if (word[src] == 'q') src += 1;
+  }
+  word[dst] = word[src];
+  return true;
 }

@@ -1,5 +1,7 @@
 from typing import Self
 
+from boggle.make_boggle_dict import bogglify_word
+
 LETTER_A = ord("a")
 
 
@@ -95,5 +97,7 @@ def make_py_trie(dict_input: str):
 
     for word in open(dict_input):
         word = word.strip()
-        t.AddWord(word)
+        word = bogglify_word(word)
+        if word is not None:
+            t.AddWord(word)
     return t
