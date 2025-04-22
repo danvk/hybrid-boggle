@@ -1,4 +1,4 @@
-from itertools import permutations
+from collections import defaultdict
 
 DICE = [
     "aeaneg",
@@ -20,28 +20,38 @@ DICE = [
 ]
 
 
-def count_valid_grids(grid_letters):
-    if len(grid_letters) != 16:
+# Preprocess: map each letter to dice that contain it
+LETTER_TO_DICE = defaultdict(set)
+for idx, die in enumerate(DICE):
+    for ch in set(die):  # use set to avoid counting same die multiple times
+        LETTER_TO_DICE[ch].add(idx)
+
+
+def count_boggle_arrangements(grid):
+    if len(grid) != 16:
         raise ValueError("Grid must be exactly 16 letters")
 
+    used = [False] * 16
     count = 0
-    dice_indices = range(16)
 
-    for dice_perm in permutations(dice_indices):
-        match = True
-        for i, die_index in enumerate(dice_perm):
-            letter = grid_letters[i].lower()
-            die = DICE[die_index]
-            if letter not in die:
-                match = False
-                break
-        if match:
+    def backtrack(pos):
+        nonlocal count
+        if pos == 16:
             count += 1
+            return
 
+        letter = grid[pos].lower()
+        for die_index in LETTER_TO_DICE.get(letter, []):
+            if not used[die_index]:
+                used[die_index] = True
+                backtrack(pos + 1)
+                used[die_index] = False
+
+    backtrack(0)
     return count
 
 
 # Example usage:
-# Provide a 16-letter string representing the 4x4 grid (row-wise)
-grid = "examplegridof16l"  # Replace with actual 16-letter grid
-print(count_valid_grids(grid))
+# Replace this with your actual grid string (16 letters, row-wise)
+grid = "perslatgsineters"  # Make sure it's 16 letters
+print(count_boggle_arrangements(grid))
