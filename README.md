@@ -194,6 +194,8 @@ Here are the results for different wordlists. See [wordlists/README.md](wordlist
 
 If you have a few thousand dollars of compute burning a hole in your pocket and you'd like to fill out the global optimum 4x4 column, please let me know!
 
+You can find lists of the highest-scoring boards found via exhaustive search in the [`results`](/results) directory.
+
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
 [33]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
