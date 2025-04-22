@@ -1,5 +1,7 @@
 from cpp_boggle import Trie
 
+from boggle.trie import bogglify_word
+
 
 def asc(char: str):
     assert len(char) == 1
@@ -41,6 +43,13 @@ def test_trie():
     child = t.FindWord("agriculture")
     assert child is not None
     assert Trie.ReverseLookup(t, child) == "agriculture"
+
+
+def test_bogglify_word():
+    assert bogglify_word("quart") == "qart"
+    assert bogglify_word("qi") is None
+    assert bogglify_word("is") is None
+    assert bogglify_word("boggle") == "boggle"
 
 
 def test_load_file():
