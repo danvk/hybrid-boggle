@@ -1,23 +1,50 @@
+"""Determine the number of ways to roll a particular Boggle board.
+
+This uses the dice from the original 19
+"""
+
 import sys
 from collections import defaultdict
 
+# https://www.bananagrammer.com/2013/10/the-boggle-cube-redesign-and-its-effect.html
+# "New" Boggle dice, 1987 to ~2008
 DICE = [
-    "aeaneg",
-    "ahspco",
-    "aspffk",
-    "objoab",
-    "iotmuc",
-    "ryvdel",
-    "lreixd",
-    "eiunes",
-    "wngeeh",
-    "lnhnrz",
-    "tstiyd",
-    "owtoat",
-    "erttyl",
-    "toessi",
-    "terwhv",
-    "nuihmq",
+    "aaeegn",
+    "achops",
+    "affkps",
+    "abjoob",
+    "ciimot",
+    "delrvy",
+    "deilrx",
+    "eeinsu",
+    "eeghnw",
+    "hlnnrz",
+    "distty",
+    "aoottw",
+    "elrtty",
+    "eiosst",
+    "ehrtuv",
+    "himnqu",
+]
+
+# "Classic" Boggle dice, 1976 to 1986
+CLASSIC_DICE = [
+    "aaciot",
+    "abilty",
+    "abjmoq",
+    "acdemp",
+    "acelrs",
+    "adenvz",
+    "ahmors",
+    "biforx",
+    "denosw",
+    "dknotu",
+    "eefhiy",
+    "egkluy",
+    "egintv",
+    "ehinps",
+    "elpstu",
+    "gilruw",
 ]
 
 
