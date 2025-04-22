@@ -6,6 +6,7 @@ namespace py = pybind11;
 using std::string;
 using std::vector;
 
+#include "arena.h"
 #include "boggler.h"
 #include "eval_node.h"
 #include "ibuckets.h"
@@ -56,9 +57,6 @@ void declare_boggler(py::module &m, const string &pyclass_name) {
       .def("set_cell", &BB::SetCell);
 }
 
-// PYBIND11_MAKE_OPAQUE(EvalNode);
-// PYBIND11_MAKE_OPAQUE(vector<EvalNode*>);
-
 PYBIND11_MODULE(cpp_boggle, m) {
   m.doc() = "C++ Boggle Solving Tools";
 
@@ -81,8 +79,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
           "ReverseLookup",
           py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup)
       )
-      .def_static("CreateFromFile", &Trie::CreateFromFile)
-      .def_static("CreateFromFileWithGrouping", &Trie::CreateFromFileWithGrouping);
+      .def_static("CreateFromFile", &Trie::CreateFromFile);
 
   declare_boggler<3, 3>(m, "Boggler33");
   declare_boggler<3, 4>(m, "Boggler34");
@@ -103,40 +100,43 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readwrite("sum_union", &ScoreDetails::sum_union)
       .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
 
-  py::class_<EvalNode>(m, "EvalNode")
-      .def_readonly("letter", &EvalNode::letter_)
-      .def_readonly("cell", &EvalNode::cell_)
-      .def_readonly("bound", &EvalNode::bound_)
-      .def_readonly("points", &EvalNode::points_)
-      .def("score_with_forces", &EvalNode::ScoreWithForces)
-      .def("node_count", &EvalNode::NodeCount)
-      .def("unique_node_count", &EvalNode::UniqueNodeCount)
-      .def("add_word", &EvalNode::AddWord, py::return_value_policy::reference)
+  py::class_<SumNode>(m, "SumNode")
+      .def_readonly("letter", &SumNode::letter_)
+      .def_property_readonly("bound", &SumNode::Bound)
+      .def_readonly("points", &SumNode::points_)
+      .def("node_count", &SumNode::NodeCount)
+      .def("add_word", &SumNode::AddWord, py::return_value_policy::reference)
       .def(
           "orderly_force_cell",
-          &EvalNode::OrderlyForceCell,
+          &SumNode::OrderlyForceCell,
           py::return_value_policy::reference,
           py::arg("cell"),
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def("structural_hash", &EvalNode::StructuralHash)
-      .def("get_children", &EvalNode::GetChildren, py::return_value_policy::reference)
-      .def("orderly_bound", &EvalNode::OrderlyBound);
+      .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
+      .def("score_with_forces", &SumNode::ScoreWithForces)
+      .def("orderly_bound", &SumNode::OrderlyBound);
+
+  py::class_<ChoiceNode>(m, "ChoiceNode")
+      .def_readonly("bound", &ChoiceNode::bound_)
+      .def_readonly("cell", &ChoiceNode::cell_)
+      .def("node_count", &ChoiceNode::NodeCount)
+      .def(
+          "get_children", &ChoiceNode::GetChildren, py::return_value_policy::reference
+      );
 
   m.def("create_eval_node_arena", &create_eval_node_arena);
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
       .def("free_the_children", &EvalNodeArena::FreeTheChildren)
       .def(
-          "new_node_with_capacity",
-          &EvalNodeArena::NewNodeWithCapacity,
-          py::return_value_policy::reference
-      )
-      .def(
           "new_root_node_with_capacity",
           &EvalNodeArena::NewRootNodeWithCapacity,
           py::return_value_policy::reference
       )
-      .def("num_nodes", &EvalNodeArena::NumNodes);
+      .def("save_level", &EvalNodeArena::SaveLevel)
+      .def("reset_level", &EvalNodeArena::ResetLevel)
+      .def("num_nodes", &EvalNodeArena::NumNodes)
+      .def("bytes_allocated", &EvalNodeArena::BytesAllocated);
 }

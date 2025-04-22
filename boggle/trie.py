@@ -1,7 +1,5 @@
 from typing import Self
 
-from boggle.letter_grouping import get_letter_map
-
 LETTER_A = ord("a")
 
 
@@ -92,18 +90,10 @@ def make_lookup_table(t: PyTrie, prefix="", out=None) -> dict[PyTrie, str]:
     return out
 
 
-def make_py_trie(dict_input: str, letter_grouping: str = ""):
+def make_py_trie(dict_input: str):
     t = PyTrie()
 
-    if not letter_grouping:
-        for word in open(dict_input):
-            word = word.strip()
-            t.AddWord(word)
-        return t
-
-    letter_map = get_letter_map(letter_grouping)
     for word in open(dict_input):
         word = word.strip()
-        mapped = "".join(letter_map[c] for c in word)
-        t.AddWord(mapped)
+        t.AddWord(word)
     return t

@@ -11,7 +11,6 @@ from dataclasses import dataclass
 
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import LETTER_A, LETTER_Z, PyBoggler
-from boggle.trie import get_letter_map
 
 
 @dataclass
@@ -21,14 +20,10 @@ class Options:
     swap_ratio: float = 1.0
     mutation_p: float = 0.75
     max_stall: int = 2000
-    letter_map: dict[str, str] | None = None
 
 
 def initial_board(num_lets: int, opts: Options = None) -> list[int]:
-    bd = [random.randint(LETTER_A, LETTER_Z) for _ in range(num_lets)]
-    if opts and opts.letter_map:
-        bd = [ord(opts.letter_map[chr(letter)]) for letter in bd]
-    return bd
+    return [random.randint(LETTER_A, LETTER_Z) for _ in range(num_lets)]
 
 
 # TODO: make this operate on strings like hillclimb.neighbors
@@ -48,8 +43,6 @@ def mutate(board: list[int], opts: Options):
             while True:
                 cell = random.randint(0, num_cells - 1)
                 letter = random.randint(LETTER_A, LETTER_Z)
-                if opts.letter_map:
-                    letter = ord(opts.letter_map[chr(letter)])
                 if board[cell] != letter:
                     break
             board[cell] = letter
@@ -126,8 +119,6 @@ def main():
     options = Options()
     options.max_stall = args.max_stall
     options.swap_ratio = args.swap_ratio
-    if args.letter_grouping:
-        options.letter_map = get_letter_map(args.letter_grouping)
 
     if args.random_seed >= 0:
         random.seed(args.random_seed)

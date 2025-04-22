@@ -1,6 +1,16 @@
+"""Build an EvalTree in an "orderly" fashion.
+
+This means that cells always appear in a set order, e.g. center outwards.
+This typically produces much smaller trees with much tigher bounds than
+the "natural" trees produced by a DFS over the board class.
+
+See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
+"""
+
 import argparse
 import time
 
+from boggle.arena import PyArena, create_eval_node_arena_py
 from boggle.args import add_standard_args, get_trie_from_args
 from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
@@ -8,19 +18,14 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_tree import (
-    ROOT_NODE,
-    EvalNode,
-    PyArena,
-    create_eval_node_arena_py,
-)
+from boggle.eval_node import ROOT_NODE, SumNode
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
 
 
 class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
-    root: EvalNode
+    root: SumNode
     cell_counts: list[int]
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
@@ -28,9 +33,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
 
     def BuildTree(self, arena: PyArena = None):
-        root = EvalNode()
+        root = SumNode()
         root.letter = ROOT_NODE
-        root.cell = 0  # irrelevant
         root.points = 0
         root.bound = 0
         self.root = root
@@ -48,7 +52,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         # This _could_ be computed if there were a need.
         return 0
 
-    # TODO: rename these methods
     def DoAllDescents(
         self, cell: int, length: int, t: PyTrie, choices: list[tuple[int, int]], arena
     ):
@@ -90,30 +93,22 @@ class OrderlyTreeBuilder(BoardClassBoggler):
     def create_arena(self):
         return create_eval_node_arena_py()
 
-    def create_vector_arena(self):
-        return create_eval_node_arena_py()
-
 
 mark = 1
 
 
-def tree_stats(t: EvalNode) -> str:
+def tree_stats(t: SumNode) -> str:
     global mark
     mark += 1
     return f"{t.bound=}, {t.node_count()} nodes"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Lift all the way to breaking")
+    parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
-    parser.add_argument("cutoff", type=int, help="Best known score for filtering.")
-    parser.add_argument("board", type=str, help="Board class to lift.")
-    parser.add_argument(
-        "lift_cells", type=str, nargs="?", help="Sequence of choices to make"
-    )
+    parser.add_argument("board", type=str, help="Board class to bound.")
     args = parser.parse_args()
     board = args.board
-    lift_cells = eval(args.lift_cells) if args.lift_cells else None
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
@@ -137,24 +132,6 @@ def main():
 
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
-
-    t = orderly_tree
-    for cell, letter in lift_cells:
-        arena = otb.create_arena()
-        arenas.append(arena)
-        start_s = time.time()
-        choices = t.orderly_force_cell(cell, len(cells[cell]), arena)
-        elapsed_s = time.time() - start_s
-        t = choices[letter]
-        cells[cell] = cells[cell][letter]
-        bd = " ".join(cells)
-        print(f"{cell}/{letter} {elapsed_s:.02f}s f -> {tree_stats(t)} {bd}")
-
-    # scores = eval_all(t, cells)
-    # print(scores)
-
-    # print("")
-    # t.print_json()
 
 
 if __name__ == "__main__":

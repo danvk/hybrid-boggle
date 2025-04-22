@@ -83,7 +83,9 @@
         "algorithm": "cpp",
         "list": "cpp",
         "set": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "cfenv": "cpp",
+        "utility": "cpp"
     },
     "python.testing.pytestArgs": [
         "boggle"
@@ -91,5 +93,6 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "C_Cpp.default.cppStandard": "c++20",
-    "C_Cpp.formatting": "clangFormat"
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_path": "/opt/homebrew/bin/clang-format"
 }

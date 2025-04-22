@@ -34,9 +34,6 @@ class Trie {
   Trie* AddWord(const char* wd);
   static unique_ptr<Trie> CreateFromFile(const char* filename);
   static unique_ptr<Trie> CreateFromFileStr(const string& filename);
-  static unique_ptr<Trie> CreateFromFileWithGrouping(
-      const char* filename, unordered_map<char, char> letter_grouping
-  );
 
   // Some slower methods that operate on the entire Trie (not just a node).
   size_t Size();

@@ -18,11 +18,9 @@ import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
+from boggle.arena import PyArena
 from boggle.boggler import PyBoggler
-from boggle.eval_tree import (
-    EvalNode,
-)
-from boggle.letter_grouping import get_letter_map, reverse_letter_map, ungroup_letters
+from boggle.eval_node import SumNode
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 
@@ -51,11 +49,10 @@ class HybridBreakDetails(BreakDetails):
     nodes: dict[int, int]
     depth: dict[int, int]
     boards_to_test: int
-    expanded_to_test: int
     init_nodes: int
     total_nodes: int
-    freed_nodes: int
-    free_time_s: float
+    tree_bytes: int
+    total_bytes: int
     n_bound: int
     n_force: int
 
@@ -69,17 +66,16 @@ class HybridTreeBreaker:
     def __init__(
         self,
         etb: OrderlyTreeBuilder,
-        ungrouped_boggler: PyBoggler,
+        boggler: PyBoggler,
         dims: tuple[int, int],
         best_score: int,
         *,
         switchover_score: int,
         log_breaker_progress: bool,
-        letter_grouping: str = "",
         max_depth=None,
     ):
         self.etb = etb
-        self.boggler = ungrouped_boggler
+        self.boggler = boggler
         self.best_score = best_score
         self.details_ = None
         self.elim_ = 0
@@ -89,11 +85,6 @@ class HybridTreeBreaker:
         self.switchover_score = switchover_score
         self.switchover_depth = max_depth or (dims[0] * dims[1] - 4)
         self.log_breaker_progress = log_breaker_progress
-        self.rev_letter_grouping = (
-            reverse_letter_map(get_letter_map(letter_grouping))
-            if letter_grouping
-            else None
-        )
 
     def SetBoard(self, board: str):
         return self.etb.ParseBoard(board)
@@ -109,13 +100,12 @@ class HybridTreeBreaker:
             secs_by_level=defaultdict(float),
             bounds={},
             boards_to_test=0,
-            expanded_to_test=0,
             init_nodes=0,
             depth=Counter(),
             nodes={},
             total_nodes=0,
-            freed_nodes=0,
-            free_time_s=0.0,
+            tree_bytes=0,
+            total_bytes=0,
             n_bound=0,
             n_force=0,
         )
@@ -136,32 +126,36 @@ class HybridTreeBreaker:
         self.details_.secs_by_level[0] += time.time() - start_time_s
         self.details_.bounds[0] = tree.bound
         self.details_.init_nodes = arena.num_nodes()
+        self.details_.tree_bytes = arena.bytes_allocated()
         self.details_.nodes[0] = self.details_.init_nodes
 
-        self.attack_tree(tree, 1, [])
+        self.attack_tree(tree, 1, [], arena)
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
+        self.details_.total_bytes = arena.bytes_allocated()
         return self.details_
 
     def attack_tree(
         self,
-        tree: EvalNode,
+        tree: SumNode,
         level: int,
         choices: list[tuple[int, int]],
+        arena: PyArena,
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
         elif tree.bound <= self.switchover_score or level > self.switchover_depth:
             self.switch_to_score(tree, level, choices)
         else:
-            self.force_and_filter(tree, level, choices)
+            self.force_and_filter(tree, level, choices, arena)
 
     def force_and_filter(
         self,
-        tree: EvalNode,
+        tree: SumNode,
         level: int,
         choices: list[tuple[int, int]],
+        arena: PyArena,
     ) -> None:
         # choices list parallels split_order
         assert len(choices) < len(self.cells)
@@ -171,7 +165,7 @@ class HybridTreeBreaker:
 
         start_s = time.time()
         self.details_.n_force += 1
-        arena = self.etb.create_arena()
+        arena_level = arena.save_level()
         trees = tree.orderly_force_cell(
             cell,
             num_lets,
@@ -192,11 +186,12 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # this can happen on truly dead-end paths
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices)
+            self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
+        arena.reset_level(arena_level)
 
     def switch_to_score(
-        self, tree: EvalNode, level: int, choices: list[tuple[int, int]]
+        self, tree: SumNode, level: int, choices: list[tuple[int, int]]
     ) -> None:
         start_s = time.time()
         remaining_cells = self.split_order[len(choices) :]
@@ -225,18 +220,7 @@ class HybridTreeBreaker:
 
         self.details_.boards_to_test += len(boards_to_test)
         start_s = time.time()
-        it = (
-            boards_to_test
-            if not self.rev_letter_grouping
-            else (
-                b
-                for board in boards_to_test
-                for b in ungroup_letters(board, self.rev_letter_grouping)
-            )
-        )
-        n_expanded = 0
-        for board in it:
-            n_expanded += 1
+        for board in boards_to_test:
             true_score = self.boggler.score(board)
             # print(f"{board}: {tree.bound} -> {true_score}")
             if true_score >= self.best_score:
@@ -244,11 +228,8 @@ class HybridTreeBreaker:
                 self.details_.failures.append(board)
         elapsed_s = time.time() - start_s
         self.details_.secs_by_level[level + 1] += elapsed_s
-        self.details_.expanded_to_test += n_expanded
-        if self.log_breaker_progress and self.rev_letter_grouping:
-            print(f"Evaluated {n_expanded} boards.")
 
         if self.log_breaker_progress:
             print(
-                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {n_expanded} in {elapsed_s:.03}s"
+                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s"
             )

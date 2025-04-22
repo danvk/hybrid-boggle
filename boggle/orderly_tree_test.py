@@ -7,10 +7,10 @@ from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.dimensional_bogglers import cpp_bucket_boggler, cpp_orderly_tree_builder
-from boggle.eval_tree import (
-    CHOICE_NODE,
+from boggle.eval_node import (
     ROOT_NODE,
-    EvalNode,
+    ChoiceNode,
+    SumNode,
     eval_all,
     eval_node_to_string,
     merge_orderly_tree,
@@ -44,7 +44,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     cells = board.split(" ")
     assert bb.ParseBoard(board)
     t = bb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, SumNode):
         t.assert_invariants(bb)
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
         external("d7687d76c39b*.txt")
@@ -77,7 +77,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, SumNode):
         t.assert_invariants(otb)
 
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
@@ -94,7 +94,7 @@ def test_orderly_bound22(is_python):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, SumNode):
         t.assert_invariants(otb)
     assert t.bound == 8
 
@@ -112,7 +112,7 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, SumNode):
         t.assert_invariants(otb)
     assert t.bound == 22
 
@@ -143,20 +143,21 @@ def test_orderly_merge():
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
     split_order = SPLIT_ORDER[(2, 2)]
-    if isinstance(t, EvalNode):
+    if isinstance(t, SumNode):
         t.assert_invariants(otb)
         t.assert_orderly(split_order)
     assert t.bound == 22
 
+    assert isinstance(t, SumNode)
     assert t.letter == ROOT_NODE
     assert len(t.children) == 2
     t0 = t.children[0]
     t1 = t.children[1]
-    assert t0.letter == CHOICE_NODE
+    assert isinstance(t0, ChoiceNode)
     assert t0.cell == 0
     assert t0.bound == 17
     assert len(t0.children) == 2
-    assert t1.letter == CHOICE_NODE
+    assert isinstance(t1, ChoiceNode)
     assert t1.cell == 1
     assert t1.bound == 5
 
@@ -177,10 +178,8 @@ def test_orderly_merge():
     assert len(force) == 2
     for c in force:
         c.assert_orderly(split_order)
-    assert force[0].cell == 0
     assert force[0].letter == 0
     assert force[0].bound == 21
-    assert force[1].cell == 0
     assert force[1].letter == 1
     assert force[1].bound == 22
 
@@ -197,7 +196,8 @@ def test_orderly_force22(is_python):
     force = t.orderly_force_cell(0, num_letters[0], arena)
 
     txt = "\n\n".join(
-        f"{i}: " + eval_node_to_string(t, cells) for i, t in enumerate(force)
+        f"{i}: " + eval_node_to_string(t, cells, top_cell=0)
+        for i, t in enumerate(force)
     )
 
     assert outsource(txt) == snapshot(external("3f6cd59206d5*.txt"))
@@ -214,7 +214,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
-    if isinstance(t, EvalNode):
+    if isinstance(t, SumNode):
         t.assert_invariants(otb)
         print(otb.cell_counts)
         t.assert_orderly(SPLIT_ORDER[(3, 3)])
