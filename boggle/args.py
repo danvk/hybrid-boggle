@@ -23,8 +23,7 @@ def add_standard_args(
         "--dictionary",
         type=str,
         default="wordlists/enable2k.txt",
-        help="Path to dictionary file with one word per line. Words must be "
-        '"bogglified" via make_boggle_dict.py to convert "qu" -> "q".',
+        help="Path to dictionary file with one word per line.",
     )
 
     if random_seed:
