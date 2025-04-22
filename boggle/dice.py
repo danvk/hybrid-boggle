@@ -1,6 +1,9 @@
 """Determine the number of ways to roll a particular Boggle board.
 
-This uses the dice from the original 19
+This uses the "new" dice from the 1987 USA version of Boggle.
+To get the odds of rolling a particular board, multiply by
+
+8 / (16! * 6^16) = 1.3553467e-25
 """
 
 import sys
