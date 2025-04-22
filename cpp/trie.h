@@ -44,6 +44,11 @@ class Trie {
   static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
   static string ReverseLookup(const Trie* base, const Trie* child);
 
+  // Replaces "qu" with "q" in-place; returns true if the word is a valid boggle word
+  // (IsBoggleWord).
+  static bool BogglifyWord(char* word);
+  static bool IsBoggleWord(const char* word);
+
  private:
   bool is_word_;
   uintptr_t mark_;

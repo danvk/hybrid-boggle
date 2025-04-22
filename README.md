@@ -82,7 +82,20 @@ Found 56 breaking failure(s):
 
 This takes ~5 minutes on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
 
-To find high-scoring 4x4 boards, run:
+To find all the high-scoring 3x4 boards, run:
+
+```
+$ time poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 1500 --size 34 --num_threads 3
+Broke 104976 classes in 8273.01s.
+Found 36 breaking failure(s):
+...
+1065762816  maximum resident set size
+/usr/bin/time -l poetry run python -m boggle.break_all  1500 --size 34  3  24290.92s user 437.64s system 298% cpu 2:17:53.83 total
+```
+
+This takes just north of two hours on three cores on my laptop.
+
+To find high-scoring 4x4 boards via hillclimbing, run:
 
 ```
 $ poetry run python -m boggle.hillclimb 20 --size 44 --pool_size 250
@@ -123,14 +136,23 @@ gresenalstip: 1563
 
 Pass `--print_words` to print the actual words on each board.
 
-To calculate the upper bound on a board class, use `ibucket_solver`:
+To calculate the upper bound on a board class using the c.2009 [max/no-mark and sum/union bounds][upper bound], use `ibucket_solver`:
 
 ```
 $ poetry run python -m boggle.ibucket_solver "lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz"
-9359 (max=9359, sum=106383) lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz
+0.02s 9359 (max=9359, sum=106383) lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz
 ```
 
 This also takes a `--print_words` flag that will print all the words that can be found on any board in the board class.
+
+To calculate the upper bound on a board class using 2025 [orderly trees], use `orderly_tree_builder`:
+
+```
+$ poetry run python -m boggle.orderly_tree_builder "lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz"
+0.05s OrderlyTreeBuilder: t.bound=1449, 332438 nodes
+```
+
+Note that this bound is considerably lower, but computing it requires more time and memory.
 
 The command line tools all take some standard flags like `--dictionary` and `--python`. Run with `--help` to see them.
 
@@ -148,9 +170,10 @@ The image that was used to exhaustively search for the best 4x4 board was [danvk
 
 If you're trying to follow the code, here are a few pointers that will help:
 
-- The word lists have been pre-processed to exclude invalid Boggle words and change "qu" to "q". So "quart" will be in the word list as "qart". See [wordlists/README.md](wordlists/README.md) for more.
+- The word lists are processed to exclude invalid Boggle words and change "qu" to "q". So "quart" will be inserted in the Trie as "qart". See [wordlists/README.md](wordlists/README.md) for more.
 - Boggle boards are represented as 1-dimensional arrays. So a 4x4 Boggle board is a 16 character string. For 3x4 boards, which are 12 character strings, you need to read down the columns to get the right board.
 - Generally the Python and C++ code match 1-1. I developed code in Python, wrote tests for it, and then translated it to C++ (sometimes with help from GitHub Copilot). The APIs are identical and they pass the same tests. Most CLI tools let you toggle between the C++ and Python implementations with the `--python` flag.
+- Most CLI tools require you to set the size of the Boggle board. 3x3 is the default. If you want 4x4, set `--size 44`.
 
 ## Results for other wordlists
 
@@ -188,3 +211,4 @@ If you have a few thousand dollars of compute burning a hole in your pocket and 
 [3625 points]: https://www.danvk.org/boggle/?board=perslatgsineters
 [545 points]: https://www.danvk.org/boggle/?board=streaedlp
 [1651 points]: https://www.danvk.org/boggle/?board=perslatesind
+[orderly trees]: https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees

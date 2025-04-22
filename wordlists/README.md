@@ -2,24 +2,6 @@
 
 The score of a Boggle board depends on your choice of dictionary. There are a few standard word lists that you can use, and you'll get slightly different results depending on which one you pick.
 
-## Processed word lists
-
-The files in the `raw` subdirectory are the original word lists.
-The files in this directory are "bogglified" versions of the same word lists.
-This means they've been processed in three ways:
-
-1. Remove words shorter than 3 letters. (Long words are kept to support 5x5 Boggle.)
-2. Remove words containing a "q" not followed by a "u", for example "niqab". There's only a "Qu" die in Boggle, so it's not possible to spell these.
-3. Replace all occurences of "qu" with "q". This simplifies the code considerably.
-
-To go from a "raw" to a "bogglified" word list, run `make_boggle_dict.py`:
-
-    ./boggle/make_boggle_dict.py wordlists/raw/enable2k.txt > wordlists/enable2k.txt
-
-The processed word lists will have slightly fewer words than the raw versions.
-
-To generate all the wordlists, run `./wordlists/generate.sh`.
-
 ## Notes on sources
 
 There are five word lists in this repo:
@@ -31,9 +13,13 @@ There are five word lists in this repo:
 - [SOWPODS]: aka CSW (Collins Scrabble Words). This is the union of OSPD and OSW. It includes both American and British spellings of words. This file comes from the [scrabblewords] repo (`British/CSW21.txt`).
 - [TWL06]: 2006 Tournament Word List (Official Scrabble Dictionary). This was a popular word list in the 2000s and is helpful for comparing against other Boggle-related content on the web.
 
+Some words aren't valid in Boggle. Specifically, words must be three letters or longer, and all Qs must be followed by a U. Words longer than 16 letters are kept to support 5x5 Boggle.
+
+You can pass a different word list to most of the CLI tools in this repo with the `--dictionary` flag. Word lists are expected to be all lowercase with one word per line.
+
 Word counts:
 
-|          File |    Raw | Processed |
+|          File |    Raw | Boggle OK |
 | ------------- | ------ | --------- |
 |  enable2k.txt | 173528 |    173402 |
 | naspa2023.txt | 196601 |    196431 |
@@ -42,7 +28,7 @@ Word counts:
 |     twl06.txt | 178691 |    178549 |
 |      yawl.txt | 264097 |    263904 |
 
-There's also `enable2k.jpa14.txt`, which is a filtered version of `enable2k.txt` that only includes the 14 letters approved in [this 2010 blog post]. It has 42,625 words.
+There's also `enable2k.jpa14.txt`, which is a filtered version of `enable2k.txt` that only includes the 14 "qualified" letters from [this 2010 blog post]. It has 42,625 words.
 
 [scrabblewords]: https://github.com/scrabblewords/scrabblewords/tree/main/words/North-American
 [ENABLE2K]: https://everything2.com/title/ENABLE+word+list
