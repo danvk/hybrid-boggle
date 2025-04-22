@@ -87,9 +87,11 @@ def hillclimb(task: int):
     score_cache = dict[str, int]()
 
     def get_score(bd: str):
+        if "q" not in bd:
+            return 0
         score = boggler.score(bd)
-        if score > 3512:
-            score = 1000
+        # if score > 3512:
+        #     score = 1000
         score_cache[bd] = score
         return score
 
