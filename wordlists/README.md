@@ -15,6 +15,8 @@ There are five word lists in this repo:
 
 Some words aren't valid in Boggle. Specifically, words must be three letters or longer, and all Qs must be followed by a U. Words longer than 16 letters are kept to support 5x5 Boggle.
 
+You can pass a different word list to most of the CLI tools in this repo with the `--dictionary` flag. Word lists are expected to be all lowercase with one word per line.
+
 Word counts:
 
 |          File |    Raw | Boggle OK |

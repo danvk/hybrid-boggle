@@ -50,6 +50,7 @@ def test_bogglify_word():
     assert bogglify_word("qi") is None
     assert bogglify_word("is") is None
     assert bogglify_word("boggle") == "boggle"
+    assert bogglify_word("quinquennia") == "qinqennia"
 
 
 def test_load_file():
