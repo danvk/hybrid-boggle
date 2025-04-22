@@ -1,7 +1,5 @@
 from typing import Self
 
-from boggle.make_boggle_dict import bogglify_word
-
 LETTER_A = ord("a")
 
 
@@ -90,6 +88,24 @@ def make_lookup_table(t: PyTrie, prefix="", out=None) -> dict[PyTrie, str]:
         if child:
             make_lookup_table(child, prefix + chr(i + LETTER_A), out)
     return out
+
+
+def is_boggle_word(word: str):
+    size = len(word)
+    if size < 3:
+        return False
+    for i, let in enumerate(word):
+        if let < "a" or let > "z":
+            return False
+        if let == "q" and (i + 1 >= size or word[i + 1] != "u"):
+            return False
+    return True
+
+
+def bogglify_word(word: str) -> str | None:
+    if not is_boggle_word(word):
+        return None
+    return word.replace("qu", "q")
 
 
 def make_py_trie(dict_input: str):

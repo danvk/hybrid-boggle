@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import time
 
 from boggle.args import add_standard_args, get_trie_from_args
 from boggle.dimensional_bogglers import LEN_TO_DIMS, BucketBogglers
@@ -42,10 +43,14 @@ def main():
         assert args.python, "--print_words only supported with --python"
         bb.collect_words = True
 
+    start_s = time.time()
     bb.ParseBoard(board)
     bound = bb.UpperBound(500_000)
+    elapsed_s = time.time() - start_s
     d = bb.Details()
-    print(f"{bound} (max={d.max_nomark}, sum={d.sum_union}) {bb.as_string()}")
+    print(
+        f"{elapsed_s:.02f}s {bound} (max={d.max_nomark}, sum={d.sum_union}) {bb.as_string()}"
+    )
 
     if args.print_words:
         print("\n".join(sorted(bb.words)))
