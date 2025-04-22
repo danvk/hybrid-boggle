@@ -51,10 +51,9 @@ CLASSIC_DICE = [
 ]
 
 
-# Preprocess: map each letter to dice that contain it
 LETTER_TO_DICE = defaultdict(set)
 for idx, die in enumerate(DICE):
-    for ch in set(die):  # use set to avoid counting same die multiple times
+    for ch in set(die):
         LETTER_TO_DICE[ch].add(idx)
 
 
@@ -71,7 +70,6 @@ def count_boggle_arrangements(grid):
             count += mult
             return
 
-        # TODO: this doesn't consider that a letter could be on the same die multiple times
         letter = grid[pos].lower()
         for die_index in LETTER_TO_DICE.get(letter, []):
             if not used[die_index]:
