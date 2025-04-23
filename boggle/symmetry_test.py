@@ -1,3 +1,4 @@
+from cpp_boggle import Symmetry
 from inline_snapshot import snapshot
 
 from boggle.symmetry import (
@@ -145,3 +146,8 @@ def test_canonicalize_board():
 
     assert canonicalize_board("dnisetalsrep") == "dnisetalsrep"
     assert canonicalize_board("perslatesind") == "dnisetalsrep"
+
+
+def test_symmetry_cpp():
+    sym = Symmetry(4, 4)
+    assert sym.canonicalize("perslatgsineters") == "perslatgsineters"

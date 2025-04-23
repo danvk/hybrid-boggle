@@ -1,0 +1,32 @@
+#ifndef SYMMETRY_H
+#define SYMMETRY_H
+
+#include <string>
+#include <vector>
+
+class Symmetry {
+ public:
+  Symmetry(int w, int h) : w_(w), h_(h) {}
+
+  // Returns the canonical version of the board (possibly the input board).
+  std::string Canonicalize(const std::string& board);
+
+ private:
+  // Generates all boards in the same symmetry class.
+  bool AllSymmetries(const std::string& board, std::vector<std::string>* analogues);
+
+  // Basic symmetries applied to board strings
+  std::string FlipTopBottom(const std::string& bd);
+  std::string FlipLeftRight(const std::string& bd);
+  std::string Rotate90CW(const std::string& bd);
+
+  // Conversions between indices and coordinates.
+  inline int Id(int x, int y) { return x * h_ + y; }
+  inline int X(int id) { return id / h_; }
+  inline int Y(int id) { return id % h_; }
+
+  int w_;
+  int h_;
+};
+
+#endif  // SYMMETRY_H
