@@ -82,8 +82,8 @@ def hillclimb(task: int):
         sym.canonicalize("".join(chr(x) for x in initial_board(num_lets)))
         for _ in range(args.pool_size)
     ]
-    score_cache = dict[str, int]()
 
+    @functools.cache
     def get_score(bd: str):
         # This is a convenient place to make adjustments to the score, e.g.
         # to require a "q" on the board or to exclude high-scoring boareds to test
@@ -93,13 +93,9 @@ def hillclimb(task: int):
         score = boggler.score(bd)
         # if score > 3512:
         #     score = 1000
-        score_cache[bd] = score
         return score
 
-    for bd in pool:
-        get_score(bd)
-
-    best_score = max(score_cache.values())
+    best_score = max(get_score(bd) for bd in pool)
 
     num_iter = 0
     while True:
@@ -107,8 +103,7 @@ def hillclimb(task: int):
         ns = {sym.canonicalize(n) for seed in pool for n in neighbors(seed)}
         scores: list[tuple[int, str]] = []
         for n in ns:
-            score = score_cache.get(n) or get_score(n)
-            scores.append((score, n))
+            scores.append((get_score(n), n))
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
         print(f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}")
