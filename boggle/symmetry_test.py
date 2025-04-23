@@ -3,6 +3,7 @@ from inline_snapshot import snapshot
 from boggle.symmetry import (
     all_symmetries,
     canonicalize,
+    canonicalize_board,
     flip_x,
     flip_y,
     list_to_matrix,
@@ -128,3 +129,15 @@ def test_canonicalize_34():
     mat = list_to_matrix(board)
     assert mat_to_str(mat) == board
     assert mat_to_str(canonicalize(mat)) == snapshot("berslatepind")
+
+
+# P E R S
+# L A T G
+# S I N E
+# T E R S
+
+
+def test_canonicalize_board():
+    assert canonicalize_board("perslatgsineters") == "perslatgsineters"
+    assert canonicalize_board("plsteaiertnrsges") == "perslatgsineters"
+    assert canonicalize_board("srepgtalenissret") == "perslatgsineters"

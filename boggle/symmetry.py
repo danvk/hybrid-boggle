@@ -56,3 +56,7 @@ def list_to_matrix(letters):
 def canonicalize[T](mat: list[list[T]]):
     """Return the canonical form of a 2D matrix."""
     return min(chain([mat], all_symmetries(mat)), key=mat_to_str)
+
+
+def canonicalize_board(bd: str):
+    return mat_to_str(canonicalize(list_to_matrix(bd)))

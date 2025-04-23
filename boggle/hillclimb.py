@@ -20,7 +20,7 @@ from collections import Counter
 
 from boggle.anneal import initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
-from boggle.symmetry import canonicalize, list_to_matrix
+from boggle.symmetry import canonicalize_board
 from boggle.trie import LETTER_A
 
 
@@ -76,12 +76,11 @@ def hillclimb(task: int):
     num_lets = w * h
 
     @functools.cache
-    def canonicalize_str(board: str) -> str:
-        bd = canonicalize(list_to_matrix(board))
-        return "".join(str(x) for row in bd for x in row)
+    def canonicalize_memo(board: str) -> str:
+        return canonicalize_board(board)
 
     pool = [
-        canonicalize_str("".join(chr(x) for x in initial_board(num_lets)))
+        canonicalize_memo("".join(chr(x) for x in initial_board(num_lets)))
         for _ in range(args.pool_size)
     ]
     score_cache = dict[str, int]()
@@ -106,7 +105,7 @@ def hillclimb(task: int):
     num_iter = 0
     while True:
         num_iter += 1
-        ns = {canonicalize_str(n) for seed in pool for n in neighbors(seed)}
+        ns = {canonicalize_memo(n) for seed in pool for n in neighbors(seed)}
         scores: list[tuple[int, str]] = []
         for n in ns:
             score = score_cache.get(n) or get_score(n)
