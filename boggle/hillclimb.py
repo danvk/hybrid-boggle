@@ -101,9 +101,7 @@ def hillclimb(task: int):
     while True:
         num_iter += 1
         ns = {sym.canonicalize(n) for seed in pool for n in neighbors(seed)}
-        scores: list[tuple[int, str]] = []
-        for n in ns:
-            scores.append((get_score(n), n))
+        scores = [(get_score(n), n) for n in ns]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
         print(f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}")
