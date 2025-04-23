@@ -14,21 +14,21 @@ bool Symmetry::AllSymmetries(
   if (board.size() != w_ * h_) return false;
   analogues->clear();
   std::string bd;
-  bd = FlipLeftRight(board);
+  bd = FlipX(board);
   if (board != bd) analogues->push_back(bd);
-  bd = FlipTopBottom(bd);
+  bd = FlipY(bd);
   if (board != bd) analogues->push_back(bd);
-  bd = FlipLeftRight(bd);
+  bd = FlipX(bd);
   if (board != bd) analogues->push_back(bd);
 
   if (w_ == h_) {
     bd = Rotate90CW(board);
     if (board != bd) analogues->push_back(bd);
-    bd = FlipLeftRight(bd);
+    bd = FlipX(bd);
     if (board != bd) analogues->push_back(bd);
-    bd = FlipTopBottom(bd);
+    bd = FlipY(bd);
     if (board != bd) analogues->push_back(bd);
-    bd = FlipLeftRight(bd);
+    bd = FlipX(bd);
     if (board != bd) analogues->push_back(bd);
   }
 
@@ -36,7 +36,7 @@ bool Symmetry::AllSymmetries(
   return true;
 }
 
-std::string Symmetry::FlipTopBottom(const std::string& bd) {
+std::string Symmetry::FlipY(const std::string& bd) {
   if (bd.size() != w_ * h_) return "";
   std::string out(w_ * h_, ' ');
   for (int y = 0; y < h_; y++) {
@@ -47,7 +47,7 @@ std::string Symmetry::FlipTopBottom(const std::string& bd) {
   return out;
 }
 
-std::string Symmetry::FlipLeftRight(const std::string& bd) {
+std::string Symmetry::FlipX(const std::string& bd) {
   if (bd.size() != w_ * h_) return "";
   std::string out(w_ * h_, ' ');
   for (int x = 0; x < w_; x++) {

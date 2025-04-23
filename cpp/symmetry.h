@@ -16,8 +16,8 @@ class Symmetry {
   bool AllSymmetries(const std::string& board, std::vector<std::string>* analogues);
 
   // Basic symmetries applied to board strings
-  std::string FlipTopBottom(const std::string& bd);
-  std::string FlipLeftRight(const std::string& bd);
+  std::string FlipY(const std::string& bd);
+  std::string FlipX(const std::string& bd);
   std::string Rotate90CW(const std::string& bd);
 
   // Conversions between indices and coordinates.

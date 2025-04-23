@@ -60,3 +60,15 @@ def canonicalize[T](mat: list[list[T]]):
 
 def canonicalize_board(bd: str):
     return mat_to_str(canonicalize(list_to_matrix(bd)))
+
+
+class Symmetry:
+    """This looks strange, but it matches the C++ interface."""
+
+    def __init__(self, w: int, h: int):
+        self.w = w
+        self.h = h
+
+    def canonicalize(self, board: str):
+        assert len(board) == self.w * self.h
+        return canonicalize_board(board)

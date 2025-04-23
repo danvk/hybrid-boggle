@@ -1,7 +1,9 @@
-from cpp_boggle import Symmetry
+import pytest
+from cpp_boggle import Symmetry as CppSymmetry
 from inline_snapshot import snapshot
 
 from boggle.symmetry import (
+    Symmetry,
     all_symmetries,
     canonicalize,
     canonicalize_board,
@@ -148,6 +150,17 @@ def test_canonicalize_board():
     assert canonicalize_board("perslatesind") == "dnisetalsrep"
 
 
-def test_symmetry_cpp():
-    sym = Symmetry(4, 4)
+@pytest.mark.parametrize("SymmetryClass", [Symmetry, CppSymmetry])
+def test_cpp_equivalence44(SymmetryClass):
+    sym = SymmetryClass(4, 4)
     assert sym.canonicalize("perslatgsineters") == "perslatgsineters"
+    assert sym.canonicalize("plsteaiertnrsges") == "perslatgsineters"
+    assert sym.canonicalize("srepgtalenissret") == "perslatgsineters"
+    assert sym.canonicalize("sretenisgtalsrep") == "perslatgsineters"
+
+
+@pytest.mark.parametrize("SymmetryClass", [Symmetry, CppSymmetry])
+def test_cpp_equivalence34(SymmetryClass):
+    sym = SymmetryClass(3, 4)
+    assert sym.canonicalize("dnisetalsrep") == "dnisetalsrep"
+    assert sym.canonicalize("perslatesind") == "dnisetalsrep"
