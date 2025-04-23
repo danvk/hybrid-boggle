@@ -109,16 +109,11 @@ class HybridTreeBreaker:
             n_bound=0,
             n_force=0,
         )
-        self.mark = 1  # New mark for a fresh EvalTree
         self.elim_ = 0
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.BuildTree(arena)
-        # num_children, num_nodes, num_singles = size_stats(tree)
-        # print(num_children)
-        # print(num_singles)
-        # print(num_nodes)
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")

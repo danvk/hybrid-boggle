@@ -23,7 +23,7 @@ from boggle.board_id import from_board_id, is_canonical_board_id, parse_classes
 from boggle.boggler import PyBoggler
 from boggle.breaker import HybridTreeBreaker
 from boggle.dimensional_bogglers import (
-    BucketBogglers,
+    cpp_bucket_boggler,
     cpp_orderly_tree_builder,
 )
 from boggle.ibucket_breaker import IBucketBreaker
@@ -182,10 +182,7 @@ def get_breaker(args) -> BreakingBundle:
             log_breaker_progress=args.log_breaker_progress,
         )
     elif args.breaker == "ibuckets":
-        if args.python:
-            etb = PyBucketBoggler(t, dims)
-        else:
-            etb = BucketBogglers[dims](t)
+        etb = (PyBucketBoggler if args.python else cpp_bucket_boggler)(t, dims)
         breaker = IBucketBreaker(
             etb,
             dims,

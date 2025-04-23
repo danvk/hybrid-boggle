@@ -130,7 +130,11 @@ class IBucketBreaker:
         elapsed_s = time.time() - start_s
         if self.log_breaker_progress:
             indent = " " * level
-            sys.stderr.write(f"{indent}{num}/{out_of} {ub} {self.bb.as_string()}\n")
+            d = self.bb.Details()
+            incomp = " (incomplete)" if ub >= self.best_score else ""
+            sys.stderr.write(
+                f"{indent}{num}/{out_of} {ub}{incomp} (max={d.max_nomark}, sum={d.sum_union}) {self.bb.as_string()}\n"
+            )
         self.details_.secs_by_level[level] += elapsed_s
         if level == 0:
             # self.details_.root_score_bailout = (ub, self.bb.Details().bailout_cell)
