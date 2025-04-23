@@ -87,8 +87,11 @@ def hillclimb(task: int):
     score_cache = dict[str, int]()
 
     def get_score(bd: str):
-        if "q" not in bd:
-            return 0
+        # This is a convenient place to make adjustments to the score, e.g.
+        # to require a "q" on the board or to exclude high-scoring boareds to test
+        # whether hill climbing can find other boareds in their absence.
+        # if "q" not in bd:
+        #     return 0
         score = boggler.score(bd)
         # if score > 3512:
         #     score = 1000
