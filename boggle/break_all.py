@@ -186,7 +186,13 @@ def get_breaker(args) -> BreakingBundle:
             etb = PyBucketBoggler(t, dims)
         else:
             etb = BucketBogglers[dims](t)
-        breaker = IBucketBreaker(etb, dims, best_score, num_splits=args.num_splits)
+        breaker = IBucketBreaker(
+            etb,
+            dims,
+            best_score,
+            num_splits=args.num_splits,
+            log_breaker_progress=args.log_breaker_progress,
+        )
     else:
         raise ValueError(args.breaker)
     return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)

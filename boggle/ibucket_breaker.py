@@ -6,6 +6,7 @@ https://www.danvk.org/2025/02/10/boggle34.html#how-did-i-find-the-optimal-3x3-bo
 This strategy uses almost no memory, but it's considerably slower than HybridTreeBreaker.
 """
 
+import sys
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -39,6 +40,7 @@ class IBucketBreaker:
         best_score: int,
         *,
         num_splits: int,
+        log_breaker_progress: bool,
     ):
         self.bb = boggler
         self.best_score = best_score
@@ -48,6 +50,7 @@ class IBucketBreaker:
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
         self.num_splits = num_splits
+        self.log_breaker_progress = log_breaker_progress
 
     def SetBoard(self, board: str):
         return self.bb.ParseBoard(board)
@@ -125,6 +128,9 @@ class IBucketBreaker:
         start_s = time.time()
         ub = self.bb.UpperBound(self.best_score)
         elapsed_s = time.time() - start_s
+        if self.log_breaker_progress:
+            indent = " " * level
+            sys.stderr.write(f"{indent}{num}/{out_of} {ub} {self.bb.as_string()}\n")
         self.details_.secs_by_level[level] += elapsed_s
         if level == 0:
             # self.details_.root_score_bailout = (ub, self.bb.Details().bailout_cell)
