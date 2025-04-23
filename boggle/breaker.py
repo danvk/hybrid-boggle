@@ -78,7 +78,6 @@ class HybridTreeBreaker:
         self.boggler = boggler
         self.best_score = best_score
         self.details_ = None
-        self.elim_ = 0
         self.orig_reps_ = 0
         self.dims = dims
         self.split_order = SPLIT_ORDER[dims]
@@ -109,7 +108,6 @@ class HybridTreeBreaker:
             n_bound=0,
             n_force=0,
         )
-        self.elim_ = 0
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
