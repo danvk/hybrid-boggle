@@ -24,16 +24,6 @@ class EvalNodeArena {
   EvalNodeArena() : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
   ~EvalNodeArena() { FreeTheChildren(); }
 
-  void FreeTheChildren() {
-    // cout << "Freeing " << buffers_.size() << " buffers" << endl;
-    for (auto buffer : buffers_) {
-      // cout << "Freeing " << node << endl;
-      delete[] buffer;
-      // cout << "(done)" << endl;
-    }
-    buffers_.clear();
-  }
-
   int NumNodes() { return num_nodes_; }
   uint64_t BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
 
@@ -51,6 +41,13 @@ class EvalNodeArena {
   void PrintStats();
 
  private:
+  void FreeTheChildren() {
+    for (auto buffer : buffers_) {
+      delete[] buffer;
+    }
+    buffers_.clear();
+  }
+
   void AddBuffer();
   vector<char*> buffers_;
   int num_nodes_;

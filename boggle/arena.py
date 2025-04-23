@@ -8,9 +8,6 @@ class PyArena:
     def __init__(self):
         self.count = 0
 
-    def free_the_children(self):
-        pass
-
     def num_nodes(self):
         return self.count
 

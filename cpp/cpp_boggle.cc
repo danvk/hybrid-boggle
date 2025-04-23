@@ -129,7 +129,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
   m.def("create_eval_node_arena", &create_eval_node_arena);
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
-      .def("free_the_children", &EvalNodeArena::FreeTheChildren)
       .def(
           "new_root_node_with_capacity",
           &EvalNodeArena::NewRootNodeWithCapacity,
