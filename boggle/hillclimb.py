@@ -5,7 +5,7 @@ all the boards within an edit distance of 1. It then chooses the highest
 scoring of these boards plus the current pool as the pool for the next round.
 
 Larger pool sizes will increase the odds of making it over to the next peak
-at the cost of more computation per iteratin.
+at the cost of more computation per iteration.
 
 This might be an implementation of this algorithm:
 https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
@@ -18,9 +18,10 @@ import random
 import time
 from collections import Counter
 
+from cpp_boggle import Symmetry
+
 from boggle.anneal import initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
-from boggle.symmetry import canonicalize, list_to_matrix
 from boggle.trie import LETTER_A
 
 
@@ -75,30 +76,32 @@ def hillclimb(task: int):
     boggler = hillclimb.boggler
     num_lets = w * h
 
-    @functools.cache
-    def canonicalize_str(board: str) -> str:
-        bd = canonicalize(list_to_matrix(board))
-        return "".join(str(x) for row in bd for x in row)
+    sym = Symmetry(w, h)
 
     pool = [
-        canonicalize_str("".join(chr(x) for x in initial_board(num_lets)))
+        sym.canonicalize("".join(chr(x) for x in initial_board(num_lets)))
         for _ in range(args.pool_size)
     ]
-    score_cache = dict[str, int]()
-    for bd in pool:
-        score_cache[bd] = boggler.score(bd)
 
-    best_score = max(score_cache.values())
+    @functools.cache
+    def get_score(bd: str):
+        # This is a convenient place to make adjustments to the score, e.g.
+        # to require a "q" on the board or to exclude high-scoring boards to test
+        # whether hill climbing can find other boards in their absence.
+        # if "q" not in bd:
+        #     return 0
+        score = boggler.score(bd)
+        # if score > 3512:
+        #     score = 1000
+        return score
+
+    best_score = max(get_score(bd) for bd in pool)
 
     num_iter = 0
     while True:
         num_iter += 1
-        ns = {canonicalize_str(n) for seed in pool for n in neighbors(seed)}
-        scores: list[tuple[int, str]] = []
-        for n in ns:
-            score = score_cache.get(n) or boggler.score(n)
-            score_cache[n] = score
-            scores.append((score, n))
+        ns = {sym.canonicalize(n) for seed in pool for n in neighbors(seed)}
+        scores = [(get_score(n), n) for n in ns]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
         print(f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}")

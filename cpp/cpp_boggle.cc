@@ -11,6 +11,7 @@ using std::vector;
 #include "eval_node.h"
 #include "ibuckets.h"
 #include "orderly_tree_builder.h"
+#include "symmetry.h"
 #include "trie.h"
 
 // See https://stackoverflow.com/a/47749076/388951
@@ -129,7 +130,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
   m.def("create_eval_node_arena", &create_eval_node_arena);
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init())
-      .def("free_the_children", &EvalNodeArena::FreeTheChildren)
       .def(
           "new_root_node_with_capacity",
           &EvalNodeArena::NewRootNodeWithCapacity,
@@ -139,4 +139,8 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("reset_level", &EvalNodeArena::ResetLevel)
       .def("num_nodes", &EvalNodeArena::NumNodes)
       .def("bytes_allocated", &EvalNodeArena::BytesAllocated);
+
+  py::class_<Symmetry>(m, "Symmetry")
+      .def(py::init<int, int>())
+      .def("canonicalize", &Symmetry::Canonicalize);
 }
