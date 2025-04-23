@@ -2,6 +2,13 @@
 
 #include "eval_node.h"
 
+EvalNodeArena::~EvalNodeArena() {
+  for (auto buffer : buffers_) {
+    delete[] buffer;
+  }
+  buffers_.clear();
+}
+
 void EvalNodeArena::PrintStats() {
   cout << "num_buffers: " << buffers_.size() << endl;
   cout << "tip: " << tip_ << endl;

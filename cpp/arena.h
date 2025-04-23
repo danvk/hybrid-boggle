@@ -22,7 +22,7 @@ const uint64_t EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
 class EvalNodeArena {
  public:
   EvalNodeArena() : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
-  ~EvalNodeArena() { FreeTheChildren(); }
+  ~EvalNodeArena();
 
   int NumNodes() { return num_nodes_; }
   uint64_t BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
@@ -41,13 +41,6 @@ class EvalNodeArena {
   void PrintStats();
 
  private:
-  void FreeTheChildren() {
-    for (auto buffer : buffers_) {
-      delete[] buffer;
-    }
-    buffers_.clear();
-  }
-
   void AddBuffer();
   vector<char*> buffers_;
   int num_nodes_;
