@@ -12,9 +12,6 @@ class Symmetry {
   std::string Canonicalize(const std::string& board);
 
  private:
-  // Generates all boards in the same symmetry class.
-  bool AllSymmetries(const std::string& board, std::vector<std::string>* analogues);
-
   // Basic symmetries applied to board strings
   std::string FlipY(const std::string& bd);
   std::string FlipX(const std::string& bd);

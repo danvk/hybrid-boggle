@@ -1,39 +1,28 @@
 #include "symmetry.h"
 
 std::string Symmetry::Canonicalize(const std::string& board) {
-  std::vector<std::string> rots;
-  if (!AllSymmetries(board, &rots)) return "";
-  rots.push_back(board);
-  sort(rots.begin(), rots.end());
-  return rots[0];
-}
-
-bool Symmetry::AllSymmetries(
-    const std::string& board, std::vector<std::string>* analogues
-) {
-  if (board.size() != w_ * h_) return false;
-  analogues->clear();
+  if (board.size() != w_ * h_) return "";
+  std::string best = board;
   std::string bd;
   bd = FlipX(board);
-  if (board != bd) analogues->push_back(bd);
+  if (bd < best) best = bd;
   bd = FlipY(bd);
-  if (board != bd) analogues->push_back(bd);
+  if (bd < best) best = bd;
   bd = FlipX(bd);
-  if (board != bd) analogues->push_back(bd);
+  if (bd < best) best = bd;
 
   if (w_ == h_) {
     bd = Rotate90CW(board);
-    if (board != bd) analogues->push_back(bd);
+    if (bd < best) best = bd;
     bd = FlipX(bd);
-    if (board != bd) analogues->push_back(bd);
+    if (bd < best) best = bd;
     bd = FlipY(bd);
-    if (board != bd) analogues->push_back(bd);
+    if (bd < best) best = bd;
     bd = FlipX(bd);
-    if (board != bd) analogues->push_back(bd);
+    if (bd < best) best = bd;
   }
 
-  analogues->erase(std::unique(analogues->begin(), analogues->end()), analogues->end());
-  return true;
+  return best;
 }
 
 std::string Symmetry::FlipY(const std::string& bd) {
