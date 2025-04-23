@@ -141,3 +141,7 @@ def test_canonicalize_board():
     assert canonicalize_board("perslatgsineters") == "perslatgsineters"
     assert canonicalize_board("plsteaiertnrsges") == "perslatgsineters"
     assert canonicalize_board("srepgtalenissret") == "perslatgsineters"
+    assert canonicalize_board("sretenisgtalsrep") == "perslatgsineters"
+
+    assert canonicalize_board("dnisetalsrep") == "dnisetalsrep"
+    assert canonicalize_board("perslatesind") == "dnisetalsrep"
