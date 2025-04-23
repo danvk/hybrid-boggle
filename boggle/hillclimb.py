@@ -86,8 +86,8 @@ def hillclimb(task: int):
     @functools.cache
     def get_score(bd: str):
         # This is a convenient place to make adjustments to the score, e.g.
-        # to require a "q" on the board or to exclude high-scoring boareds to test
-        # whether hill climbing can find other boareds in their absence.
+        # to require a "q" on the board or to exclude high-scoring boards to test
+        # whether hill climbing can find other boards in their absence.
         # if "q" not in bd:
         #     return 0
         score = boggler.score(bd)
