@@ -8,7 +8,7 @@ These are the best (and best known) boards with the [ENABLE2K word list].
 
 - ✅ 3x3: `streaedlp` [545 points], [proven optimal][33] in 2009.
 - ✅ 3x4: `perslatesind` [1651 points], [proven optimal][34] in 2025.
-- ✅ 4x4: `perslatgsineters` [3625 points], proven optimal in 2025. (Details coming soon!)
+- ✅ 4x4: `perslatgsineters` [3625 points], [proven optimal][35] in 2025.
 - ❓ 5x5: `sepesdsracietilmanesligdr`, 10406 points, found via hill climbing, optimality unknown.
 
 The 3x4 board should be read down columns first:
@@ -200,6 +200,7 @@ You can find lists of the highest-scoring boards found via exhaustive search in 
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
 [33]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
 [34]: https://www.danvk.org/2025/02/13/boggle2025.html
+[35]: https://www.danvk.org/2025/04/23/boggle-solved.html
 [bnb]: https://www.danvk.org/2025/02/10/boggle34.html#how-did-i-find-the-optimal-3x3-board-in-2009
 [simulated annealing]: https://github.com/danvk/hybrid-boggle/blob/main/boggle/anneal.py
 [hill climbing]: https://github.com/danvk/hybrid-boggle/blob/main/boggle/hillclimb.py
