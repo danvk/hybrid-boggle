@@ -1,6 +1,7 @@
 """Find the highest-scoring path between two boards."""
 
 import argparse
+import heapq
 
 import networkx as nx
 from tqdm import tqdm
@@ -64,13 +65,33 @@ def highest_scoring_path(G: nx.Graph, start: str, end: str):
     min(G[node]['score'] for node in path)
     """
 
-    # Evaluate each path based on the minimum score of its nodes
-    def path_score(path):
-        return min(G.nodes[node]["score"] for node in path)
+    # Use a priority queue to find the best path with the maximum minimum score
 
-    # Find all shortest paths from start to end
-    # Select the path with the maximum minimum score
-    best_path = max(nx.all_shortest_paths(G, source=start, target=end), key=path_score)
+    # Priority queue stores (-min_score, current_node, path)
+    pq = [(-G.nodes[start]["score"], start, [start])]
+    visited = set()
+
+    best_path = None
+    best_min_score = float("-inf")
+
+    while pq:
+        neg_min_score, current, path = heapq.heappop(pq)
+        min_score = -neg_min_score
+
+        if current in visited:
+            continue
+        visited.add(current)
+
+        if current == end:
+            if min_score > best_min_score:
+                best_min_score = min_score
+                best_path = path
+            continue
+
+        for neighbor in G.neighbors(current):
+            if neighbor not in visited:
+                new_min_score = min(min_score, G.nodes[neighbor]["score"])
+                heapq.heappush(pq, (-new_min_score, neighbor, path + [neighbor]))
 
     return best_path
 
