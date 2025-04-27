@@ -288,6 +288,13 @@ void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
 // [[[end]]]
 // clang-format on
 
+#undef REC
+#undef REC3
+#undef REC5
+#undef REC8
+#undef PREFIX
+#undef SUFFIX
+
 template <int M, int N>
 vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggle) {
   seq_.clear();
