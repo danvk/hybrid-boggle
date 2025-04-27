@@ -123,7 +123,7 @@ unsigned int Boggler<M, N>::InternalScore() {
   REC5(a, b, c, d, e);               \
   REC3(f, g, h)
 
-// TODO: this could be an inline method
+// PREFIX and SUFFIX could be inline methods instead, but this incurs a ~5% perf hit.
 #define PREFIX()                  \
   int c = bd_[i], cc;             \
   used_ ^= (1 << i);              \
