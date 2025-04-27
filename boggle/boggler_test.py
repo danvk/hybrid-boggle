@@ -90,8 +90,8 @@ def test_find_words():
             [11, 14, 15],
             [12, 8, 13, 10],
             [13, 8, 12],
-            [15, 14, 11],
             [15, 11, 14, 13, 10],
+            [15, 14, 11],
         ]
     )
 
@@ -103,8 +103,8 @@ def test_find_words():
     assert three_uniq == snapshot(
         [
             [0, 1, 5, 4],
-            [1, 0, 4, 8, 5],
             [1, 0, 4, 5],
+            [1, 0, 4, 8, 5],
             [1, 5, 0, 4],
             [1, 5, 9, 6],
             [2, 5, 4, 9],
@@ -117,8 +117,8 @@ def test_find_words():
     assert words_uniq == snapshot(
         [
             "abed",
-            "badge",
             "bade",
+            "badge",
             "bead",
             "beef",
             "cede",
@@ -131,9 +131,9 @@ def test_find_words():
     assert three_multi == snapshot(
         [
             [0, 1, 5, 4],
+            [1, 0, 4, 5],
             [1, 0, 4, 8, 5],
             [1, 0, 4, 8, 9],
-            [1, 0, 4, 5],
             [1, 0, 4, 9],
             [1, 5, 0, 4],
             [1, 5, 9, 6],
