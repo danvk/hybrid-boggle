@@ -2,6 +2,7 @@
 
 import argparse
 
+import networkx as nx
 from tqdm import tqdm
 
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
@@ -10,11 +11,10 @@ from boggle.winner_hierarchy import distance, symmetry_group
 
 
 def score_intermediates(boggler: PyBoggler, board1: str, board2: str):
-    # collect inidices of differing letters
+    # collect indices of differing letters
     n = len(board1)
     diff_indices = [i for i in range(n) if board1[i] != board2[i]]
     nd = len(diff_indices)
-    print(f"{nd=} {diff_indices=}")
     bd1list = [*board1]
 
     scores = {}
@@ -28,6 +28,33 @@ def score_intermediates(boggler: PyBoggler, board1: str, board2: str):
         scores[bd_str] = boggler.score(bd_str)
 
     return scores
+
+
+def make_graph(board1: str, board2: str, scores: dict[str, int]):
+    n = len(board1)
+    diff_indices = [i for i in range(n) if board1[i] != board2[i]]
+
+    G = nx.Graph()
+    for board, score in scores.items():
+        G.add_node(board, score=score)
+
+    # Add an edge from each board to the boards an edit distance of 1 away
+    for board in scores.keys():
+        for i in diff_indices:
+            if board[i] == board1[i]:
+                other = board[:i] + board2[i] + board[i + 1 :]
+                assert len(other) == len(board)
+                assert other != board
+                G.add_edge(board, other)
+            elif board[i] == board2[i]:
+                other = board[:i] + board1[i] + board[i + 1 :]
+                assert len(other) == len(board)
+                assert other != board
+                G.add_edge(board, other)
+            else:
+                raise ValueError(board)
+
+    return G
 
 
 def main():
@@ -52,6 +79,9 @@ def main():
 
     scores = score_intermediates(boggler, board1, board2)
     print(f"Scored {len(scores)} intermediate boards.")
+
+    G = make_graph(board1, board2, scores)
+    print(f"{G.number_of_nodes()=} {G.number_of_edges()=}")
 
 
 if __name__ == "__main__":

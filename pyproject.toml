@@ -15,6 +15,7 @@ ruff = "^0.8.4"
 gprof2dot = "^2024.6.6"
 numpy = "^2.2.1"
 google-cloud-storage = "^3.1.0"
+networkx = "^3.4.2"
 
 
 [tool.poetry.group.dev.dependencies]
