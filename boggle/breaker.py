@@ -39,7 +39,6 @@ class BreakDetails:
         d = dataclasses.asdict(self)
         d["elim_level"] = dict(self.elim_level.items())
         d["secs_by_level"] = dict(self.secs_by_level.items())
-        d["depth"] = dict(self.depth.items())
         return d
 
 
@@ -47,7 +46,7 @@ class BreakDetails:
 class HybridBreakDetails(BreakDetails):
     bounds: dict[int, int]
     nodes: dict[int, int]
-    depth: dict[int, int]
+    depth: Counter[int]
     boards_to_test: int
     init_nodes: int
     total_nodes: int
@@ -55,6 +54,11 @@ class HybridBreakDetails(BreakDetails):
     total_bytes: int
     n_bound: int
     n_force: int
+
+    def asdict(self):
+        d = super().asdict()
+        d["depth"] = dict(self.depth.items())
+        return d
 
 
 class HybridTreeBreaker:
