@@ -47,7 +47,7 @@ class BucketBoggler : public BoardClassBoggler<M, N> {
   ScoreDetails details_;
   unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
   unsigned int DoDFS(unsigned int i, unsigned int len, Trie* t);
-  unsigned int ExitDFS(unsigned int i, unsigned int len, Trie* t);
+  unsigned int CountWord(unsigned int i, unsigned int len, Trie* t);
 };
 
 template <int M, int N>
@@ -96,7 +96,7 @@ unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* 
 }
 
 template <int M, int N>
-unsigned int BucketBoggler<M, N>::ExitDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<M, N>::CountWord(unsigned int i, unsigned int len, Trie* t) {
   unsigned int score = 0;
   if (t->IsWord()) {
     unsigned int word_score = kWordScores[len];
@@ -115,7 +115,6 @@ unsigned int BucketBoggler<M, N>::ExitDFS(unsigned int i, unsigned int len, Trie
       t->Mark(runs_);
     }
   }
-  used_ ^= (1 << i);
   return score;
 }
 
@@ -158,7 +157,8 @@ unsigned int BucketBoggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, Tr
         print(f"    case {i}: REC{len(ns)}({csv}); break;")
 
     print("""  }
-  score += ExitDFS(i, len, t);
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
   return score;
 }""")
 ]]]*/
@@ -174,7 +174,8 @@ unsigned int BucketBoggler<2, 2>::DoDFS(unsigned int i, unsigned int len, Trie* 
     case 2: REC3(0, 1, 3); break;
     case 3: REC3(0, 1, 2); break;
   }
-  score += ExitDFS(i, len, t);
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
   return score;
 }
 
@@ -191,7 +192,8 @@ unsigned int BucketBoggler<2, 3>::DoDFS(unsigned int i, unsigned int len, Trie* 
     case 4: REC5(0, 1, 2, 3, 5); break;
     case 5: REC3(1, 2, 4); break;
   }
-  score += ExitDFS(i, len, t);
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
   return score;
 }
 
@@ -211,7 +213,8 @@ unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* 
     case 7: REC5(3, 4, 5, 6, 8); break;
     case 8: REC3(4, 5, 7); break;
   }
-  score += ExitDFS(i, len, t);
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
   return score;
 }
 
@@ -234,7 +237,8 @@ unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
     case 10: REC5(5, 6, 7, 9, 11); break;
     case 11: REC3(6, 7, 10); break;
   }
-  score += ExitDFS(i, len, t);
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
   return score;
 }
 
@@ -261,7 +265,8 @@ unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
     case 14: REC5(9, 10, 11, 13, 15); break;
     case 15: REC3(10, 11, 14); break;
   }
-  score += ExitDFS(i, len, t);
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
   return score;
 }
 
@@ -297,7 +302,8 @@ unsigned int BucketBoggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* 
     case 23: REC5(17, 18, 19, 22, 24); break;
     case 24: REC3(18, 19, 23); break;
   }
-  score += ExitDFS(i, len, t);
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
   return score;
 }
 // [[[end]]]
