@@ -47,6 +47,7 @@ class BucketBoggler : public BoardClassBoggler<M, N> {
   ScoreDetails details_;
   unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
   unsigned int DoDFS(unsigned int i, unsigned int len, Trie* t);
+  unsigned int ExitDFS(unsigned int i, unsigned int len, Trie* t);
 };
 
 template <int M, int N>
@@ -94,6 +95,30 @@ unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* 
   exit(1);
 }
 
+template <int M, int N>
+unsigned int BucketBoggler<M, N>::ExitDFS(unsigned int i, unsigned int len, Trie* t) {
+  unsigned int score = 0;
+  if (t->IsWord()) {
+    unsigned int word_score = kWordScores[len];
+    score += word_score;
+    if (PrintWords)
+      printf(
+          " +%2d (%d,%d) %s\n",
+          word_score,
+          i / 3,
+          i % 3,
+          Trie::ReverseLookup(dict_, t).c_str()
+      );
+
+    if (t->Mark() != runs_) {
+      details_.sum_union += word_score;
+      t->Mark(runs_);
+    }
+  }
+  used_ ^= (1 << i);
+  return score;
+}
+
 // TODO: codegen specialized bogglers
 // clang-format off
 
@@ -135,20 +160,7 @@ unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* 
 #undef HIT3y
 #undef HIT8
 
-  if (t->IsWord()) {
-    unsigned int word_score = kWordScores[len];
-    score += word_score;
-    if (PrintWords)
-      printf(" +%2d (%d,%d) %s\n", word_score, i/3, i%3,
-            Trie::ReverseLookup(dict_, t).c_str());
-
-    if (t->Mark() != runs_) {
-      details_.sum_union += word_score;
-      t->Mark(runs_);
-    }
-  }
-
-  used_ ^= (1 << i);
+  score += ExitDFS(i, len, t);
   return score;
 }
 
@@ -193,20 +205,7 @@ unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
 #undef HIT3y
 #undef HIT8
 
-  if (t->IsWord()) {
-    unsigned int word_score = kWordScores[len];
-    score += word_score;
-    if (PrintWords)
-      printf(" +%2d (%d,%d) %s\n", word_score, i/4, i%4,
-            Trie::ReverseLookup(dict_, t).c_str());
-
-    if (t->Mark() != runs_) {
-      details_.sum_union += word_score;
-      t->Mark(runs_);
-    }
-  }
-
-  used_ ^= (1 << i);
+  score += ExitDFS(i, len, t);
   return score;
 }
 
@@ -253,20 +252,7 @@ unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
 #undef HIT3y
 #undef HIT8
 
-  if (t->IsWord()) {
-    unsigned int word_score = kWordScores[len];
-    score += word_score;
-    if (PrintWords)
-      printf(" +%2d (%d,%d) %s\n", word_score, i/4, i%4,
-            Trie::ReverseLookup(dict_, t).c_str());
-
-    if (t->Mark() != runs_) {
-      details_.sum_union += word_score;
-      t->Mark(runs_);
-    }
-  }
-
-  used_ ^= (1 << i);
+  score += ExitDFS(i, len, t);
   return score;
 }
 

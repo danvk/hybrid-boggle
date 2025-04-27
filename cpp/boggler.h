@@ -341,4 +341,4 @@ void Boggler<M, N>::FindWordsDFS(
   seq_.pop_back();
 }
 
-#endif
+#endif  // BOGGLER_4
