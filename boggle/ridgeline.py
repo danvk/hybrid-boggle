@@ -3,6 +3,7 @@
 import argparse
 import heapq
 
+import chalk
 import networkx as nx
 from tqdm import tqdm
 
@@ -74,6 +75,7 @@ def highest_scoring_path(G: nx.Graph, start: str, end: str):
     best_path = None
     best_min_score = float("-inf")
 
+    # TODO: does this return the shortest, then highest path? Or just highest?
     while pq:
         neg_min_score, current, path = heapq.heappop(pq)
         min_score = -neg_min_score
@@ -94,6 +96,15 @@ def highest_scoring_path(G: nx.Graph, start: str, end: str):
                 heapq.heappush(pq, (-new_min_score, neighbor, path + [neighbor]))
 
     return best_path
+
+
+YELLOW = chalk.Chalk("yellow") + chalk.utils.FontFormat("bold")
+
+
+def color_diffs(board: str, prev: str | None):
+    if prev is None:
+        return board
+    return "".join(a if a == b else YELLOW(a) for a, b in zip(board, prev))
 
 
 def main():
@@ -123,8 +134,10 @@ def main():
     print(f"{G.number_of_nodes()=} {G.number_of_edges()=}")
 
     path = highest_scoring_path(G, board1, board2)
+    prev = None
     for board in path:
-        print(f"{board}\t{scores[board]}")
+        print(f"{color_diffs(board, prev)}\t{scores[board]}")
+        prev = board
 
 
 if __name__ == "__main__":

@@ -614,6 +614,19 @@ files = [
 global = ["pybind11-global (==2.13.6)"]
 
 [[package]]
+name = "pychalk"
+version = "2.0.1"
+description = "Color printing in python"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pychalk-2.0.1.tar.gz", hash = "sha256:f763275f6fa68835a30d22c2449f73724d569f33532a031d26e32edc604e7e39"},
+]
+
+[package.dependencies]
+six = ">=1.11.0"
+
+[[package]]
 name = "pygments"
 version = "2.19.1"
 description = "Pygments is a syntax highlighting package written in Python."
@@ -728,6 +741,17 @@ files = [
 ]
 
 [[package]]
+name = "six"
+version = "1.17.0"
+description = "Python 2 and 3 compatibility utilities"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+files = [
+    {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
+    {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
+]
+
+[[package]]
 name = "tqdm"
 version = "4.67.1"
 description = "Fast, Extensible Progress Meter"
@@ -768,4 +792,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13"
-content-hash = "1d79f5804fb632c6440354ba47b9b6574380999eb79f1c1d48830900a76a060c"
+content-hash = "d3d9ed8fb25af2ec05a28f8261aef4f57247908d4f0d4151286878dce7a6870a"
