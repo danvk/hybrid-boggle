@@ -26,6 +26,7 @@ class BoardClassBoggler {
   // evaluate.
   uint64_t NumReps() const;
 
+  // TODO: move these into a new, standalone header file
   static const int NEIGHBORS[M * N][9];
   static const int SPLIT_ORDER[M * N];
 
@@ -240,6 +241,9 @@ const int BoardClassBoggler<3, 4>::SPLIT_ORDER[3*4] = {5, 6, 1, 9, 2, 10, 4, 7, 
 
 template<>
 const int BoardClassBoggler<4, 4>::SPLIT_ORDER[4*4] = {5, 6, 9, 10, 1, 13, 2, 14, 4, 7, 8, 11, 0, 12, 3, 15};
+
+template<>
+const int BoardClassBoggler<5, 5>::SPLIT_ORDER[5*5] = {12, 7, 11, 17, 13, 6, 8, 16, 18, 2, 10, 22, 14, 5, 15, 1, 3, 9, 19, 21, 23, 0, 20, 4, 24};
 //[[[end]]]
 
 // clang-format on

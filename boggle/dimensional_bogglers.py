@@ -3,32 +3,38 @@ from cpp_boggle import (
     Boggler34,
     Boggler44,
     Boggler55,
+    BucketBoggler22,
+    BucketBoggler23,
     BucketBoggler33,
     BucketBoggler34,
     BucketBoggler44,
+    BucketBoggler55,
     OrderlyTreeBuilder22,
+    OrderlyTreeBuilder23,
     OrderlyTreeBuilder33,
     OrderlyTreeBuilder34,
     OrderlyTreeBuilder44,
+    OrderlyTreeBuilder55,
 )
-
-from boggle.ibuckets import PyBucketBoggler22, PyBucketBoggler23
 
 Bogglers = {(3, 3): Boggler33, (3, 4): Boggler34, (4, 4): Boggler44, (5, 5): Boggler55}
 
 BucketBogglers = {
-    (2, 2): PyBucketBoggler22,
-    (2, 3): PyBucketBoggler23,
+    (2, 2): BucketBoggler22,
+    (2, 3): BucketBoggler23,
     (3, 3): BucketBoggler33,
     (3, 4): BucketBoggler34,
     (4, 4): BucketBoggler44,
+    (5, 5): BucketBoggler55,
 }
 
 OrderlyTreeBuilders = {
     (2, 2): OrderlyTreeBuilder22,
+    (2, 3): OrderlyTreeBuilder23,
     (3, 3): OrderlyTreeBuilder33,
     (3, 4): OrderlyTreeBuilder34,
     (4, 4): OrderlyTreeBuilder44,
+    (5, 5): OrderlyTreeBuilder55,
 }
 
 
