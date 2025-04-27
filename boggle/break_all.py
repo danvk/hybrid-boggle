@@ -305,8 +305,8 @@ def main():
     best_score = args.best_score
     assert best_score > 0
     w, h = dims = args.size // 10, args.size % 10
-    assert 3 <= w <= 4
-    assert 3 <= h <= 4
+    assert 3 <= w <= 5
+    assert 3 <= h <= 5
     classes = parse_classes(args.classes, dims)
     assert len(classes) == w * h
     num_classes = [len(c) for c in classes]

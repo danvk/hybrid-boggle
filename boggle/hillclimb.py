@@ -198,7 +198,7 @@ def main():
             for score_board in tops:
                 score, board = score_board
                 freq = best[score_board]
-                print_and_write(f"{score}\t{board}\t{freq}/{args.num_boards}")
+                print_and_write(f"{score}\t{board}\t{freq}/{1+run}")
 
 
 if __name__ == "__main__":
