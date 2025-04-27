@@ -144,18 +144,19 @@ void Boggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
   int cc;
 
   switch (i) {
-    case 0: REC3(1, 3, 4);
-    case 1: REC5(0, 2, 3, 4, 5);
-    case 2: REC3(1, 4, 5);
-    case 3: REC5(0, 1, 4, 6, 7);
-    case 4: REC8(0, 1, 2, 3, 5, 6, 7, 8);
-    case 5: REC5(1, 2, 4, 7, 8);
-    case 6: REC3(3, 4, 7);
-    case 7: REC5(3, 4, 5, 6, 8);
-    case 8: REC3(4, 5, 7);
+    case 0: REC3(1, 3, 4); break;
+    case 1: REC5(0, 2, 3, 4, 5); break;
+    case 2: REC3(1, 4, 5); break;
+    case 3: REC5(0, 1, 4, 6, 7); break;
+    case 4: REC8(0, 1, 2, 3, 5, 6, 7, 8); break;
+    case 5: REC5(1, 2, 4, 7, 8); break;
+    case 6: REC3(3, 4, 7); break;
+    case 7: REC5(3, 4, 5, 6, 8); break;
+    case 8: REC3(4, 5, 7); break;
   }
 
   used_ ^= (1 << i);
+
 }
 
 // 3x4 Boggle
