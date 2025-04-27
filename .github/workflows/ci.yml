@@ -34,7 +34,7 @@ jobs:
       run: poetry run ruff check
 
     - name: Run cog
-      run: PYTHONPATH=. poetry run cog -P --check cpp/board_class_boggler.h
+      run: PYTHONPATH=. poetry run cog -P --check cpp/*.h
 
     - name: Run clang-format
       run: clang-format --dry-run --Werror cpp/*.{h,cc}
