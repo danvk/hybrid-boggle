@@ -137,7 +137,6 @@ unsigned int Boggler<M, N>::InternalScore() {
 
 #define SUFFIX() used_ ^= (1 << i)
 
-// TODO: codegen specialized bogglers
 // clang-format off
 
 /*[[[cog
