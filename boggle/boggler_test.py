@@ -32,6 +32,7 @@ def test33(get_trie, Boggler):
     t = get_trie()
     b = Boggler(t, (3, 3))
     assert b.score("abcdefghi") == 20
+    assert b.score("streaedlp") == 545
 
 
 # This tests proper orientation: 3x4 vs 4x3, row- vs. column-major.

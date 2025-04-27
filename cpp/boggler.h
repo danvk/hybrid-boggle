@@ -99,6 +99,30 @@ unsigned int Boggler<M, N>::InternalScore() {
   return score_;
 }
 
+#define REC(idx)                         \
+  do {                                   \
+    if ((used_ & (1 << idx)) == 0) {     \
+      cc = bd_[idx];                     \
+      if (t->StartsWord(cc)) {           \
+        DoDFS(idx, len, t->Descend(cc)); \
+      }                                  \
+    }                                    \
+  } while (0)
+
+#define REC3(a, b, c) \
+  REC(a);             \
+  REC(b);             \
+  REC(c)
+
+#define REC5(a, b, c, d, e) \
+  REC3(a, b, c);            \
+  REC(d);                   \
+  REC(e)
+
+#define REC8(a, b, c, d, e, f, g, h) \
+  REC5(a, b, c, d, e);               \
+  REC3(f, g, h)
+
 // TODO: codegen specialized bogglers
 // clang-format off
 
@@ -117,41 +141,21 @@ void Boggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
     }
   }
 
-  int cc, idx;
+  int cc;
 
-#define HIT(x,y) do { idx = (x) * 3 + y; \
-                      if ((used_ & (1 << idx)) == 0) { \
-                        cc = bd_[idx]; \
-                        if (t->StartsWord(cc)) { \
-                          DoDFS(idx, len, t->Descend(cc)); \
-                        } \
-                      } \
-		 } while(0)
-#define HIT3x(x,y) HIT(x,y); HIT(x+1,y); HIT(x+2,y)
-#define HIT3y(x,y) HIT(x,y); HIT(x,y+1); HIT(x,y+2)
-#define HIT8(x,y) HIT3x(x-1,y-1); HIT(x-1,y); HIT(x+1,y); HIT3x(x-1,y+1)
-
-  // x*3 + y
   switch (i) {
-    case 0*3 + 0: HIT(0, 1); HIT(1, 0); HIT(1, 1); break;
-    case 0*3 + 1: HIT(0, 0); HIT3y(1, 0); HIT(0, 2); break;
-    case 0*3 + 2: HIT(0, 1); HIT(1, 1); HIT(1, 2); break;
-
-    case 1*3 + 0: HIT(0, 0); HIT(2, 0); HIT3x(0, 1); break;
-    case 1*3 + 1: HIT8(1, 1); break;
-    case 1*3 + 2: HIT3x(0, 1); HIT(0, 2); HIT(2, 2); break;
-
-    case 2*3 + 0: HIT(1, 0); HIT(1, 1); HIT(2, 1); break;
-    case 2*3 + 1: HIT3y(1, 0); HIT(2, 0); HIT(2, 2); break;
-    case 2*3 + 2: HIT(1, 2); HIT(1, 1); HIT(2, 1); break;
+    case 0: REC3(1, 3, 4);
+    case 1: REC5(0, 2, 3, 4, 5);
+    case 2: REC3(1, 4, 5);
+    case 3: REC5(0, 1, 4, 6, 7);
+    case 4: REC8(0, 1, 2, 3, 5, 6, 7, 8);
+    case 5: REC5(1, 2, 4, 7, 8);
+    case 6: REC3(3, 4, 7);
+    case 7: REC5(3, 4, 5, 6, 8);
+    case 8: REC3(4, 5, 7);
   }
 
   used_ ^= (1 << i);
-
-#undef HIT
-#undef HIT3x
-#undef HIT3y
-#undef HIT8
 }
 
 // 3x4 Boggle
