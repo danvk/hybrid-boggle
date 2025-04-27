@@ -41,6 +41,6 @@ NEIGHBORS = {
     (5, 5): NEIGHBORS55,
 }
 
-for i, ns in enumerate(NEIGHBORS[(3, 3)]):
-    csv = ", ".join(str(n) for n in ns)
-    print(f"case {i}: REC{len(ns)}({csv});")
+# for i, ns in enumerate(NEIGHBORS[(3, 3)]):
+#     csv = ", ".join(str(n) for n in ns)
+#     print(f"case {i}: REC{len(ns)}({csv});")

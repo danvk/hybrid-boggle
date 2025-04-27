@@ -52,6 +52,7 @@ def test34(get_trie, Boggler):
     # G H I
     # J K L
     assert b.score("adgjbehkcfil") == 34
+    assert b.score("perslatesind") == 1651
 
 
 @pytest.mark.parametrize("get_trie, Boggler", PARAMS)
@@ -59,3 +60,11 @@ def test44(get_trie, Boggler):
     t = get_trie()
     b = Boggler(t, (4, 4))
     assert b.score("abcdefghijklmnop") == 18
+    assert b.score("perslatgsineters") == 3625
+
+
+@pytest.mark.parametrize("get_trie, Boggler", PARAMS)
+def test55(get_trie, Boggler):
+    t = get_trie()
+    b = Boggler(t, (5, 5))
+    assert b.score("sepesdsracietilmanesligdr") == 10406
