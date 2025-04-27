@@ -147,18 +147,143 @@ for (w, h), neighbors in NEIGHBORS.items():
     print(f"""
 // {w}x{h}
 template<>
-const int Boggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, Trie* t) {{
+void Boggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, Trie* t) {{
   PREFIX();
   switch(i) {{""")
-    for i, ns in enumerate(NEIGHBORS[(3, 3)]):
+    for i, ns in enumerate(neighbors):
         csv = ", ".join(str(n) for n in ns)
         print(f"    case {i}: REC{len(ns)}({csv});")
 
-    print(f"""  }
+    print("""  }
   SUFFIX();
 }""")
 ]]]*/
 
+// 2x2
+template<>
+void Boggler<2, 2>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 2, 3);
+    case 1: REC3(0, 2, 3);
+    case 2: REC3(0, 1, 3);
+    case 3: REC3(0, 1, 2);
+  }
+  SUFFIX();
+}
+
+// 2x3
+template<>
+void Boggler<2, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 3, 4);
+    case 1: REC5(0, 2, 3, 4, 5);
+    case 2: REC3(1, 4, 5);
+    case 3: REC3(0, 1, 4);
+    case 4: REC5(0, 1, 2, 3, 5);
+    case 5: REC3(1, 2, 4);
+  }
+  SUFFIX();
+}
+
+// 3x3
+template<>
+void Boggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 3, 4);
+    case 1: REC5(0, 2, 3, 4, 5);
+    case 2: REC3(1, 4, 5);
+    case 3: REC5(0, 1, 4, 6, 7);
+    case 4: REC8(0, 1, 2, 3, 5, 6, 7, 8);
+    case 5: REC5(1, 2, 4, 7, 8);
+    case 6: REC3(3, 4, 7);
+    case 7: REC5(3, 4, 5, 6, 8);
+    case 8: REC3(4, 5, 7);
+  }
+  SUFFIX();
+}
+
+// 3x4
+template<>
+void Boggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 4, 5);
+    case 1: REC5(0, 2, 4, 5, 6);
+    case 2: REC5(1, 3, 5, 6, 7);
+    case 3: REC3(2, 6, 7);
+    case 4: REC5(0, 1, 5, 8, 9);
+    case 5: REC8(0, 1, 2, 4, 6, 8, 9, 10);
+    case 6: REC8(1, 2, 3, 5, 7, 9, 10, 11);
+    case 7: REC5(2, 3, 6, 10, 11);
+    case 8: REC3(4, 5, 9);
+    case 9: REC5(4, 5, 6, 8, 10);
+    case 10: REC5(5, 6, 7, 9, 11);
+    case 11: REC3(6, 7, 10);
+  }
+  SUFFIX();
+}
+
+// 4x4
+template<>
+void Boggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 4, 5);
+    case 1: REC5(0, 2, 4, 5, 6);
+    case 2: REC5(1, 3, 5, 6, 7);
+    case 3: REC3(2, 6, 7);
+    case 4: REC5(0, 1, 5, 8, 9);
+    case 5: REC8(0, 1, 2, 4, 6, 8, 9, 10);
+    case 6: REC8(1, 2, 3, 5, 7, 9, 10, 11);
+    case 7: REC5(2, 3, 6, 10, 11);
+    case 8: REC5(4, 5, 9, 12, 13);
+    case 9: REC8(4, 5, 6, 8, 10, 12, 13, 14);
+    case 10: REC8(5, 6, 7, 9, 11, 13, 14, 15);
+    case 11: REC5(6, 7, 10, 14, 15);
+    case 12: REC3(8, 9, 13);
+    case 13: REC5(8, 9, 10, 12, 14);
+    case 14: REC5(9, 10, 11, 13, 15);
+    case 15: REC3(10, 11, 14);
+  }
+  SUFFIX();
+}
+
+// 5x5
+template<>
+void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 5, 6);
+    case 1: REC5(0, 2, 5, 6, 7);
+    case 2: REC5(1, 3, 6, 7, 8);
+    case 3: REC5(2, 4, 7, 8, 9);
+    case 4: REC3(3, 8, 9);
+    case 5: REC5(0, 1, 6, 10, 11);
+    case 6: REC8(0, 1, 2, 5, 7, 10, 11, 12);
+    case 7: REC8(1, 2, 3, 6, 8, 11, 12, 13);
+    case 8: REC8(2, 3, 4, 7, 9, 12, 13, 14);
+    case 9: REC5(3, 4, 8, 13, 14);
+    case 10: REC5(5, 6, 11, 15, 16);
+    case 11: REC8(5, 6, 7, 10, 12, 15, 16, 17);
+    case 12: REC8(6, 7, 8, 11, 13, 16, 17, 18);
+    case 13: REC8(7, 8, 9, 12, 14, 17, 18, 19);
+    case 14: REC5(8, 9, 13, 18, 19);
+    case 15: REC5(10, 11, 16, 20, 21);
+    case 16: REC8(10, 11, 12, 15, 17, 20, 21, 22);
+    case 17: REC8(11, 12, 13, 16, 18, 21, 22, 23);
+    case 18: REC8(12, 13, 14, 17, 19, 22, 23, 24);
+    case 19: REC5(13, 14, 18, 23, 24);
+    case 20: REC3(15, 16, 21);
+    case 21: REC5(15, 16, 17, 20, 22);
+    case 22: REC5(16, 17, 18, 21, 23);
+    case 23: REC5(17, 18, 19, 22, 24);
+    case 24: REC3(18, 19, 23);
+  }
+  SUFFIX();
+}
 // [[[end]]]
 // clang-format on
 
@@ -185,6 +310,7 @@ vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggl
   return out;
 }
 
+// TODO: make this generic on M, N via BoardClassBoggler<M, N>::NEIGHBORS
 template <>
 void Boggler<4, 4>::FindWordsDFS(
     unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
