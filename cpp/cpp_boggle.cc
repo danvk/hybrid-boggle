@@ -54,6 +54,7 @@ void declare_boggler(py::module &m, const string &pyclass_name) {
   py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
       .def(py::init<Trie *>())
       .def("score", &BB::Score)
+      .def("find_words", &BB::FindWords)
       .def("cell", &BB::Cell)
       .def("set_cell", &BB::SetCell);
 }
@@ -82,19 +83,26 @@ PYBIND11_MODULE(cpp_boggle, m) {
       )
       .def_static("CreateFromFile", &Trie::CreateFromFile);
 
+  declare_boggler<2, 2>(m, "Boggler22");
+  declare_boggler<2, 3>(m, "Boggler23");
   declare_boggler<3, 3>(m, "Boggler33");
   declare_boggler<3, 4>(m, "Boggler34");
   declare_boggler<4, 4>(m, "Boggler44");
   declare_boggler<5, 5>(m, "Boggler55");
 
+  declare_bucket_boggler<2, 2>(m, "BucketBoggler22");
+  declare_bucket_boggler<2, 3>(m, "BucketBoggler23");
   declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
   declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
   declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
+  declare_bucket_boggler<5, 5>(m, "BucketBoggler55");
 
   declare_tree_builder<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22");
+  declare_tree_builder<OrderlyTreeBuilder<2, 3>>(m, "OrderlyTreeBuilder23");
   declare_tree_builder<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33");
   declare_tree_builder<OrderlyTreeBuilder<3, 4>>(m, "OrderlyTreeBuilder34");
   declare_tree_builder<OrderlyTreeBuilder<4, 4>>(m, "OrderlyTreeBuilder44");
+  declare_tree_builder<OrderlyTreeBuilder<5, 5>>(m, "OrderlyTreeBuilder55");
 
   py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
       .def_readwrite("max_nomark", &ScoreDetails::max_nomark)

@@ -2,6 +2,7 @@
 #ifndef BOGGLER_4
 #define BOGGLER_4
 
+#include "board_class_boggler.h"
 #include "constants.h"
 #include "trie.h"
 
@@ -19,6 +20,7 @@ class Boggler {
   void SetCell(int x, int y, unsigned int c);
   unsigned int Cell(int x, int y) const;
 
+  // This is used by the web Boggle UI
   vector<vector<int>> FindWords(const string& lets, bool multiboggle);
 
  private:
@@ -99,232 +101,199 @@ unsigned int Boggler<M, N>::InternalScore() {
   return score_;
 }
 
-// TODO: codegen specialized bogglers
+#define REC(idx)                         \
+  do {                                   \
+    if ((used_ & (1 << idx)) == 0) {     \
+      cc = bd_[idx];                     \
+      if (t->StartsWord(cc)) {           \
+        DoDFS(idx, len, t->Descend(cc)); \
+      }                                  \
+    }                                    \
+  } while (0)
+
+#define REC3(a, b, c) \
+  REC(a);             \
+  REC(b);             \
+  REC(c)
+
+#define REC5(a, b, c, d, e) \
+  REC3(a, b, c);            \
+  REC(d);                   \
+  REC(e)
+
+#define REC8(a, b, c, d, e, f, g, h) \
+  REC5(a, b, c, d, e);               \
+  REC3(f, g, h)
+
+// PREFIX and SUFFIX could be inline methods instead, but this incurs a ~5% perf hit.
+#define PREFIX()                  \
+  int c = bd_[i], cc;             \
+  used_ ^= (1 << i);              \
+  len += (c == kQ ? 2 : 1);       \
+  if (t->IsWord()) {              \
+    if (t->Mark() != runs_) {     \
+      t->Mark(runs_);             \
+      score_ += kWordScores[len]; \
+    }                             \
+  }
+
+#define SUFFIX() used_ ^= (1 << i)
+
 // clang-format off
 
-// 3x3 Boggle
+/*[[[cog
+from boggle.neighbors import NEIGHBORS
 
-template <>
+for (w, h), neighbors in NEIGHBORS.items():
+    print(f"""
+// {w}x{h}
+template<>
+void Boggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, Trie* t) {{
+  PREFIX();
+  switch(i) {{""")
+    for i, ns in enumerate(neighbors):
+        csv = ", ".join(str(n) for n in ns)
+        print(f"    case {i}: REC{len(ns)}({csv}); break;")
+
+    print("""  }
+  SUFFIX();
+}""")
+]]]*/
+
+// 2x2
+template<>
+void Boggler<2, 2>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 2, 3); break;
+    case 1: REC3(0, 2, 3); break;
+    case 2: REC3(0, 1, 3); break;
+    case 3: REC3(0, 1, 2); break;
+  }
+  SUFFIX();
+}
+
+// 2x3
+template<>
+void Boggler<2, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 3, 4); break;
+    case 1: REC5(0, 2, 3, 4, 5); break;
+    case 2: REC3(1, 4, 5); break;
+    case 3: REC3(0, 1, 4); break;
+    case 4: REC5(0, 1, 2, 3, 5); break;
+    case 5: REC3(1, 2, 4); break;
+  }
+  SUFFIX();
+}
+
+// 3x3
+template<>
 void Boggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  int c = bd_[i];
-
-  used_ ^= (1 << i);
-  len += (c==kQ ? 2 : 1);
-  if (t->IsWord()) {
-    if (t->Mark() != runs_) {
-      t->Mark(runs_);
-      score_ += kWordScores[len];
-    }
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 3, 4); break;
+    case 1: REC5(0, 2, 3, 4, 5); break;
+    case 2: REC3(1, 4, 5); break;
+    case 3: REC5(0, 1, 4, 6, 7); break;
+    case 4: REC8(0, 1, 2, 3, 5, 6, 7, 8); break;
+    case 5: REC5(1, 2, 4, 7, 8); break;
+    case 6: REC3(3, 4, 7); break;
+    case 7: REC5(3, 4, 5, 6, 8); break;
+    case 8: REC3(4, 5, 7); break;
   }
-
-  int cc, idx;
-
-#define HIT(x,y) do { idx = (x) * 3 + y; \
-                      if ((used_ & (1 << idx)) == 0) { \
-                        cc = bd_[idx]; \
-                        if (t->StartsWord(cc)) { \
-                          DoDFS(idx, len, t->Descend(cc)); \
-                        } \
-                      } \
-		 } while(0)
-#define HIT3x(x,y) HIT(x,y); HIT(x+1,y); HIT(x+2,y)
-#define HIT3y(x,y) HIT(x,y); HIT(x,y+1); HIT(x,y+2)
-#define HIT8(x,y) HIT3x(x-1,y-1); HIT(x-1,y); HIT(x+1,y); HIT3x(x-1,y+1)
-
-  // x*3 + y
-  switch (i) {
-    case 0*3 + 0: HIT(0, 1); HIT(1, 0); HIT(1, 1); break;
-    case 0*3 + 1: HIT(0, 0); HIT3y(1, 0); HIT(0, 2); break;
-    case 0*3 + 2: HIT(0, 1); HIT(1, 1); HIT(1, 2); break;
-
-    case 1*3 + 0: HIT(0, 0); HIT(2, 0); HIT3x(0, 1); break;
-    case 1*3 + 1: HIT8(1, 1); break;
-    case 1*3 + 2: HIT3x(0, 1); HIT(0, 2); HIT(2, 2); break;
-
-    case 2*3 + 0: HIT(1, 0); HIT(1, 1); HIT(2, 1); break;
-    case 2*3 + 1: HIT3y(1, 0); HIT(2, 0); HIT(2, 2); break;
-    case 2*3 + 2: HIT(1, 2); HIT(1, 1); HIT(2, 1); break;
-  }
-
-  used_ ^= (1 << i);
-
-#undef HIT
-#undef HIT3x
-#undef HIT3y
-#undef HIT8
+  SUFFIX();
 }
 
-// 3x4 Boggle
-template <>
+// 3x4
+template<>
 void Boggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  int c = bd_[i];
-
-  used_ ^= (1 << i);
-  len += (c==kQ ? 2 : 1);
-  if (t->IsWord()) {
-    if (t->Mark() != runs_) {
-      t->Mark(runs_);
-      score_ += kWordScores[len];
-    }
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 4, 5); break;
+    case 1: REC5(0, 2, 4, 5, 6); break;
+    case 2: REC5(1, 3, 5, 6, 7); break;
+    case 3: REC3(2, 6, 7); break;
+    case 4: REC5(0, 1, 5, 8, 9); break;
+    case 5: REC8(0, 1, 2, 4, 6, 8, 9, 10); break;
+    case 6: REC8(1, 2, 3, 5, 7, 9, 10, 11); break;
+    case 7: REC5(2, 3, 6, 10, 11); break;
+    case 8: REC3(4, 5, 9); break;
+    case 9: REC5(4, 5, 6, 8, 10); break;
+    case 10: REC5(5, 6, 7, 9, 11); break;
+    case 11: REC3(6, 7, 10); break;
   }
-
-  int cc, idx;
-
-#define HIT(x,y) do { idx = (x) * 4 + y; \
-                      if ((used_ & (1 << idx)) == 0) { \
-                        cc = bd_[idx]; \
-                        if (t->StartsWord(cc)) { \
-                          DoDFS(idx, len, t->Descend(cc)); \
-                        } \
-                      } \
-		 } while(0)
-#define HIT3x(x,y) HIT(x,y); HIT(x+1,y); HIT(x+2,y)
-#define HIT3y(x,y) HIT(x,y); HIT(x,y+1); HIT(x,y+2)
-#define HIT8(x,y) HIT3x(x-1,y-1); HIT(x-1,y); HIT(x+1,y); HIT3x(x-1,y+1)
-
-  // x*4 + y
-  switch (i) {
-    case 0*4 + 0: HIT(0, 1); HIT(1, 0); HIT(1, 1); break;
-    case 0*4 + 1: HIT(0, 0); HIT3y(1, 0); HIT(0, 2); break;
-    case 0*4 + 2: HIT(0, 1); HIT3y(1, 1); HIT(0, 3); break;
-    case 0*4 + 3: HIT(0, 2); HIT(1, 2); HIT(1, 3); break;
-
-    case 1*4 + 0: HIT(0, 0); HIT(2, 0); HIT3x(0, 1); break;
-    case 1*4 + 1: HIT8(1, 1); break;
-    case 1*4 + 2: HIT8(1, 2); break;
-    case 1*4 + 3: HIT3x(0, 2); HIT(0, 3); HIT(2, 3); break;
-
-    case 2*4 + 0: HIT(1, 0); HIT(1, 1); HIT(2, 1); break;
-    case 2*4 + 1: HIT3y(1, 0); HIT(2, 0); HIT(2, 2); break;
-    case 2*4 + 2: HIT3y(1, 1); HIT(2, 1); HIT(2, 3); break;
-    case 2*4 + 3: HIT(1, 3); HIT(1, 2); HIT(2, 2); break;
-  }
-
-  used_ ^= (1 << i);
-
-#undef HIT
-#undef HIT3x
-#undef HIT3y
-#undef HIT8
+  SUFFIX();
 }
 
-// 4x4 Boggle
-
-template <>
+// 4x4
+template<>
 void Boggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  int c = bd_[i];
-
-  used_ ^= (1 << i);
-  len += (c==kQ ? 2 : 1);
-  if (t->IsWord()) {
-    if (t->Mark() != runs_) {
-      t->Mark(runs_);
-      score_ += kWordScores[len];
-    }
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 4, 5); break;
+    case 1: REC5(0, 2, 4, 5, 6); break;
+    case 2: REC5(1, 3, 5, 6, 7); break;
+    case 3: REC3(2, 6, 7); break;
+    case 4: REC5(0, 1, 5, 8, 9); break;
+    case 5: REC8(0, 1, 2, 4, 6, 8, 9, 10); break;
+    case 6: REC8(1, 2, 3, 5, 7, 9, 10, 11); break;
+    case 7: REC5(2, 3, 6, 10, 11); break;
+    case 8: REC5(4, 5, 9, 12, 13); break;
+    case 9: REC8(4, 5, 6, 8, 10, 12, 13, 14); break;
+    case 10: REC8(5, 6, 7, 9, 11, 13, 14, 15); break;
+    case 11: REC5(6, 7, 10, 14, 15); break;
+    case 12: REC3(8, 9, 13); break;
+    case 13: REC5(8, 9, 10, 12, 14); break;
+    case 14: REC5(9, 10, 11, 13, 15); break;
+    case 15: REC3(10, 11, 14); break;
   }
-
-  int cc, idx;
-
-#define HIT(x,y) do { idx = (x) * 4 + y; \
-                      if ((used_ & (1 << idx)) == 0) { \
-                        cc = bd_[idx]; \
-                        if (t->StartsWord(cc)) { \
-                          DoDFS(idx, len, t->Descend(cc)); \
-                        } \
-                      } \
-		 } while(0)
-#define HIT3x(x,y) HIT(x,y); HIT(x+1,y); HIT(x+2,y)
-#define HIT3y(x,y) HIT(x,y); HIT(x,y+1); HIT(x,y+2)
-#define HIT8(x,y) HIT3x(x-1,y-1); HIT(x-1,y); HIT(x+1,y); HIT3x(x-1,y+1)
-
-  switch (i) {
-    case 0*4 + 0: HIT(0, 1); HIT(1, 0); HIT(1, 1); break;
-    case 0*4 + 1: HIT(0, 0); HIT3y(1, 0); HIT(0, 2); break;
-    case 0*4 + 2: HIT(0, 1); HIT3y(1, 1); HIT(0, 3); break;
-    case 0*4 + 3: HIT(0, 2); HIT(1, 2); HIT(1, 3); break;
-
-    case 1*4 + 0: HIT(0, 0); HIT(2, 0); HIT3x(0, 1); break;
-    case 1*4 + 1: HIT8(1, 1); break;
-    case 1*4 + 2: HIT8(1, 2); break;
-    case 1*4 + 3: HIT3x(0, 2); HIT(0, 3); HIT(2, 3); break;
-
-    case 2*4 + 0: HIT(1, 0); HIT(3, 0); HIT3x(1, 1); break;
-    case 2*4 + 1: HIT8(2, 1); break;
-    case 2*4 + 2: HIT8(2, 2); break;
-    case 2*4 + 3: HIT3x(1, 2); HIT(1, 3); HIT(3, 3); break;
-
-    case 3*4 + 0: HIT(2, 0); HIT(2, 1); HIT(3, 1); break;
-    case 3*4 + 1: HIT3y(2, 0); HIT(3, 0); HIT(3, 2); break;
-    case 3*4 + 2: HIT3y(2, 1); HIT(3, 1); HIT(3, 3); break;
-    case 3*4 + 3: HIT(2, 2); HIT(3, 2); HIT(2, 3); break;
-  }
-  used_ ^= (1 << i);
-
-#undef HIT
-#undef HIT3x
-#undef HIT3y
-#undef HIT8
+  SUFFIX();
 }
 
-// 5x5 Boggle
-
-static int NEIGHBORS55[5*5][9] = {
-  {3, 1, 5, 6},
-  {5, 0, 2, 5, 6, 7},
-  {5, 1, 3, 6, 7, 8},
-  {5, 2, 4, 7, 8, 9},
-  {3, 3, 8, 9},
-  {5, 0, 1, 6, 10, 11},
-  {8, 0, 1, 2, 5, 7, 10, 11, 12},
-  {8, 1, 2, 3, 6, 8, 11, 12, 13},
-  {8, 2, 3, 4, 7, 9, 12, 13, 14},
-  {5, 3, 4, 8, 13, 14},
-  {5, 5, 6, 11, 15, 16},
-  {8, 5, 6, 7, 10, 12, 15, 16, 17},
-  {8, 6, 7, 8, 11, 13, 16, 17, 18},
-  {8, 7, 8, 9, 12, 14, 17, 18, 19},
-  {5, 8, 9, 13, 18, 19},
-  {5, 10, 11, 16, 20, 21},
-  {8, 10, 11, 12, 15, 17, 20, 21, 22},
-  {8, 11, 12, 13, 16, 18, 21, 22, 23},
-  {8, 12, 13, 14, 17, 19, 22, 23, 24},
-  {5, 13, 14, 18, 23, 24},
-  {3, 15, 16, 21},
-  {5, 15, 16, 17, 20, 22},
-  {5, 16, 17, 18, 21, 23},
-  {5, 17, 18, 19, 22, 24},
-  {3, 18, 19, 23},
-};
-
-template <>
+// 5x5
+template<>
 void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  int c = bd_[i];
-
-  used_ ^= (1 << i);
-  len += (c==kQ ? 2 : 1);
-  if (t->IsWord()) {
-    if (t->Mark() != runs_) {
-      t->Mark(runs_);
-      score_ += kWordScores[len];
-    }
+  PREFIX();
+  switch(i) {
+    case 0: REC3(1, 5, 6); break;
+    case 1: REC5(0, 2, 5, 6, 7); break;
+    case 2: REC5(1, 3, 6, 7, 8); break;
+    case 3: REC5(2, 4, 7, 8, 9); break;
+    case 4: REC3(3, 8, 9); break;
+    case 5: REC5(0, 1, 6, 10, 11); break;
+    case 6: REC8(0, 1, 2, 5, 7, 10, 11, 12); break;
+    case 7: REC8(1, 2, 3, 6, 8, 11, 12, 13); break;
+    case 8: REC8(2, 3, 4, 7, 9, 12, 13, 14); break;
+    case 9: REC5(3, 4, 8, 13, 14); break;
+    case 10: REC5(5, 6, 11, 15, 16); break;
+    case 11: REC8(5, 6, 7, 10, 12, 15, 16, 17); break;
+    case 12: REC8(6, 7, 8, 11, 13, 16, 17, 18); break;
+    case 13: REC8(7, 8, 9, 12, 14, 17, 18, 19); break;
+    case 14: REC5(8, 9, 13, 18, 19); break;
+    case 15: REC5(10, 11, 16, 20, 21); break;
+    case 16: REC8(10, 11, 12, 15, 17, 20, 21, 22); break;
+    case 17: REC8(11, 12, 13, 16, 18, 21, 22, 23); break;
+    case 18: REC8(12, 13, 14, 17, 19, 22, 23, 24); break;
+    case 19: REC5(13, 14, 18, 23, 24); break;
+    case 20: REC3(15, 16, 21); break;
+    case 21: REC5(15, 16, 17, 20, 22); break;
+    case 22: REC5(16, 17, 18, 21, 23); break;
+    case 23: REC5(17, 18, 19, 22, 24); break;
+    case 24: REC3(18, 19, 23); break;
   }
-
-  int* neighbors = NEIGHBORS55[i];
-  int num_neighbors = neighbors[0];
-  for (int j = 1; j <= num_neighbors; j++) {
-    int idx = neighbors[j];
-    if ((used_ & (1 << idx)) == 0) {
-      int cc = bd_[idx];
-      if (t->StartsWord(cc)) {
-        DoDFS(idx, len, t->Descend(cc));
-      }
-    }
-  }
-
-  used_ ^= (1 << i);
+  SUFFIX();
 }
-
+// [[[end]]]
 // clang-format on
+
+#undef REC
+#undef REC3
+#undef REC5
+#undef REC8
+#undef PREFIX
+#undef SUFFIX
 
 template <int M, int N>
 vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggle) {
@@ -349,8 +318,9 @@ vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggl
   return out;
 }
 
-template <>
-void Boggler<4, 4>::FindWordsDFS(
+// This could be specialized, but it's not as performance-sensitive as DoDFS()
+template <int M, int N>
+void Boggler<M, N>::FindWordsDFS(
     unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
 ) {
   used_ ^= (1 << i);
@@ -362,50 +332,20 @@ void Boggler<4, 4>::FindWordsDFS(
     }
   }
 
-  int cc, idx;
-
-  // clang-format off
-#define HIT(x,y) do { idx = (x) * 4 + y; \
-  if ((used_ & (1 << idx)) == 0) { \
-    cc = bd_[idx]; \
-    if (cc != -1 && t->StartsWord(cc)) { \
-      FindWordsDFS(idx, t->Descend(cc), multiboggle, out); \
-    } \
-  } \
-} while(0)
-#define HIT3x(x,y) HIT(x,y); HIT(x+1,y); HIT(x+2,y)
-#define HIT3y(x,y) HIT(x,y); HIT(x,y+1); HIT(x,y+2)
-#define HIT8(x,y) HIT3x(x-1,y-1); HIT(x-1,y); HIT(x+1,y); HIT3x(x-1,y+1)
-
-  switch (i) {
-    case 0*4 + 0: HIT(0, 1); HIT(1, 0); HIT(1, 1); break;
-    case 0*4 + 1: HIT(0, 0); HIT3y(1, 0); HIT(0, 2); break;
-    case 0*4 + 2: HIT(0, 1); HIT3y(1, 1); HIT(0, 3); break;
-    case 0*4 + 3: HIT(0, 2); HIT(1, 2); HIT(1, 3); break;
-
-    case 1*4 + 0: HIT(0, 0); HIT(2, 0); HIT3x(0, 1); break;
-    case 1*4 + 1: HIT8(1, 1); break;
-    case 1*4 + 2: HIT8(1, 2); break;
-    case 1*4 + 3: HIT3x(0, 2); HIT(0, 3); HIT(2, 3); break;
-
-    case 2*4 + 0: HIT(1, 0); HIT(3, 0); HIT3x(1, 1); break;
-    case 2*4 + 1: HIT8(2, 1); break;
-    case 2*4 + 2: HIT8(2, 2); break;
-    case 2*4 + 3: HIT3x(1, 2); HIT(1, 3); HIT(3, 3); break;
-
-    case 3*4 + 0: HIT(2, 0); HIT(2, 1); HIT(3, 1); break;
-    case 3*4 + 1: HIT3y(2, 0); HIT(3, 0); HIT(3, 2); break;
-    case 3*4 + 2: HIT3y(2, 1); HIT(3, 1); HIT(3, 3); break;
-    case 3*4 + 3: HIT(2, 2); HIT(3, 2); HIT(2, 3); break;
+  auto& neighbors = BoardClassBoggler<M, N>::NEIGHBORS[i];
+  auto n_neighbors = neighbors[0];
+  for (int j = 1; j <= n_neighbors; j++) {
+    auto idx = neighbors[j];
+    if ((used_ & (1 << idx)) == 0) {
+      int cc = bd_[idx];
+      if (cc != -1 && t->StartsWord(cc)) {
+        FindWordsDFS(idx, t->Descend(cc), multiboggle, out);
+      }
+    }
   }
 
-#undef HIT
-#undef HIT3x
-#undef HIT3y
-#undef HIT8
-  // clang-format on
   used_ ^= (1 << i);
   seq_.pop_back();
 }
 
-#endif
+#endif  // BOGGLER_4

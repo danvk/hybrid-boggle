@@ -9,7 +9,7 @@ These are the best (and best known) boards with the [ENABLE2K word list].
 - ✅ 3x3: `streaedlp` [545 points], [proven optimal][33] in 2009.
 - ✅ 3x4: `perslatesind` [1651 points], [proven optimal][34] in 2025.
 - ✅ 4x4: `perslatgsineters` [3625 points], [proven optimal][35] in 2025.
-- ❓ 5x5: `sepesdsracietilmanesligdr`, 10406 points, found via hill climbing, optimality unknown.
+- ❓ 5x5: `ligdrmanesietildsracsepes`, 10406 points, found via hill climbing, optimality unknown.
 
 The 3x4 board should be read down columns first:
 
@@ -145,7 +145,7 @@ $ poetry run python -m boggle.ibucket_solver "lnrsy aeiou chkmpt chkmpt aeiou ln
 
 This also takes a `--print_words` flag that will print all the words that can be found on any board in the board class.
 
-To calculate the upper bound on a board class using 2025 [orderly trees], use `orderly_tree_builder`:
+To calculate the upper bound on a board class using 2025's [orderly trees], use `orderly_tree_builder`:
 
 ```
 $ poetry run python -m boggle.orderly_tree_builder "lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz"
@@ -182,12 +182,12 @@ Here are the results for different wordlists. See [wordlists/README.md](wordlist
   | 3x3 |   | 3x4 |   | 4x4 |   | 5x5
 -- | -- | -- | -- | -- | -- | -- | --
              | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb**
-**ENABLE2K** | `streaedlp` | `streaedlp` | `perslatesind` | `perslatesind` | `perslatgsineters` | `perslatgsineters` | `sepesdsracietilmanesligdr`
-**NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | ?
+**ENABLE2K** | `streaedlp` | `streaedlp` | `perslatesind` | `perslatesind` | `perslatgsineters` | `perslatgsineters` | `ligdrmanesietildsracsepes`
+**NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | `ligdrmanesietildsracsepes`
 **OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | ?
-**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | ?
+**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `dplcsseaietrtndsaiesgnmpr`
 **SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | ?
-**TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `sepesdsracietilmanesligdr`
+**TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `rdgassentmliteicarsdseper`
 
 - "hillclimb" means that this is the best board found using [hill climbing] (`hillclimb.py`).
 - "global" means this is the globally optimal board (`break_all.py`).

@@ -126,17 +126,8 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
           return cell_to_order_[a.first] < cell_to_order_[b.first];
         }
     );
-    /*
-    cout << "AddWord:";
-    for (int j = 0; j < n; j++) {
-      auto [cell, letter] = orderly_choices_[j];
-      cout << " (" << cell << "=" << letter << "):" << bd_[cell][letter];
-    }
-    cout << endl;
-    */
     auto new_root =
         root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
-    // cout << "/AddWord" << endl;
     assert(new_root == root_);
   }
 

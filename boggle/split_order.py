@@ -52,10 +52,50 @@ SPLIT_ORDER_44 = tuple(
 assert len(SPLIT_ORDER_44) == 16
 assert len(set(SPLIT_ORDER_44)) == 16
 
+
+def to_idx5(x, y):
+    return x * 5 + y
+
+
+SPLIT_ORDER_55 = tuple(
+    to_idx5(x, y)
+    for x, y in (
+        (2, 2),  # super-center
+        (1, 2),
+        (2, 1),
+        (3, 2),
+        (2, 3),  # up/down from center
+        (1, 1),
+        (1, 3),
+        (3, 1),
+        (3, 3),  # diagonal from center
+        (0, 2),
+        (2, 0),
+        (4, 2),
+        (2, 4),  # center sides
+        (1, 0),
+        (3, 0),
+        (0, 1),
+        (0, 3),
+        (1, 4),
+        (3, 4),
+        (4, 1),
+        (4, 3),  # off-center sides
+        (0, 0),
+        (4, 0),
+        (0, 4),
+        (4, 4),  # corners
+    )
+)
+assert len(SPLIT_ORDER_55) == 25
+assert len(set(SPLIT_ORDER_55)) == 25
+
+
 SPLIT_ORDER: dict[tuple[int, int], Sequence[int]] = {
     (2, 2): (0, 1, 2, 3),
     (2, 3): (0, 1, 2, 3, 4, 5),
     (3, 3): SPLIT_ORDER_33,
     (3, 4): SPLIT_ORDER_34,
     (4, 4): SPLIT_ORDER_44,
+    (5, 5): SPLIT_ORDER_55,
 }

@@ -69,8 +69,14 @@ def get_process_id():
 def hillclimb(task: int):
     me = get_process_id()
     seed = hillclimb.random_seed + task
+
+    def print_and_write(line: str):
+        print(line)
+        with open(f"hillclimb-{me}.txt", "a") as out:
+            out.write(line + "\n")
+
     random.seed(seed)
-    print(f"#{me} starting hillclimb with random seed = {seed}")
+    print_and_write(f"#{me} starting hillclimb with random seed = {seed}")
     args = hillclimb.args
     w, h = hillclimb.dims
     boggler = hillclimb.boggler
@@ -104,7 +110,8 @@ def hillclimb(task: int):
         scores = [(get_score(n), n) for n in ns]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
-        print(f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}")
+        line = f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}"
+        print_and_write(line)
         new_pool = [bd for _, bd in scores]
         if new_pool == pool:
             break
@@ -170,21 +177,28 @@ def main():
         hillclimb_init(args)
         it = (hillclimb(task) for task in tasks)
 
+    out = open("hillclimb.root.txt", "w")
+
+    def print_and_write(line: str):
+        print(line)
+        out.write(line)
+        out.write("\n")
+
     best = Counter[tuple[int, str]]()
     for run, (score, board, n, score_boards) in enumerate(it):
-        print(f"{run}/{args.num_boards} {score} {board} ({n} iterations)")
+        print_and_write(f"{run}/{args.num_boards} {score} {board} ({n} iterations)")
         best.update(score_boards)
 
-    if args.num_boards > 1:
-        print("---")
-        print(f"Top {args.pool_size} boards:")
-        tops = [*best.keys()]
-        tops.sort(reverse=True)
-        tops = tops[: args.pool_size]
-        for score_board in tops:
-            score, board = score_board
-            freq = best[score_board]
-            print(f"{score}\t{board}\t{freq}/{args.num_boards}")
+        if args.num_boards > 1:
+            print_and_write("---")
+            print_and_write(f"Top {args.pool_size} boards:")
+            tops = [*best.keys()]
+            tops.sort(reverse=True)
+            tops = tops[: args.pool_size]
+            for score_board in tops:
+                score, board = score_board
+                freq = best[score_board]
+                print_and_write(f"{score}\t{board}\t{freq}/{1+run}")
 
 
 if __name__ == "__main__":
