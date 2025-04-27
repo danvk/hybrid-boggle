@@ -3,6 +3,8 @@
 #ifndef BOARD_CLASS_BOGGLER_H
 #define BOARD_CLASS_BOGGLER_H
 
+#include "trie.h"
+
 // TODO: templating on M, N probably isn't that helpful here, or on any
 // implementations except BucketBoggler.
 template <int M, int N>

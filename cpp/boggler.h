@@ -2,6 +2,7 @@
 #ifndef BOGGLER_4
 #define BOGGLER_4
 
+#include "board_class_boggler.h"
 #include "constants.h"
 #include "trie.h"
 
@@ -19,6 +20,7 @@ class Boggler {
   void SetCell(int x, int y, unsigned int c);
   unsigned int Cell(int x, int y) const;
 
+  // This is used by the web Boggle UI
   vector<vector<int>> FindWords(const string& lets, bool multiboggle);
 
  private:
@@ -307,6 +309,35 @@ vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggl
     }
   }
   return out;
+}
+
+template <int M, int N>
+void Boggler<M, N>::FindWordsDFS(
+    unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
+) {
+  used_ ^= (1 << i);
+  seq_.push_back(i);
+  if (t->IsWord()) {
+    if (t->Mark() != runs_ || multiboggle) {
+      t->Mark(runs_);
+      out.push_back(seq_);
+    }
+  }
+
+  auto& neighbors = BoardClassBoggler<M, N>::NEIGHBORS[i];
+  auto n_neighbors = neighbors[0];
+  for (int j = 1; j <= n_neighbors; j++) {
+    auto idx = neighbors[j];
+    if ((used_ & (1 << idx)) == 0) {
+      int cc = bd_[idx];
+      if (cc != -1 && t->StartsWord(cc)) {
+        FindWordsDFS(idx, t->Descend(cc), multiboggle, out);
+      }
+    }
+  }
+
+  used_ ^= (1 << i);
+  seq_.pop_back();
 }
 
 // TODO: make this generic on M, N via BoardClassBoggler<M, N>::NEIGHBORS
