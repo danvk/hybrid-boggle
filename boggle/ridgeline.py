@@ -39,7 +39,7 @@ def make_graph(board1: str, board2: str, scores: dict[str, int]):
         G.add_node(board, score=score)
 
     # Add an edge from each board to the boards an edit distance of 1 away
-    for board in scores.keys():
+    for board in tqdm(scores.keys()):
         for i in diff_indices:
             if board[i] == board1[i]:
                 other = board[:i] + board2[i] + board[i + 1 :]
@@ -55,6 +55,24 @@ def make_graph(board1: str, board2: str, scores: dict[str, int]):
                 raise ValueError(board)
 
     return G
+
+
+def highest_scoring_path(G: nx.Graph, start: str, end: str):
+    """Returns a sequence of nodes in G representing the shortest path from start to end.
+
+    Amongst all shortest paths, this path will have the maximum value for:
+    min(G[node]['score'] for node in path)
+    """
+
+    # Evaluate each path based on the minimum score of its nodes
+    def path_score(path):
+        return min(G.nodes[node]["score"] for node in path)
+
+    # Find all shortest paths from start to end
+    # Select the path with the maximum minimum score
+    best_path = max(nx.all_shortest_paths(G, source=start, target=end), key=path_score)
+
+    return best_path
 
 
 def main():
@@ -82,6 +100,10 @@ def main():
 
     G = make_graph(board1, board2, scores)
     print(f"{G.number_of_nodes()=} {G.number_of_edges()=}")
+
+    path = highest_scoring_path(G, board1, board2)
+    for board in path:
+        print(f"{board}\t{scores[board]}")
 
 
 if __name__ == "__main__":
