@@ -145,7 +145,7 @@ $ poetry run python -m boggle.ibucket_solver "lnrsy aeiou chkmpt chkmpt aeiou ln
 
 This also takes a `--print_words` flag that will print all the words that can be found on any board in the board class.
 
-To calculate the upper bound on a board class using 2025 [orderly trees], use `orderly_tree_builder`:
+To calculate the upper bound on a board class using 2025's [orderly trees], use `orderly_tree_builder`:
 
 ```
 $ poetry run python -m boggle.orderly_tree_builder "lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz"
