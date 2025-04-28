@@ -185,7 +185,7 @@ Here are the results for different wordlists. See [wordlists/README.md](wordlist
 **ENABLE2K** | `streaedlp` | `streaedlp` | `perslatesind` | `perslatesind` | `perslatgsineters` | `perslatgsineters` | `ligdrmanesietildsracsepes`
 **NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | `ligdrmanesietildsracsepes`
 **OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | `dlpmeseasicrtndoaiegsplsr`
-**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `cdimloseaiprtngeaiedslcsr`
+**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `dlpmeseasicrtndoaiegpllsr`
 **SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | `gndsrsoiesctrtnheaiasplcs`
 **TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `rdgassentmliteicarsdseper`
 
