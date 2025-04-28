@@ -184,9 +184,9 @@ Here are the results for different wordlists. See [wordlists/README.md](wordlist
              | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb**
 **ENABLE2K** | `streaedlp` | `streaedlp` | `perslatesind` | `perslatesind` | `perslatgsineters` | `perslatgsineters` | `ligdrmanesietildsracsepes`
 **NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | `ligdrmanesietildsracsepes`
-**OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | ?
-**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `dplcsseaietrtndsaiesgnmpr`
-**SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | ?
+**OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | `dlpmeseasicrtndoaiegsplsr`
+**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `cdimloseaiprtngeaiedslcsr`
+**SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | `gndsrsoiesctrtnheaiasplcs`
 **TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `rdgassentmliteicarsdseper`
 
 - "hillclimb" means that this is the best board found using [hill climbing] (`hillclimb.py`).
