@@ -186,7 +186,7 @@ Here are the results for different wordlists. See [wordlists/README.md](wordlist
 **NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | `ligdrmanesietildsracsepes`
 **OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | `dlpmeseasicrtndoaiegsplsr`
 **YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `dlpmeseasicrtndoaiegpllsr`
-**SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | `gndsrsoiesctrtnheaiasplcs`
+**SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | `degosrsniceitalstrepuopsd`
 **TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `rdgassentmliteicarsdseper`
 
 - "hillclimb" means that this is the best board found using [hill climbing] (`hillclimb.py`).
