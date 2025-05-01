@@ -9,7 +9,12 @@
 template <int M, int N>
 class Boggler {
  public:
-  Boggler(Trie* t) : dict_(t), runs_(0) {}
+  Boggler(Trie* t) : dict_(t), runs_(0) {
+    static_assert(
+        sizeof(kWordScores) / sizeof(kWordScores[0]) - 1 >= M * N,
+        "kWordScores must have at least M * N + 1 elements"
+    );
+  }
 
   int Score(const char* lets);
 
