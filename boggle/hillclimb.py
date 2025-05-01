@@ -104,13 +104,15 @@ def hillclimb(task: int):
     best_score = max(get_score(bd) for bd in pool)
 
     num_iter = 0
+    start = time.time()
     while True:
         num_iter += 1
         ns = {sym.canonicalize(n) for seed in pool for n in neighbors(seed)}
         scores = [(get_score(n), n) for n in ns]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
-        line = f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}"
+        elapsed = time.time() - start
+        line = f"#{me} {num_iter=}: {max(scores)=} {min(scores)=} {len(ns)=} {elapsed=}"
         print_and_write(line)
         new_pool = [bd for _, bd in scores]
         if new_pool == pool:

@@ -17,6 +17,7 @@ Trie::Trie() {
   for (int i = 0; i < kNumLetters; i++) children_[i] = NULL;
   is_word_ = false;
   mark_ = 0;
+  has_children_ = 0;
 }
 
 Trie* Trie::AddWord(const char* wd) {
@@ -27,6 +28,7 @@ Trie* Trie::AddWord(const char* wd) {
   }
   int c = idx(*wd);
   if (!StartsWord(c)) children_[c] = new Trie;
+  has_children_ |= (1 << c);
   return Descend(c)->AddWord(wd + 1);
 }
 

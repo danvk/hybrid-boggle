@@ -2,6 +2,7 @@
 #ifndef BOGGLER_4
 #define BOGGLER_4
 
+#include <bits/stdc++.h>
 #include "board_class_boggler.h"
 #include "constants.h"
 #include "trie.h"
@@ -9,7 +10,18 @@
 template <int M, int N>
 class Boggler {
  public:
-  Boggler(Trie* t) : dict_(t), runs_(0) {}
+  Boggler(Trie* t) : dict_(t), runs_(0) {
+    // Precompute the neighbors for each cell
+    // NOTE: we lose information about the order of the neighbors
+    for (int i = 0; i < M * N; i++) {
+      auto& neighbors = BoardClassBoggler<M, N>::NEIGHBORS[i];
+      auto n_neighbors = neighbors[0];
+      neighbors_[i] = 0;
+      for (int j = 1; j <= n_neighbors; j++) {
+        neighbors_[i] |= (1 << neighbors[j]);
+      }
+    }
+  }
 
   int Score(const char* lets);
 
@@ -34,6 +46,7 @@ class Boggler {
   Trie* dict_;
   unsigned int used_;
   int bd_[M * N];
+  uint32_t neighbors_[M * N];
   unsigned int score_;
   unsigned int runs_;
   vector<int> seq_;
@@ -101,199 +114,31 @@ unsigned int Boggler<M, N>::InternalScore() {
   return score_;
 }
 
-#define REC(idx)                         \
-  do {                                   \
-    if ((used_ & (1 << idx)) == 0) {     \
-      cc = bd_[idx];                     \
-      if (t->StartsWord(cc)) {           \
-        DoDFS(idx, len, t->Descend(cc)); \
-      }                                  \
-    }                                    \
-  } while (0)
+template<int M, int N>
+void Boggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  used_ ^= (1 << i);
+  int c = bd_[i];
 
-#define REC3(a, b, c) \
-  REC(a);             \
-  REC(b);             \
-  REC(c)
-
-#define REC5(a, b, c, d, e) \
-  REC3(a, b, c);            \
-  REC(d);                   \
-  REC(e)
-
-#define REC8(a, b, c, d, e, f, g, h) \
-  REC5(a, b, c, d, e);               \
-  REC3(f, g, h)
-
-// PREFIX and SUFFIX could be inline methods instead, but this incurs a ~5% perf hit.
-#define PREFIX()                  \
-  int c = bd_[i], cc;             \
-  used_ ^= (1 << i);              \
-  len += (c == kQ ? 2 : 1);       \
-  if (t->IsWord()) {              \
-    if (t->Mark() != runs_) {     \
-      t->Mark(runs_);             \
-      score_ += kWordScores[len]; \
-    }                             \
+  len += (c == kQ ? 2 : 1); 
+  if (t->IsWord()) {
+    if (t->Mark() != runs_) {
+      t->Mark(runs_);
+      score_ += kWordScores[len];
+    }
   }
 
-#define SUFFIX() used_ ^= (1 << i)
-
-// clang-format off
-
-/*[[[cog
-from boggle.neighbors import NEIGHBORS
-
-for (w, h), neighbors in NEIGHBORS.items():
-    print(f"""
-// {w}x{h}
-template<>
-void Boggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, Trie* t) {{
-  PREFIX();
-  switch(i) {{""")
-    for i, ns in enumerate(neighbors):
-        csv = ", ".join(str(n) for n in ns)
-        print(f"    case {i}: REC{len(ns)}({csv}); break;")
-
-    print("""  }
-  SUFFIX();
-}""")
-]]]*/
-
-// 2x2
-template<>
-void Boggler<2, 2>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  PREFIX();
-  switch(i) {
-    case 0: REC3(1, 2, 3); break;
-    case 1: REC3(0, 2, 3); break;
-    case 2: REC3(0, 1, 3); break;
-    case 3: REC3(0, 1, 2); break;
+  uint32_t has_children = t->HasChildren();
+  uint32_t unused_neighbors = neighbors_[i] & ~used_;
+  while (unused_neighbors) {
+    int idx = __builtin_ctz(unused_neighbors);
+    unused_neighbors &= unused_neighbors - 1;
+    int cc = bd_[idx];
+    if (has_children & (1 << cc)) {
+      DoDFS(idx, len, t->Descend(cc));
+    }
   }
-  SUFFIX();
+  used_ ^= (1 << i);
 }
-
-// 2x3
-template<>
-void Boggler<2, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  PREFIX();
-  switch(i) {
-    case 0: REC3(1, 3, 4); break;
-    case 1: REC5(0, 2, 3, 4, 5); break;
-    case 2: REC3(1, 4, 5); break;
-    case 3: REC3(0, 1, 4); break;
-    case 4: REC5(0, 1, 2, 3, 5); break;
-    case 5: REC3(1, 2, 4); break;
-  }
-  SUFFIX();
-}
-
-// 3x3
-template<>
-void Boggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  PREFIX();
-  switch(i) {
-    case 0: REC3(1, 3, 4); break;
-    case 1: REC5(0, 2, 3, 4, 5); break;
-    case 2: REC3(1, 4, 5); break;
-    case 3: REC5(0, 1, 4, 6, 7); break;
-    case 4: REC8(0, 1, 2, 3, 5, 6, 7, 8); break;
-    case 5: REC5(1, 2, 4, 7, 8); break;
-    case 6: REC3(3, 4, 7); break;
-    case 7: REC5(3, 4, 5, 6, 8); break;
-    case 8: REC3(4, 5, 7); break;
-  }
-  SUFFIX();
-}
-
-// 3x4
-template<>
-void Boggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  PREFIX();
-  switch(i) {
-    case 0: REC3(1, 4, 5); break;
-    case 1: REC5(0, 2, 4, 5, 6); break;
-    case 2: REC5(1, 3, 5, 6, 7); break;
-    case 3: REC3(2, 6, 7); break;
-    case 4: REC5(0, 1, 5, 8, 9); break;
-    case 5: REC8(0, 1, 2, 4, 6, 8, 9, 10); break;
-    case 6: REC8(1, 2, 3, 5, 7, 9, 10, 11); break;
-    case 7: REC5(2, 3, 6, 10, 11); break;
-    case 8: REC3(4, 5, 9); break;
-    case 9: REC5(4, 5, 6, 8, 10); break;
-    case 10: REC5(5, 6, 7, 9, 11); break;
-    case 11: REC3(6, 7, 10); break;
-  }
-  SUFFIX();
-}
-
-// 4x4
-template<>
-void Boggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  PREFIX();
-  switch(i) {
-    case 0: REC3(1, 4, 5); break;
-    case 1: REC5(0, 2, 4, 5, 6); break;
-    case 2: REC5(1, 3, 5, 6, 7); break;
-    case 3: REC3(2, 6, 7); break;
-    case 4: REC5(0, 1, 5, 8, 9); break;
-    case 5: REC8(0, 1, 2, 4, 6, 8, 9, 10); break;
-    case 6: REC8(1, 2, 3, 5, 7, 9, 10, 11); break;
-    case 7: REC5(2, 3, 6, 10, 11); break;
-    case 8: REC5(4, 5, 9, 12, 13); break;
-    case 9: REC8(4, 5, 6, 8, 10, 12, 13, 14); break;
-    case 10: REC8(5, 6, 7, 9, 11, 13, 14, 15); break;
-    case 11: REC5(6, 7, 10, 14, 15); break;
-    case 12: REC3(8, 9, 13); break;
-    case 13: REC5(8, 9, 10, 12, 14); break;
-    case 14: REC5(9, 10, 11, 13, 15); break;
-    case 15: REC3(10, 11, 14); break;
-  }
-  SUFFIX();
-}
-
-// 5x5
-template<>
-void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
-  PREFIX();
-  switch(i) {
-    case 0: REC3(1, 5, 6); break;
-    case 1: REC5(0, 2, 5, 6, 7); break;
-    case 2: REC5(1, 3, 6, 7, 8); break;
-    case 3: REC5(2, 4, 7, 8, 9); break;
-    case 4: REC3(3, 8, 9); break;
-    case 5: REC5(0, 1, 6, 10, 11); break;
-    case 6: REC8(0, 1, 2, 5, 7, 10, 11, 12); break;
-    case 7: REC8(1, 2, 3, 6, 8, 11, 12, 13); break;
-    case 8: REC8(2, 3, 4, 7, 9, 12, 13, 14); break;
-    case 9: REC5(3, 4, 8, 13, 14); break;
-    case 10: REC5(5, 6, 11, 15, 16); break;
-    case 11: REC8(5, 6, 7, 10, 12, 15, 16, 17); break;
-    case 12: REC8(6, 7, 8, 11, 13, 16, 17, 18); break;
-    case 13: REC8(7, 8, 9, 12, 14, 17, 18, 19); break;
-    case 14: REC5(8, 9, 13, 18, 19); break;
-    case 15: REC5(10, 11, 16, 20, 21); break;
-    case 16: REC8(10, 11, 12, 15, 17, 20, 21, 22); break;
-    case 17: REC8(11, 12, 13, 16, 18, 21, 22, 23); break;
-    case 18: REC8(12, 13, 14, 17, 19, 22, 23, 24); break;
-    case 19: REC5(13, 14, 18, 23, 24); break;
-    case 20: REC3(15, 16, 21); break;
-    case 21: REC5(15, 16, 17, 20, 22); break;
-    case 22: REC5(16, 17, 18, 21, 23); break;
-    case 23: REC5(17, 18, 19, 22, 24); break;
-    case 24: REC3(18, 19, 23); break;
-  }
-  SUFFIX();
-}
-// [[[end]]]
-// clang-format on
-
-#undef REC
-#undef REC3
-#undef REC5
-#undef REC8
-#undef PREFIX
-#undef SUFFIX
 
 template <int M, int N>
 vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggle) {
