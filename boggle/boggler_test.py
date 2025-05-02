@@ -28,10 +28,19 @@ PARAMS = [
 # These should all match performance-boggle's solve binary
 
 
-@pytest.mark.parametrize("get_trie, Boggler", PARAMS)
-def test33(get_trie, Boggler):
-    t = get_trie()
-    b = Boggler(t, (3, 3))
+def get_trie_and_boggler(is_python: bool, dims: tuple[int, int]):
+    if is_python:
+        t = get_py_trie()
+        b = PyBoggler(t, dims)
+    else:
+        t = get_cpp_trie()
+        b = cpp_boggler(t, dims)
+    return t, b
+
+
+@pytest.mark.parametrize("is_python", [True, False])
+def test33(is_python: bool):
+    t, b = get_trie_and_boggler(is_python, (3, 3))
     assert b.score("abcdefghi") == 20
     assert b.score("streaedlp") == 545
 
@@ -159,9 +168,10 @@ def test_find_words():
     assert sorted(words_multi) == sorted(words_multi3)
 
 
-def test_find_masked():
-    t = get_cpp_trie()
-    b = cpp_boggler(t, (3, 3))
+@pytest.mark.parametrize("is_python", [False, True])
+def test_find_masked(is_python: bool):
+    t, b = get_trie_and_boggler(is_python, (3, 3))
     assert b.score("abcdefghi") == 20
-    assert b.score_with_mask(1 << 3) == 10  # blank out the "b"
+    assert b.score_with_mask(0) == 20
+    assert b.score_with_mask(1 << 1) == 10  # blank out the "b"
     # See https://www.danvk.org/boggle/?board=a.cdefghi&dims=33

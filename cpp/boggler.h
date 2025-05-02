@@ -124,7 +124,9 @@ unsigned int Boggler<M, N>::ScoreWithMask(unsigned int mask) {
   score_ = 0;
   for (int i = 0; i < M * N; i++) {
     int c = bd_[i];
-    if (dict_->StartsWord(c)) DoDFS(i, 0, dict_->Descend(c));
+    if (((used_ & (1 << i)) == 0) && dict_->StartsWord(c)) {
+      DoDFS(i, 0, dict_->Descend(c));
+    }
   }
   return score_;
 }

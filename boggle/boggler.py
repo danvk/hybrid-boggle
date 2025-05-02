@@ -1,14 +1,16 @@
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import make_lookup_table
-#            1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
-SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
+
+#                  1, 2, 3, 4, 5, 6, 7,  8
+SCORES = tuple([0, 0, 0, 1, 1, 2, 3, 5, 11] + [11 for _ in range(9, 25 + 1)])
+assert len(SCORES) == 25 + 1
 LETTER_A = ord("a")
 LETTER_Q = ord("q") - LETTER_A
 LETTER_Z = ord("z")
 
 
 class PyBoggler:
-    """Hybrid or pure-Python Boggler (depending on the Trie)."""
+    """Pure-Python Boggler. Has the same API as Boggler<M, N> plus some extra."""
 
     def __init__(self, trie, dims: tuple[int, int]):
         self._trie = trie
@@ -20,6 +22,7 @@ class PyBoggler:
         self._score = 0
         self.collect_words = False
         self.words = None
+        self._is_multi = False
         self._neighbors = NEIGHBORS[dims]
         self.lookup_table = None
         assert not self._trie.IsWord()
@@ -38,6 +41,22 @@ class PyBoggler:
 
     def score(self, bd: str):
         self.set_board(bd)
+        self._used = [False] * self._n
+        return self.score_internal()
+
+    def score_with_mask(self, mask: int):
+        """mask=0 is equivalent to normal scoring"""
+        assert mask >= 0
+        self._used = [mask & (1 << i) != 0 for i in range(self._n)]
+        return self.score_internal()
+
+    def multi_score_with_mask(self, mask: int):
+        self._is_multi = True
+        score = self.score_with_mask(mask)
+        self._is_multi = False
+        return score
+
+    def score_internal(self):
         # This allows the same Trie to be used by multiple bogglers, e.g. for boggle_test.py
         self._runs = 1 + self._trie.Mark()
         self._trie.SetMark(self._runs)
@@ -49,7 +68,7 @@ class PyBoggler:
         t = self._trie
         for i in range(0, self._n):
             c = self._cells[i]
-            if c == -1:
+            if c == -1 or self._used[i]:
                 continue
             d = t.Descend(c)
             if d:
@@ -61,7 +80,7 @@ class PyBoggler:
         self._used[i] = True
         length += 1 if c != LETTER_Q else 2
         if t.IsWord():
-            if t.Mark() != self._runs:
+            if self._is_multi or t.Mark() != self._runs:
                 t.SetMark(self._runs)
                 self._score += SCORES[length]
                 if self.collect_words:
