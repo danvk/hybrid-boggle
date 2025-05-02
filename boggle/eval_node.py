@@ -26,6 +26,7 @@ from collections import Counter
 from typing import Self, Sequence
 
 from boggle.arena import PyArena
+from boggle.boggler import PyBoggler
 
 ROOT_NODE = -2
 
@@ -153,6 +154,7 @@ class SumNode:
         cells: list[str],
         split_order: Sequence[int],
         preset_cells: Sequence[tuple[int, int]],
+        boggler: PyBoggler,
     ):
         """Find individual high-scoring boards in this tree without creating new nodes.
 

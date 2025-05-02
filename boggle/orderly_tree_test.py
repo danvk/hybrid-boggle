@@ -3,7 +3,13 @@ import math
 from typing import Sequence
 
 import pytest
-from cpp_boggle import Trie
+from cpp_boggle import (
+    Trie,
+    orderly_bound22,
+    orderly_bound33,
+    orderly_bound34,
+    orderly_bound44,
+)
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.boggler import PyBoggler
@@ -111,15 +117,15 @@ def orderly_bound(
     if isinstance(boggler, PyBoggler):
         return tree.orderly_bound(cutoff, cells, split_order, preset_cells, boggler)
     if dims == (2, 2):
-        return tree.orderly_bound22(cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound22(tree, cutoff, cells, split_order, preset_cells, boggler)
     elif dims == (3, 3):
-        return tree.orderly_bound33(cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound33(tree, cutoff, cells, split_order, preset_cells, boggler)
     elif dims == (3, 4):
-        return tree.orderly_bound34(cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound34(tree, cutoff, cells, split_order, preset_cells, boggler)
     elif dims == (4, 4):
-        return tree.orderly_bound44(cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound44(tree, cutoff, cells, split_order, preset_cells, boggler)
     elif dims == (5, 5):
-        return tree.orderly_bound44(cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound44(tree, cutoff, cells, split_order, preset_cells, boggler)
     raise ValueError(f"Invalid dims {dims}")
 
 
