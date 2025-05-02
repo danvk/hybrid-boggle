@@ -22,6 +22,8 @@ class Boggler {
   // mask=0 is ordinary scoring.
   unsigned int ScoreWithMask(unsigned int mask);
 
+  unsigned int MultiScoreWithMask(unsigned int mask);
+
   unsigned int NumCells() { return M * N; }
 
   // Set a cell on the current board. Must have 0 <= x < M, 0 <= y < N and 0 <=
@@ -41,6 +43,7 @@ class Boggler {
   );
   bool ParseBoard(const char* bd);
 
+  bool is_multi_;
   Trie* dict_;
   unsigned int used_;
   int bd_[M * N];
@@ -64,6 +67,7 @@ int Boggler<M, N>::Score(const char* lets) {
   if (!ParseBoard(lets)) {
     return -1;
   }
+  is_multi_ = false;
   return ScoreWithMask(0);
 }
 
@@ -96,6 +100,12 @@ bool Boggler<M, N>::ParseBoard(const char* bd) {
     bd_[i] = bd[i] - 'a';
   }
   return true;
+}
+
+template <int M, int N>
+unsigned int Boggler<M, N>::MultiScoreWithMask(unsigned int mask) {
+  is_multi_ = true;
+  return ScoreWithMask(mask);
 }
 
 template <int M, int N>
@@ -136,15 +146,15 @@ unsigned int Boggler<M, N>::ScoreWithMask(unsigned int mask) {
   REC3(f, g, h)
 
 // PREFIX and SUFFIX could be inline methods instead, but this incurs a ~5% perf hit.
-#define PREFIX()                  \
-  int c = bd_[i], cc;             \
-  used_ ^= (1 << i);              \
-  len += (c == kQ ? 2 : 1);       \
-  if (t->IsWord()) {              \
-    if (t->Mark() != runs_) {     \
-      t->Mark(runs_);             \
-      score_ += kWordScores[len]; \
-    }                             \
+#define PREFIX()                           \
+  int c = bd_[i], cc;                      \
+  used_ ^= (1 << i);                       \
+  len += (c == kQ ? 2 : 1);                \
+  if (t->IsWord()) {                       \
+    if (is_multi_ || t->Mark() != runs_) { \
+      t->Mark(runs_);                      \
+      score_ += kWordScores[len];          \
+    }                                      \
   }
 
 #define SUFFIX() used_ ^= (1 << i)
