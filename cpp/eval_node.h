@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "arena.h"
+#include "boggler.h"
 
 using namespace std;
 
@@ -57,11 +58,13 @@ class SumNode {
   // The bound is equal to the multiboggle score.
   // The other vectors have some metrics
   // TODO: remove the other vectors, they're not filled out
+  template <int M, int N>
   tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
       int cutoff,
       const vector<string>& cells,
       const vector<int>& split_order,
-      const vector<pair<int, int>>& preset_cells
+      const vector<pair<int, int>>& preset_cells,
+      Boggler<M, N>& b
   ) const;
 
   vector<const SumNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
