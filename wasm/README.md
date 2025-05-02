@@ -4,7 +4,7 @@ The C++ Boggle code can be exported to [WebAssembly] (WASM) for use on web pages
 
 To build, install [emscripten] and then run:
 
-    emcc -lembind -sALLOW_MEMORY_GROWTH -sEXPORTED_FUNCTIONS=FS -sFORCE_FILESYSTEM=1 -o wasm/boggle.js cpp/wasm_boggle.cc cpp/trie.cc --emit-tsd boggle.d.ts
+    ./wasm/build-wasm.sh
 
 Check out [danvk/webboggle] for the web UI and https://www.danvk.org/boggle/ for the live version. This wrapper uses [embind], which is analogous to [pybind11] for WASM.
 
