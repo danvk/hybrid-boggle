@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from boggle.arena import PyArena
 from boggle.boggler import PyBoggler
 from boggle.eval_node import SumNode
+from boggle.orderly_bound import orderly_bound
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 
@@ -196,8 +197,14 @@ class HybridTreeBreaker:
         self.details_.n_bound += 1
         self.details_.depth[level] += 1
         # print(choices, tree.bound)
-        score_boards, bound_level, elim_level = tree.orderly_bound(
-            self.best_score, self.cells, remaining_cells, choices
+        score_boards, bound_level, elim_level = orderly_bound(
+            tree,
+            self.dims,
+            self.best_score,
+            self.cells,
+            remaining_cells,
+            choices,
+            self.boggler,
         )
         # for i, ev in enumerate(elim_level):
         #     bv = bound_level[i]

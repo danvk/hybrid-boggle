@@ -1,15 +1,8 @@
 import itertools
 import math
-from typing import Sequence
 
 import pytest
-from cpp_boggle import (
-    Trie,
-    orderly_bound22,
-    orderly_bound33,
-    orderly_bound34,
-    orderly_bound44,
-)
+from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.boggler import PyBoggler
@@ -28,6 +21,7 @@ from boggle.eval_node import (
     split_orderly_tree,
 )
 from boggle.ibuckets import PyBucketBoggler
+from boggle.orderly_bound import orderly_bound
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
@@ -103,30 +97,6 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
         external("1bc9f74c0682*.txt")
     )
-
-
-def orderly_bound(
-    tree: SumNode,
-    dims: tuple[int, int],
-    cutoff: int,
-    cells: list[str],
-    split_order: Sequence[int],
-    preset_cells: Sequence[tuple[int, int]],
-    boggler: PyBoggler,
-):
-    if isinstance(boggler, PyBoggler):
-        return tree.orderly_bound(cutoff, cells, split_order, preset_cells, boggler)
-    if dims == (2, 2):
-        return orderly_bound22(tree, cutoff, cells, split_order, preset_cells, boggler)
-    elif dims == (3, 3):
-        return orderly_bound33(tree, cutoff, cells, split_order, preset_cells, boggler)
-    elif dims == (3, 4):
-        return orderly_bound34(tree, cutoff, cells, split_order, preset_cells, boggler)
-    elif dims == (4, 4):
-        return orderly_bound44(tree, cutoff, cells, split_order, preset_cells, boggler)
-    elif dims == (5, 5):
-        return orderly_bound44(tree, cutoff, cells, split_order, preset_cells, boggler)
-    raise ValueError(f"Invalid dims {dims}")
 
 
 @pytest.mark.parametrize("is_python", [True, False])
