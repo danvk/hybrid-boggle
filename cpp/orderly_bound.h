@@ -120,7 +120,6 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
   vector<int> sums(cells.size(), 0);
   // visit_at_level[0] += 1;
   auto base_points = advance(base_node, sums, stacks);
-  advance(base_node, sums, stacks);
   rec(base_points, 0, sums);
   return {failures, visit_at_level, elim_at_level};
 }
