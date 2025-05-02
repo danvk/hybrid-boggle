@@ -61,6 +61,7 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
         // and previously-split cells.
         // TODO: masked evaluation here… but only if there are dupes?
         int scored_base = b.MultiScoreWithMask(~ok_mask);
+        /*
         if (scored_base != base_points) {
           printf("ok_mask: %d\n", ok_mask);
           printf("board: %s\n", b.ToString().c_str());
@@ -74,6 +75,8 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
               stack_sums[split_order[num_splits]]
           );
         }
+        */
+        assert(scored_base == base_points);
 
         int bound = base_points;
         for (int i = num_splits; i < split_order.size(); ++i) {
