@@ -126,7 +126,12 @@ PYBIND11_MODULE(cpp_boggle, m) {
       )
       .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
       .def("score_with_forces", &SumNode::ScoreWithForces)
-      .def("orderly_bound", &SumNode::OrderlyBound);
+      // TODO: maybe this shouldn't be an instance method
+      .def("orderly_bound22", &SumNode::OrderlyBound<2, 2>)
+      .def("orderly_bound33", &SumNode::OrderlyBound<3, 3>)
+      .def("orderly_bound34", &SumNode::OrderlyBound<3, 4>)
+      .def("orderly_bound44", &SumNode::OrderlyBound<4, 4>)
+      .def("orderly_bound55", &SumNode::OrderlyBound<5, 5>);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_readonly("bound", &ChoiceNode::bound_)
