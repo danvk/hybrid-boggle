@@ -217,8 +217,9 @@ class HybridTreeBreaker:
 
         if not boards_to_test:
             if self.log_breaker_progress:
+                time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
                 print(
-                    f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s"
+                    f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s"
                 )
             return
 
@@ -234,6 +235,7 @@ class HybridTreeBreaker:
         self.details_.secs_by_level[level + 1] += elapsed_s
 
         if self.log_breaker_progress:
+            time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
             print(
-                f"{self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s"
+                f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s"
             )
