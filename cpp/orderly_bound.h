@@ -45,6 +45,25 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
     ok_mask |= (1 << cell);
   }
 
+  /*
+  auto any_repeats = [&]() {
+    uint32_t letters = 0;
+    assert(cells.size() == sizeof(b.bd_) / sizeof(b.bd_[0]));
+
+    for (int i = 0; i < cells.size(); i++) {
+      if (ok_mask & (1 << i)) {
+        unsigned int c = b.bd_[i];
+        auto letter = 1 << c;
+        if (letters & letter) {
+          return true;
+        }
+        letters |= letter;
+      }
+    }
+    return false;
+  };
+  */
+
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
     for (const auto& choice : preset_cells) {
@@ -78,6 +97,7 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
         }
         */
         // assert(scored_base == base_points);
+        // TODO: only use this when there are repeat letters, where it could help
         if (use_masked_score) {
           // TODO: no need to pass base_points recursively if this is true
           base_points = b.ScoreWithMask(~ok_mask);

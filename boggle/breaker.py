@@ -205,7 +205,7 @@ class HybridTreeBreaker:
             remaining_cells,
             choices,
             self.boggler,
-            False,
+            True,
         )
         # for i, ev in enumerate(elim_level):
         #     bv = bound_level[i]

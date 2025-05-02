@@ -44,6 +44,8 @@ class Boggler {
     return out;
   }
 
+  int bd_[M * N];
+
  private:
   void DoDFS(unsigned int i, unsigned int len, Trie* t);
   void FindWordsDFS(
@@ -54,7 +56,6 @@ class Boggler {
   bool is_multi_;
   Trie* dict_;
   unsigned int used_;
-  int bd_[M * N];
   unsigned int score_;
   unsigned int runs_;
   vector<int> seq_;
