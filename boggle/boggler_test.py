@@ -157,3 +157,11 @@ def test_find_words():
     paths_multi = [path for path in b3.find_words(three_board, True) if len(path) > 3]
     words_multi3 = ["".join(three_board[i] for i in path) for path in paths_multi]
     assert sorted(words_multi) == sorted(words_multi3)
+
+
+def test_find_masked():
+    t = get_cpp_trie()
+    b = cpp_boggler(t, (3, 3))
+    assert b.score("abcdefghi") == 20
+    assert b.score_with_mask(1 << 3) == 10  # blank out the "b"
+    # See https://www.danvk.org/boggle/?board=a.cdefghi&dims=33

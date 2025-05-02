@@ -53,6 +53,10 @@ class SumNode {
   int NodeCount() const;
   uint32_t Bound() const { return bound_; }
 
+  // The first returned vector contains (bound, board) pairs with bound > cutoff.
+  // The bound is equal to the multiboggle score.
+  // The other vectors have some metrics
+  // TODO: remove the other vectors, they're not filled out
   tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
       int cutoff,
       const vector<string>& cells,

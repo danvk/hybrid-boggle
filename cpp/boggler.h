@@ -18,6 +18,10 @@ class Boggler {
 
   int Score(const char* lets);
 
+  // If mask & (1<<cell) == 1, then that cell is off-limits.
+  // mask=0 is ordinary scoring.
+  unsigned int ScoreWithMask(unsigned int mask);
+
   unsigned int NumCells() { return M * N; }
 
   // Set a cell on the current board. Must have 0 <= x < M, 0 <= y < N and 0 <=
@@ -33,7 +37,6 @@ class Boggler {
   void FindWordsDFS(
       unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
   );
-  unsigned int InternalScore();
   bool ParseBoard(const char* bd);
 
   Trie* dict_;
@@ -59,7 +62,7 @@ int Boggler<M, N>::Score(const char* lets) {
   if (!ParseBoard(lets)) {
     return -1;
   }
-  return InternalScore();
+  return ScoreWithMask(0);
 }
 
 template <int M, int N>
@@ -94,10 +97,10 @@ bool Boggler<M, N>::ParseBoard(const char* bd) {
 }
 
 template <int M, int N>
-unsigned int Boggler<M, N>::InternalScore() {
+unsigned int Boggler<M, N>::ScoreWithMask(unsigned int mask) {
   runs_ = dict_->Mark() + 1;
   dict_->Mark(runs_);
-  used_ = 0;
+  used_ = mask;
   score_ = 0;
   for (int i = 0; i < M * N; i++) {
     int c = bd_[i];

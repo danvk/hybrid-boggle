@@ -54,6 +54,7 @@ void declare_boggler(py::module &m, const string &pyclass_name) {
   py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
       .def(py::init<Trie *>())
       .def("score", &BB::Score)
+      .def("score_with_mask", &BB::ScoreWithMask)
       .def("find_words", &BB::FindWords)
       .def("cell", &BB::Cell)
       .def("set_cell", &BB::SetCell);
