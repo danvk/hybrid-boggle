@@ -278,7 +278,7 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
 }
 
 // block-scope functions cannot be declared inline.
-inline void advance(
+inline uint16_t advance(
     const SumNode* node, vector<int>& sums, vector<vector<const ChoiceNode*>>& stacks
 ) {
   for (int i = 0; i < node->num_children_; i++) {
@@ -286,6 +286,7 @@ inline void advance(
     stacks[child->cell_].push_back(child);
     sums[child->cell_] += child->bound_;
   }
+  return node->points_;
 }
 
 template <int M, int N>
@@ -307,7 +308,7 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound
   // Set the preset cells once
   unsigned int ok_mask = 0;
   for (auto& [cell, choice] : preset_cells) {
-    b.SetCellIndex(cell, cells[cell][choice] - 'a');
+    b.SetCellAtIndex(cell, cells[cell][choice] - 'a');
     ok_mask |= (1 << cell);
   }
 
@@ -322,70 +323,73 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound
     failures.push_back({bound, board});
   };
 
-  function<void(int, vector<int>&)> rec = [&](int num_splits, vector<int>& stack_sums) {
-    // TODO: masked evaluation here… but only if there are dupes?
-    int base_points = b.ScoreWithMask(~ok_mask);
-    int bound = base_points;
-    for (int i = num_splits; i < split_order.size(); ++i) {
-      bound += stack_sums[split_order[i]];
-    }
-    if (bound <= cutoff) {
-      // elim_at_level[num_splits] += 1;
-      return;  // done!
-    }
-    if (num_splits == split_order.size()) {
-      record_failure(bound);
-      return;
-    }
+  function<void(int, int vector<int>&)> rec =
+      [&](int base_points, int num_splits, vector<int>& stack_sums) {
+        // TODO: masked evaluation here… but only if there are dupes?
+        // int base_points = b.ScoreWithMask(~ok_mask);
+        int bound = base_points;
+        for (int i = num_splits; i < split_order.size(); ++i) {
+          bound += stack_sums[split_order[i]];
+        }
+        if (bound <= cutoff) {
+          // elim_at_level[num_splits] += 1;
+          return;  // done!
+        }
+        if (num_splits == split_order.size()) {
+          record_failure(bound);
+          return;
+        }
 
-    int next_to_split = split_order[num_splits];
-    vector<int> stack_top(stacks.size());
-    for (int i = 0; i < stacks.size(); ++i) {
-      stack_top[i] = stacks[i].size();
-    }
-    vector<int> base_sums = stack_sums;
-
-    auto& next_stack = stacks[next_to_split];
-    vector<pair<SumNode* const*, SumNode* const*>> its;
-    its.reserve(next_stack.size());
-    for (auto& n : next_stack) {
-      // assert(n->letter_ == CHOICE_NODE);
-      // assert(n->cell_ == next_to_split);
-      its.push_back({&n->children_[0], &n->children_[n->num_children_]});
-    }
-
-    int num_letters = cells[next_to_split].size();
-    for (int letter = 0; letter < num_letters; ++letter) {
-      if (letter > 0) {
-        // TODO: it should be possible to avoid this copy with another stack.
-        stack_sums = base_sums;
+        int next_to_split = split_order[num_splits];
+        vector<int> stack_top(stacks.size());
         for (int i = 0; i < stacks.size(); ++i) {
-          // This will not de-allocate anything, just reduce size.
-          // https://cplusplus.com/reference/vector/vector/resize/
-          stacks[i].resize(stack_top[i]);
+          stack_top[i] = stacks[i].size();
         }
-      }
-      b.SetCellIndex(next_to_split, cells[next_to_split][letter] - 'a');
-      assert((ok_mask & (1 << next_to_split)) == 0);
-      ok_mask ^= (1 << next_to_split);
-      choices.emplace_back(next_to_split, letter);
-      for (auto& [it, end] : its) {
-        if (it != end && (*it)->letter_ == letter) {
-          // visit_at_level[1 + num_splits] += 1;
-          advance(*it, stack_sums, stacks);
-          ++it;
+        vector<int> base_sums = stack_sums;
+
+        auto& next_stack = stacks[next_to_split];
+        vector<pair<SumNode* const*, SumNode* const*>> its;
+        its.reserve(next_stack.size());
+        for (auto& n : next_stack) {
+          // assert(n->letter_ == CHOICE_NODE);
+          // assert(n->cell_ == next_to_split);
+          its.push_back({&n->children_[0], &n->children_[n->num_children_]});
         }
-      }
-      rec(num_splits + 1, stack_sums);
-      choices.pop_back();
-      ok_mask ^= (1 << next_to_split);
-    }
-  };
+
+        int num_letters = cells[next_to_split].size();
+        for (int letter = 0; letter < num_letters; ++letter) {
+          if (letter > 0) {
+            // TODO: it should be possible to avoid this copy with another stack.
+            stack_sums = base_sums;
+            for (int i = 0; i < stacks.size(); ++i) {
+              // This will not de-allocate anything, just reduce size.
+              // https://cplusplus.com/reference/vector/vector/resize/
+              stacks[i].resize(stack_top[i]);
+            }
+          }
+          b.SetCellAtIndex(next_to_split, cells[next_to_split][letter] - 'a');
+          assert((ok_mask & (1 << next_to_split)) == 0);
+          ok_mask ^= (1 << next_to_split);
+          choices.emplace_back(next_to_split, letter);
+          int points = base_points;
+          for (auto& [it, end] : its) {
+            if (it != end && (*it)->letter_ == letter) {
+              // visit_at_level[1 + num_splits] += 1;
+              points += advance(*it, stack_sums, stacks);
+              ++it;
+            }
+          }
+          rec(points, num_splits + 1, stack_sums);
+          choices.pop_back();
+          ok_mask ^= (1 << next_to_split);
+        }
+      };
 
   vector<int> sums(cells.size(), 0);
   // visit_at_level[0] += 1;
+  auto base_points = advance(this, sums, stacks);
   advance(this, sums, stacks);
-  rec(0, sums);
+  rec(base_points, 0, sums);
   return {failures, visit_at_level, elim_at_level};
 }
 
