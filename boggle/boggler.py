@@ -1,7 +1,7 @@
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import make_lookup_table
-
-SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
+#            1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
 LETTER_A = ord("a")
 LETTER_Q = ord("q") - LETTER_A
 LETTER_Z = ord("z")

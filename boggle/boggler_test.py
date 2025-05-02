@@ -69,6 +69,7 @@ def test55(get_trie, Boggler):
     t = get_trie()
     b = Boggler(t, (5, 5))
     assert b.score("sepesdsracietilmanesligdr") == 10406
+    assert b.score("ititinstietbulseutiarsaba") == 810
 
 
 def test_find_words():
