@@ -27,7 +27,8 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
     const vector<string>& cells,
     const vector<int>& split_order,
     const vector<pair<int, int>>& preset_cells,
-    Boggler<M, N>& b
+    Boggler<M, N>& b,
+    bool use_masked_score
 ) {
   vector<vector<const ChoiceNode*>> stacks(cells.size());
   vector<pair<int, int>> choices;
@@ -60,7 +61,7 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
         // base_points represents the points coming from words that use only the preset
         // and previously-split cells.
         // TODO: masked evaluation here… but only if there are dupes?
-        int scored_base = b.MultiScoreWithMask(~ok_mask);
+        // int scored_base = b.MultiScoreWithMask(~ok_mask);
         /*
         if (scored_base != base_points) {
           printf("ok_mask: %d\n", ok_mask);
@@ -76,7 +77,11 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
           );
         }
         */
-        assert(scored_base == base_points);
+        // assert(scored_base == base_points);
+        if (use_masked_score) {
+          // TODO: no need to pass base_points recursively if this is true
+          base_points = b.ScoreWithMask(~ok_mask);
+        }
 
         int bound = base_points;
         for (int i = num_splits; i < split_order.size(); ++i) {

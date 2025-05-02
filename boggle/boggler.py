@@ -36,6 +36,9 @@ class PyBoggler:
                 assert "a" <= let <= "z"
                 self._cells[i] = ord(let) - LETTER_A
 
+    def set_cell_at_index(self, cell: int, letter: int):
+        self._cells[cell] = letter
+
     def __str__(self):
         return "".join(chr(ord("a") + let) if let != -1 else "." for let in self._cells)
 

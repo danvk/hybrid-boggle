@@ -115,7 +115,7 @@ def test_orderly_bound22(is_python):
     assert t.bound == 8
 
     failures, _, _ = orderly_bound(
-        t, (2, 2), 6, cells, SPLIT_ORDER[(2, 2)], [], boggler
+        t, (2, 2), 6, cells, SPLIT_ORDER[(2, 2)], [], boggler, False
     )
     assert failures == [(8, "adeg"), (7, "adeh")]
 
@@ -136,7 +136,7 @@ def test_orderly_bound22_best(is_python):
     assert t.bound == 22
 
     failures, _, _ = orderly_bound(
-        t, (2, 2), 15, cells, SPLIT_ORDER[(2, 2)], [], boggler
+        t, (2, 2), 15, cells, SPLIT_ORDER[(2, 2)], [], boggler, False
     )
     assert failures == snapshot(
         [
@@ -151,6 +151,15 @@ def test_orderly_bound22_best(is_python):
     )
 
     # TODO: confirm these via ibuckets
+
+    # the "failures" with repeated letters don't have regular Boggle scores above the
+    # cutoff, just multiboggle scores.
+    failures_masked, _, _ = orderly_bound(
+        t, (2, 2), 15, cells, SPLIT_ORDER[(2, 2)], [], boggler, True
+    )
+    assert failures_masked == snapshot(
+        [(18, "seat"), (17, "sear"), (18, "saet"), (17, "saer")]
+    )
 
 
 # TODO: test C++ equivalence
@@ -245,10 +254,15 @@ def test_orderly_bound33(is_python: bool):
     assert t.bound > 500
 
     failures, _, _ = orderly_bound(
-        t, (3, 3), 500, cells, SPLIT_ORDER[(3, 3)], [], boggler
+        t, (3, 3), 500, cells, SPLIT_ORDER[(3, 3)], [], boggler, False
     )
     # https://www.danvk.org/boggle/?board=stsaseblt&multiboggle=1&dims=33
     assert failures == snapshot([(512, "stsaseblt")])
+
+    failures, _, _ = orderly_bound(
+        t, (3, 3), 500, cells, SPLIT_ORDER[(3, 3)], [], boggler, True
+    )
+    assert failures == []
 
 
 # Invariants:

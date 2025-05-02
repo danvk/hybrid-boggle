@@ -113,7 +113,9 @@ bool Boggler<M, N>::ParseBoard(const char* bd) {
 template <int M, int N>
 unsigned int Boggler<M, N>::MultiScoreWithMask(unsigned int mask) {
   is_multi_ = true;
-  return ScoreWithMask(mask);
+  auto score = ScoreWithMask(mask);
+  is_multi_ = false;
+  return score;
 }
 
 template <int M, int N>

@@ -8,7 +8,7 @@ from cpp_boggle import (
     orderly_bound44,
 )
 
-from boggle.boggler import PyBoggler
+from boggle.boggler import LETTER_A, PyBoggler
 from boggle.eval_node import ChoiceNode, SumNode
 
 
@@ -18,7 +18,8 @@ def py_orderly_bound(
     cells: list[str],
     split_order: Sequence[int],
     preset_cells: Sequence[tuple[int, int]],
-    boggler: PyBoggler,
+    b: PyBoggler,
+    use_masked_score: bool,
 ):
     """Find individual high-scoring boards in this tree without creating new nodes.
 
@@ -32,6 +33,11 @@ def py_orderly_bound(
     n_preset = len(preset_cells)
     elim_at_level = [0] * (1 + len(cells) - n_preset)
     visit_at_level = [0] * (1 + len(cells) - n_preset)
+
+    ok_mask = 0
+    for cell, choice in preset_cells:
+        b.set_cell_at_index(cell, ord(cells[cell][choice]) - LETTER_A)
+        ok_mask |= 1 << cell
 
     num_visits = Counter[SumNode]()
 
@@ -53,6 +59,12 @@ def py_orderly_bound(
         failures.append((bound, board))
 
     def rec(base_points: int, num_splits: int, stack_sums: list[int]):
+        nonlocal ok_mask
+        if use_masked_score:
+            neg_mask = (1 << 32) - 1 - ok_mask  # equivalent of ~ok_mask in C++
+            base_points = b.score_with_mask(neg_mask)
+        # assert scored_base == base_points, f"{scored_base} != {base_points}"
+
         bound = base_points + sum(stack_sums[cell] for cell in split_order[num_splits:])
         if bound <= cutoff:
             elim_at_level[num_splits] += 1
@@ -71,6 +83,12 @@ def py_orderly_bound(
                     stack_sums[i] = v
                 for i, length in enumerate(stack_top):
                     stacks[i] = stacks[i][:length]
+
+            b.set_cell_at_index(
+                next_to_split, ord(cells[next_to_split][letter]) - LETTER_A
+            )
+            assert (ok_mask & (1 << next_to_split)) == 0
+            ok_mask ^= 1 << next_to_split
             choices.append((next_to_split, letter))
             points = base_points
             for node in stacks[next_to_split]:
@@ -86,6 +104,7 @@ def py_orderly_bound(
             rec(points, num_splits + 1, stack_sums)
             # reset the stacks
             choices.pop()
+            ok_mask ^= 1 << next_to_split
 
     sums = [0] * len(num_letters)
     visit_at_level[0] += 1
@@ -103,18 +122,20 @@ def orderly_bound(
     split_order: Sequence[int],
     preset_cells: Sequence[tuple[int, int]],
     boggler: PyBoggler,
+    use_masked_score: bool,
 ):
     """Call either the C++ or Python orderly_bound function."""
+    args = (tree, cutoff, cells, split_order, preset_cells, boggler, use_masked_score)
     if isinstance(boggler, PyBoggler):
-        return py_orderly_bound(tree, cutoff, cells, split_order, preset_cells, boggler)
+        return py_orderly_bound(*args)
     if dims == (2, 2):
-        return orderly_bound22(tree, cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound22(*args)
     elif dims == (3, 3):
-        return orderly_bound33(tree, cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound33(*args)
     elif dims == (3, 4):
-        return orderly_bound34(tree, cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound34(*args)
     elif dims == (4, 4):
-        return orderly_bound44(tree, cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound44(*args)
     elif dims == (5, 5):
-        return orderly_bound44(tree, cutoff, cells, split_order, preset_cells, boggler)
+        return orderly_bound44(*args)
     raise ValueError(f"Invalid dims {dims}")
