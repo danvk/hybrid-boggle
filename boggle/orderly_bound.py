@@ -6,6 +6,7 @@ from cpp_boggle import (
     orderly_bound33,
     orderly_bound34,
     orderly_bound44,
+    orderly_bound55,
 )
 
 from boggle.boggler import LETTER_A, PyBoggler
@@ -137,5 +138,5 @@ def orderly_bound(
     elif dims == (4, 4):
         return orderly_bound44(*args)
     elif dims == (5, 5):
-        return orderly_bound44(*args)
+        return orderly_bound55(*args)
     raise ValueError(f"Invalid dims {dims}")
