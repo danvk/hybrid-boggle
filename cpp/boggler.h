@@ -29,6 +29,8 @@ class Boggler {
   void SetCell(int x, int y, unsigned int c);
   unsigned int Cell(int x, int y) const;
 
+  void SetCellIndex(int index, unsigned int c) { bd_[index] = c; }
+
   // This is used by the web Boggle UI
   vector<vector<int>> FindWords(const string& lets, bool multiboggle);
 
