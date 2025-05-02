@@ -36,6 +36,14 @@ class Boggler {
   // This is used by the web Boggle UI
   vector<vector<int>> FindWords(const string& lets, bool multiboggle);
 
+  string ToString() const {
+    string out;
+    for (int i = 0; i < M * N; i++) {
+      out += {static_cast<char>('a' + bd_[i])};
+    }
+    return out;
+  }
+
  private:
   void DoDFS(unsigned int i, unsigned int len, Trie* t);
   void FindWordsDFS(

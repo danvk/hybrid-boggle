@@ -57,8 +57,24 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
 
   function<void(int, int, vector<int>&)> rec =
       [&](int base_points, int num_splits, vector<int>& stack_sums) {
+        // base_points represents the points coming from words that use only the preset
+        // and previously-split cells.
         // TODO: masked evaluation here… but only if there are dupes?
-        // int base_points = b.ScoreWithMask(~ok_mask);
+        int scored_base = b.MultiScoreWithMask(~ok_mask);
+        if (scored_base != base_points) {
+          printf("ok_mask: %d\n", ok_mask);
+          printf("board: %s\n", b.ToString().c_str());
+          printf("scored_base: %d\n", scored_base);
+          printf("base_points: %d\n", base_points);
+          printf("num_splits: %d\n", num_splits);
+          printf("split_order.size(): %zu\n", split_order.size());
+          printf(
+              "stack_sums[%d] = %d\n",
+              split_order[num_splits],
+              stack_sums[split_order[num_splits]]
+          );
+        }
+
         int bound = base_points;
         for (int i = num_splits; i < split_order.size(); ++i) {
           bound += stack_sums[split_order[i]];
