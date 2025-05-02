@@ -1,12 +1,17 @@
 import itertools
 import math
-import time
+from typing import Sequence
 
 import pytest
 from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
-from boggle.dimensional_bogglers import cpp_bucket_boggler, cpp_orderly_tree_builder
+from boggle.boggler import PyBoggler
+from boggle.dimensional_bogglers import (
+    cpp_boggler,
+    cpp_bucket_boggler,
+    cpp_orderly_tree_builder,
+)
 from boggle.eval_node import (
     ROOT_NODE,
     ChoiceNode,
@@ -67,6 +72,15 @@ def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
     return trie, otb
 
 
+def get_trie_otb_boggler(dict_file: str, dims: tuple[int, int], is_python: bool):
+    trie, otb = get_trie_otb(dict_file, dims, is_python)
+    if is_python:
+        boggler = PyBoggler(trie, dims=dims)
+    else:
+        boggler = cpp_boggler(trie, dims=dims)
+    return trie, otb, boggler
+
+
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
 def test_lift_invariants_33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
@@ -85,9 +99,35 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     )
 
 
+def orderly_bound(
+    tree: SumNode,
+    dims: tuple[int, int],
+    cutoff: int,
+    cells: list[str],
+    split_order: Sequence[int],
+    preset_cells: Sequence[tuple[int, int]],
+    boggler: PyBoggler,
+):
+    if isinstance(boggler, PyBoggler):
+        return tree.orderly_bound(cutoff, cells, split_order, preset_cells, boggler)
+    if dims == (2, 2):
+        return tree.orderly_bound22(cutoff, cells, split_order, preset_cells, boggler)
+    elif dims == (3, 3):
+        return tree.orderly_bound33(cutoff, cells, split_order, preset_cells, boggler)
+    elif dims == (3, 4):
+        return tree.orderly_bound34(cutoff, cells, split_order, preset_cells, boggler)
+    elif dims == (4, 4):
+        return tree.orderly_bound44(cutoff, cells, split_order, preset_cells, boggler)
+    elif dims == (5, 5):
+        return tree.orderly_bound44(cutoff, cells, split_order, preset_cells, boggler)
+    raise ValueError(f"Invalid dims {dims}")
+
+
 @pytest.mark.parametrize("is_python", [True, False])
 def test_orderly_bound22(is_python):
-    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
+    _, otb, boggler = get_trie_otb_boggler(
+        "testdata/boggle-words-4.txt", (2, 2), is_python
+    )
     board = "ab cd ef gh"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
@@ -98,17 +138,20 @@ def test_orderly_bound22(is_python):
         t.assert_invariants(otb)
     assert t.bound == 8
 
-    failures, _, _ = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
+    failures, _, _ = orderly_bound(
+        t, (2, 2), 6, cells, SPLIT_ORDER[(2, 2)], [], boggler
+    )
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
-def test_orderly_bound22_best(make_trie, get_tree_builder):
-    trie = make_trie("testdata/boggle-words-4.txt")
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_bound22_best(is_python):
+    trie, otb, boggler = get_trie_otb_boggler(
+        "testdata/boggle-words-4.txt", (2, 2), is_python
+    )
     board = "st ea ea tr"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = get_tree_builder(trie, dims=(2, 2))
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
@@ -116,7 +159,9 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
         t.assert_invariants(otb)
     assert t.bound == 22
 
-    failures, _, _ = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
+    failures, _, _ = orderly_bound(
+        t, (2, 2), 15, cells, SPLIT_ORDER[(2, 2)], [], boggler
+    )
     assert failures == snapshot(
         [
             (18, "seer"),
@@ -135,7 +180,9 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
 # TODO: test C++ equivalence
 def test_orderly_merge():
     is_python = True
-    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
+    _, otb, boggler = get_trie_otb_boggler(
+        "testdata/boggle-words-4.txt", (2, 2), is_python
+    )
     board = "st ea ea tr"
     cells = board.split(" ")
     num_letters = [len(cell) for cell in cells]
@@ -203,14 +250,15 @@ def test_orderly_force22(is_python):
     assert outsource(txt) == snapshot(external("3f6cd59206d5*.txt"))
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
-def test_orderly_bound33(make_trie, get_tree_builder):
-    trie = make_trie("testdata/boggle-words-9.txt")
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_bound33(is_python: bool):
+    _, otb, boggler = get_trie_otb_boggler(
+        "testdata/boggle-words-9.txt", (3, 3), is_python
+    )
     board = "lnrsy chkmpt lnrsy aeiou lnrsy aeiou bdfgjvwxz lnrsy chkmpt"
     # board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = get_tree_builder(trie, dims=(3, 3))
     otb.ParseBoard(board)
     arena = otb.create_arena()
     t = otb.BuildTree(arena)
@@ -220,13 +268,11 @@ def test_orderly_bound33(make_trie, get_tree_builder):
         t.assert_orderly(SPLIT_ORDER[(3, 3)])
     assert t.bound > 500
 
-    # node_counts = t.node_counts()
-    start_s = time.time()
-    failures, _, _ = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
-    print(time.time() - start_s)
-    # break_all reports 889 points for this board, but ibucket_solver reports 512
+    failures, _, _ = orderly_bound(
+        t, (3, 3), 500, cells, SPLIT_ORDER[(3, 3)], [], boggler
+    )
+    # https://www.danvk.org/boggle/?board=stsaseblt&multiboggle=1&dims=33
     assert failures == snapshot([(512, "stsaseblt")])
-    # assert False
 
 
 # Invariants:
