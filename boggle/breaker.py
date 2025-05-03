@@ -55,6 +55,8 @@ class HybridBreakDetails(BreakDetails):
     total_bytes: int
     n_bound: int
     n_force: int
+    n_masked: int
+    score_secs: float
 
     def asdict(self):
         d = super().asdict()
@@ -112,6 +114,8 @@ class HybridTreeBreaker:
             total_bytes=0,
             n_bound=0,
             n_force=0,
+            n_masked=0,
+            score_secs=0.0,
         )
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
@@ -192,21 +196,31 @@ class HybridTreeBreaker:
         self, tree: SumNode, level: int, choices: list[tuple[int, int]]
     ) -> None:
         start_s = time.time()
+        mid_s = None
         remaining_cells = self.split_order[len(choices) :]
         # TODO: make this just return the boards
         self.details_.n_bound += 1
         self.details_.depth[level] += 1
         # print(choices, tree.bound)
-        score_boards, bound_level, elim_level = orderly_bound(
-            tree,
-            self.dims,
-            self.best_score,
-            self.cells,
-            remaining_cells,
-            choices,
-            self.boggler,
-            True,
-        )
+        init_boards = 0
+        for use_masked_score in (False, True):
+            score_boards, bound_level, elim_level = orderly_bound(
+                tree,
+                self.dims,
+                self.best_score,
+                self.cells,
+                remaining_cells,
+                choices,
+                self.boggler,
+                use_masked_score,
+            )
+            if not use_masked_score:
+                init_boards = len(score_boards)
+                mid_s = time.time()
+            if len(score_boards) < 10_000:
+                break
+        if use_masked_score:
+            self.details_.n_masked += 1
         # for i, ev in enumerate(elim_level):
         #     bv = bound_level[i]
         #     self.details_.bound_elim_level[i + len(choices)] += ev
@@ -219,8 +233,13 @@ class HybridTreeBreaker:
         if not boards_to_test:
             if self.log_breaker_progress:
                 time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
+                repeat = (
+                    f" multi, init_s={mid_s-start_s} {init_boards=}"
+                    if use_masked_score
+                    else ""
+                )
                 print(
-                    f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s"
+                    f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s{repeat}"
                 )
             return
 
@@ -233,10 +252,16 @@ class HybridTreeBreaker:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)
         elapsed_s = time.time() - start_s
+        self.details_.score_secs += elapsed_s
         self.details_.secs_by_level[level + 1] += elapsed_s
 
         if self.log_breaker_progress:
             time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
+            repeat = (
+                f" multi, init_s={mid_s-start_s} {init_boards=}"
+                if use_masked_score
+                else ""
+            )
             print(
-                f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s"
+                f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s {repeat}"
             )

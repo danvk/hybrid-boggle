@@ -98,6 +98,8 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
         */
         // assert(scored_base == base_points);
         // TODO: only use this when there are repeat letters, where it could help
+        // TODO: only do this at a high depth?
+        // TODO: only do this when there's a new repeat?
         if (use_masked_score) {
           // TODO: no need to pass base_points recursively if this is true
           base_points = b.ScoreWithMask(~ok_mask);
