@@ -217,7 +217,7 @@ class HybridTreeBreaker:
             if not use_masked_score:
                 init_boards = len(score_boards)
                 mid_s = time.time()
-            if len(score_boards) < 10_000:
+            if len(score_boards) < 200_000:
                 break
         if use_masked_score:
             self.details_.n_masked += 1
@@ -234,7 +234,7 @@ class HybridTreeBreaker:
             if self.log_breaker_progress:
                 time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
                 repeat = (
-                    f" multi, init_s={mid_s-start_s} {init_boards=}"
+                    f" multi, init_s={mid_s-start_s:.03} {init_boards=}"
                     if use_masked_score
                     else ""
                 )
@@ -258,7 +258,7 @@ class HybridTreeBreaker:
         if self.log_breaker_progress:
             time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
             repeat = (
-                f" multi, init_s={mid_s-start_s} {init_boards=}"
+                f" multi, init_s={mid_s-start_s:.03} {init_boards=}"
                 if use_masked_score
                 else ""
             )
