@@ -22,7 +22,6 @@ pychalk = "^2.0.1"
 [tool.poetry.group.dev.dependencies]
 inline-snapshot = "^0.20.2"
 cogapp = "^3.4.1"
-jupyter = "^1.1.1"
 
 [tool.inline-snapshot]
 format-command="ruff format --stdin-filename {filename}"
