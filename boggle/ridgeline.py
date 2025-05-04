@@ -3,7 +3,6 @@
 import argparse
 import heapq
 
-import chalk
 import networkx as nx
 from tqdm import tqdm
 
@@ -98,13 +97,19 @@ def highest_scoring_path(G: nx.Graph, start: str, end: str):
     return best_path
 
 
-YELLOW = chalk.Chalk("yellow") + chalk.utils.FontFormat("bold")
+CYELLOW = "\33[33m"
+CBOLD = "\33[1m"
+CEND = "\33[0m"
+
+
+def yellow(txt: str):
+    return f"{CYELLOW}{CBOLD}{txt}{CEND}"
 
 
 def color_diffs(board: str, prev: str | None):
     if prev is None:
         return board
-    return "".join(a if a == b else YELLOW(a) for a, b in zip(board, prev))
+    return "".join(a if a == b else yellow(a) for a, b in zip(board, prev))
 
 
 def main():
