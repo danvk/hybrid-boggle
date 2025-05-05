@@ -46,6 +46,7 @@ def test_breaker(is_python):
     # blank out non-deterministic fields
     details.secs_by_level = {}
     details.elapsed_s = 0.0
+    details.score_secs = 0.0
 
     # poetry run python -m boggle.exhaustive_search --size 22 15 'aeiou lnrsy chkmpt aeiou' --python
     # 16 alte
@@ -60,17 +61,18 @@ def test_breaker(is_python):
             "num_reps": 750,
             "elapsed_s": 0.0,
             "failures": ["alte", "aste", "elta", "esta"],
-            "elim_level": {2: 2},
+            "elim_level": {4: 30, 5: 23, 3: 9, 2: 2},
             "secs_by_level": {},
             "bounds": {0: 21},
             "nodes": {0: 1186},
-            "depth": {2: 3},
+            "depth": {},
             "boards_to_test": 7,
             "init_nodes": 1186,
-            "total_nodes": 1864,
+            "total_nodes": 2592,
             "tree_bytes": 37952,
-            "total_bytes": 59648,
-            "n_bound": 3,
-            "n_force": 1,
+            "total_bytes": 82944,
+            "n_bound": 0,
+            "n_force": 16,
+            "score_secs": 0.0,
         }
     )
