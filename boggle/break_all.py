@@ -168,10 +168,8 @@ def get_breaker(args) -> BreakingBundle:
 
     t, boggler = get_trie_and_boggler_from_args(args)
 
-    builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
-    etb = builder(t, dims)
-
     if args.breaker == "hybrid":
+        etb = (OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder)(t, dims)
         switchover_score = args.switchover_score or 2.5 * best_score
         breaker = HybridTreeBreaker(
             etb,
@@ -180,6 +178,7 @@ def get_breaker(args) -> BreakingBundle:
             best_score,
             switchover_score=switchover_score,
             log_breaker_progress=args.log_breaker_progress,
+            max_depth=args.max_force_depth,
         )
     elif args.breaker == "ibuckets":
         etb = (PyBucketBoggler if args.python else cpp_bucket_boggler)(t, dims)
@@ -243,6 +242,13 @@ def main():
         help="When to switch from splitting the tree by forcing cells to evaluating the "
         "remaining tree with a DFS. Higher values will use less RAM but potentially run "
         "more slowly. The default is 2.5 * best_score.",
+    )
+    parser.add_argument(
+        "--max_force_depth",
+        type=int,
+        default=None,
+        help="Maximum depth to force to before switching to orderly_bound. "
+        "This can increase speed at the cost of additional memory. Default is WxH-4.",
     )
     parser.add_argument(
         "--breaker",
