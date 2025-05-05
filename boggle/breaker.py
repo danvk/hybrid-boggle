@@ -54,6 +54,7 @@ class HybridBreakDetails(BreakDetails):
     total_bytes: int
     n_bound: int
     n_force: int
+    score_secs: float
 
     def asdict(self):
         d = super().asdict()
@@ -84,9 +85,8 @@ class HybridTreeBreaker:
         self.details_ = None
         self.orig_reps_ = 0
         self.dims = dims
+        self.num_cells = dims[0] * dims[1]
         self.split_order = SPLIT_ORDER[dims]
-        self.switchover_score = switchover_score
-        self.switchover_depth = max_depth or (dims[0] * dims[1] - 4)
         self.log_breaker_progress = log_breaker_progress
 
     def SetBoard(self, board: str):
@@ -111,6 +111,7 @@ class HybridTreeBreaker:
             total_bytes=0,
             n_bound=0,
             n_force=0,
+            score_secs=0.0,
         )
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
@@ -142,8 +143,9 @@ class HybridTreeBreaker:
     ) -> None:
         if tree.bound <= self.best_score:
             self.details_.elim_level[level] += 1
-        elif tree.bound <= self.switchover_score or level > self.switchover_depth:
-            self.switch_to_score(tree, level, choices)
+        elif len(choices) == self.num_cells:
+            # This is a complete board with a bound > self.best_score. Check if it's for real.
+            self.check_complete_board(choices)
         else:
             self.force_and_filter(tree, level, choices, arena)
 
@@ -155,10 +157,10 @@ class HybridTreeBreaker:
         arena: PyArena,
     ) -> None:
         # choices list parallels split_order
-        assert len(choices) < len(self.cells)
+        assert len(choices) < self.num_cells
 
         cell = self.split_order[len(choices)]
-        num_lets = len(self.cells[cell])
+        num_lets = self.num_letters[cell]
 
         start_s = time.time()
         self.details_.n_force += 1
@@ -187,48 +189,18 @@ class HybridTreeBreaker:
         choices.pop()
         arena.reset_level(arena_level)
 
-    def switch_to_score(
-        self, tree: SumNode, level: int, choices: list[tuple[int, int]]
-    ) -> None:
+    def check_complete_board(self, choices: list[tuple[int, int]]) -> None:
         start_s = time.time()
-        remaining_cells = self.split_order[len(choices) :]
-        # TODO: make this just return the boards
-        self.details_.n_bound += 1
-        self.details_.depth[level] += 1
-        # print(choices, tree.bound)
-        score_boards, bound_level, elim_level = tree.orderly_bound(
-            self.best_score, self.cells, remaining_cells, choices
-        )
-        # for i, ev in enumerate(elim_level):
-        #     bv = bound_level[i]
-        #     self.details_.bound_elim_level[i + len(choices)] += ev
-        #     self.details_.bound_level[i + len(choices)] += bv
-        # print(time.time() - start_s, seq, tree.bound, this_failures)
-        boards_to_test = [board for _score, board in score_boards]
-        bound_elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[level] += bound_elapsed_s
-
-        if not boards_to_test:
-            if self.log_breaker_progress:
-                time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
-                print(
-                    f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03} s"
-                )
-            return
-
-        self.details_.boards_to_test += len(boards_to_test)
-        start_s = time.time()
-        for board in boards_to_test:
-            true_score = self.boggler.score(board)
-            # print(f"{board}: {tree.bound} -> {true_score}")
-            if true_score >= self.best_score:
-                print(f"Unable to break board: {board} {true_score}")
-                self.details_.failures.append(board)
+        self.details_.boards_to_test += 1
+        board = "".join(self.cells[cell][letter] for cell, letter in choices)
+        true_score = self.boggler.score(board)
         elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[level + 1] += elapsed_s
+
+        self.details_.score_secs += elapsed_s
+        if true_score >= self.best_score:
+            print(f"Unable to break board: {board} {true_score}")
+            self.details_.failures.append(board)
 
         if self.log_breaker_progress:
             time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
-            print(
-                f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s"
-            )
+            print(f"{time_fmt} {choices} -> {true_score} {board}")
