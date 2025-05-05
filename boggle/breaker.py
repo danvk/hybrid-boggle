@@ -145,7 +145,7 @@ class HybridTreeBreaker:
             self.details_.elim_level[level] += 1
         elif len(choices) == self.num_cells:
             # This is a complete board with a bound > self.best_score. Check if it's for real.
-            self.check_complete_board(choices)
+            self.check_complete_board(tree.bound, choices)
         else:
             self.force_and_filter(tree, level, choices, arena)
 
@@ -189,10 +189,13 @@ class HybridTreeBreaker:
         choices.pop()
         arena.reset_level(arena_level)
 
-    def check_complete_board(self, choices: list[tuple[int, int]]) -> None:
+    def check_complete_board(self, bound: int, choices: list[tuple[int, int]]) -> None:
         start_s = time.time()
         self.details_.boards_to_test += 1
-        board = "".join(self.cells[cell][letter] for cell, letter in choices)
+        cells = [None] * self.num_cells
+        for cell, letter in choices:
+            cells[cell] = self.cells[cell][letter]
+        board = "".join(cells)
         true_score = self.boggler.score(board)
         elapsed_s = time.time() - start_s
 
