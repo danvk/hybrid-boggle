@@ -140,6 +140,7 @@ def break_worker(task: str | int):
         if args.omit_times:
             del summary["elapsed_s"]
             del summary["secs_by_level"]
+            del summary["score_secs"]
         out.write(json.dumps(summary))
         out.write("\n")
         if args.log_per_board_stats:
