@@ -23,7 +23,7 @@ def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
     "is_python",
     [
         True,
-        # False
+        # False -- the byte and node counts don't agree
     ],
 )
 def test_breaker(is_python):
