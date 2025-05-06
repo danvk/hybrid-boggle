@@ -98,7 +98,7 @@ def test_orderly_bound22(is_python):
         t.assert_invariants(otb)
     assert t.bound == 8
 
-    failures, _, _ = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
+    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
@@ -116,7 +116,7 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
         t.assert_invariants(otb)
     assert t.bound == 22
 
-    failures, _, _ = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
+    failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
     assert failures == snapshot(
         [
             (18, "seer"),
@@ -222,7 +222,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
 
     # node_counts = t.node_counts()
     start_s = time.time()
-    failures, _, _ = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
+    failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
     print(time.time() - start_s)
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([(512, "stsaseblt")])

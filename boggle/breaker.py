@@ -27,11 +27,15 @@ from boggle.split_order import SPLIT_ORDER
 
 
 def counter_to_array(c: Counter):
+    if not c:
+        return []
     m = max(c.keys())
     return [c.get(k, 0) for k in range(0, m + 1)]
 
 
 def float_dict_to_array(c: defaultdict[int, float]):
+    if not c:
+        return []
     m = max(c.keys())
     return [round(c.get(k, 0), 5) for k in range(0, m + 1)]
 
