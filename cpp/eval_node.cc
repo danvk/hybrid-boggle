@@ -587,8 +587,13 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
-    throw runtime_error("tried to force cell without top choice");
-    return {this};
+    // throw runtime_error("tried to force cell without top choice");
+    // return {this};
+    vector<const SumNode*> out(num_lets, nullptr);
+    for (int i = 0; i < num_lets; i++) {
+      out[i] = this;
+    }
+    return out;
   }
 
   int non_cell_points = points_;
