@@ -317,7 +317,7 @@ vector<pair<int, string>> SumNode::OrderlyBound(
         for (int i = num_splits; i < split_order.size(); ++i) {
           bound += stack_sums[split_order[i]];
         }
-        if (bound <= cutoff) {
+        if (bound < cutoff) {
           return;  // done!
         }
         if (num_splits == split_order.size()) {
