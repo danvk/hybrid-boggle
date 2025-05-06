@@ -190,7 +190,7 @@ class SumNode:
             bound = base_points + sum(
                 stack_sums[cell] for cell in split_order[num_splits:]
             )
-            if bound <= cutoff:
+            if bound < cutoff:
                 elim_at_level[num_splits] += 1
                 return  # done!
             if num_splits == len(split_order):
@@ -228,7 +228,8 @@ class SumNode:
         base_points = advance(self, sums)
         rec(base_points, 0, sums)
         self.num_visits = num_visits  # for visualizing backtracking behavior
-        return failures, visit_at_level, elim_at_level
+        # return failures, visit_at_level, elim_at_level
+        return failures
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
