@@ -64,7 +64,7 @@ def test_breaker(is_python):
             "failures": ["alte", "arte", "aste", "elta", "erta", "esta"],
             "elim_level": [0, 0, 2],
             "secs_by_level": [],
-            "bounds": [21, 21, 19],
+            "bounds": [21, 19],
             "depth": [0, 0, 3],
             "boards_to_test": 9,
             "init_nodes": 1186,

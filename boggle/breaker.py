@@ -89,7 +89,7 @@ class HybridBreakDetails(BreakDetails):
 
     def asdict(self):
         d = super().asdict()
-        d["bounds"] = counter_to_array(self.bounds)
+        d["bounds"] = counter_to_array(self.bounds)[1:]
         d["depth"] = counter_to_array(self.depth)
         d["bound_secs"] = float_dict_to_array(self.bound_secs)
         d["test_secs"] = round(self.test_secs, 5)
@@ -159,7 +159,6 @@ class HybridTreeBreaker:
             print(f"root {tree.bound=}, {num_nodes} nodes")
 
         self.details_.secs_by_level[0] += time.time() - start_time_s
-        self.details_.bounds[0] = tree.bound
         self.details_.init_nodes = arena.num_nodes()
         self.details_.tree_bytes = arena.bytes_allocated()
 

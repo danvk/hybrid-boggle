@@ -43,7 +43,6 @@ Found unbreakable board for 2520743: perslitesand
   "elim_level": [],
   "bounds": [
     6652,
-    6652,
     5691,
     4728,
     4122,
