@@ -44,8 +44,10 @@ def test_breaker(is_python):
     breaker.SetBoard(board)
     details = breaker.Break()
     # blank out non-deterministic fields
-    details.secs_by_level = {}
+    details.secs_by_level = []
     details.elapsed_s = 0.0
+    details.test_secs = 0.0
+    details.bound_secs = []
 
     # poetry run python -m boggle.exhaustive_search --size 22 15 'aeiou lnrsy chkmpt aeiou' --python
     # 16 alte
@@ -59,18 +61,21 @@ def test_breaker(is_python):
         {
             "num_reps": 750,
             "elapsed_s": 0.0,
-            "failures": ["alte", "aste", "elta", "esta"],
-            "elim_level": {2: 2},
-            "secs_by_level": {},
-            "bounds": {0: 21},
-            "nodes": {0: 1186},
-            "depth": {2: 3},
-            "boards_to_test": 7,
+            "failures": ["alte", "arte", "aste", "elta", "erta", "esta"],
+            "elim_level": [0, 0, 2],
+            "secs_by_level": [],
+            "bounds": [21, 21, 19],
+            "depth": [0, 0, 3],
+            "boards_to_test": 9,
             "init_nodes": 1186,
             "total_nodes": 1864,
             "tree_bytes": 37952,
             "total_bytes": 59648,
             "n_bound": 3,
             "n_force": 1,
+            "max_multi": 18,
+            "bound_secs": [],
+            "test_secs": 0.0,
+            "best_board": (18, "aste"),
         }
     )
