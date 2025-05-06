@@ -125,7 +125,9 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
             (18, "saet"),
             (17, "saer"),
             (20, "teat"),
+            (15, "tear"),
             (20, "taet"),
+            (15, "taer"),
         ]
     )
 
