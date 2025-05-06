@@ -40,27 +40,37 @@ Found unbreakable board for 2520743: perslitesand
     "pansliteserd",
     "perslitesand"
   ],
-  "elim_level": {},
-  "bounds": {
-    "0": 6652
-  },
-  "nodes": {
-    "0": 2641103
-  },
-  "depth": {
-    "3": 20,
-    "4": 18,
-    "5": 9,
-    "6": 5,
-    "2": 1
-  },
-  "boards_to_test": 8078,
+  "elim_level": [],
+  "bounds": [
+    6652,
+    6652,
+    5691,
+    4728,
+    4122,
+    3700,
+    3270
+  ],
+  "depth": [
+    0,
+    0,
+    1,
+    20,
+    18,
+    9,
+    5
+  ],
+  "boards_to_test": 8133,
   "init_nodes": 2641103,
   "total_nodes": 4053634,
   "tree_bytes": 67108864,
   "total_bytes": 134217728,
   "n_bound": 53,
-  "n_force": 12
+  "n_force": 12,
+  "max_multi": 2509,
+  "best_board": [
+    1651,
+    "perslatesind"
+  ]
 }
 Found 12 breaking failure(s):
 cerslatesind
