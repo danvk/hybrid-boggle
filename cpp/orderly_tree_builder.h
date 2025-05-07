@@ -34,8 +34,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
-  unsigned int used_ordered_; // used cells mapped to their split order
-  int choices_[M * N]; // cell order -> letter index
+  unsigned int used_ordered_;  // used cells mapped to their split order
+  int choices_[M * N];         // cell order -> letter index
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -112,8 +112,9 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
 
-    auto new_root =
-        root_->AddWordWork(choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena);
+    auto new_root = root_->AddWordWork(
+        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
+    );
     assert(new_root == root_);
   }
 }
