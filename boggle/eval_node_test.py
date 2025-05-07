@@ -1,5 +1,4 @@
 import pytest
-from boggle.split_order import SPLIT_ORDER
 from cpp_boggle import create_eval_node_arena
 from inline_snapshot import external, outsource, snapshot
 
