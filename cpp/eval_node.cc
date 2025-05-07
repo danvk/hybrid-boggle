@@ -293,7 +293,7 @@ inline uint16_t advance(
   return node->points_;
 }
 
-tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound(
+vector<pair<int, string>> SumNode::OrderlyBound(
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
@@ -303,9 +303,6 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
-  int n_preset = preset_cells.size();
-  vector<int> elim_at_level(1 + cells.size() - n_preset, 0);
-  vector<int> visit_at_level(1 + cells.size() - n_preset, 0);
 
   auto record_failure = [&](int bound) {
     string board(cells.size(), '.');
@@ -324,8 +321,7 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound
         for (int i = num_splits; i < split_order.size(); ++i) {
           bound += stack_sums[split_order[i]];
         }
-        if (bound <= cutoff) {
-          // elim_at_level[num_splits] += 1;
+        if (bound < cutoff) {
           return;  // done!
         }
         if (num_splits == split_order.size()) {
@@ -344,7 +340,6 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound
         vector<pair<SumNode* const*, SumNode* const*>> its;
         its.reserve(next_stack.size());
         for (auto& n : next_stack) {
-          // assert(n->letter_ == CHOICE_NODE);
           // assert(n->cell_ == next_to_split);
           its.push_back({&n->children_[0], &n->children_[n->num_children_]});
         }
@@ -375,10 +370,9 @@ tuple<vector<pair<int, string>>, vector<int>, vector<int>> SumNode::OrderlyBound
       };
 
   vector<int> sums(cells.size(), 0);
-  // visit_at_level[0] += 1;
   auto base_points = advance(this, sums, stacks);
   rec(base_points, 0, sums);
-  return {failures, visit_at_level, elim_at_level};
+  return failures;
 }
 
 SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena);
@@ -591,8 +585,12 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
-    throw runtime_error("tried to force cell without top choice");
-    return {this};
+    // This means that there are zero words going through the next cell, so it's
+    // completely irrelevant to the bound. It's exceptionally rare that this would
+    // happen on a high-scoring board class. Returning N copies of ourselves is not
+    // the most efficient way to deal with this, but it's expedient.
+    vector<const SumNode*> out(num_lets, this);
+    return out;
   }
 
   int non_cell_points = points_;

@@ -60,7 +60,7 @@ class SumNode {
   int NodeCount() const;
   uint32_t Bound() const { return bound_; }
 
-  tuple<vector<pair<int, string>>, vector<int>, vector<int>> OrderlyBound(
+  vector<pair<int, string>> OrderlyBound(
       int cutoff,
       const vector<string>& cells,
       const vector<int>& split_order,

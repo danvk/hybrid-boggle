@@ -17,12 +17,27 @@ import dataclasses
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+from typing import Optional
 
 from boggle.arena import PyArena
 from boggle.boggler import PyBoggler
 from boggle.eval_node import SumNode
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
+
+
+def counter_to_array(c: Counter):
+    if not c:
+        return []
+    m = max(c.keys())
+    return [c.get(k, 0) for k in range(0, m + 1)]
+
+
+def float_dict_to_array(c: defaultdict[int, float]):
+    if not c:
+        return []
+    m = max(c.keys())
+    return [round(c.get(k, 0), 5) for k in range(0, m + 1)]
 
 
 @dataclass
@@ -37,27 +52,47 @@ class BreakDetails:
 
     def asdict(self):
         d = dataclasses.asdict(self)
-        d["elim_level"] = dict(self.elim_level.items())
-        d["secs_by_level"] = dict(self.secs_by_level.items())
+        d["elapsed_s"] = round(self.elapsed_s, 5)
+        d["elim_level"] = counter_to_array(self.elim_level)
+        d["secs_by_level"] = float_dict_to_array(self.secs_by_level)
         return d
 
 
 @dataclass
 class HybridBreakDetails(BreakDetails):
     bounds: dict[int, int]
-    nodes: dict[int, int]
+    """Maximum bound at each depth."""
     depth: Counter[int]
+    """This is the switchover depth"""
     boards_to_test: int
+    """Number of boards that made it through to the Boggler"""
     init_nodes: int
+    """Number of nodes in the initial orderly tree"""
     total_nodes: int
+    """Total nodes ever allocated (not necessarily all at once)"""
     tree_bytes: int
+    """Number of bytes used by the initial orderly tree"""
     total_bytes: int
+    """Max bytes ever used while breaking"""
     n_bound: int
+    """Number of calls to orderly_bound"""
     n_force: int
+    """Number of calls to orderly_force"""
+    max_multi: int
+    """Highest-observed bound (multiboggle score) from orderly_bound"""
+    bound_secs: defaultdict[int, float]
+    """Seconds spent in orderly_bound, by level"""
+    test_secs: float
+    """Seconds spent evaluating individual boards."""
+    best_board: Optional[tuple[int, str]]
+    """Highest-scoring board that was evaluated (if any did)"""
 
     def asdict(self):
         d = super().asdict()
-        d["depth"] = dict(self.depth.items())
+        d["bounds"] = counter_to_array(self.bounds)[1:]
+        d["depth"] = counter_to_array(self.depth)
+        d["bound_secs"] = float_dict_to_array(self.bound_secs)
+        d["test_secs"] = round(self.test_secs, 5)
         return d
 
 
@@ -105,12 +140,15 @@ class HybridTreeBreaker:
             boards_to_test=0,
             init_nodes=0,
             depth=Counter(),
-            nodes={},
             total_nodes=0,
             tree_bytes=0,
             total_bytes=0,
             n_bound=0,
             n_force=0,
+            max_multi=0,
+            bound_secs=defaultdict(float),
+            test_secs=0.0,
+            best_board=None,
         )
         self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
         start_time_s = time.time()
@@ -121,10 +159,8 @@ class HybridTreeBreaker:
             print(f"root {tree.bound=}, {num_nodes} nodes")
 
         self.details_.secs_by_level[0] += time.time() - start_time_s
-        self.details_.bounds[0] = tree.bound
         self.details_.init_nodes = arena.num_nodes()
         self.details_.tree_bytes = arena.bytes_allocated()
-        self.details_.nodes[0] = self.details_.init_nodes
 
         self.attack_tree(tree, 1, [], arena)
 
@@ -140,7 +176,10 @@ class HybridTreeBreaker:
         choices: list[tuple[int, int]],
         arena: PyArena,
     ) -> None:
-        if tree.bound <= self.best_score:
+        self.details_.bounds[level] = max(
+            self.details_.bounds.get(level, 0), tree.bound
+        )
+        if tree.bound < self.best_score:
             self.details_.elim_level[level] += 1
         elif tree.bound <= self.switchover_score or level > self.switchover_depth:
             self.switch_to_score(tree, level, choices)
@@ -195,18 +234,12 @@ class HybridTreeBreaker:
         # TODO: make this just return the boards
         self.details_.n_bound += 1
         self.details_.depth[level] += 1
-        # print(choices, tree.bound)
-        score_boards, bound_level, elim_level = tree.orderly_bound(
+        score_boards = tree.orderly_bound(
             self.best_score, self.cells, remaining_cells, choices
         )
-        # for i, ev in enumerate(elim_level):
-        #     bv = bound_level[i]
-        #     self.details_.bound_elim_level[i + len(choices)] += ev
-        #     self.details_.bound_level[i + len(choices)] += bv
-        # print(time.time() - start_s, seq, tree.bound, this_failures)
         boards_to_test = [board for _score, board in score_boards]
         bound_elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[level] += bound_elapsed_s
+        self.details_.bound_secs[level] += bound_elapsed_s
 
         if not boards_to_test:
             if self.log_breaker_progress:
@@ -216,16 +249,22 @@ class HybridTreeBreaker:
                 )
             return
 
+        max_multi = max(score for score, _board in score_boards)
+        self.details_.max_multi = max(self.details_.max_multi, max_multi)
         self.details_.boards_to_test += len(boards_to_test)
         start_s = time.time()
+        best_board = self.details_.best_board or (-1, "")
         for board in boards_to_test:
             true_score = self.boggler.score(board)
             # print(f"{board}: {tree.bound} -> {true_score}")
             if true_score >= self.best_score:
                 print(f"Unable to break board: {board} {true_score}")
                 self.details_.failures.append(board)
+            if true_score > best_board[0]:
+                best_board = (true_score, board)
         elapsed_s = time.time() - start_s
-        self.details_.secs_by_level[level + 1] += elapsed_s
+        self.details_.test_secs += elapsed_s
+        self.details_.best_board = best_board
 
         if self.log_breaker_progress:
             time_fmt = time.strftime("%Y-%m-%d %H:%M:%S")
