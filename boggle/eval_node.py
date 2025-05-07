@@ -120,7 +120,7 @@ class SumNode:
                 break
 
         if top_choice is None:
-            return [self]
+            return [self] * num_lets  # See comment in C++
 
         non_cell_children = [*self.children]
         non_cell_children.pop(top_choice_idx)

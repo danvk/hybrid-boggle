@@ -581,8 +581,12 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
-    throw runtime_error("tried to force cell without top choice");
-    return {this};
+    // This means that there are zero words going through the next cell, so it's
+    // completely irrelevant to the bound. It's exceptionally rare that this would
+    // happen on a high-scoring board class. Returning N copies of ourselves is not
+    // the most efficient way to deal with this, but it's expedient.
+    vector<const SumNode*> out(num_lets, this);
+    return out;
   }
 
   int non_cell_points = points_;
