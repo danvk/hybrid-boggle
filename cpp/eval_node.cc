@@ -56,22 +56,25 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, EvalNodeArena& arena) {
 }
 
 SumNode* SumNode::AddWordWork(
-    int num_choices,
-    pair<int, int>* choices,
+    int* choices,
+    unsigned int used_ordered,
+    const int* split_order,
     const int* num_letters,
     int points,
     EvalNodeArena& arena
 ) {
-  if (!num_choices) {
+  if (used_ordered == 0) {
     points_ += points;
     bound_ += points;
     return this;
   }
 
-  auto cell = choices->first;
-  auto letter = choices->second;
-  choices++;
-  num_choices--;
+  int order_index = __builtin_ctz(used_ordered);
+  int cell = split_order[order_index];
+  int letter = choices[order_index];
+
+  // remove the cell from used_ordered
+  used_ordered &= used_ordered - 1;
 
   ChoiceNode* choice_child = NULL;
   for (int i = 0; i < num_children_; i++) {
@@ -103,7 +106,7 @@ SumNode* SumNode::AddWordWork(
     }
   }
   if (!letter_child) {
-    letter_child = arena.NewSumNodeWithCapacity(num_choices == 1 ? 0 : 1);
+    letter_child = arena.NewSumNodeWithCapacity(__builtin_popcount(used_ordered) == 1 ? 0 : 1);
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
@@ -129,7 +132,7 @@ SumNode* SumNode::AddWordWork(
     );
   }
   auto new_letter_child =
-      letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
+      letter_child->AddWordWork(choices, used_ordered, split_order, num_letters, points, arena);
   if (new_letter_child != letter_child) {
     const auto& old_letter_child = letter_child;
     bool patched = false;
@@ -148,17 +151,18 @@ SumNode* SumNode::AddWordWork(
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
+    new_me->bound_ += (choice_child->bound_ - old_choice_bound);
   }
-  new_me->bound_ += (choice_child->bound_ - old_choice_bound);
+
   return new_me;
 }
 
 void SumNode::AddWord(
-    vector<pair<int, int>> choices, int points, EvalNodeArena& arena
+    vector<int> choices, unsigned int used_ordered, const int* split_order, int points, EvalNodeArena& arena
 ) {
   vector<int> num_letters(choices.size(), 1);
   auto r =
-      AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
+      AddWordWork(choices.data(), used_ordered, split_order, num_letters.data(), points, arena);
   assert(r == this);
 }
 

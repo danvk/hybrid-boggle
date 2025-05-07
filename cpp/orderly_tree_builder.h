@@ -22,6 +22,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   using BoardClassBoggler<M, N>::dict_;
   using BoardClassBoggler<M, N>::bd_;
   using BoardClassBoggler<M, N>::used_;
+  using BoardClassBoggler<M, N>::used_ordered_;
 
   /** Build an EvalTree for the current board. */
   const SumNode* BuildTree(EvalNodeArena& arena, bool dedupe = false);
@@ -34,8 +35,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   SumNode* root_;
   int cell_to_order_[M * N];
   vector<int> num_letters_;
-  pair<int, int> choices_[M * N];
-  pair<int, int> orderly_choices_[M * N];
+  int choices_[M * N]; // cell order -> letter index
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -80,15 +80,19 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(
     int cell, int n, int length, Trie* t, EvalNodeArena& arena
 ) {
-  choices_[n] = {cell, 0};
-
   char* c = &bd_[cell][0];
   int j = 0;
   while (*c) {
     auto cc = *c - 'a';
     if (t->StartsWord(cc)) {
-      choices_[n].second = j;
+      choices_[cell_to_order_[cell]] = j;
+      used_ ^= (1 << cell);
+      used_ordered_ ^= (1 << cell_to_order_[cell]);
+
       DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
+
+      used_ordered_ ^= (1 << cell_to_order_[cell]);
+      used_ ^= (1 << cell);
     }
     c++;
     j++;
@@ -99,8 +103,6 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoDFS(
     int i, int n, int length, Trie* t, EvalNodeArena& arena
 ) {
-  used_ ^= (1 << i);
-
   auto& neighbors = BucketBoggler<M, N>::NEIGHBORS[i];
   auto n_neighbors = neighbors[0];
   for (int j = 1; j <= n_neighbors; j++) {
@@ -113,25 +115,10 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
 
-    // TODO: track current letter for each cell in a plain array.
-    //       Use used_ bit mask to track which ones are relevant.
-    //       map these through cell_to_order to avoid the need for sorting or
-    //       copying.
-    pair<int, int>* orderly_ptr = &orderly_choices_[0];
-    memcpy(orderly_ptr, &choices_[0], n * sizeof(pair<int, int>));
-    sort(
-        orderly_ptr,
-        orderly_ptr + n,
-        [this](const pair<int, int>& a, const pair<int, int>& b) {
-          return cell_to_order_[a.first] < cell_to_order_[b.first];
-        }
-    );
     auto new_root =
-        root_->AddWordWork(n, orderly_choices_, num_letters_.data(), word_score, arena);
+        root_->AddWordWork(choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, num_letters_.data(), word_score, arena);
     assert(new_root == root_);
   }
-
-  used_ ^= (1 << i);
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H

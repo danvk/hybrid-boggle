@@ -10,7 +10,7 @@
 template <int M, int N>
 class BoardClassBoggler {
  public:
-  BoardClassBoggler(Trie* t) : dict_(t), used_(0) {}
+  BoardClassBoggler(Trie* t) : dict_(t), used_(0), used_ordered_(0) {}
   virtual ~BoardClassBoggler() {}
 
   // bd is a class of boards with cells delimited by spaces.
@@ -34,6 +34,7 @@ class BoardClassBoggler {
   Trie* dict_;
   char bd_[M * N][27];  // null-terminated lists of possible letters
   unsigned int used_;
+  unsigned int used_ordered_; // used cells mapped to their split order
   char board_rep_[27 * M * N];  // for as_string()
 };
 
