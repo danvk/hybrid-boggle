@@ -407,3 +407,127 @@ def test_force_invariants44():
         forced_score = t.score_with_forces(indices)
         assert forced_score == root_score
         assert ibuckets_score == root_score
+<<<<<<< HEAD
+||||||| parent of e3e9a15 (add explanation)
+
+
+def test_missing_top_choice():
+    is_python = False  # Python is pretty slow for this one.
+    dims = (4, 4)
+    # TODO: cache the trie across tests
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    base_cells = [
+        "bcdfghjklmnpqrtvwxz",
+        "bcdfgmpqvwxz",
+        "aeijou",
+        "bcdfghjklmnpqrtvwxz",
+        "hklnrsty",
+        "ej",  # 5
+        "vw",  # 6
+        "bcdfgmpqvwxz",
+        "bcdfgmpqvwxz",
+        "ej",  # 9
+        "hklnrsty",
+        "hklnrsty",
+        "bcdfghjklmnpqrtvwxz",
+        "aeijou",
+        "hklnrsty",
+        "aeiosuy",
+    ]
+    base_num_letters = [len(cell) for cell in base_cells]
+    arena = otb.create_arena()
+    assert otb.ParseBoard(" ".join(base_cells))
+    root = otb.BuildTree(arena)
+    assert root.bound == 25779
+
+    forces = [
+        (5, 0),
+        (6, 0),
+        (9, 0),
+        (10, 4),
+        (1, 0),
+        (13, 1),
+        (2, 3),
+        (14, 5),
+        (4, 4),
+        (7, 6),
+        (8, 8),
+        (11, 4),
+        (0, 13),
+        (12, 13),
+        (3, 3),
+    ]
+
+    t = root
+    cells = [*base_cells]
+    unforced_cells = {*range(16)}
+    for cell, letter in forces:
+        forces = t.orderly_force_cell(cell, base_num_letters[cell], arena)
+        t = forces[letter]
+        cells[cell] = cells[cell][letter]
+        unforced_cells.remove(cell)
+
+    # assert t.bound == 329
+=======
+
+
+def test_missing_top_choice():
+    is_python = False  # Python is pretty slow for this one.
+    dims = (4, 4)
+    # TODO: cache the trie across tests
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    base_cells = [
+        "bcdfghjklmnpqrtvwxz",
+        "bcdfgmpqvwxz",
+        "aeijou",
+        "bcdfghjklmnpqrtvwxz",
+        "hklnrsty",
+        "ej",  # 5
+        "vw",  # 6
+        "bcdfgmpqvwxz",
+        "bcdfgmpqvwxz",
+        "ej",  # 9
+        "hklnrsty",
+        "hklnrsty",
+        "bcdfghjklmnpqrtvwxz",
+        "aeijou",
+        "hklnrsty",
+        "aeiosuy",
+    ]
+    base_num_letters = [len(cell) for cell in base_cells]
+    arena = otb.create_arena()
+    assert otb.ParseBoard(" ".join(base_cells))
+    root = otb.BuildTree(arena)
+    assert root.bound == 25779
+
+    forces = [
+        (5, 0),
+        (6, 0),
+        (9, 0),
+        (10, 4),
+        (1, 0),
+        (13, 1),
+        (2, 3),
+        (14, 5),
+        (4, 4),
+        (7, 6),
+        (8, 8),
+        (11, 4),
+        (0, 13),
+        (12, 13),
+        (3, 3),  # this force triggers the "!top_choice" path in OrderlyForceCell
+        (15, 0),
+    ]
+
+    t = root
+    cells = [*base_cells]
+    unforced_cells = {*range(16)}
+    for cell, letter in forces:
+        forces = t.orderly_force_cell(cell, base_num_letters[cell], arena)
+        t = forces[letter]
+        cells[cell] = cells[cell][letter]
+        unforced_cells.remove(cell)
+
+    # https://www.danvk.org/boggle/?board=rbjfrevpverrresa&multiboggle=1
+    assert t.bound == 1680
+>>>>>>> e3e9a15 (add explanation)
