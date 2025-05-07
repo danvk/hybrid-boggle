@@ -25,15 +25,14 @@ class SumNode {
   void AddWord(
       vector<int> choices,
       unsigned int used_ordered,
-      const int* split_order,
+      vector<int> split_order,
       int points,
       EvalNodeArena& arena);
 
   SumNode* AddWordWork(
-      int* choices,
+      int choices[],
       unsigned int used_ordered,
-      const int* split_order,
-      const int* num_letters,
+      const int split_order[],
       int points,
       EvalNodeArena& arena
   );

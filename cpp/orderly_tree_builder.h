@@ -14,6 +14,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
     for (int i = 0; i < M * N; i++) {
       cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
+    used_ordered_ = 0;
   }
   virtual ~OrderlyTreeBuilder() {}
 
@@ -22,7 +23,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   using BoardClassBoggler<M, N>::dict_;
   using BoardClassBoggler<M, N>::bd_;
   using BoardClassBoggler<M, N>::used_;
-  using BoardClassBoggler<M, N>::used_ordered_;
 
   /** Build an EvalTree for the current board. */
   const SumNode* BuildTree(EvalNodeArena& arena, bool dedupe = false);
@@ -34,7 +34,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
-  vector<int> num_letters_;
+  unsigned int used_ordered_; // used cells mapped to their split order
   int choices_[M * N]; // cell order -> letter index
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -48,10 +48,6 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
-  num_letters_.resize(M * N);
-  for (int i = 0; i < M * N; i++) {
-    num_letters_[i] = strlen(bd_[i]);
-  }
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
@@ -85,13 +81,14 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
   while (*c) {
     auto cc = *c - 'a';
     if (t->StartsWord(cc)) {
-      choices_[cell_to_order_[cell]] = j;
+      int cell_order = cell_to_order_[cell];
+      choices_[cell_order] = j;
       used_ ^= (1 << cell);
-      used_ordered_ ^= (1 << cell_to_order_[cell]);
+      used_ordered_ ^= (1 << cell_order);
 
       DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
 
-      used_ordered_ ^= (1 << cell_to_order_[cell]);
+      used_ordered_ ^= (1 << cell_order);
       used_ ^= (1 << cell);
     }
     c++;
@@ -116,7 +113,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     auto word_score = kWordScores[length];
 
     auto new_root =
-        root_->AddWordWork(choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, num_letters_.data(), word_score, arena);
+        root_->AddWordWork(choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena);
     assert(new_root == root_);
   }
 }
