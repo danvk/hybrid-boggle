@@ -22,11 +22,17 @@ class SumNode {
   SumNode() : points_(0), num_children_(0) {}
   ~SumNode() {}
 
-  void AddWord(vector<pair<int, int>> choices, int points, EvalNodeArena& arena);
+  void AddWord(
+      vector<int> choices,
+      unsigned int used_ordered,
+      vector<int> split_order,
+      int points,
+      EvalNodeArena& arena);
+
   SumNode* AddWordWork(
-      int num_choices,
-      pair<int, int>* choices,
-      const int* num_letters,
+      int choices[],
+      unsigned int used_ordered,
+      const int split_order[],
       int points,
       EvalNodeArena& arena
   );

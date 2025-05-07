@@ -56,22 +56,25 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, EvalNodeArena& arena) {
 }
 
 SumNode* SumNode::AddWordWork(
-    int num_choices,
-    pair<int, int>* choices,
-    const int* num_letters,
+    int choices[],
+    unsigned int used_ordered,
+    const int split_order[],
     int points,
     EvalNodeArena& arena
 ) {
-  if (!num_choices) {
+  if (used_ordered == 0) {
     points_ += points;
     bound_ += points;
     return this;
   }
 
-  auto cell = choices->first;
-  auto letter = choices->second;
-  choices++;
-  num_choices--;
+  // some choices values are uninitialized here, but we only access the ones that are initialized based on the bitmap
+  int order_index = std::countr_zero(used_ordered);
+  int cell = split_order[order_index];
+  int letter = choices[order_index];
+
+  // remove the cell from used_ordered
+  used_ordered &= used_ordered - 1;
 
   ChoiceNode* choice_child = NULL;
   for (int i = 0; i < num_children_; i++) {
@@ -103,6 +106,7 @@ SumNode* SumNode::AddWordWork(
     }
   }
   if (!letter_child) {
+    unsigned int num_choices = std::popcount(used_ordered);
     letter_child = arena.NewSumNodeWithCapacity(num_choices == 1 ? 0 : 1);
     letter_child->letter_ = letter;
     letter_child->bound_ = 0;
@@ -129,7 +133,7 @@ SumNode* SumNode::AddWordWork(
     );
   }
   auto new_letter_child =
-      letter_child->AddWordWork(num_choices, choices, num_letters, points, arena);
+      letter_child->AddWordWork(choices, used_ordered, split_order, points, arena);
   if (new_letter_child != letter_child) {
     const auto& old_letter_child = letter_child;
     bool patched = false;
@@ -148,17 +152,17 @@ SumNode* SumNode::AddWordWork(
 
   if (letter_child->bound_ > old_choice_bound) {
     choice_child->bound_ = letter_child->bound_;
+    new_me->bound_ += (choice_child->bound_ - old_choice_bound);
   }
-  new_me->bound_ += (choice_child->bound_ - old_choice_bound);
+
   return new_me;
 }
 
 void SumNode::AddWord(
-    vector<pair<int, int>> choices, int points, EvalNodeArena& arena
+    vector<int> choices, unsigned int used_ordered, vector<int> split_order, int points, EvalNodeArena& arena
 ) {
-  vector<int> num_letters(choices.size(), 1);
   auto r =
-      AddWordWork(choices.size(), choices.data(), num_letters.data(), points, arena);
+      AddWordWork(choices.data(), used_ordered, split_order.data(), points, arena);
   assert(r == this);
 }
 

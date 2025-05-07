@@ -39,12 +39,14 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         root.bound = 0
         self.root = root
         self.used_ = 0
+        self.used_ordered_ = 0
         self.cell_counts = [0] * len(self.bd_)
+        choices = [0] * len(self.bd_)
         if arena:
             arena.add_node(root)
 
         for cell in range(len(self.bd_)):
-            self.DoAllDescents(cell, 0, self.trie_, [], arena)
+            self.DoAllDescents(cell, 0, self.trie_, choices, arena)
         self.root = None
         return root
 
@@ -59,7 +61,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         for j, char in enumerate(self.bd_[cell]):
             cc = ord(char) - LETTER_A
             if t.StartsWord(cc):
-                choices[-1] = (cell, j)
+                cell_order = self.cell_to_order[cell]
+                choices[cell_order] = j
                 self.DoDFS(
                     cell,
                     length + (2 if cc == LETTER_Q else 1),
@@ -78,6 +81,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         arena,
     ):
         self.used_ ^= 1 << cell
+        self.used_ordered_ ^= 1 << self.cell_to_order[cell]
 
         for idx in self.neighbors[cell]:
             if not self.used_ & (1 << idx):
@@ -85,9 +89,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         if t.IsWord():
             word_score = SCORES[length]
-            orderly_choices = [*sorted(choices, key=lambda c: self.cell_to_order[c[0]])]
-            self.root.add_word(orderly_choices, word_score, arena, self.cell_counts)
+            self.root.add_word(choices, self.used_ordered_, SPLIT_ORDER[self.dims], word_score, arena, self.cell_counts)
 
+        self.used_ordered_ ^= 1 << self.cell_to_order[cell]
         self.used_ ^= 1 << cell
 
     def create_arena(self):

@@ -1,4 +1,5 @@
 import pytest
+from boggle.split_order import SPLIT_ORDER
 from cpp_boggle import create_eval_node_arena
 from inline_snapshot import external, outsource, snapshot
 
@@ -15,15 +16,20 @@ def test_add_word(create_arena):
     arena = create_arena()
     root = arena.new_root_node_with_capacity(4)
     cells = ["bcd", "aei", "nrd"]
-    root.add_word([(0, 0), (1, 0), (2, 0)], 1, arena)  # ban
-    root.add_word([(0, 1), (1, 0), (2, 0)], 1, arena)  # can
-    root.add_word([(0, 0), (1, 0), (2, 1)], 1, arena)  # bar
-    root.add_word([(0, 0), (1, 1), (2, 2)], 1, arena)  # bed
-    root.add_word([(0, 0), (1, 2), (2, 2)], 1, arena)  # bid
-    root.add_word([(0, 2), (1, 2), (2, 2)], 1, arena)  # did
-    root.add_word([(0, 2), (2, 1), (1, 1)], 1, arena)  # dre
 
-    # print(root.to_dot(cells))
+    regular_order = [0, 1, 2]
+    other_order = [0, 2, 1]
+
+    # all three choices are used
+    used_ordered = 0b111
+
+    root.add_word([0, 0, 0], used_ordered, regular_order, 1, arena)  # ban
+    root.add_word([1, 0, 0], used_ordered, regular_order, 1, arena)  # can
+    root.add_word([0, 0, 1], used_ordered, regular_order, 1, arena)  # bar
+    root.add_word([0, 1, 2], used_ordered, regular_order, 1, arena)  # bed
+    root.add_word([0, 2, 2], used_ordered, regular_order, 1, arena)  # bid
+    root.add_word([2, 2, 2], used_ordered, regular_order, 1, arena)  # did
+    root.add_word([2, 1, 1], used_ordered, other_order, 1, arena)  # dre
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(root, cells)) == snapshot(
