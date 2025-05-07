@@ -53,18 +53,29 @@ class SumNode:
     def add_word(
         self,
         choices: Sequence[tuple[int, int]],
+        used_ordered: int,
+        split_order: Sequence[int],
         points: int,
         arena: PyArena,
         cell_counts: list[int] = None,
     ):
         """Add a word to this tree. choices is a list of (cell, letter index) tuples."""
-        if not choices:
+        if used_ordered == 0:
             self.points += points
             self.bound += points
             return
 
-        (cell, letter) = choices[0]
-        remaining_choices = choices[1:]
+        def countr_zero(n):
+            assert n != 0
+            return (n & -n).bit_length() - 1
+
+        # some choices values may uninitialized here, but we only access the ones that are initialized based on the bitmap
+        order_index = countr_zero(used_ordered)
+        cell = split_order[order_index]
+        letter = choices[order_index]
+
+        # remove the cell from used_ordered
+        used_ordered &= used_ordered - 1
 
         choice_child = None
         for c in self.children:
@@ -99,7 +110,7 @@ class SumNode:
             if arena:
                 arena.add_node(letter_child)
 
-        letter_child.add_word(remaining_choices, points, arena, cell_counts)
+        letter_child.add_word(choices, used_ordered, split_order, points, arena, cell_counts)
         if letter_child.bound > old_choice_bound:
             choice_child.bound = letter_child.bound
         self.bound += choice_child.bound - old_choice_bound
