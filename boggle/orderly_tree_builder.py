@@ -102,10 +102,12 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             word_score = SCORES[length]
             mark_raw = t.Mark()
             is_dupe = False
-            letters = get_choices(choices, self.used_ordered_, self.split_order)
-            choice_mark = encode_choices(letters, self.num_letters)
-            word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
-            word = self.lookup[t]
+            choice_mark = get_choice_mark(
+                choices, self.used_ordered_, self.split_order, self.num_letters
+            )
+            # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
+            # word = self.lookup[t]
+            # TODO: 38 = 64 - 25 - 1, but could be 64 - dims - 1
             if choice_mark < (1 << 38):
                 this_mark = self.used_ordered_ << 38 + choice_mark
                 # print(word, this_mark, word_order, letters, choice_mark)
@@ -139,6 +141,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                     m = this_mark + (1 << 63)
                     # print(f"{word} set mark: {m} {word_order}")
                     t.SetMark(m)
+            else:
+                word = self.lookup[t]
+                print(f"Overflow on choice_mark for {word}")
 
             if not is_dupe:
                 self.root.add_word(
@@ -157,11 +162,14 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         return create_eval_node_arena_py()
 
 
-def get_choices(
-    choices: Sequence[int], used_ordered: int, split_order: Sequence[int]
+def get_choice_mark(
+    choices: Sequence[int],
+    used_ordered: int,
+    split_order: Sequence[int],
+    num_letters: Sequence[int],
 ) -> list[tuple[int, int]]:
     """Returns the choices in split order"""
-    letters = list[tuple[int, int]]()
+    idx = 0
     while used_ordered:
         order_index = countr_zero(used_ordered)
         cell = split_order[order_index]
@@ -169,15 +177,6 @@ def get_choices(
 
         # remove the cell from used_ordered
         used_ordered &= used_ordered - 1
-        letters.append((cell, letter))
-    return letters
-
-
-def encode_choices(
-    choices: Sequence[tuple[int, int]], num_letters: Sequence[int]
-) -> int:
-    idx = 0
-    for cell, letter in choices:
         idx *= num_letters[cell]
         idx += letter
     return idx
