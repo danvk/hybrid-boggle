@@ -56,6 +56,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.trie_.ResetMarks()
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, choices, arena)
+            print(f"{len(self.found_words)=}")
         self.root = None
         self.trie_.ResetMarks()
         print(f"{len(self.found_words)=}")
@@ -133,6 +134,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                             is_dupe = this_key in self.found_words
                             if not is_dupe:
                                 self.found_words.add(this_key)
+                                if len(self.found_words) % 1_000 == 0:
+                                    print(f"{len(self.found_words)=} {this_key}")
                             else:
                                 pass
                                 # print(f"{word} Found dupe in found_words {word_order}")
