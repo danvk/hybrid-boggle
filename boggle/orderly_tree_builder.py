@@ -48,6 +48,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_counts = [0] * len(self.bd_)
         self.found_words = set()
         self.num_letters = [len(cell) for cell in self.bd_]
+        self.num_overflow = 0
         print(f"{self.num_letters=}")
         choices = [0] * len(self.bd_)
         if arena:
@@ -59,7 +60,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             print(f"{len(self.found_words)=}")
         self.root = None
         self.trie_.ResetMarks()
-        print(f"{len(self.found_words)=}")
+        print(f"{len(self.found_words)=}, {self.num_overflow=}")
         return root
 
     def SumUnion(self):
@@ -110,7 +111,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             # word = self.lookup[t]
             # TODO: 38 = 64 - 25 - 1, but could be 64 - dims - 1
             if choice_mark < (1 << 38):
-                this_mark = self.used_ordered_ << 38 + choice_mark
+                this_mark = (self.used_ordered_ << 38) + choice_mark
                 # print(word, this_mark, word_order, letters, choice_mark)
                 if mark_raw != 0:
                     # possible collision
@@ -134,7 +135,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                             is_dupe = this_key in self.found_words
                             if not is_dupe:
                                 self.found_words.add(this_key)
-                                if len(self.found_words) % 1_000 == 0:
+                                if len(self.found_words) % 1_000_000 == 0:
                                     print(f"{len(self.found_words)=} {this_key}")
                             else:
                                 pass
@@ -145,8 +146,10 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                     # print(f"{word} set mark: {m} {word_order}")
                     t.SetMark(m)
             else:
-                word = self.lookup[t]
-                print(f"Overflow on choice_mark for {word}")
+                self.num_overflow += 1
+                pass
+                # word = self.lookup[t]
+                # print(f"Overflow on choice_mark for {word}")
 
             if not is_dupe:
                 self.root.add_word(
