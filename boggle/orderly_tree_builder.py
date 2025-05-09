@@ -9,6 +9,7 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 
 import argparse
 import time
+from typing import Sequence
 
 from boggle.arena import PyArena, create_eval_node_arena_py
 from boggle.args import add_standard_args, get_trie_from_args
@@ -18,7 +19,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import ROOT_NODE, SumNode
+from boggle.eval_node import ROOT_NODE, SumNode, countr_zero
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie
 
@@ -27,6 +28,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
     root: SumNode
     cell_counts: list[int]
+    found_words: set[tuple[str, int, int]]
+    num_letters_: list[int]
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
@@ -41,13 +44,17 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.used_ = 0
         self.used_ordered_ = 0
         self.cell_counts = [0] * len(self.bd_)
+        self.found_words = set()
+        self.num_letters = [len(cell) for cell in self.bd_]
         choices = [0] * len(self.bd_)
         if arena:
             arena.add_node(root)
 
+        self.trie_.ResetMarks()
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, choices, arena)
         self.root = None
+        self.trie_.ResetMarks()
         return root
 
     def SumUnion(self):
@@ -55,7 +62,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         return 0
 
     def DoAllDescents(
-        self, cell: int, length: int, t: PyTrie, choices: list[tuple[int, int]], arena
+        self, cell: int, length: int, t: PyTrie, choices: list[int], arena
     ):
         choices.append((cell, 0))
         for j, char in enumerate(self.bd_[cell]):
@@ -77,7 +84,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         cell: int,
         length: int,
         t: PyTrie,
-        choices: list[tuple[int, int]],
+        choices: list[int],
         arena,
     ):
         self.used_ ^= 1 << cell
@@ -89,13 +96,77 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         if t.IsWord():
             word_score = SCORES[length]
-            self.root.add_word(choices, self.used_ordered_, SPLIT_ORDER[self.dims], word_score, arena, self.cell_counts)
+            mark_raw = t.Mark()
+            is_dupe = False
+            choice_mark = encode_choices(
+                get_choices(choices, self.used_ordered_), self.num_letters
+            )
+            if choice_mark < (1 << 38):
+                this_mark = self.used_ << 38 + choice_mark
+                if mark_raw != 0:
+                    # possible collision
+                    m = mark_raw & (1 << 63 - 1)
+                    if m == this_mark:
+                        # definite collision
+                        is_dupe = True
+                    else:
+                        # possible collision -- check the found_words set, too
+                        this_key = (id(t), this_mark)
+                        was_first = mark_raw & (1 << 63)
+                        if was_first:
+                            old_key = (id(t), m)
+                            self.found_words.add(this_key)
+                            self.found_words.add(old_key)
+                            t.Mark(m)  # clear "was_first" bit
+                        else:
+                            is_dupe = this_key in self.found_words
+                            if not is_dupe:
+                                self.found_words.add(this_key)
+
+                else:
+                    t.Mark(this_mark + (1 << 63))
+
+            if not is_dupe:
+                self.root.add_word(
+                    choices,
+                    self.used_ordered_,
+                    SPLIT_ORDER[self.dims],
+                    word_score,
+                    arena,
+                    self.cell_counts,
+                )
 
         self.used_ordered_ ^= 1 << self.cell_to_order[cell]
         self.used_ ^= 1 << cell
 
     def create_arena(self):
         return create_eval_node_arena_py()
+
+
+def get_choices(
+    choices: Sequence[int], used_ordered: int, split_order: Sequence[int]
+) -> list[tuple[int, int]]:
+    """Returns the choices in split order"""
+    letters = list[tuple[int, int]]()
+    while used_ordered:
+        order_index = countr_zero(used_ordered)
+        cell = split_order[order_index]
+        letter = choices[order_index]
+
+        # remove the cell from used_ordered
+        used_ordered &= used_ordered - 1
+        letters.append((cell, letter))
+    return letters
+
+
+def encode_choices(
+    choices: Sequence[tuple[int, int]], num_letters: Sequence[int]
+) -> int:
+    idx = 0
+    for cell, letter in choices:
+        idx *= num_letters[cell]
+        idx += letter
+    return idx
 
 
 mark = 1

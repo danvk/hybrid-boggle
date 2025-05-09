@@ -65,11 +65,8 @@ class SumNode:
             self.bound += points
             return
 
-        def countr_zero(n):
-            assert n != 0
-            return (n & -n).bit_length() - 1
-
-        # some choices values may uninitialized here, but we only access the ones that are initialized based on the bitmap
+        # some choices values may uninitialized here, but we only access the ones that are
+        # initialized based on the bitmap
         order_index = countr_zero(used_ordered)
         cell = split_order[order_index]
         letter = choices[order_index]
@@ -400,6 +397,11 @@ class ChoiceNode:
         if self.children:
             out["children"] = [c.to_json(max_depth - 1) for c in self.children if c]
         return out
+
+
+def countr_zero(n: int):
+    assert n != 0
+    return (n & -n).bit_length() - 1
 
 
 def _sum_to_list(
