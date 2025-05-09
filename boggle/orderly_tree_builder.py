@@ -36,6 +36,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
+        self.shift = 64 - 1 - dims[0] * dims[1]
 
     def BuildTree(self, arena: PyArena = None):
         root = SumNode()
@@ -109,9 +110,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             )
             # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
             # word = self.lookup[t]
-            # TODO: 38 = 64 - 25 - 1, but could be 64 - dims - 1
-            if choice_mark < (1 << 38):
-                this_mark = (self.used_ordered_ << 38) + choice_mark
+            if choice_mark < (1 << self.shift):
+                this_mark = (self.used_ordered_ << self.shift) + choice_mark
                 # print(word, this_mark, word_order, letters, choice_mark)
                 if mark_raw != 0:
                     # possible collision
