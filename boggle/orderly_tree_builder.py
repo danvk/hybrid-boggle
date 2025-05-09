@@ -21,7 +21,7 @@ from boggle.dimensional_bogglers import (
 )
 from boggle.eval_node import ROOT_NODE, SumNode, countr_zero
 from boggle.split_order import SPLIT_ORDER
-from boggle.trie import PyTrie
+from boggle.trie import PyTrie, make_lookup_table
 
 
 class OrderlyTreeBuilder(BoardClassBoggler):
@@ -34,6 +34,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
+        self.split_order = SPLIT_ORDER[dims]
+        self.lookup = make_lookup_table(trie)
 
     def BuildTree(self, arena: PyArena = None):
         root = SumNode()
@@ -46,6 +48,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_counts = [0] * len(self.bd_)
         self.found_words = set()
         self.num_letters = [len(cell) for cell in self.bd_]
+        print(f"{self.num_letters=}")
         choices = [0] * len(self.bd_)
         if arena:
             arena.add_node(root)
@@ -55,6 +58,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             self.DoAllDescents(cell, 0, self.trie_, choices, arena)
         self.root = None
         self.trie_.ResetMarks()
+        print(f"{len(self.found_words)=}")
         return root
 
     def SumUnion(self):
@@ -98,16 +102,21 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             word_score = SCORES[length]
             mark_raw = t.Mark()
             is_dupe = False
-            choice_mark = encode_choices(
-                get_choices(choices, self.used_ordered_), self.num_letters
-            )
+            letters = get_choices(choices, self.used_ordered_, self.split_order)
+            choice_mark = encode_choices(letters, self.num_letters)
+            word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
+            word = self.lookup[t]
             if choice_mark < (1 << 38):
-                this_mark = self.used_ << 38 + choice_mark
+                this_mark = self.used_ordered_ << 38 + choice_mark
+                # print(word, this_mark, word_order, letters, choice_mark)
                 if mark_raw != 0:
                     # possible collision
-                    m = mark_raw & (1 << 63 - 1)
+                    m = mark_raw & ((1 << 63) - 1)
+                    # print(f"{mark_raw=} {m=}")
+                    # print(f"{word} Possible collision {this_mark} =? {m}")
                     if m == this_mark:
                         # definite collision
+                        # print(f"{word} Definite collision {word_order}")
                         is_dupe = True
                     else:
                         # possible collision -- check the found_words set, too
@@ -117,14 +126,19 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                             old_key = (id(t), m)
                             self.found_words.add(this_key)
                             self.found_words.add(old_key)
-                            t.Mark(m)  # clear "was_first" bit
+                            t.SetMark(m)  # clear "was_first" bit
                         else:
                             is_dupe = this_key in self.found_words
                             if not is_dupe:
                                 self.found_words.add(this_key)
+                            else:
+                                pass
+                                # print(f"{word} Found dupe in found_words {word_order}")
 
                 else:
-                    t.Mark(this_mark + (1 << 63))
+                    m = this_mark + (1 << 63)
+                    # print(f"{word} set mark: {m} {word_order}")
+                    t.SetMark(m)
 
             if not is_dupe:
                 self.root.add_word(
