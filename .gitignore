@@ -163,5 +163,5 @@ cython_debug/
 
 .DS_Store
 *.dot
-tasks*.ndjson
 *.dSYM
+*.ndjson
