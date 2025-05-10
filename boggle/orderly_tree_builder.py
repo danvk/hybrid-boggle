@@ -66,6 +66,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.root = None
         self.trie_.ResetMarks()
         print(f"{len(self.found_words)=}, {self.num_overflow=}")
+        assert self.letter_counts == [0] * 26
         return root
 
     def SumUnion(self):
@@ -114,7 +115,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         if t.IsWord():
             word_score = SCORES[length]
-            is_dupe = self.dupe_mask > 0 and self.check_for_dupe(t, choices)
+            is_dupe = any(
+                count > 1 for count in self.letter_counts
+            ) and self.check_for_dupe(t, choices)
 
             if not is_dupe:
                 self.root.add_word(
