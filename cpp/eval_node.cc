@@ -7,6 +7,7 @@
 #include <new>
 #include <variant>
 #include <vector>
+
 #include "constants.h"
 
 using namespace std;
@@ -288,7 +289,10 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
 
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
-    const SumNode* node, vector<int>& sums, const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH], int stack_sizes[MAX_CELLS]
+    const SumNode* node,
+    vector<int>& sums,
+    const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
+    int stack_sizes[MAX_CELLS]
 ) {
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
@@ -350,7 +354,10 @@ vector<pair<int, string>> SumNode::OrderlyBound(
         its.reserve(stack_sizes[next_to_split]);
         for (int i = 0; i < stack_sizes[next_to_split]; i++) {
           // assert(n->cell_ == next_to_split);
-          its.push_back({&next_stack[i]->children_[0], &next_stack[i]->children_[next_stack[i]->num_children_]});
+          its.push_back(
+              {&next_stack[i]->children_[0],
+               &next_stack[i]->children_[next_stack[i]->num_children_]}
+          );
         }
 
         int num_letters = cells[next_to_split].size();
