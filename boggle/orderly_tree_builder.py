@@ -147,7 +147,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         )
         # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
         # word = self.lookup[t]
-        if not choice_mark:
+        if choice_mark > (1 << self.shift):
             self.num_overflow += 1
             return False
 
@@ -206,8 +206,8 @@ def get_choice_mark(
         used_ordered &= used_ordered - 1
         idx *= num_letters[cell]
         idx += letter
-    if idx > max_value:
-        return 0
+        if idx > max_value:
+            return max_value
     return idx
 
 
