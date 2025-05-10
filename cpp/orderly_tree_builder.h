@@ -6,6 +6,22 @@
 
 using namespace std;
 
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <typename S, typename T>
+struct pair_hash {
+  inline std::size_t operator()(const std::pair<S, T>& v) const {
+    std::size_t seed = 0;
+    hash_combine(seed, v.first);
+    hash_combine(seed, v.second);
+    return seed;
+  }
+};
+
 // TODO: templating on M, N probably isn't helpful, either.
 template <int M, int N>
 class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
@@ -36,9 +52,17 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int cell_to_order_[M * N];
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
+  int num_letters_[M * N];
+
+  static const int shift_ = 64 - 1 - M * N;
+  int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
+  uint32_t dupe_mask_;
+  unordered_set<pair<uintptr_t, uint64_t>, pair_hash<uintptr_t, uint64_t>> found_words_;
+  unsigned int num_overflow_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
+  bool CheckForDupe(Trie* t);
 };
 
 template <int M, int N>
@@ -48,11 +72,26 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
+  found_words_.reserve(100'000);
+  for (int i = 0; i < 26; i++) {
+    letter_counts_[i] = 0;
+  }
+  dupe_mask_ = 0;
+  num_overflow_ = 0;
+  dict_->ResetMarks();
+  for (int cell = 0; cell < M * N; cell++) {
+    num_letters_[cell] = strlen(bd_[cell]);
+  }
+
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
   auto root = root_;
   root_ = NULL;
+  dict_->ResetMarks();
+  cout << "len(found_word)=" << found_words_.size()
+       << ", num_overflow=" << num_overflow_ << endl;
+  found_words_.clear();  // TODO: swap trip to release memory
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
@@ -86,7 +125,16 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
       used_ ^= (1 << cell);
       used_ordered_ ^= (1 << cell_order);
 
+      auto old_count = letter_counts_[cc]++;
+      auto old_mask = dupe_mask_;
+      if (old_count == 1) {
+        dupe_mask_ |= (1 << cc);
+      }
+
       DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
+
+      letter_counts_[cc]--;
+      dupe_mask_ = old_mask;
 
       used_ordered_ ^= (1 << cell_order);
       used_ ^= (1 << cell);
@@ -111,12 +159,86 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
 
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
+    auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
 
-    auto new_root = root_->AddWordWork(
-        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
-    );
-    assert(new_root == root_);
+    if (!is_dupe) {
+      auto new_root = root_->AddWordWork(
+          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
+      );
+      assert(new_root == root_);
+    }
   }
+}
+uint64_t GetChoiceMark(
+    const int* choices,
+    unsigned int used_ordered,
+    const int* split_order,
+    const int* num_letters,
+    uint64_t max_value
+) {
+  uint64_t idx = 0;
+  while (used_ordered) {
+    int order_index = __builtin_ctz(used_ordered);
+    int cell = split_order[order_index];
+    int letter = choices[order_index];
+
+    used_ordered &= used_ordered - 1;
+    idx *= num_letters[cell];
+    idx += letter;
+    if (idx > max_value) {
+      return max_value;
+    }
+  }
+  return idx;
+}
+
+template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
+  uintptr_t mark_raw = t->Mark();
+  uint64_t choice_mark = GetChoiceMark(
+      choices_,
+      used_ordered_,
+      BucketBoggler<M, N>::SPLIT_ORDER,
+      this->num_letters_,
+      1ULL << shift_
+  );
+
+  if (choice_mark > (1ULL << shift_)) {
+    num_overflow_++;
+    return false;
+  }
+
+  uint64_t this_mark = (static_cast<uint64_t>(used_ordered_) << shift_) + choice_mark;
+  if (mark_raw == 0) {
+    uintptr_t m = this_mark + (1ULL << 63);
+    t->Mark(m);
+    return false;
+  }
+
+  uint64_t m = mark_raw & ((1ULL << 63) - 1);
+  if (m == this_mark) {
+    return true;
+  }
+
+  auto this_key = std::make_pair(reinterpret_cast<uintptr_t>(t), this_mark);
+  bool was_first = mark_raw & (1ULL << 63);
+  if (was_first) {
+    auto old_key = std::make_pair(reinterpret_cast<uintptr_t>(t), m);
+    found_words_.insert(this_key);
+    found_words_.insert(old_key);
+    t->Mark(m);
+    return false;
+  }
+
+  bool is_dupe = found_words_.find(this_key) != found_words_.end();
+  if (!is_dupe) {
+    found_words_.insert(this_key);
+    if (found_words_.size() % 1'000'000 == 0) {
+      std::cout << "len(found_words)=" << found_words_.size() << " " << this_key.second
+                << std::endl;
+    }
+  }
+  return is_dupe;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H

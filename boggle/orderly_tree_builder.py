@@ -115,9 +115,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         if t.IsWord():
             word_score = SCORES[length]
-            is_dupe = any(
-                count > 1 for count in self.letter_counts
-            ) and self.check_for_dupe(t, choices)
+            is_dupe = self.dupe_mask > 0 and self.check_for_dupe(t, choices)
 
             if not is_dupe:
                 self.root.add_word(
