@@ -37,6 +37,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
         self.shift = 64 - 1 - dims[0] * dims[1]
+        self.letter_counts = [0] * 26
+        self.dupe_mask = 0
 
     def BuildTree(self, arena: PyArena = None):
         root = SumNode()
@@ -50,6 +52,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.found_words = set()
         self.num_letters = [len(cell) for cell in self.bd_]
         self.num_overflow = 0
+        self.letter_counts = [0] * 26
+        self.dupe_mask = 0
         print(f"{self.num_letters=}")
         choices = [0] * len(self.bd_)
         if arena:
@@ -77,6 +81,11 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             if t.StartsWord(cc):
                 cell_order = self.cell_to_order[cell]
                 choices[cell_order] = j
+                old_count = self.letter_counts[cc]
+                old_mask = self.dupe_mask  # TODO: can move out of loop
+                self.letter_counts[cc] += 1
+                if old_count == 1:
+                    self.dupe_mask |= 1 << cc
                 self.DoDFS(
                     cell,
                     length + (2 if cc == LETTER_Q else 1),
@@ -84,6 +93,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                     choices,
                     arena,
                 )
+                self.letter_counts[cc] -= 1
+                self.dupe_mask = old_mask
         choices.pop()
 
     def DoDFS(
@@ -103,53 +114,57 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         if t.IsWord():
             word_score = SCORES[length]
-            mark_raw = t.Mark()
             is_dupe = False
-            choice_mark = get_choice_mark(
-                choices, self.used_ordered_, self.split_order, self.num_letters
-            )
-            # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
-            # word = self.lookup[t]
-            if choice_mark < (1 << self.shift):
-                this_mark = (self.used_ordered_ << self.shift) + choice_mark
-                # print(word, this_mark, word_order, letters, choice_mark)
-                if mark_raw != 0:
-                    # possible collision
-                    m = mark_raw & ((1 << 63) - 1)
-                    # print(f"{mark_raw=} {m=}")
-                    # print(f"{word} Possible collision {this_mark} =? {m}")
-                    if m == this_mark:
-                        # definite collision
-                        # print(f"{word} Definite collision {word_order}")
-                        is_dupe = True
-                    else:
-                        # possible collision -- check the found_words set, too
-                        this_key = (id(t), this_mark)
-                        was_first = mark_raw & (1 << 63)
-                        if was_first:
-                            old_key = (id(t), m)
-                            self.found_words.add(this_key)
-                            self.found_words.add(old_key)
-                            t.SetMark(m)  # clear "was_first" bit
-                        else:
-                            is_dupe = this_key in self.found_words
-                            if not is_dupe:
-                                self.found_words.add(this_key)
-                                if len(self.found_words) % 1_000_000 == 0:
-                                    print(f"{len(self.found_words)=} {this_key}")
-                            else:
-                                pass
-                                # print(f"{word} Found dupe in found_words {word_order}")
-
-                else:
-                    m = this_mark + (1 << 63)
-                    # print(f"{word} set mark: {m} {word_order}")
-                    t.SetMark(m)
-            else:
-                self.num_overflow += 1
-                pass
+            if self.dupe_mask > 0:
+                mark_raw = t.Mark()
+                choice_mark = get_choice_mark(
+                    choices,
+                    self.used_ordered_,
+                    self.split_order,
+                    self.num_letters,
+                    1 << self.shift,
+                )
+                # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
                 # word = self.lookup[t]
-                # print(f"Overflow on choice_mark for {word}")
+                if choice_mark:
+                    this_mark = (self.used_ordered_ << self.shift) + choice_mark
+                    # print(word, this_mark, word_order, letters, choice_mark)
+                    if mark_raw != 0:
+                        # possible collision
+                        m = mark_raw & ((1 << 63) - 1)
+                        # print(f"{mark_raw=} {m=}")
+                        # print(f"{word} Possible collision {this_mark} =? {m}")
+                        if m == this_mark:
+                            # definite collision
+                            # print(f"{word} Definite collision {word_order}")
+                            is_dupe = True
+                        else:
+                            # possible collision -- check the found_words set, too
+                            this_key = (id(t), this_mark)
+                            was_first = mark_raw & (1 << 63)
+                            if was_first:
+                                old_key = (id(t), m)
+                                self.found_words.add(this_key)
+                                self.found_words.add(old_key)
+                                t.SetMark(m)  # clear "was_first" bit
+                            else:
+                                is_dupe = this_key in self.found_words
+                                if not is_dupe:
+                                    self.found_words.add(this_key)
+                                    if len(self.found_words) % 1_000_000 == 0:
+                                        print(f"{len(self.found_words)=} {this_key}")
+                                else:
+                                    pass
+                                    # print(f"{word} Found dupe in found_words {word_order}")
+
+                    else:
+                        m = this_mark + (1 << 63)
+                        # print(f"{word} set mark: {m} {word_order}")
+                        t.SetMark(m)
+                else:
+                    self.num_overflow += 1
+                    # word = self.lookup[t]
+                    # print(f"Overflow on choice_mark for {word}")
 
             if not is_dupe:
                 self.root.add_word(
@@ -173,8 +188,8 @@ def get_choice_mark(
     used_ordered: int,
     split_order: Sequence[int],
     num_letters: Sequence[int],
-) -> list[tuple[int, int]]:
-    """Returns the choices in split order"""
+    max_value: int,
+) -> int:
     idx = 0
     while used_ordered:
         order_index = countr_zero(used_ordered)
@@ -185,6 +200,8 @@ def get_choice_mark(
         used_ordered &= used_ordered - 1
         idx *= num_letters[cell]
         idx += letter
+    if idx > max_value:
+        return 0
     return idx
 
 
