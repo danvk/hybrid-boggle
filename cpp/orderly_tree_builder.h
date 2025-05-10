@@ -91,7 +91,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   dict_->ResetMarks();
   cout << "len(found_word)=" << found_words_.size()
        << ", num_overflow=" << num_overflow_ << endl;
-  found_words_.clear();  // TODO: swap trip to release memory
+  found_words_.clear();
+  unordered_set<pair<uintptr_t, uint64_t>, pair_hash<uintptr_t, uint64_t>>().swap(
+      found_words_
+  );
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
