@@ -8,6 +8,8 @@
 #include <variant>
 #include <vector>
 
+#include "constants.h"
+
 using namespace std;
 
 inline bool SortByLetter(const SumNode* a, const SumNode* b) {
@@ -287,11 +289,14 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
 
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
-    const SumNode* node, vector<int>& sums, vector<vector<const ChoiceNode*>>& stacks
+    const SumNode* node,
+    vector<int>& sums,
+    const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
+    int stack_sizes[MAX_CELLS]
 ) {
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
-    stacks[child->cell_].push_back(child);
+    stacks[child->cell_][stack_sizes[child->cell_]++] = child;
     sums[child->cell_] += child->bound_;
   }
   return node->points_;
@@ -303,7 +308,11 @@ vector<pair<int, string>> SumNode::OrderlyBound(
     const vector<int>& split_order,
     const vector<pair<int, int>>& preset_cells
 ) const {
-  vector<vector<const ChoiceNode*>> stacks(cells.size());
+  const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH];
+  int stack_sizes[MAX_CELLS];
+  for (int i = 0; i < MAX_CELLS; i++) {
+    stack_sizes[i] = 0;
+  }
   vector<pair<int, int>> choices;
   vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
@@ -334,18 +343,21 @@ vector<pair<int, string>> SumNode::OrderlyBound(
         }
 
         int next_to_split = split_order[num_splits];
-        vector<int> stack_top(stacks.size());
-        for (int i = 0; i < stacks.size(); ++i) {
-          stack_top[i] = stacks[i].size();
+        int base_stack_sizes[MAX_CELLS];
+        for (int i = 0; i < MAX_CELLS; i++) {
+          base_stack_sizes[i] = stack_sizes[i];
         }
         vector<int> base_sums = stack_sums;
 
         auto& next_stack = stacks[next_to_split];
         vector<pair<SumNode* const*, SumNode* const*>> its;
-        its.reserve(next_stack.size());
-        for (auto& n : next_stack) {
+        its.reserve(stack_sizes[next_to_split]);
+        for (int i = 0; i < stack_sizes[next_to_split]; i++) {
           // assert(n->cell_ == next_to_split);
-          its.push_back({&n->children_[0], &n->children_[n->num_children_]});
+          its.push_back(
+              {&next_stack[i]->children_[0],
+               &next_stack[i]->children_[next_stack[i]->num_children_]}
+          );
         }
 
         int num_letters = cells[next_to_split].size();
@@ -353,10 +365,8 @@ vector<pair<int, string>> SumNode::OrderlyBound(
           if (letter > 0) {
             // TODO: it should be possible to avoid this copy with another stack.
             stack_sums = base_sums;
-            for (int i = 0; i < stacks.size(); ++i) {
-              // This will not de-allocate anything, just reduce size.
-              // https://cplusplus.com/reference/vector/vector/resize/
-              stacks[i].resize(stack_top[i]);
+            for (int i = 0; i < MAX_CELLS; i++) {
+              stack_sizes[i] = base_stack_sizes[i];
             }
           }
           choices.emplace_back(next_to_split, letter);
@@ -364,7 +374,7 @@ vector<pair<int, string>> SumNode::OrderlyBound(
           for (auto& [it, end] : its) {
             if (it != end && (*it)->letter_ == letter) {
               // visit_at_level[1 + num_splits] += 1;
-              points += advance(*it, stack_sums, stacks);
+              points += advance(*it, stack_sums, stacks, stack_sizes);
               ++it;
             }
           }
@@ -374,7 +384,7 @@ vector<pair<int, string>> SumNode::OrderlyBound(
       };
 
   vector<int> sums(cells.size(), 0);
-  auto base_points = advance(this, sums, stacks);
+  auto base_points = advance(this, sums, stacks, stack_sizes);
   rec(base_points, 0, sums);
   return failures;
 }
