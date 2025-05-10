@@ -114,57 +114,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         if t.IsWord():
             word_score = SCORES[length]
-            is_dupe = False
-            if self.dupe_mask > 0:
-                mark_raw = t.Mark()
-                choice_mark = get_choice_mark(
-                    choices,
-                    self.used_ordered_,
-                    self.split_order,
-                    self.num_letters,
-                    1 << self.shift,
-                )
-                # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
-                # word = self.lookup[t]
-                if choice_mark:
-                    this_mark = (self.used_ordered_ << self.shift) + choice_mark
-                    # print(word, this_mark, word_order, letters, choice_mark)
-                    if mark_raw != 0:
-                        # possible collision
-                        m = mark_raw & ((1 << 63) - 1)
-                        # print(f"{mark_raw=} {m=}")
-                        # print(f"{word} Possible collision {this_mark} =? {m}")
-                        if m == this_mark:
-                            # definite collision
-                            # print(f"{word} Definite collision {word_order}")
-                            is_dupe = True
-                        else:
-                            # possible collision -- check the found_words set, too
-                            this_key = (id(t), this_mark)
-                            was_first = mark_raw & (1 << 63)
-                            if was_first:
-                                old_key = (id(t), m)
-                                self.found_words.add(this_key)
-                                self.found_words.add(old_key)
-                                t.SetMark(m)  # clear "was_first" bit
-                            else:
-                                is_dupe = this_key in self.found_words
-                                if not is_dupe:
-                                    self.found_words.add(this_key)
-                                    if len(self.found_words) % 1_000_000 == 0:
-                                        print(f"{len(self.found_words)=} {this_key}")
-                                else:
-                                    pass
-                                    # print(f"{word} Found dupe in found_words {word_order}")
-
-                    else:
-                        m = this_mark + (1 << 63)
-                        # print(f"{word} set mark: {m} {word_order}")
-                        t.SetMark(m)
-                else:
-                    self.num_overflow += 1
-                    # word = self.lookup[t]
-                    # print(f"Overflow on choice_mark for {word}")
+            is_dupe = self.dupe_mask > 0 and self.check_for_dupe(t, choices)
 
             if not is_dupe:
                 self.root.add_word(
@@ -178,6 +128,59 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         self.used_ordered_ ^= 1 << self.cell_to_order[cell]
         self.used_ ^= 1 << cell
+
+    def check_for_dupe(
+        self,
+        t: PyTrie,
+        choices: list[int],
+    ) -> bool:
+        mark_raw = t.Mark()
+        choice_mark = get_choice_mark(
+            choices,
+            self.used_ordered_,
+            self.split_order,
+            self.num_letters,
+            1 << self.shift,
+        )
+        # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
+        # word = self.lookup[t]
+        if not choice_mark:
+            self.num_overflow += 1
+            return False
+
+        this_mark = (self.used_ordered_ << self.shift) + choice_mark
+        if mark_raw == 0:
+            m = this_mark + (1 << 63)
+            # print(f"{word} set mark: {m} {word_order}")
+            t.SetMark(m)
+            return False
+
+        # print(word, this_mark, word_order, letters, choice_mark)
+        # possible collision
+        m = mark_raw & ((1 << 63) - 1)
+        # print(f"{mark_raw=} {m=}")
+        # print(f"{word} Possible collision {this_mark} =? {m}")
+        if m == this_mark:
+            # definite collision
+            # print(f"{word} Definite collision {word_order}")
+            return True
+
+        # possible collision -- check the found_words set, too
+        this_key = (id(t), this_mark)
+        was_first = mark_raw & (1 << 63)
+        if was_first:
+            old_key = (id(t), m)
+            self.found_words.add(this_key)
+            self.found_words.add(old_key)
+            t.SetMark(m)  # clear "was_first" bit
+            return False
+
+        is_dupe = this_key in self.found_words
+        if not is_dupe:
+            self.found_words.add(this_key)
+            if len(self.found_words) % 1_000_000 == 0:
+                print(f"{len(self.found_words)=} {this_key}")
+        return is_dupe
 
     def create_arena(self):
         return create_eval_node_arena_py()
