@@ -189,7 +189,7 @@ uint64_t GetChoiceMark(
     idx *= num_letters[cell];
     idx += letter;
     if (idx > max_value) {
-      return max_value;
+      return max_value + 1;
     }
   }
   return idx;
@@ -198,15 +198,16 @@ uint64_t GetChoiceMark(
 template <int M, int N>
 bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
   uintptr_t mark_raw = t->Mark();
+  uint64_t max_choice_mark = 1ULL << shift_;
   uint64_t choice_mark = GetChoiceMark(
       choices_,
       used_ordered_,
       BucketBoggler<M, N>::SPLIT_ORDER,
       this->num_letters_,
-      1ULL << shift_
+      max_choice_mark
   );
 
-  if (choice_mark > (1ULL << shift_)) {
+  if (choice_mark > max_choice_mark) {
     num_overflow_++;
     return false;
   }
@@ -223,24 +224,19 @@ bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
     return true;
   }
 
-  auto this_key = std::make_pair(reinterpret_cast<uintptr_t>(t), this_mark);
+  auto trie_key = (uintptr_t)t;
+  auto this_key = std::make_pair(trie_key, this_mark);
   bool was_first = mark_raw & (1ULL << 63);
   if (was_first) {
-    auto old_key = std::make_pair(reinterpret_cast<uintptr_t>(t), m);
+    auto old_key = std::make_pair(trie_key, m);
     found_words_.insert(this_key);
     found_words_.insert(old_key);
     t->Mark(m);
     return false;
   }
 
-  bool is_dupe = found_words_.find(this_key) != found_words_.end();
-  if (!is_dupe) {
-    found_words_.insert(this_key);
-    if (found_words_.size() % 1'000'000 == 0) {
-      std::cout << "len(found_words)=" << found_words_.size() << " " << this_key.second
-                << std::endl;
-    }
-  }
+  auto result = found_words_.emplace(this_key);
+  auto is_dupe = !result.second;
   return is_dupe;
 }
 
