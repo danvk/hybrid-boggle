@@ -64,7 +64,7 @@ def break_init(args, needs_canonical_filter):
     break_worker.args = args
     break_worker.needs_canonical_filter = needs_canonical_filter
     me = get_process_id()
-    with open(f"tasks-{me}.ndjson", "w"):
+    with open(f"{args.output_base}-{me}.ndjson", "w"):
         pass
     last_upload_time_secs = time.time()
     atexit.register(final_sync)
@@ -98,7 +98,7 @@ def final_sync():
     if args.gcs_path:
         print(f"Performing final sync to GCS for process {me}")
         upload_to_gcs(
-            f"tasks-{me}.ndjson",
+            f"{args.output_base}-{me}.ndjson",
             f"{args.gcs_path}/{args.timestamp}.tasks-{me}.ndjson",
         )
 
@@ -134,7 +134,7 @@ def break_worker(task: str | int):
     # depths[details.max_depth] += 1
     # times[round(10 * details.elapsed_s) / 10] += 1
     # all_details.append((task, details))
-    with open(f"tasks-{me}.ndjson", "a") as out:
+    with open(f"{args.output_base}-{me}.ndjson", "a") as out:
         # It's convenient to have id first when viewing.
         summary = {"id": task, **details.asdict()}
         if args.omit_times:
@@ -155,7 +155,7 @@ def break_worker(task: str | int):
         and current_time_secs - last_upload_time_secs >= MAX_GCS_UPLOAD_FREQUENCY_SECS
     ):
         upload_to_gcs(
-            f"tasks-{me}.ndjson",
+            f"{args.output_base}-{me}.ndjson",
             f"{args.gcs_path}/{args.timestamp}.tasks-{me}.ndjson",
         )
         last_upload_time_secs = current_time_secs
@@ -283,6 +283,11 @@ def main():
         "--omit_times",
         action="store_true",
         help="Omit times from logging, to get deterministic output.",
+    )
+    parser.add_argument(
+        "--output_base",
+        default="tasks",
+        help="Outputs will be written to output_base-thread_id.ndjson.",
     )
     parser.add_argument(
         "--gcs_path",

@@ -71,6 +71,8 @@ string Trie::ReverseLookup(const Trie* base, const Trie* child) {
   return out;
 }
 
+void Trie::ResetMarks() { SetAllMarks(0); }
+
 void Trie::SetAllMarks(unsigned mark) {
   if (IsWord()) Mark(mark);
   for (int i = 0; i < kNumLetters; i++) {

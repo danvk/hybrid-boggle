@@ -39,6 +39,7 @@ class Trie {
   size_t Size();
   size_t NumNodes();
   void SetAllMarks(unsigned mark);
+  void ResetMarks();
   Trie* FindWord(const char* wd);
 
   static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
