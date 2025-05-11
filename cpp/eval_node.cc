@@ -68,7 +68,8 @@ SumNode* SumNode::AddWordWork(
     return this;
   }
 
-  // some choices values are uninitialized here, but we only access the ones that are initialized based on the bitmap
+  // some choices values are uninitialized here, but we only access the ones that are
+  // initialized based on the bitmap
   int order_index = std::countr_zero(used_ordered);
   int cell = split_order[order_index];
   int letter = choices[order_index];
@@ -159,10 +160,13 @@ SumNode* SumNode::AddWordWork(
 }
 
 void SumNode::AddWord(
-    vector<int> choices, unsigned int used_ordered, vector<int> split_order, int points, EvalNodeArena& arena
+    vector<int> choices,
+    unsigned int used_ordered,
+    vector<int> split_order,
+    int points,
+    EvalNodeArena& arena
 ) {
-  auto r =
-      AddWordWork(choices.data(), used_ordered, split_order.data(), points, arena);
+  auto r = AddWordWork(choices.data(), used_ordered, split_order.data(), points, arena);
   assert(r == this);
 }
 

@@ -27,7 +27,8 @@ class SumNode {
       unsigned int used_ordered,
       vector<int> split_order,
       int points,
-      EvalNodeArena& arena);
+      EvalNodeArena& arena
+  );
 
   SumNode* AddWordWork(
       int choices[],
