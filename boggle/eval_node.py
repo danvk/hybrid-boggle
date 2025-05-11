@@ -52,7 +52,7 @@ class SumNode:
 
     def add_word(
         self,
-        choices: Sequence[tuple[int, int]],
+        choices: Sequence[int],
         used_ordered: int,
         split_order: Sequence[int],
         points: int,
@@ -110,7 +110,9 @@ class SumNode:
             if arena:
                 arena.add_node(letter_child)
 
-        letter_child.add_word(choices, used_ordered, split_order, points, arena, cell_counts)
+        letter_child.add_word(
+            choices, used_ordered, split_order, points, arena, cell_counts
+        )
         if letter_child.bound > old_choice_bound:
             choice_child.bound = letter_child.bound
         self.bound += choice_child.bound - old_choice_bound
