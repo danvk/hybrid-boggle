@@ -6,6 +6,22 @@
 
 using namespace std;
 
+using int128_t = __int128;
+
+namespace std {
+template <>
+struct hash<int128_t> {
+  size_t operator()(const int128_t& x) const {
+    // Combine the hash of the upper and lower 64 bits
+    const uint64_t* data = reinterpret_cast<const uint64_t*>(&x);
+    std::hash<uint64_t> hasher;
+    size_t seed = hasher(data[0]);
+    seed ^= hasher(data[1]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+  }
+};
+}  // namespace std
+
 // TODO: templating on M, N probably isn't helpful, either.
 template <int M, int N>
 class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
@@ -15,6 +31,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
       cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
     used_ordered_ = 0;
+    found_words_ = unordered_set<int128_t>();
   }
   virtual ~OrderlyTreeBuilder() {}
 
@@ -34,11 +51,13 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
-  unsigned int used_ordered_; // used cells mapped to their split order
-  int choices_[M * N]; // cell order -> letter index
+  unsigned int used_ordered_;            // used cells mapped to their split order
+  int choices_[M * N];                   // cell order -> letter index
+  unordered_set<int128_t> found_words_;  // hash of (choices, used_ordered, word id)
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
+  int128_t HashChoices(uint32_t word_id);
 };
 
 template <int M, int N>
@@ -110,12 +129,37 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   }
 
   if (t->IsWord()) {
-    auto word_score = kWordScores[length];
-
-    auto new_root =
-        root_->AddWordWork(choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena);
-    assert(new_root == root_);
+    auto hash = HashChoices(t->WordId());
+    if (found_words_.find(hash) == found_words_.end()) {
+      auto word_score = kWordScores[length];
+      found_words_.insert(hash);
+      auto new_root = root_->AddWordWork(
+          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
+      );
+      assert(new_root == root_);
+    }
   }
+}
+
+// Packs the choices + used_order + word_id into a 128-bit integer.
+// Assumes at most 23 choices are made. 110 bits used to hash the choices, the remaining
+// 18 bits are used to store the word index from the wordlist (max size 2**18 = 262143).
+// 2**110 >= 26**23
+template <int M, int N>
+int128_t OrderlyTreeBuilder<M, N>::HashChoices(uint32_t word_id) {
+  assert(__builtin_popcount(used_ordered_) <= 23);
+
+  // Take only the indices from choices that are part of the used_order bitmap
+  int128_t hash = 0;
+  for (int i = 0; i < M * N; i++) {
+    if (used_ordered_ & (1 << i)) {
+      hash += choices_[i];
+    }
+    hash *= 26;
+  }
+
+  // Word_id goes in the highest 18 bits
+  return hash | (static_cast<int128_t>(word_id) << 110);
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H

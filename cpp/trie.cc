@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include <cassert>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -22,7 +23,10 @@ Trie::Trie() {
 Trie* Trie::AddWord(const char* wd) {
   if (!wd) return NULL;
   if (!*wd) {
+    static int count = 0;
     SetIsWord();
+    SetWordId(count++);
+    assert(count <= 262143);
     return this;
   }
   int c = idx(*wd);
