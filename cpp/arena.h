@@ -24,7 +24,7 @@ class EvalNodeArena {
   EvalNodeArena() : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
   ~EvalNodeArena();
 
-  int NumNodes() { return num_nodes_; }
+  uint64_t NumNodes() { return num_nodes_; }
   uint64_t BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
 
   pair<int, int> SaveLevel();
@@ -43,7 +43,7 @@ class EvalNodeArena {
  private:
   void AddBuffer();
   vector<char*> buffers_;
-  int num_nodes_;
+  uint64_t num_nodes_;
   int cur_buffer_;
   int tip_;
   vector<pair<int, int>> watermarks_;
