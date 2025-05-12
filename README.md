@@ -191,7 +191,7 @@ Wordlist | 3x3 | 3x4 | 4x4 | 5x5
 **SOWPODS**    | ✅ `streaedlb` ([676](https://www.danvk.org/boggle/?board=lepsartes&wordlist=sowpods)) | ✅ `drpseiaestng` ([2073](https://www.danvk.org/boggle/?board=drpseiaestng&wordlist=sowpods&dims=34)) | ❓ `bestlatepirsseng` ([4808](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=sowpods)) | ❓ `degosrsniceitalstrepuopsd` ([14488](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
 
 - ✅ means this is proven to be the globally optimal board via exhaustive search (`break_all.py`).
-- ❓ means that this is the best board found to date using [hill climbing] (`hillclimb.py`), but there may still be a better board out there. (Please send a pull request if you find)
+- ❓ means that this is the best board found to date using [hill climbing] (`hillclimb.py`), but there may still be a better board out there. (Please send a pull request if you find a better one!)
 
 If you have a few thousand dollars of compute burning a hole in your pocket and you'd like to fill out the global optimum 4x4 column, please let me know!
 
