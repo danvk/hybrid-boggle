@@ -6,10 +6,12 @@ An attempt to find the highest-scoring [Boggle] board, and prove that it's the b
 
 These are the best (and best known) boards with the [ENABLE2K word list].
 
-- ✅ 3x3: `streaedlp` [545 points], [proven optimal][33] in 2009.
-- ✅ 3x4: `perslatesind` [1651 points], [proven optimal][34] in 2025.
-- ✅ 4x4: `perslatgsineters` [3625 points], [proven optimal][35] in 2025.
-- ❓ 5x5: `ligdrmanesietildsracsepes`, 10406 points, found via hill climbing, optimality unknown.
+- ✅ 3x3: `streaedlp` [545 points], [proven optimal][33] in 2009.
+- ✅ 3x4: `perslatesind` [1651 points], [proven optimal][34] in 2025.
+- ✅ 4x4: `perslatgsineters` [3625 points], [proven optimal][35] in 2025.
+- ❓ 5x5: `ligdrmanesietildsracsepes`, [10406 points], found via hill climbing, optimality unknown.
+
+For other wordlists, [see below](#results-for-other-wordlists).
 
 The 3x4 board should be read down columns first:
 
@@ -20,7 +22,7 @@ R T N
 S E D
 ```
 
-For square boards, you can read them however you like; every way is equivalent. For other wordlists, [see below](#results-for-other-wordlists).
+For square boards, you can read them however you like; every way is equivalent.
 
 To get a feel for Boggle, try the [online Boggle Solver][3625 points], which is an interactive WASM build of part of this repo.
 
@@ -210,7 +212,8 @@ You can find lists of the highest-scoring boards found via exhaustive search in 
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
 [danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general
 [danvk/boggle:2025-03-13]: https://hub.docker.com/repository/docker/danvk/boggle/tags/2025-03-13/sha256-e6a23b324af22b077af2b7b79ec31e17e668a5e166156818aedea188e791c1e1
-[3625 points]: https://www.danvk.org/boggle/?board=perslatgsineters
 [545 points]: https://www.danvk.org/boggle/?board=streaedlp
 [1651 points]: https://www.danvk.org/boggle/?board=perslatesind
+[3625 points]: https://www.danvk.org/boggle/?board=perslatgsineters
+[10406 points]: https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes
 [orderly trees]: https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
