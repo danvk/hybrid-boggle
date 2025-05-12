@@ -179,18 +179,37 @@ If you're trying to follow the code, here are a few pointers that will help:
 
 Here are the results for different wordlists. See [wordlists/README.md](wordlists/README.md) for background.
 
-  | 3x3 |   | 3x4 |   | 4x4 |   | 5x5
--- | -- | -- | -- | -- | -- | -- | --
-             | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb**
-**ENABLE2K** | `streaedlp` | `streaedlp` | `perslatesind` | `perslatesind` | `perslatgsineters` | `perslatgsineters` | `ligdrmanesietildsracsepes`
-**NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | `ligdrmanesietildsracsepes`
-**OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | `dlpmeseasicrtndoaiegsplsr`
-**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `dlpmeseasicrtndoaiegpllsr`
-**SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | `degosrsniceitalstrepuopsd`
-**TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `rdgassentmliteicarsdseper`
+- 3x3
+  - ENAB: ✅ `streaedlp` ([545 points](https://www.danvk.org/boggle/?board=streaedlp))
+  - NASP: ✅ `lepsartes` ([581 points](https://www.danvk.org/boggle/?board=lepsartes&wordlist=naspa23))
+  - OSPD: ✅ `lepsartes` ([573 points](https://www.danvk.org/boggle/?board=lepsartes&wordlist=ospd5))
+  - TWL6: ✅ `lepsartes` ([555 points](https://www.danvk.org/boggle/?board=lepsartes&wordlist=twl06))
+  - YAWL: ✅ `stleaeprd` ([659 points](https://www.danvk.org/boggle/?board=lepsartes&wordlist=yawl))
+  - SOWP: ✅ `streaedlb` ([676 points](https://www.danvk.org/boggle/?board=lepsartes&wordlist=sowpods))
+- 3x4
+  - ENAB: ✅ `perslatesind` ([1651 points](https://www.danvk.org/boggle/?board=perslatesind&dims=34))
+  - NASP: ✅ `perslatesind` ([1718 points](https://www.danvk.org/boggle/?board=perslatesind&wordlist=naspa23&dims=34))
+  - OSPD: ✅ `perslatesind` ([1701 points](https://www.danvk.org/boggle/?board=perslatesind&wordlist=ospd5&dims=34))
+  - TWL6: ✅ `perslatesind` ([1668 points](https://www.danvk.org/boggle/?board=perslatesind&wordlist=twl06&dims=34))
+  - YAWL: ✅ `bindlatesers` ([1959 points](https://www.danvk.org/boggle/?board=bindlatesers&wordlist=yawl&dims=34))
+  - SOWP: ✅ `drpseiaestng` ([2073 points](https://www.danvk.org/boggle/?board=drpseiaestng&wordlist=sowpods&dims=34))
+- 4x4
+  - ENAB: ✅ `perslatgsineters` ([3625 points](https://www.danvk.org/boggle/?board=perslatgsineters))
+  - NASP: ❓ `perslatgsineters` ([3923 points](https://www.danvk.org/boggle/?board=perslatgsineters&wordlist=naspa23))
+  - OSPD: ❓ `segsrntreiaeslps` ([3827 points](https://www.danvk.org/boggle/?board=segsrntreiaeslps&wordlist=ospd5))
+  - TWL6: ❓ `aresstapenildres` ([3701 points](https://www.danvk.org/boggle/?board=aresstapenildres&wordlist=twl06))
+  - YAWL: ❓ `bestlatepirsseng` ([4540 points](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=yawl))
+  - SOWP: ❓ `bestlatepirsseng` ([4808 points](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=sowpods))
+- 5x5
+  - ENAB: ❓ `ligdrmanesietildsracsepes` ([10406 points](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes))
+  - NASP: ❓ `ligdrmanesietildsracsepes` ([11371 points](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
+  - OSPD: ❓ `dlpmeseasicrtndoaiegsplsr` ([10473 points](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
+  - TWL6: ❓ `rdgassentmliteicarsdseper` ([10769 points](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
+  - YAWL: ❓ `dlpmeseasicrtndoaiegpllsr` ([13479 points](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegpllsr&wordlist=yawl))
+  - SOWP: ❓ `degosrsniceitalstrepuopsd` ([14488 points](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
 
-- "hillclimb" means that this is the best board found using [hill climbing] (`hillclimb.py`).
-- "global" means this is the globally optimal board (`break_all.py`).
+- ✅ means this is proven to be the globally optimal board via exhaustive search (`break_all.py`).
+- ❓ means that this is the best board found to date using [hill climbing] (`hillclimb.py`), but there may still be a better board out there. (Please send a pull request if you find)
 
 If you have a few thousand dollars of compute burning a hole in your pocket and you'd like to fill out the global optimum 4x4 column, please let me know!
 
