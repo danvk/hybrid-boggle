@@ -9,7 +9,9 @@ These are the best (and best known) boards with the [ENABLE2K word list].
 - ✅ 3x3: `streaedlp` [545 points], [proven optimal][33] in 2009.
 - ✅ 3x4: `perslatesind` [1651 points], [proven optimal][34] in 2025.
 - ✅ 4x4: `perslatgsineters` [3625 points], [proven optimal][35] in 2025.
-- ❓ 5x5: `ligdrmanesietildsracsepes`, 10406 points, found via hill climbing, optimality unknown.
+- ❓ 5x5: `ligdrmanesietildsracsepes`, [10406 points], found via hill climbing, optimality unknown.
+
+For other wordlists, [see below](#results-for-other-wordlists).
 
 The 3x4 board should be read down columns first:
 
@@ -20,7 +22,7 @@ R T N
 S E D
 ```
 
-For square boards, you can read them however you like; every way is equivalent. For other wordlists, [see below](#results-for-other-wordlists).
+For square boards, you can read them however you like; every way is equivalent.
 
 To get a feel for Boggle, try the [online Boggle Solver][3625 points], which is an interactive WASM build of part of this repo.
 
@@ -179,18 +181,17 @@ If you're trying to follow the code, here are a few pointers that will help:
 
 Here are the results for different wordlists. See [wordlists/README.md](wordlists/README.md) for background.
 
-  | 3x3 |   | 3x4 |   | 4x4 |   | 5x5
--- | -- | -- | -- | -- | -- | -- | --
-             | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb** | **global** | **hillclimb**
-**ENABLE2K** | `streaedlp` | `streaedlp` | `perslatesind` | `perslatesind` | `perslatgsineters` | `perslatgsineters` | `ligdrmanesietildsracsepes`
-**NASPA23**  | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `perslatgsineters` | ? | `ligdrmanesietildsracsepes`
-**OSPD**     | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `segsrntreiaeslps` | ? | `dlpmeseasicrtndoaiegsplsr`
-**YAWL**     | `stleaeprd` | `stleaeprd` | `bindlatesers` | `bindlatesers` | `bestlatepirsseng` | ? | `dlpmeseasicrtndoaiegpllsr`
-**SOWPODS**  | `streaedlb` | `streaedlb` | `drpseiaestng` | `drpseiaestng` | `bestlatepirsseng` | ? | `degosrsniceitalstrepuopsd`
-**TWL06**    | `lepsartes` | `lepsartes` | `perslatesind` | `perslatesind` | `aresstapenildres` | ? | `rdgassentmliteicarsdseper`
+Wordlist | 3x3 | 3x4 | 4x4 | 5x5
+--: | -- | -- | -- | --
+**ENABLE2K** | ✅ `streaedlp` ([545](https://www.danvk.org/boggle/?board=streaedlp)) | ✅ `perslatesind` ([1651](https://www.danvk.org/boggle/?board=perslatesind&dims=34)) | ✅ `perslatgsineters` ([3625](https://www.danvk.org/boggle/?board=perslatgsineters)) | ❓ `ligdrmanesietildsracsepes` ([10406](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes))
+**NASPA23**  | ✅ `lepsartes` ([581](https://www.danvk.org/boggle/?board=lepsartes&wordlist=naspa23)) | ✅ `perslatesind` ([1718](https://www.danvk.org/boggle/?board=perslatesind&wordlist=naspa23&dims=34)) | ❓ `perslatgsineters` ([3923](https://www.danvk.org/boggle/?board=perslatgsineters&wordlist=naspa23)) | ❓ `ligdrmanesietildsracsepes` ([11371](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
+**OSPD5**     | ✅ `lepsartes` ([573](https://www.danvk.org/boggle/?board=lepsartes&wordlist=ospd5)) | ✅ `perslatesind` ([1701](https://www.danvk.org/boggle/?board=perslatesind&wordlist=ospd5&dims=34)) | ❓ `segsrntreiaeslps` ([3827](https://www.danvk.org/boggle/?board=segsrntreiaeslps&wordlist=ospd5)) | ❓ `dlpmeseasicrtndoaiegsplsr` ([10473](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
+**TWL06**     | ✅ `lepsartes` ([555](https://www.danvk.org/boggle/?board=lepsartes&wordlist=twl06)) | ✅ `perslatesind` ([1668](https://www.danvk.org/boggle/?board=perslatesind&wordlist=twl06&dims=34)) | ❓ `aresstapenildres` ([3701](https://www.danvk.org/boggle/?board=aresstapenildres&wordlist=twl06)) | ❓ `rdgassentmliteicarsdseper` ([10769](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
+**YAWL**  | ✅ `stleaeprd` ([659](https://www.danvk.org/boggle/?board=lepsartes&wordlist=yawl)) | ✅ `bindlatesers` ([1959](https://www.danvk.org/boggle/?board=bindlatesers&wordlist=yawl&dims=34)) | ❓ `bestlatepirsseng` ([4540](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=yawl)) | ❓ `dlpmeseasicrtndoaiegpllsr` ([13479](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegpllsr&wordlist=yawl))
+**SOWPODS**    | ✅ `streaedlb` ([676](https://www.danvk.org/boggle/?board=lepsartes&wordlist=sowpods)) | ✅ `drpseiaestng` ([2073](https://www.danvk.org/boggle/?board=drpseiaestng&wordlist=sowpods&dims=34)) | ❓ `bestlatepirsseng` ([4808](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=sowpods)) | ❓ `degosrsniceitalstrepuopsd` ([14488](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
 
-- "hillclimb" means that this is the best board found using [hill climbing] (`hillclimb.py`).
-- "global" means this is the globally optimal board (`break_all.py`).
+- ✅ means this is proven to be the globally optimal board via exhaustive search (`break_all.py`).
+- ❓ means that this is the best board found to date using [hill climbing] (`hillclimb.py`), but there may still be a better board out there. (Please send a pull request if you find a better one!)
 
 If you have a few thousand dollars of compute burning a hole in your pocket and you'd like to fill out the global optimum 4x4 column, please let me know!
 
@@ -211,7 +212,8 @@ You can find lists of the highest-scoring boards found via exhaustive search in 
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
 [danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general
 [danvk/boggle:2025-03-13]: https://hub.docker.com/repository/docker/danvk/boggle/tags/2025-03-13/sha256-e6a23b324af22b077af2b7b79ec31e17e668a5e166156818aedea188e791c1e1
-[3625 points]: https://www.danvk.org/boggle/?board=perslatgsineters
 [545 points]: https://www.danvk.org/boggle/?board=streaedlp
 [1651 points]: https://www.danvk.org/boggle/?board=perslatesind
+[3625 points]: https://www.danvk.org/boggle/?board=perslatgsineters
+[10406 points]: https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes
 [orderly trees]: https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
