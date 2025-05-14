@@ -165,3 +165,6 @@ def test_multiboggle_score(get_trie, Boggler):
     t = get_trie()
     b = Boggler(t, (4, 4))
     assert PyBoggler.multiboggle_score(b, "eeesrvrreeesrsrs") == 13253
+
+    b = Boggler(t, (3, 3))
+    assert PyBoggler.multiboggle_score(b, "ee.bf.ee.") == 6
