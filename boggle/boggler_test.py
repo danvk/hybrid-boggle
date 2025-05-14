@@ -72,9 +72,10 @@ def test55(get_trie, Boggler):
     assert b.score("ititinstietbulseutiarsaba") == 810
 
 
-def test_find_words():
-    t = get_cpp_trie()
-    b = cpp_boggler(t, (4, 4))
+@pytest.mark.parametrize("get_trie, Boggler", PARAMS)
+def test_find_words(get_trie, Boggler):
+    t = get_trie()
+    b = Boggler(t, (4, 4))
     assert (b.find_words("abcdefghijklmnop", False)) == snapshot(
         [
             [5, 8, 4],
@@ -152,7 +153,7 @@ def test_find_words():
 
     assert set(words_multi) == set(words_uniq)
 
-    b3 = cpp_boggler(t, (3, 3))
+    b3 = Boggler(t, (3, 3))
     three_board = "abcdefgei"
     paths_multi = [path for path in b3.find_words(three_board, True) if len(path) > 3]
     words_multi3 = ["".join(three_board[i] for i in path) for path in paths_multi]
