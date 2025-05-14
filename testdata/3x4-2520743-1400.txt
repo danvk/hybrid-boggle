@@ -1,3 +1,4 @@
+len(found_word)=457582, num_overflow=0
 Unable to break board: cerslatesind 1406
 Unable to break board: merslatesind 1440
 Unable to break board: perslatesind 1651
@@ -42,30 +43,26 @@ Found unbreakable board for 2520743: perslitesand
   ],
   "elim_level": [],
   "bounds": [
-    6652,
-    5691,
-    4728,
-    4122,
-    3700,
-    3270
+    5496,
+    4694,
+    3951,
+    3125
   ],
   "depth": [
     0,
     0,
     1,
-    20,
-    18,
-    9,
-    5
+    21,
+    15
   ],
-  "boards_to_test": 8133,
+  "boards_to_test": 2084,
   "init_nodes": 2641103,
-  "total_nodes": 4053634,
+  "total_nodes": 3903388,
   "tree_bytes": 67108864,
-  "total_bytes": 134217728,
-  "n_bound": 53,
-  "n_force": 12,
-  "max_multi": 2509,
+  "total_bytes": 67108864,
+  "n_bound": 37,
+  "n_force": 8,
+  "max_multi": 2071,
   "best_board": [
     1651,
     "perslatesind"
