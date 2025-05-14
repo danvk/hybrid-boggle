@@ -341,7 +341,7 @@ def test_build_invariants44():
         # ibb.UpperBound(123_456)
         # score = ibb.Details().max_nomark
         score = PyBoggler.multiboggle_score(boggler, bd)
-        assert score == scores[idx]
+        assert score == scores[idx], f"{idx} {bd}"
         best_score = max(score, best_score)
 
     assert best_score == snapshot(2994)
