@@ -114,19 +114,18 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     t = otb.BuildTree(arena)
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
-    assert t.bound == 22
+    assert t.bound == snapshot(21)
 
     failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
     assert failures == snapshot(
         [
-            (18, "seer"),
             (18, "seat"),
             (17, "sear"),
             (18, "saet"),
             (17, "saer"),
-            (20, "teat"),
+            (15, "teat"),
             (15, "tear"),
-            (20, "taet"),
+            (15, "taet"),
             (15, "taer"),
         ]
     )
@@ -148,7 +147,7 @@ def test_orderly_merge():
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
         t.assert_orderly(split_order)
-    assert t.bound == 22
+    assert t.bound == snapshot(21)
 
     assert isinstance(t, SumNode)
     assert t.letter == ROOT_NODE
@@ -157,7 +156,7 @@ def test_orderly_merge():
     t1 = t.children[1]
     assert isinstance(t0, ChoiceNode)
     assert t0.cell == 0
-    assert t0.bound == 17
+    assert t0.bound == snapshot(16)
     assert len(t0.children) == 2
     assert isinstance(t1, ChoiceNode)
     assert t1.cell == 1
@@ -171,19 +170,19 @@ def test_orderly_merge():
         child.assert_orderly(split_order)
 
     m0 = merge_orderly_tree(choice0.children[0], tree1, arena)
-    assert m0.bound == 21
+    assert m0.bound == snapshot(21)
 
     m1 = merge_orderly_tree(choice0.children[1], tree1, arena)
-    assert m1.bound == 22
+    assert m1.bound == snapshot(18)
 
     force = t.orderly_force_cell(0, num_letters[0], arena)
     assert len(force) == 2
     for c in force:
         c.assert_orderly(split_order)
     assert force[0].letter == 0
-    assert force[0].bound == 21
+    assert force[0].bound == m0.bound
     assert force[1].letter == 1
-    assert force[1].bound == 22
+    assert force[1].bound == m1.bound
 
 
 @pytest.mark.parametrize("is_python", [True, False])
@@ -317,14 +316,14 @@ def test_build_invariants44():
     arena = otb.create_arena()
     assert otb.ParseBoard(board)
     root = otb.BuildTree(arena)
-    assert root.bound == 5463
+    assert root.bound == snapshot(3858)
 
     # this is a better bound than orderly, for which this is a worst-case scenario
     ibb = cpp_bucket_boggler(trie, dims)
     assert ibb.ParseBoard(board)
     ibb.UpperBound(123_456)
     ibuckets_score = ibb.Details().max_nomark
-    assert ibuckets_score == 4348
+    assert ibuckets_score == snapshot(4348)
 
     scores = eval_all(root, cells)
 
@@ -338,7 +337,7 @@ def test_build_invariants44():
         assert score == scores[idx]
         best_score = max(score, best_score)
 
-    assert best_score == 2994
+    assert best_score == snapshot(2994)
 
 
 def test_force_invariants44():
@@ -353,7 +352,7 @@ def test_force_invariants44():
     arena = otb.create_arena()
     assert otb.ParseBoard(base_board)
     root = otb.BuildTree(arena)
-    assert root.bound == 17596
+    assert root.bound == snapshot(15051)
 
     forces = [
         (5, 0),
@@ -379,7 +378,7 @@ def test_force_invariants44():
         cells[cell] = cells[cell][letter]
         unforced_cells.remove(cell)
 
-    assert t.bound == 329
+    assert t.bound == snapshot(320)
     forced_scores = eval_all(t, cells)
 
     board = " ".join(cells)
@@ -390,7 +389,7 @@ def test_force_invariants44():
     # The direct tree's bound is much higher because the cells with single letters
     # interfere with the other choices and desynchronize them. Despite this, it _is_
     # the same tree, which eval_all demonstrates.
-    assert direct_root.bound == 569
+    assert direct_root.bound == snapshot(557)
     direct_scores = eval_all(direct_root, cells)
 
     assert forced_scores == direct_scores
@@ -438,7 +437,7 @@ def test_missing_top_choice():
     arena = otb.create_arena()
     assert otb.ParseBoard(" ".join(base_cells))
     root = otb.BuildTree(arena)
-    assert root.bound == 25779
+    assert root.bound == snapshot(21049)
 
     forces = [
         (5, 0),
@@ -469,4 +468,4 @@ def test_missing_top_choice():
         unforced_cells.remove(cell)
 
     # https://www.danvk.org/boggle/?board=rbjfrevpverrresa&multiboggle=1
-    assert t.bound == 1680
+    assert t.bound == snapshot(1029)
