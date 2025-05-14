@@ -82,6 +82,7 @@ class PyBoggler:
 
     def find_words(self, lets: str, multiboggle: bool) -> list[list[int]]:
         self._seq = []
+        self._found_words = set()
         self.set_board(lets)
         self._runs = self._trie.Mark() + 1
         self._trie.SetMark(self._runs)
@@ -105,7 +106,14 @@ class PyBoggler:
         self._seq.append(i)
 
         if t.IsWord():
-            if t.Mark() != self._runs or multiboggle:
+            if multiboggle:
+                key = (id(t), tuple(sorted(self._seq)))
+                should_count = key not in self._found_words
+                if should_count:
+                    self._found_words.add(key)
+            else:
+                should_count = t.Mark() != self._runs
+            if should_count:
                 t.SetMark(self._runs)
                 out.append([*self._seq])
 
@@ -120,3 +128,6 @@ class PyBoggler:
 
         self._seq.pop()
         self._used[i] = False
+
+    def multiboggle_score(self, lets: str) -> int:
+        return sum(SCORES[len(path)] for path in self.find_words(lets, True))

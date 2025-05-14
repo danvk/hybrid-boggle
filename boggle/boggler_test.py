@@ -158,3 +158,9 @@ def test_find_words(get_trie, Boggler):
     paths_multi = [path for path in b3.find_words(three_board, True) if len(path) > 3]
     words_multi3 = ["".join(three_board[i] for i in path) for path in paths_multi]
     assert sorted(words_multi) == sorted(words_multi3)
+
+
+def test_multiboggle_score():
+    t = get_py_trie()
+    b = PyBoggler(t, (4, 4))
+    assert b.multiboggle_score("eeesrvrreeesrsrs") == 13253
