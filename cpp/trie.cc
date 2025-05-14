@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include <cassert>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -22,7 +23,10 @@ Trie::Trie() {
 Trie* Trie::AddWord(const char* wd) {
   if (!wd) return NULL;
   if (!*wd) {
+    static int count = 0;
     SetIsWord();
+    SetWordId(count++);
+    assert(count <= 262143);
     return this;
   }
   int c = idx(*wd);
@@ -64,14 +68,14 @@ bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
   return false;
 }
 
+void Trie::ResetMarks() { SetAllMarks(0); }
+
 // static
 string Trie::ReverseLookup(const Trie* base, const Trie* child) {
   string out;
   ReverseLookup(base, child, &out);
   return out;
 }
-
-void Trie::ResetMarks() { SetAllMarks(0); }
 
 void Trie::SetAllMarks(unsigned mark) {
   if (IsWord()) Mark(mark);
