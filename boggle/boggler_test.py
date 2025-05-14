@@ -163,8 +163,11 @@ def test_find_words(get_trie, Boggler):
 @pytest.mark.parametrize("get_trie, Boggler", PARAMS)
 def test_multiboggle_score(get_trie, Boggler):
     t = get_trie()
-    b = Boggler(t, (4, 4))
-    assert PyBoggler.multiboggle_score(b, "eeesrvrreeesrsrs") == 13253
-
+    # {bee, fee, beef} * 2
     b = Boggler(t, (3, 3))
     assert PyBoggler.multiboggle_score(b, "ee.bf.ee.") == 6
+    # assert b.score("ee.bf.ee.") == 3
+
+    b = Boggler(t, (4, 4))
+    assert PyBoggler.multiboggle_score(b, "eeesrvrreeesrsrs") == 13253
+    assert b.score("eeesrvrreeesrsrs") == 189
