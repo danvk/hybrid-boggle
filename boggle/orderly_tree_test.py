@@ -230,6 +230,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     start_s = time.time()
     failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
     print(time.time() - start_s)
+    # XXX lower the cutoff to get a board out
     # break_all reports 889 points for this board, but ibucket_solver reports 512
     assert failures == snapshot([])
     # assert False
@@ -242,6 +243,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
 def test_force_invariants22(is_python):
     dims = (2, 2)
     trie, otb = get_trie_otb("testdata/boggle-words-4.txt", dims, is_python)
+    # This has no dupes, so bounds converge to the true Boggle score
     board = "lnrsy aeiou chkmpt bdfgjvwxz"
     cells = board.split(" ")
     num_letters = [len(cell) for cell in cells]
@@ -292,6 +294,7 @@ def test_force_invariants22(is_python):
     assert len(choices_to_trees[-1]) == math.prod(num_letters)
     assert len(choices_to_trees) == 5
 
+    boggler = (PyBoggler if is_python else cpp_boggler)(trie, dims)
     ibb = PyBucketBoggler(trie, dims)
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         i0, i1, i2, i3 = idx
@@ -308,6 +311,7 @@ def test_force_invariants22(is_python):
 
         t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
         assert score == (t.bound if t else 0)
+        assert score == PyBoggler.multiboggle_score(boggler, bd.replace(" ", ""))
         # print(t.to_string(etb))
 
 
@@ -323,6 +327,7 @@ def test_build_invariants44():
     root = otb.BuildTree(arena)
     assert root.bound == snapshot(3858)
 
+    # XXX this is no longer true
     # this is a better bound than orderly, for which this is a worst-case scenario
     ibb = cpp_bucket_boggler(trie, dims)
     assert ibb.ParseBoard(board)
