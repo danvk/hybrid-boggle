@@ -160,7 +160,8 @@ def test_find_words(get_trie, Boggler):
     assert sorted(words_multi) == sorted(words_multi3)
 
 
-def test_multiboggle_score():
-    t = get_py_trie()
-    b = PyBoggler(t, (4, 4))
-    assert b.multiboggle_score("eeesrvrreeesrsrs") == 13253
+@pytest.mark.parametrize("get_trie, Boggler", PARAMS)
+def test_multiboggle_score(get_trie, Boggler):
+    t = get_trie()
+    b = Boggler(t, (4, 4))
+    assert PyBoggler.multiboggle_score(b, "eeesrvrreeesrsrs") == 13253
