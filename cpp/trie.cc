@@ -23,10 +23,7 @@ Trie::Trie() {
 Trie* Trie::AddWord(const char* wd) {
   if (!wd) return NULL;
   if (!*wd) {
-    static int count = 0;
     SetIsWord();
-    SetWordId(count++);
-    assert(count <= 262143);
     return this;
   }
   int c = idx(*wd);
@@ -102,10 +99,12 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
     return NULL;
   }
 
+  int count = 0;
   unique_ptr<Trie> t(new Trie);
   while (!feof(f) && fscanf(f, "%s", line)) {
     if (BogglifyWord(line)) {
-      t->AddWord(line);
+      t->AddWord(line)->SetWordId(count++);
+      assert(count <= 262143);
     }
   }
   fclose(f);

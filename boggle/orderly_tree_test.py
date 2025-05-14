@@ -81,7 +81,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         t.assert_invariants(otb)
 
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("1bc9f74c0682*.txt")
+        external("1f0fc29ed9ce*.txt")
     )
 
 
@@ -202,7 +202,7 @@ def test_orderly_force22(is_python):
         for i, t in enumerate(force)
     )
 
-    assert outsource(txt) == snapshot(external("3f6cd59206d5*.txt"))
+    assert outsource(txt) == snapshot(external("7e73f64f3fe0*.txt"))
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
@@ -227,7 +227,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
     print(time.time() - start_s)
     # break_all reports 889 points for this board, but ibucket_solver reports 512
-    assert failures == snapshot([(512, "stsaseblt")])
+    assert failures == snapshot([])
     # assert False
 
 
