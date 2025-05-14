@@ -335,7 +335,7 @@ void Boggler<M, N>::FindWordsDFS(
   if (t->IsWord()) {
     bool should_count;
     if (multiboggle) {
-      uint64_t key = (t->Id() << 32) + used_;
+      uint64_t key = (((uint64_t)t->WordId()) << 32) + used_;
       auto result = found_words_.emplace(key);
       should_count = result.second;
     } else {
