@@ -47,7 +47,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     board = "s e p e a u h t c"
     cells = board.split(" ")
     assert bb.parse_board(board)
-    t = bb.BuildTree(arena)
+    t = bb.build_tree(arena)
     if isinstance(t, SumNode):
         t.assert_invariants(bb)
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
@@ -80,7 +80,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
     otb = get_tree_builder(trie, dims=(3, 3))
     otb.parse_board(board)
     arena = otb.create_arena()
-    t = otb.BuildTree(arena)
+    t = otb.build_tree(arena)
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
 
@@ -97,7 +97,7 @@ def test_orderly_bound22(is_python):
     # num_letters = [len(cell) for cell in cells]
     otb.parse_board(board)
     arena = otb.create_arena()
-    t = otb.BuildTree(arena)
+    t = otb.build_tree(arena)
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
     assert t.bound == 8
@@ -115,7 +115,7 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     otb = get_tree_builder(trie, dims=(2, 2))
     otb.parse_board(board)
     arena = otb.create_arena()
-    t = otb.BuildTree(arena)
+    t = otb.build_tree(arena)
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
     assert t.bound == snapshot(21)
@@ -146,7 +146,7 @@ def test_orderly_merge():
     num_letters = [len(cell) for cell in cells]
     otb.parse_board(board)
     arena = otb.create_arena()
-    t = otb.BuildTree(arena)
+    t = otb.build_tree(arena)
     split_order = SPLIT_ORDER[(2, 2)]
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
@@ -197,7 +197,7 @@ def test_orderly_force22(is_python):
     num_letters = [len(cell) for cell in cells]
     otb.parse_board(board)
     arena = otb.create_arena()
-    t = otb.BuildTree(arena)
+    t = otb.build_tree(arena)
     force = t.orderly_force_cell(0, num_letters[0], arena)
 
     txt = "\n\n".join(
@@ -216,7 +216,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     otb = get_tree_builder(trie, dims=(3, 3))
     otb.parse_board(board)
     arena = otb.create_arena()
-    t = otb.BuildTree(arena)
+    t = otb.build_tree(arena)
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
         print(otb.cell_counts)
@@ -241,7 +241,7 @@ def test_force_invariants22(is_python):
     num_letters = [len(cell) for cell in cells]
     otb.parse_board(board)
     arena = otb.create_arena()
-    root = otb.BuildTree(arena)
+    root = otb.build_tree(arena)
     # print(t.to_dot(cells))
 
     scores = eval_all(root, cells)
@@ -319,7 +319,7 @@ def test_build_invariants44():
 
     arena = otb.create_arena()
     assert otb.parse_board(board)
-    root = otb.BuildTree(arena)
+    root = otb.build_tree(arena)
     assert root.bound == snapshot(3858)
 
     # the orderly bound is only a bit better for this board thanks to all the repeat "e"s.
@@ -354,7 +354,7 @@ def test_force_invariants44():
 
     arena = otb.create_arena()
     assert otb.parse_board(base_board)
-    root = otb.BuildTree(arena)
+    root = otb.build_tree(arena)
     assert root.bound == snapshot(15051)
 
     forces = [
@@ -387,7 +387,7 @@ def test_force_invariants44():
     board = " ".join(cells)
     cells = board.split(" ")
     assert otb.parse_board(board)
-    direct_root = otb.BuildTree(arena)
+    direct_root = otb.build_tree(arena)
 
     # The direct tree's bound is much higher because the cells with single letters
     # interfere with the other choices and desynchronize them. Despite this, it _is_
@@ -437,7 +437,7 @@ def test_missing_top_choice():
     base_num_letters = [len(cell) for cell in base_cells]
     arena = otb.create_arena()
     assert otb.parse_board(" ".join(base_cells))
-    root = otb.BuildTree(arena)
+    root = otb.build_tree(arena)
     assert root.bound == snapshot(21049)
 
     forces = [

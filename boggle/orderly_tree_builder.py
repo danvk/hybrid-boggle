@@ -39,7 +39,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.letter_counts = [0] * 26
         self.dupe_mask = 0
 
-    def BuildTree(self, arena: PyArena = None):
+    def build_tree(self, arena: PyArena = None):
         root = SumNode()
         root.letter = ROOT_NODE
         root.points = 0
@@ -66,10 +66,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.trie_.reset_marks()
         assert self.letter_counts == [0] * 26
         return root
-
-    def SumUnion(self):
-        # This _could_ be computed if there were a need.
-        return 0
 
     def DoAllDescents(
         self, cell: int, length: int, t: PyTrie, choices: list[int], arena
@@ -210,7 +206,7 @@ def main():
     # etb = TreeBuilder(trie, dims)
     # assert etb.parse_board(board)
     # e_arena = etb.create_arena()
-    # classic_tree = etb.BuildTree(e_arena, dedupe=True)
+    # classic_tree = etb.build_tree(e_arena, dedupe=True)
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     otb = builder(trie, dims)
@@ -219,7 +215,7 @@ def main():
     arenas = []
     arenas.append(o_arena)
     start_s = time.time()
-    orderly_tree = otb.BuildTree(o_arena)
+    orderly_tree = otb.build_tree(o_arena)
     elapsed_s = time.time() - start_s
 
     # print("EvalTreeBuilder:    ", end="")

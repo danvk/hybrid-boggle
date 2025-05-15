@@ -153,7 +153,7 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.num_reps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
-        tree = self.etb.BuildTree(arena)
+        tree = self.etb.build_tree(arena)
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")

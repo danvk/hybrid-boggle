@@ -34,16 +34,15 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
   py::class_<TB>(m, pyclass_name.c_str(), py::buffer_protocol())
       .def(py::init<Trie *>())
       .def(
-          "BuildTree",
+          "build_tree",
           &TB::BuildTree,
           py::return_value_policy::reference,
           py::arg("arena"),
           py::arg("dedupe") = false
       )
-      .def("ParseBoard", &TB::ParseBoard)
+      .def("parse_board", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
-      .def("SumUnion", &TB::SumUnion)
-      .def("NumReps", &TB::NumReps)
+      .def("num_reps", &TB::NumReps)
       .def("create_arena", &TB::CreateArena);
 }
 
