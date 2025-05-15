@@ -122,8 +122,12 @@ def break_worker(task: str | int):
         ):
             return []
         board = from_board_id(classes, task)
+        if args.log_breaker_progress:
+            print(f"{me} Starting {task}: {board}")
     else:
         board = task
+        if args.log_breaker_progress:
+            print(f"{me} Starting {task}")
 
     assert breaker.SetBoard(board)
     details = breaker.Break()

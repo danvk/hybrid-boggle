@@ -1,4 +1,6 @@
 from cpp_boggle import (
+    Boggler22,
+    Boggler23,
     Boggler33,
     Boggler34,
     Boggler44,
@@ -17,7 +19,14 @@ from cpp_boggle import (
     OrderlyTreeBuilder55,
 )
 
-Bogglers = {(3, 3): Boggler33, (3, 4): Boggler34, (4, 4): Boggler44, (5, 5): Boggler55}
+Bogglers = {
+    (2, 2): Boggler22,
+    (2, 3): Boggler23,
+    (3, 3): Boggler33,
+    (3, 4): Boggler34,
+    (4, 4): Boggler44,
+    (5, 5): Boggler55,
+}
 
 BucketBogglers = {
     (2, 2): BucketBoggler22,

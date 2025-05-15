@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include <cassert>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -64,6 +65,8 @@ bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
   return false;
 }
 
+void Trie::ResetMarks() { SetAllMarks(0); }
+
 // static
 string Trie::ReverseLookup(const Trie* base, const Trie* child) {
   string out;
@@ -96,10 +99,12 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
     return NULL;
   }
 
+  int count = 0;
   unique_ptr<Trie> t(new Trie);
   while (!feof(f) && fscanf(f, "%s", line)) {
     if (BogglifyWord(line)) {
-      t->AddWord(line);
+      t->AddWord(line)->SetWordId(count++);
+      assert(count <= 262143);
     }
   }
   fclose(f);

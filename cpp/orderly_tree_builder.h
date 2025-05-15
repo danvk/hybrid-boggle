@@ -36,9 +36,17 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int cell_to_order_[M * N];
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
+  int num_letters_[M * N];
+
+  static const int shift_ = 64 - M * N;
+  int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
+  uint32_t dupe_mask_;
+  vector<unordered_set<uint64_t>*> found_words_;
+  unsigned int num_overflow_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
+  bool CheckForDupe(Trie* t);
 };
 
 template <int M, int N>
@@ -48,11 +56,29 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
+  found_words_.reserve(1000);
+  for (int i = 0; i < 26; i++) {
+    letter_counts_[i] = 0;
+  }
+  dupe_mask_ = 0;
+  num_overflow_ = 0;
+  dict_->ResetMarks();
+  for (int cell = 0; cell < M * N; cell++) {
+    num_letters_[cell] = strlen(bd_[cell]);
+  }
+
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
   auto root = root_;
   root_ = NULL;
+  dict_->ResetMarks();
+  // cout << "len(found_word)=" << found_words_.size()
+  //      << ", num_overflow=" << num_overflow_ << endl;
+  for (auto word_set : found_words_) {
+    delete word_set;
+  }
+  found_words_.clear();
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
@@ -76,6 +102,7 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(
     int cell, int n, int length, Trie* t, EvalNodeArena& arena
 ) {
+  auto old_mask = dupe_mask_;
   char* c = &bd_[cell][0];
   int j = 0;
   while (*c) {
@@ -86,7 +113,15 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
       used_ ^= (1 << cell);
       used_ordered_ ^= (1 << cell_order);
 
+      auto old_count = letter_counts_[cc]++;
+      if (old_count == 1) {
+        dupe_mask_ |= (1 << cc);
+      }
+
       DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
+
+      letter_counts_[cc]--;
+      dupe_mask_ = old_mask;
 
       used_ordered_ ^= (1 << cell_order);
       used_ ^= (1 << cell);
@@ -111,12 +146,73 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
 
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
+    auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
 
-    auto new_root = root_->AddWordWork(
-        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
-    );
-    assert(new_root == root_);
+    if (!is_dupe) {
+      auto new_root = root_->AddWordWork(
+          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
+      );
+      assert(new_root == root_);
+    }
   }
+}
+
+uint64_t GetChoiceMark(
+    const int* choices,
+    unsigned int used_ordered,
+    const int* split_order,
+    const int* num_letters,
+    uint64_t max_value
+) {
+  uint64_t idx = 0;
+  while (used_ordered) {
+    int order_index = __builtin_ctz(used_ordered);
+    int cell = split_order[order_index];
+    int letter = choices[order_index];
+
+    used_ordered &= used_ordered - 1;
+    idx *= num_letters[cell];
+    idx += letter;
+    if (idx > max_value) {
+      return max_value + 1;
+    }
+  }
+  return idx;
+}
+
+template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
+  uint64_t max_choice_mark = 1ULL << shift_;
+  uint64_t choice_mark = GetChoiceMark(
+      choices_,
+      used_ordered_,
+      BucketBoggler<M, N>::SPLIT_ORDER,
+      this->num_letters_,
+      max_choice_mark
+  );
+
+  if (choice_mark > max_choice_mark) {
+    num_overflow_++;
+    return false;
+  }
+
+  auto prev_paths = (unordered_set<uint64_t>*)(t->Mark());
+
+  uint64_t this_mark = (static_cast<uint64_t>(used_ordered_) << shift_) + choice_mark;
+  if (prev_paths == nullptr) {
+    auto new_paths = new unordered_set<uint64_t>;
+    // This is around the median for the board class for perslatgsineters (19005578)
+    // with three buckets ("aeijou bcdfgmpqvwxz hklnrsty").
+    new_paths->reserve(100);
+    new_paths->insert(this_mark);
+    t->Mark((uintptr_t)new_paths);
+    found_words_.push_back(new_paths);
+    return false;
+  }
+
+  auto result = prev_paths->emplace(this_mark);
+  auto is_dupe = !result.second;
+  return is_dupe;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H

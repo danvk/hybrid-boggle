@@ -1,7 +1,9 @@
 from boggle.neighbors import NEIGHBORS
-from boggle.trie import make_lookup_table
-#            1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
-SCORES = (0, 0, 0, 1, 1, 2, 3, 5, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11)
+from boggle.trie import PyTrie, make_lookup_table
+
+#                  1, 2, 3, 4, 5, 6, 7,  8,     9..25
+SCORES = tuple([0, 0, 0, 1, 1, 2, 3, 5, 11] + [11 for _ in range(9, 26)])
+assert len(SCORES) == 26
 LETTER_A = ord("a")
 LETTER_Q = ord("q") - LETTER_A
 LETTER_Z = ord("z")
@@ -77,3 +79,58 @@ class PyBoggler:
                     self.do_dfs(idx, length, d)
 
         self._used[i] = False
+
+    def find_words(self, lets: str, multiboggle: bool) -> list[list[int]]:
+        self._seq = []
+        self._found_words = set()
+        self.set_board(lets)
+        self._runs = self._trie.Mark() + 1
+        self._trie.SetMark(self._runs)
+        self._score = 0
+        self._used = [False] * 16
+        t = self._trie
+        out = []
+        for i in range(0, self._n):
+            c = self._cells[i]
+            if c == -1:
+                continue
+            d = t.Descend(c)
+            if d:
+                self.find_words_dfs(i, d, multiboggle, out)
+        return out
+
+    def find_words_dfs(
+        self, i: int, t: PyTrie, multiboggle: bool, out: list[list[int]]
+    ):
+        self._used[i] = True
+        self._seq.append(i)
+
+        if t.IsWord():
+            if multiboggle:
+                key = (id(t), tuple(sorted(self._seq)))
+                should_count = key not in self._found_words
+                if should_count:
+                    self._found_words.add(key)
+            else:
+                should_count = t.Mark() != self._runs
+            if should_count:
+                t.SetMark(self._runs)
+                out.append([*self._seq])
+
+        for idx in self._neighbors[i]:
+            if not self._used[idx]:
+                cc = self._cells[idx]
+                if cc == -1:
+                    continue
+                d = t.Descend(cc)
+                if d:
+                    self.find_words_dfs(idx, d, multiboggle, out)
+
+        self._seq.pop()
+        self._used[i] = False
+
+    def multiboggle_score(self, lets: str) -> int:
+        return sum(
+            SCORES[sum(2 if lets[cell] == "q" else 1 for cell in path)]
+            for path in self.find_words(lets, True)
+        )

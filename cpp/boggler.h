@@ -2,6 +2,8 @@
 #ifndef BOGGLER_4
 #define BOGGLER_4
 
+#include <unordered_set>
+
 #include "board_class_boggler.h"
 #include "constants.h"
 #include "trie.h"
@@ -42,6 +44,7 @@ class Boggler {
   unsigned int score_;
   unsigned int runs_;
   vector<int> seq_;
+  unordered_set<uint64_t> found_words_;
 };
 
 template <int M, int N>
@@ -302,6 +305,7 @@ void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
 
 template <int M, int N>
 vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggle) {
+  found_words_.clear();
   seq_.clear();
   seq_.reserve(M * N);
   vector<vector<int>> out;
@@ -331,7 +335,15 @@ void Boggler<M, N>::FindWordsDFS(
   used_ ^= (1 << i);
   seq_.push_back(i);
   if (t->IsWord()) {
-    if (t->Mark() != runs_ || multiboggle) {
+    bool should_count;
+    if (multiboggle) {
+      uint64_t key = (((uint64_t)t->WordId()) << 32) + used_;
+      auto result = found_words_.emplace(key);
+      should_count = result.second;
+    } else {
+      should_count = (t->Mark() != runs_);
+    }
+    if (should_count) {
       t->Mark(runs_);
       out.push_back(seq_);
     }
