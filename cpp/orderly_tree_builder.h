@@ -6,22 +6,6 @@
 
 using namespace std;
 
-template <class T>
-inline void hash_combine(std::size_t& seed, const T& v) {
-  std::hash<T> hasher;
-  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-
-template <typename S, typename T>
-struct pair_hash {
-  inline std::size_t operator()(const std::pair<S, T>& v) const {
-    std::size_t seed = 0;
-    hash_combine(seed, v.first);
-    hash_combine(seed, v.second);
-    return seed;
-  }
-};
-
 // TODO: templating on M, N probably isn't helpful, either.
 template <int M, int N>
 class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
@@ -118,6 +102,7 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(
     int cell, int n, int length, Trie* t, EvalNodeArena& arena
 ) {
+  auto old_mask = dupe_mask_;
   char* c = &bd_[cell][0];
   int j = 0;
   while (*c) {
@@ -129,7 +114,6 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
       used_ordered_ ^= (1 << cell_order);
 
       auto old_count = letter_counts_[cc]++;
-      auto old_mask = dupe_mask_;
       if (old_count == 1) {
         dupe_mask_ |= (1 << cc);
       }
