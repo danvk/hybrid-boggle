@@ -130,4 +130,7 @@ class PyBoggler:
         self._used[i] = False
 
     def multiboggle_score(self, lets: str) -> int:
-        return sum(SCORES[len(path)] for path in self.find_words(lets, True))
+        return sum(
+            SCORES[sum(2 if lets[cell] == "q" else 1 for cell in path)]
+            for path in self.find_words(lets, True)
+        )

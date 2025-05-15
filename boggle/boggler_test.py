@@ -4,7 +4,7 @@ import pytest
 from cpp_boggle import Trie
 from inline_snapshot import snapshot
 
-from boggle.boggler import PyBoggler
+from boggle.boggler import LETTER_Q, SCORES, PyBoggler
 from boggle.dimensional_bogglers import cpp_boggler
 from boggle.trie import make_py_trie
 
@@ -169,4 +169,16 @@ def test_multiboggle_score(get_trie, Boggler):
     assert PyBoggler.multiboggle_score(b, "eeesrvrreeesrsrs") == 13253
     assert b.score("eeesrvrreeesrsrs") == 189
 
-    assert PyBoggler.multiboggle_score(b, "besbrrneeeehbteq") == 933
+    q_bd = "besbrrneeeehbteq"
+    assert PyBoggler.multiboggle_score(b, q_bd) == 965
+
+    q_bd_score = b.score(q_bd)
+    assert q_bd_score == 201
+    words = b.find_words(q_bd, False)
+    assert (
+        sum(
+            SCORES[sum(2 if q_bd[cell] == "q" else 1 for cell in path)]
+            for path in words
+        )
+        == q_bd_score
+    )
