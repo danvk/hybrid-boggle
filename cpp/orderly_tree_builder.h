@@ -2,7 +2,6 @@
 #define ORDERLY_TREE_BUILDER_H
 
 #include "eval_node.h"
-#include "ibuckets.h"
 
 using namespace std;
 

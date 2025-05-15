@@ -9,24 +9,11 @@ using std::vector;
 #include "arena.h"
 #include "boggler.h"
 #include "eval_node.h"
-#include "ibuckets.h"
 #include "orderly_tree_builder.h"
 #include "symmetry.h"
 #include "trie.h"
 
 // See https://stackoverflow.com/a/47749076/388951
-template <int M, int N>
-void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
-  using BB = BucketBoggler<M, N>;
-  py::class_<BB>(m, pyclass_name.c_str())
-      .def(py::init<Trie *>())
-      .def("parse_board", &BB::ParseBoard)
-      .def("upper_bound", &BB::UpperBound)
-      .def("as_string", &BB::as_string)
-      .def("details", &BB::Details)
-      .def("num_reps", &BB::NumReps);
-}
-
 template <typename TB>
 void declare_tree_builder(py::module &m, const string &pyclass_name) {
   py::class_<TB>(m, pyclass_name.c_str())
@@ -86,24 +73,12 @@ PYBIND11_MODULE(cpp_boggle, m) {
   declare_boggler<4, 4>(m, "Boggler44");
   declare_boggler<5, 5>(m, "Boggler55");
 
-  declare_bucket_boggler<2, 2>(m, "BucketBoggler22");
-  declare_bucket_boggler<2, 3>(m, "BucketBoggler23");
-  declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
-  declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
-  declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
-  declare_bucket_boggler<5, 5>(m, "BucketBoggler55");
-
   declare_tree_builder<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22");
   declare_tree_builder<OrderlyTreeBuilder<2, 3>>(m, "OrderlyTreeBuilder23");
   declare_tree_builder<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33");
   declare_tree_builder<OrderlyTreeBuilder<3, 4>>(m, "OrderlyTreeBuilder34");
   declare_tree_builder<OrderlyTreeBuilder<4, 4>>(m, "OrderlyTreeBuilder44");
   declare_tree_builder<OrderlyTreeBuilder<5, 5>>(m, "OrderlyTreeBuilder55");
-
-  py::class_<ScoreDetails>(m, "ScoreDetails")
-      .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
-      .def_readwrite("sum_union", &ScoreDetails::sum_union)
-      .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
 
   py::class_<SumNode>(m, "SumNode")
       .def_readonly("letter", &SumNode::letter_)

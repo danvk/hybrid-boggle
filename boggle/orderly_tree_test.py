@@ -8,7 +8,6 @@ from inline_snapshot import external, outsource, snapshot
 from boggle.boggler import PyBoggler
 from boggle.dimensional_bogglers import (
     cpp_boggler,
-    cpp_bucket_boggler,
     cpp_orderly_tree_builder,
 )
 from boggle.eval_node import (
@@ -20,7 +19,6 @@ from boggle.eval_node import (
     merge_orderly_tree,
     split_orderly_tree,
 )
-from boggle.ibuckets import PyBucketBoggler
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
@@ -289,14 +287,10 @@ def test_force_invariants22(is_python):
     # Since the board has no repeat letters, the ibuckets bound, multiboggle score,
     # and true score are all identical to the fully-forced bound.
     boggler = (PyBoggler if is_python else cpp_boggler)(trie, dims)
-    ibb = PyBucketBoggler(trie, dims)
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         i0, i1, i2, i3 = idx
-        bd = " ".join(cells[i][letter] for i, letter in enumerate(idx))
-        assert ibb.parse_board(bd)
-        ibb.upper_bound(123)
-        score = ibb.details().max_nomark
-        # print(idx, bd, score)
+        bd = "".join(cells[i][letter] for i, letter in enumerate(idx))
+        score == boggler.score(bd)
         assert score == all_scores[0][idx]
         assert score == all_scores[1][idx]
         assert score == all_scores[2][idx]
@@ -305,8 +299,7 @@ def test_force_invariants22(is_python):
 
         t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
         assert score == (t.bound if t else 0)
-        assert score == PyBoggler.multiboggle_score(boggler, bd.replace(" ", ""))
-        assert score == boggler.score(bd.replace(" ", ""))
+        assert score == PyBoggler.multiboggle_score(boggler, bd)
         # print(t.to_string(etb))
 
 
@@ -321,13 +314,6 @@ def test_build_invariants44():
     assert otb.parse_board(board)
     root = otb.build_tree(arena)
     assert root.bound == snapshot(3858)
-
-    # the orderly bound is only a bit better for this board thanks to all the repeat "e"s.
-    ibb = cpp_bucket_boggler(trie, dims)
-    assert ibb.parse_board(board)
-    ibb.upper_bound(123_456)
-    ibuckets_score = ibb.details().max_nomark
-    assert ibuckets_score == snapshot(4348)
 
     scores = eval_all(root, cells)
 
