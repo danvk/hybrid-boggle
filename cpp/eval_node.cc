@@ -314,7 +314,6 @@ vector<pair<int, string>> SumNode::OrderlyBound(
     stack_sizes[i] = 0;
   }
   vector<pair<int, int>> choices;
-  vector<int> stack_sums(cells.size(), 0);
   vector<pair<int, string>> failures;
 
   auto record_failure = [&](int bound) {
