@@ -1,4 +1,3 @@
-len(found_word)=457582, num_overflow=0
 Unable to break board: cerslatesind 1406
 Unable to break board: merslatesind 1440
 Unable to break board: perslatesind 1651
