@@ -4,7 +4,7 @@ import pytest
 from cpp_boggle import Trie
 from inline_snapshot import snapshot
 
-from boggle.boggler import LETTER_Q, SCORES, PyBoggler
+from boggle.boggler import SCORES, PyBoggler
 from boggle.dimensional_bogglers import cpp_boggler
 from boggle.trie import make_py_trie
 

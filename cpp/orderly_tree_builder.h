@@ -57,7 +57,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static const int shift_ = 64 - 1 - M * N;
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
   uint32_t dupe_mask_;
-  unordered_set<pair<uintptr_t, uint64_t>, pair_hash<uintptr_t, uint64_t>> found_words_;
+  vector<unordered_set<uint64_t>*> found_words_;
   unsigned int num_overflow_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -72,7 +72,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
-  found_words_.reserve(100'000);
+  found_words_.reserve(1000);
   for (int i = 0; i < 26; i++) {
     letter_counts_[i] = 0;
   }
@@ -89,12 +89,12 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   auto root = root_;
   root_ = NULL;
   dict_->ResetMarks();
-  // cout << "len(found_word)=" << found_words_.size()
-  //     << ", num_overflow=" << num_overflow_ << endl;
+  cout << "len(found_word)=" << found_words_.size()
+       << ", num_overflow=" << num_overflow_ << endl;
+  for (auto word_set : found_words_) {
+    delete word_set;
+  }
   found_words_.clear();
-  unordered_set<pair<uintptr_t, uint64_t>, pair_hash<uintptr_t, uint64_t>>().swap(
-      found_words_
-  );
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
@@ -198,7 +198,6 @@ uint64_t GetChoiceMark(
 
 template <int M, int N>
 bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
-  uintptr_t mark_raw = t->Mark();
   uint64_t max_choice_mark = 1ULL << shift_;
   uint64_t choice_mark = GetChoiceMark(
       choices_,
@@ -213,30 +212,17 @@ bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
     return false;
   }
 
+  auto prev_paths = (unordered_set<uint64_t>*)(t->Mark());
+
   uint64_t this_mark = (static_cast<uint64_t>(used_ordered_) << shift_) + choice_mark;
-  if (mark_raw == 0) {
-    uintptr_t m = this_mark + (1ULL << 63);
-    t->Mark(m);
+  if (prev_paths == nullptr) {
+    auto new_paths = new unordered_set<uint64_t>{this_mark};
+    t->Mark((uintptr_t)new_paths);
+    found_words_.push_back(new_paths);
     return false;
   }
 
-  uint64_t m = mark_raw & ((1ULL << 63) - 1);
-  if (m == this_mark) {
-    return true;
-  }
-
-  auto trie_key = (uintptr_t)t;
-  auto this_key = std::make_pair(trie_key, this_mark);
-  bool was_first = mark_raw & (1ULL << 63);
-  if (was_first) {
-    auto old_key = std::make_pair(trie_key, m);
-    found_words_.insert(this_key);
-    found_words_.insert(old_key);
-    t->Mark(m);
-    return false;
-  }
-
-  auto result = found_words_.emplace(this_key);
+  auto result = prev_paths->emplace(this_mark);
   auto is_dupe = !result.second;
   return is_dupe;
 }
