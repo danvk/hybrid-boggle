@@ -216,7 +216,11 @@ bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
 
   uint64_t this_mark = (static_cast<uint64_t>(used_ordered_) << shift_) + choice_mark;
   if (prev_paths == nullptr) {
-    auto new_paths = new unordered_set<uint64_t>{this_mark};
+    auto new_paths = new unordered_set<uint64_t>;
+    // This is around the median for the board class for perslatgsineters (19005578)
+    // with three buckets ("aeijou bcdfgmpqvwxz hklnrsty").
+    new_paths->reserve(100);
+    new_paths->insert(this_mark);
     t->Mark((uintptr_t)new_paths);
     found_words_.push_back(new_paths);
     return false;
