@@ -33,11 +33,11 @@ def test_boards(Boggler: type[PyBucketBoggler], TrieT: type[PyTrie]):
 @pytest.mark.parametrize("Boggler, TrieT", PARAMS)
 def test_bound(Boggler: type[PyBucketBoggler], TrieT: type[PyTrie]):
     t = TrieT()
-    t.AddWord("sea")
-    t.AddWord("seat")
-    t.AddWord("seats")
-    t.AddWord("tea")
-    t.AddWord("teas")
+    t.add_word("sea")
+    t.add_word("seat")
+    t.add_word("seats")
+    t.add_word("tea")
+    t.add_word("teas")
 
     bb = Boggler(t, (3, 3))
 
@@ -82,9 +82,9 @@ def test_bound(Boggler: type[PyBucketBoggler], TrieT: type[PyTrie]):
 @pytest.mark.parametrize("Boggler, TrieT", PARAMS)
 def test_q(Boggler, TrieT):
     t = TrieT()
-    t.AddWord("qa")  # qua = 1
-    t.AddWord("qas")  # qua = 1
-    t.AddWord("qest")  # quest = 2
+    t.add_word("qa")  # qua = 1
+    t.add_word("qas")  # qua = 1
+    t.add_word("qest")  # quest = 2
 
     bb = Boggler(t, (3, 3))
 
@@ -113,11 +113,11 @@ def test_tar_tier(Boggler, TrieT):
     # https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/
 
     t = TrieT()
-    t.AddWord("tar")
-    t.AddWord("tie")
-    t.AddWord("tier")
-    t.AddWord("tea")
-    t.AddWord("the")
+    t.add_word("tar")
+    t.add_word("tie")
+    t.add_word("tier")
+    t.add_word("tea")
+    t.add_word("the")
 
     bb = Boggler(t, (3, 3))
 
@@ -143,11 +143,11 @@ def test_tar_tier(Boggler, TrieT):
 def test_tar_tier_boggler():
     # Analogous to test_tar_tier(), but try each board.
     t = PyTrie()
-    t.AddWord("tar")
-    t.AddWord("tie")
-    t.AddWord("tier")
-    t.AddWord("tea")
-    t.AddWord("the")
+    t.add_word("tar")
+    t.add_word("tie")
+    t.add_word("tier")
+    t.add_word("tea")
+    t.add_word("the")
 
     b = PyBoggler(t, (4, 4))
     assert b.score("tizzazzzrzzzzzzz") == 1
@@ -155,7 +155,7 @@ def test_tar_tier_boggler():
 
 
 def test_bucket_boggle34():
-    t = Trie.CreateFromFile("wordlists/enable2k.txt")
+    t = Trie.create_from_file("wordlists/enable2k.txt")
     bb = BucketBoggler34(t)
     # s l p i a e n t r d e s
     assert bb.ParseBoard(

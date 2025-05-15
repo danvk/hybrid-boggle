@@ -59,11 +59,11 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         if arena:
             arena.add_node(root)
 
-        self.trie_.ResetMarks()
+        self.trie_.reset_marks()
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, choices, arena)
         self.root = None
-        self.trie_.ResetMarks()
+        self.trie_.reset_marks()
         assert self.letter_counts == [0] * 26
         return root
 
@@ -78,7 +78,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         old_mask = self.dupe_mask
         for j, char in enumerate(self.bd_[cell]):
             cc = ord(char) - LETTER_A
-            if t.StartsWord(cc):
+            if t.starts_word(cc):
                 cell_order = self.cell_to_order[cell]
                 choices[cell_order] = j
                 old_count = self.letter_counts[cc]
@@ -88,7 +88,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.DoDFS(
                     cell,
                     length + (2 if cc == LETTER_Q else 1),
-                    t.Descend(cc),
+                    t.descend(cc),
                     choices,
                     arena,
                 )
@@ -111,7 +111,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             if not self.used_ & (1 << idx):
                 self.DoAllDescents(idx, length, t, choices, arena)
 
-        if t.IsWord():
+        if t.is_word():
             word_score = SCORES[length]
             is_dupe = self.dupe_mask > 0 and self.check_for_dupe(t, choices)
 
@@ -149,9 +149,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             return False
 
         this_mark = (self.used_ordered_ << self.shift) + choice_mark
-        prev_paths: set[int] | 0 = t.Mark()
+        prev_paths: set[int] | 0 = t.mark()
         if not prev_paths:
-            t.SetMark({this_mark})
+            t.set_mark({this_mark})
             return False
 
         if this_mark in prev_paths:

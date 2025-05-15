@@ -10,39 +10,39 @@ def asc(char: str):
 
 def test_trie():
     t = Trie()
-    t.AddWord("agriculture")
-    t.AddWord("culture")
-    t.AddWord("boggle")
-    t.AddWord("tea")
-    t.AddWord("sea")
-    t.AddWord("teapot")
-    assert not t.IsWord()
+    t.add_word("agriculture")
+    t.add_word("culture")
+    t.add_word("boggle")
+    t.add_word("tea")
+    t.add_word("sea")
+    t.add_word("teapot")
+    assert not t.is_word()
 
-    assert t.Size() == 6
-    assert t.FindWord("agriculture") is not None
-    assert t.FindWord("culture") is not None
-    assert t.FindWord("boggle") is not None
-    assert t.FindWord("tea") is not None
-    assert t.FindWord("sea") is not None
-    assert t.FindWord("teapot") is not None
+    assert t.size() == 6
+    assert t.find_word("agriculture") is not None
+    assert t.find_word("culture") is not None
+    assert t.find_word("boggle") is not None
+    assert t.find_word("tea") is not None
+    assert t.find_word("sea") is not None
+    assert t.find_word("teapot") is not None
 
-    assert t.FindWord("teap") is None
-    assert t.FindWord("random") is None
-    assert t.FindWord("cultur") is None
+    assert t.find_word("teap") is None
+    assert t.find_word("random") is None
+    assert t.find_word("cultur") is None
 
-    wd = t.Descend(asc("t"))
+    wd = t.descend(asc("t"))
     assert wd is not None
-    wd = wd.Descend(asc("e"))
+    wd = wd.descend(asc("e"))
     assert wd is not None
-    wd = wd.Descend(asc("a"))
+    wd = wd.descend(asc("a"))
     assert wd is not None
-    assert wd.Mark() == 0
-    wd.SetMark(12345)
-    assert wd.Mark() == 12345
+    assert wd.mark() == 0
+    wd.set_mark(12345)
+    assert wd.mark() == 12345
 
-    child = t.FindWord("agriculture")
+    child = t.find_word("agriculture")
     assert child is not None
-    assert Trie.ReverseLookup(t, child) == "agriculture"
+    assert Trie.reverse_lookup(t, child) == "agriculture"
 
 
 def test_bogglify_word():
@@ -54,8 +54,8 @@ def test_bogglify_word():
 
 
 def test_load_file():
-    t = Trie.CreateFromFile("testdata/boggle-words-4.txt")
-    assert not t.IsWord()
+    t = Trie.create_from_file("testdata/boggle-words-4.txt")
+    assert not t.is_word()
 
-    assert t.FindWord("wood") is not None
-    assert t.FindWord("woxd") is None
+    assert t.find_word("wood") is not None
+    assert t.find_word("woxd") is None

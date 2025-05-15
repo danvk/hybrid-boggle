@@ -14,7 +14,7 @@ def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
         trie = make_py_trie(dict_file)
         otb = OrderlyTreeBuilder(trie, dims=dims)
     else:
-        trie = Trie.CreateFromFile(dict_file)
+        trie = Trie.create_from_file(dict_file)
         otb = cpp_orderly_tree_builder(trie, dims=dims)
     return trie, otb
 

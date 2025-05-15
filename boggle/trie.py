@@ -4,74 +4,78 @@ LETTER_A = ord("a")
 
 
 class PyTrie:
+    _children: list[Self | None]
+    _mark: int
+    _is_word: bool
+
     def __init__(self):
-        self.is_word = False
-        self.mark = 0
-        self.children = [None] * 26
+        self._is_word = False
+        self._mark = 0
+        self._children = [None] * 26
 
-    def StartsWord(self, i: int):
-        return self.children[i] is not None
+    def starts_word(self, i: int):
+        return self._children[i] is not None
 
-    def Descend(self, i: int):
-        return self.children[i]
+    def descend(self, i: int):
+        return self._children[i]
 
-    def IsWord(self):
-        return self.is_word
+    def is_word(self):
+        return self._is_word
 
-    def Mark(self):
-        return self.mark
+    def mark(self):
+        return self._mark
 
-    def SetMark(self, mark):
-        self.mark = mark
+    def set_mark(self, mark):
+        self._mark = mark
 
     # ---
 
-    def SetIsWord(self):
-        self.is_word = True
+    def set_is_word(self):
+        self._is_word = True
 
-    def AddWord(self, word):
+    def add_word(self, word: str) -> Self:
         if word == "":
-            self.SetIsWord()
+            self.set_is_word()
             return self
         c = ord(word[0]) - LETTER_A
         try:
-            if not self.StartsWord(c):
-                self.children[c] = PyTrie()
+            if not self.starts_word(c):
+                self._children[c] = PyTrie()
         except IndexError:
             print(c, word)
             raise
-        return self.Descend(c).AddWord(word[1:])
+        return self.descend(c).add_word(word[1:])
 
-    def Size(self):
-        return (1 if self.IsWord() else 0) + sum(c.Size() for c in self.children if c)
+    def size(self):
+        return (1 if self.is_word() else 0) + sum(c.size() for c in self._children if c)
 
-    def NumNodes(self):
-        return 1 + sum(c.NumNodes() for c in self.children if c)
+    def num_nodes(self):
+        return 1 + sum(c.num_nodes() for c in self._children if c)
 
-    def FindWord(self, word):
+    def find_word(self, word: str):
         if word == "":
             return self
         c = ord(word[0]) - LETTER_A
-        if self.StartsWord(c):
-            return self.Descend(c).FindWord(word[1:])
+        if self.starts_word(c):
+            return self.descend(c).find_word(word[1:])
         return None
 
-    def ResetMarks(self):
-        self.mark = 0
-        for child in self.children:
+    def reset_marks(self):
+        self.set_mark(0)
+        for child in self._children:
             if not child:
                 continue
-            child.ResetMarks()
+            child.reset_marks()
 
     @staticmethod
-    def ReverseLookup(root: Self, node: Self):
+    def reverse_lookup(root: Self, node: Self):
         return reverse_lookup(root, node)
 
 
 def reverse_lookup(root: PyTrie, node: PyTrie):
     if root is node:
         return ""
-    for i, child in enumerate(root.children):
+    for i, child in enumerate(root._children):
         if not child:
             continue
         child_result = reverse_lookup(child, node)
@@ -84,7 +88,7 @@ def make_lookup_table(t: PyTrie, prefix="", out=None) -> dict[PyTrie, str]:
     """Construct a Trie -> str table for debugging."""
     out = out or {}
     out[t] = prefix
-    for i, child in enumerate(t.children):
+    for i, child in enumerate(t._children):
         if child:
             make_lookup_table(child, prefix + chr(i + LETTER_A), out)
     return out
@@ -115,5 +119,5 @@ def make_py_trie(dict_input: str):
         word = word.strip()
         word = bogglify_word(word)
         if word is not None:
-            t.AddWord(word)
+            t.add_word(word)
     return t

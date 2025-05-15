@@ -32,11 +32,11 @@ from boggle.trie import PyTrie, make_py_trie
 )
 def test_build_orderly_tree(TrieT, TreeBuilderT):
     t = TrieT()
-    t.AddWord("sea")
-    t.AddWord("seat")
-    t.AddWord("seats")
-    t.AddWord("tea")
-    t.AddWord("teas")
+    t.add_word("sea")
+    t.add_word("seat")
+    t.add_word("seats")
+    t.add_word("tea")
+    t.add_word("teas")
 
     bb = TreeBuilderT(t, (3, 3))
     arena = bb.create_arena()
@@ -57,7 +57,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
 
 OTB_PARAMS = [
     (make_py_trie, OrderlyTreeBuilder),
-    (Trie.CreateFromFile, cpp_orderly_tree_builder),
+    (Trie.create_from_file, cpp_orderly_tree_builder),
 ]
 
 
@@ -66,7 +66,7 @@ def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
         trie = make_py_trie(dict_file)
         otb = OrderlyTreeBuilder(trie, dims=dims)
     else:
-        trie = Trie.CreateFromFile(dict_file)
+        trie = Trie.create_from_file(dict_file)
         otb = cpp_orderly_tree_builder(trie, dims=dims)
     return trie, otb
 

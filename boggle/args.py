@@ -46,7 +46,7 @@ def get_trie_from_args(args: argparse.Namespace):
         t = make_py_trie(args.dictionary)
         assert t
     else:
-        t = Trie.CreateFromFile(args.dictionary)
+        t = Trie.create_from_file(args.dictionary)
         assert t
     return t
 

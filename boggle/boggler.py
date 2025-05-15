@@ -12,6 +12,8 @@ LETTER_Z = ord("z")
 class PyBoggler:
     """Hybrid or pure-Python Boggler (depending on the Trie)."""
 
+    _trie: PyTrie
+
     def __init__(self, trie, dims: tuple[int, int]):
         self._trie = trie
         self._runs = 0
@@ -24,7 +26,7 @@ class PyBoggler:
         self.words = None
         self._neighbors = NEIGHBORS[dims]
         self.lookup_table = None
-        assert not self._trie.IsWord()
+        assert not self._trie.is_word()
 
     def set_board(self, bd: str):
         assert len(bd) == self._n
@@ -41,8 +43,8 @@ class PyBoggler:
     def score(self, bd: str):
         self.set_board(bd)
         # This allows the same Trie to be used by multiple bogglers, e.g. for boggle_test.py
-        self._runs = 1 + self._trie.Mark()
-        self._trie.SetMark(self._runs)
+        self._runs = 1 + self._trie.mark()
+        self._trie.set_mark(self._runs)
         self._score = 0
         if self.collect_words:
             self.words = []
@@ -53,7 +55,7 @@ class PyBoggler:
             c = self._cells[i]
             if c == -1:
                 continue
-            d = t.Descend(c)
+            d = t.descend(c)
             if d:
                 self.do_dfs(i, 0, d)
         return self._score
@@ -62,9 +64,9 @@ class PyBoggler:
         c = self._cells[i]
         self._used[i] = True
         length += 1 if c != LETTER_Q else 2
-        if t.IsWord():
-            if t.Mark() != self._runs:
-                t.SetMark(self._runs)
+        if t.is_word():
+            if t.mark() != self._runs:
+                t.set_mark(self._runs)
                 self._score += SCORES[length]
                 if self.collect_words:
                     self.words.append(self.lookup_table[t])
@@ -74,7 +76,7 @@ class PyBoggler:
                 cc = self._cells[idx]
                 if cc == -1:
                     continue
-                d = t.Descend(cc)
+                d = t.descend(cc)
                 if d:
                     self.do_dfs(idx, length, d)
 
@@ -84,8 +86,8 @@ class PyBoggler:
         self._seq = []
         self._found_words = set()
         self.set_board(lets)
-        self._runs = self._trie.Mark() + 1
-        self._trie.SetMark(self._runs)
+        self._runs = self._trie.mark() + 1
+        self._trie.set_mark(self._runs)
         self._score = 0
         self._used = [False] * 16
         t = self._trie
@@ -94,7 +96,7 @@ class PyBoggler:
             c = self._cells[i]
             if c == -1:
                 continue
-            d = t.Descend(c)
+            d = t.descend(c)
             if d:
                 self.find_words_dfs(i, d, multiboggle, out)
         return out
@@ -105,16 +107,16 @@ class PyBoggler:
         self._used[i] = True
         self._seq.append(i)
 
-        if t.IsWord():
+        if t.is_word():
             if multiboggle:
                 key = (id(t), tuple(sorted(self._seq)))
                 should_count = key not in self._found_words
                 if should_count:
                     self._found_words.add(key)
             else:
-                should_count = t.Mark() != self._runs
+                should_count = t.mark() != self._runs
             if should_count:
-                t.SetMark(self._runs)
+                t.set_mark(self._runs)
                 out.append([*self._seq])
 
         for idx in self._neighbors[i]:
@@ -122,7 +124,7 @@ class PyBoggler:
                 cc = self._cells[idx]
                 if cc == -1:
                     continue
-                d = t.Descend(cc)
+                d = t.descend(cc)
                 if d:
                     self.find_words_dfs(idx, d, multiboggle, out)
 
