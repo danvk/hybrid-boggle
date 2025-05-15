@@ -18,8 +18,7 @@ using std::vector;
 template <int M, int N>
 void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
   using BB = BucketBoggler<M, N>;
-  // TODO: do I care about buffer_protocol() here?
-  py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
+  py::class_<BB>(m, pyclass_name.c_str())
       .def(py::init<Trie *>())
       .def("parse_board", &BB::ParseBoard)
       .def("upper_bound", &BB::UpperBound)
@@ -30,15 +29,13 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
 
 template <typename TB>
 void declare_tree_builder(py::module &m, const string &pyclass_name) {
-  // TODO: do I care about buffer_protocol() here?
-  py::class_<TB>(m, pyclass_name.c_str(), py::buffer_protocol())
+  py::class_<TB>(m, pyclass_name.c_str())
       .def(py::init<Trie *>())
       .def(
           "build_tree",
           &TB::BuildTree,
           py::return_value_policy::reference,
-          py::arg("arena"),
-          py::arg("dedupe") = false
+          py::arg("arena")
       )
       .def("parse_board", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
@@ -49,8 +46,7 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
 template <int M, int N>
 void declare_boggler(py::module &m, const string &pyclass_name) {
   using BB = Boggler<M, N>;
-  // TODO: do I care about buffer_protocol() here?
-  py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
+  py::class_<BB>(m, pyclass_name.c_str())
       .def(py::init<Trie *>())
       .def("score", &BB::Score)
       .def("find_words", &BB::FindWords)
@@ -104,7 +100,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
   declare_tree_builder<OrderlyTreeBuilder<4, 4>>(m, "OrderlyTreeBuilder44");
   declare_tree_builder<OrderlyTreeBuilder<5, 5>>(m, "OrderlyTreeBuilder55");
 
-  py::class_<ScoreDetails>(m, "ScoreDetails", py::buffer_protocol())
+  py::class_<ScoreDetails>(m, "ScoreDetails")
       .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
       .def_readwrite("sum_union", &ScoreDetails::sum_union)
       .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);

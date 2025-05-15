@@ -178,7 +178,7 @@ def get_breaker(args) -> BreakingBundle:
     etb = builder(t, dims)
 
     if args.breaker == "hybrid":
-        switchover_score = args.switchover_score or 2.5 * best_score
+        switchover_score = args.switchover_score or 1.7 * best_score
         breaker = HybridTreeBreaker(
             etb,
             boggler,
@@ -248,7 +248,7 @@ def main():
         default=None,
         help="When to switch from splitting the tree by forcing cells to evaluating the "
         "remaining tree with a DFS. Higher values will use less RAM but potentially run "
-        "more slowly. The default is 2.5 * best_score.",
+        "more slowly. The default is 1.7 * best_score.",
     )
     parser.add_argument(
         "--breaker",
