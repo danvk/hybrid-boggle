@@ -54,7 +54,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.num_overflow = 0
         self.letter_counts = [0] * 26
         self.dupe_mask = 0
-        print(f"{self.num_letters=}")
         choices = [0] * len(self.bd_)
         if arena:
             arena.add_node(root)
@@ -62,10 +61,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.trie_.ResetMarks()
         for cell in range(len(self.bd_)):
             self.DoAllDescents(cell, 0, self.trie_, choices, arena)
-            print(f"{len(self.found_words)=}")
         self.root = None
         self.trie_.ResetMarks()
-        print(f"{len(self.found_words)=}, {self.num_overflow=}")
         assert self.letter_counts == [0] * 26
         return root
 
@@ -135,7 +132,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         t: PyTrie,
         choices: list[int],
     ) -> bool:
-        mark_raw = t.Mark()
         choice_mark = get_choice_mark(
             choices,
             self.used_ordered_,
@@ -150,38 +146,15 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             return False
 
         this_mark = (self.used_ordered_ << self.shift) + choice_mark
-        if mark_raw == 0:
-            m = this_mark + (1 << 63)
-            # print(f"{word} set mark: {m} {word_order}")
-            t.SetMark(m)
+        prev_paths = t.Mark()
+        if not prev_paths:
+            t.SetMark({this_mark})
             return False
 
-        # print(word, this_mark, word_order, letters, choice_mark)
-        # possible collision
-        m = mark_raw & ((1 << 63) - 1)
-        # print(f"{mark_raw=} {m=}")
-        # print(f"{word} Possible collision {this_mark} =? {m}")
-        if m == this_mark:
-            # definite collision
-            # print(f"{word} Definite collision {word_order}")
+        if this_mark in prev_paths:
             return True
-
-        # possible collision -- check the found_words set, too
-        this_key = (id(t), this_mark)
-        was_first = mark_raw & (1 << 63)
-        if was_first:
-            old_key = (id(t), m)
-            self.found_words.add(this_key)
-            self.found_words.add(old_key)
-            t.SetMark(m)  # clear "was_first" bit
-            return False
-
-        is_dupe = this_key in self.found_words
-        if not is_dupe:
-            self.found_words.add(this_key)
-            if len(self.found_words) % 1_000_000 == 0:
-                print(f"{len(self.found_words)=} {this_key}")
-        return is_dupe
+        prev_paths.add(this_mark)
+        return False
 
     def create_arena(self):
         return create_eval_node_arena_py()
