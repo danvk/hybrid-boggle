@@ -46,6 +46,7 @@ Here are the blog posts I've written about this project in 2025:
 - [New Ideas in 2025][post2]: Explains Multi-Boggle, the EvalTree structure and the basic operations on it.
 - [A Thrilling Insight and the Power of Algorithms][post3]: Explains Orderly Trees, the idea that really broke this problem open.
 - [Following up on an insight][post4]: Explains a incremental improvements that brought 4x4 Boggle in range.
+- [After 20 Years, the Globally Optimal Boggle Board][35]: Announcement of the big 4x4 Boggle result.
 
 For earlier posts, check out this [2014 compendium].
 
