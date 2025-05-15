@@ -12,8 +12,9 @@ cd cpp
 c++ -Wall -shared -std=c++20 -fPIC -march=native \
     -Wno-sign-compare \
     -Wshadow \
+    -Werror \
     -O3 \
-    $(poetry run python -m pybind11 --includes) \
+    $(poetry run python -m pybind11 --includes | perl -pe 's/-I/-isystem /g') \
     cpp_boggle.cc trie.cc arena.cc eval_node.cc symmetry.cc \
     -o ../cpp_boggle$(python3-config --extension-suffix) \
     $EXTRA_FLAGS
