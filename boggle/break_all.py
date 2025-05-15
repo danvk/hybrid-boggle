@@ -22,12 +22,7 @@ from boggle.args import (
 from boggle.board_id import from_board_id, is_canonical_board_id, parse_classes
 from boggle.boggler import PyBoggler
 from boggle.breaker import HybridTreeBreaker
-from boggle.dimensional_bogglers import (
-    cpp_bucket_boggler,
-    cpp_orderly_tree_builder,
-)
-from boggle.ibucket_breaker import IBucketBreaker
-from boggle.ibuckets import PyBucketBoggler
+from boggle.dimensional_bogglers import cpp_orderly_tree_builder
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import PyTrie
 
@@ -39,7 +34,7 @@ class BreakingBundle:
     trie: PyTrie
     boggler: PyBoggler
     etb: OrderlyTreeBuilder
-    breaker: IBucketBreaker | HybridTreeBreaker
+    breaker: HybridTreeBreaker
 
 
 def get_process_id():
@@ -177,27 +172,15 @@ def get_breaker(args) -> BreakingBundle:
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     etb = builder(t, dims)
 
-    if args.breaker == "hybrid":
-        switchover_score = args.switchover_score or 2.5 * best_score
-        breaker = HybridTreeBreaker(
-            etb,
-            boggler,
-            dims,
-            best_score,
-            switchover_score=switchover_score,
-            log_breaker_progress=args.log_breaker_progress,
-        )
-    elif args.breaker == "ibuckets":
-        etb = (PyBucketBoggler if args.python else cpp_bucket_boggler)(t, dims)
-        breaker = IBucketBreaker(
-            etb,
-            dims,
-            best_score,
-            num_splits=args.num_splits,
-            log_breaker_progress=args.log_breaker_progress,
-        )
-    else:
-        raise ValueError(args.breaker)
+    switchover_score = args.switchover_score or 1.5 * best_score
+    breaker = HybridTreeBreaker(
+        etb,
+        boggler,
+        dims,
+        best_score,
+        switchover_score=switchover_score,
+        log_breaker_progress=args.log_breaker_progress,
+    )
     return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
 
 
@@ -249,13 +232,6 @@ def main():
         help="When to switch from splitting the tree by forcing cells to evaluating the "
         "remaining tree with a DFS. Higher values will use less RAM but potentially run "
         "more slowly. The default is 2.5 * best_score.",
-    )
-    parser.add_argument(
-        "--breaker",
-        type=str,
-        choices=("ibuckets", "hybrid"),
-        default="hybrid",
-        help="Breaking strategy to use.",
     )
     parser.add_argument(
         "--break_class",
