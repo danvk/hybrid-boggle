@@ -138,23 +138,12 @@ gresenalstip: 1563
 
 Pass `--print_words` to print the actual words on each board.
 
-To calculate the upper bound on a board class using the c.2009 [max/no-mark and sum/union bounds][upper bound], use `ibucket_solver`:
-
-```
-$ poetry run python -m boggle.ibucket_solver "lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz"
-0.02s 9359 (max=9359, sum=106383) lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz
-```
-
-This also takes a `--print_words` flag that will print all the words that can be found on any board in the board class.
-
 To calculate the upper bound on a board class using 2025's [orderly trees], use `orderly_tree_builder`:
 
 ```
 $ poetry run python -m boggle.orderly_tree_builder "lnrsy aeiou chkmpt chkmpt aeiou lnrsy lnrsy aeiou bdfgjvwxz"
-0.05s OrderlyTreeBuilder: t.bound=1449, 332438 nodes
+0.05s OrderlyTreeBuilder: t.bound=1231, 332438 nodes
 ```
-
-Note that this bound is considerably lower, but computing it requires more time and memory.
 
 The command line tools all take some standard flags like `--dictionary` and `--python`. Run with `--help` to see them.
 
@@ -173,6 +162,7 @@ The image that was used to exhaustively search for the best 4x4 board was [danvk
 If you're trying to follow the code, here are a few pointers that will help:
 
 - The word lists are processed to exclude invalid Boggle words and change "qu" to "q". So "quart" will be inserted in the Trie as "qart". See [wordlists/README.md](wordlists/README.md) for more.
+- There is a convention that the "mark" on the root Trie node tracks the largest mark that's been placed on any node in the Trie. This avoids the need for synchronization across all the different classes that make use of Tries and their marks.
 - Boggle boards are represented as 1-dimensional arrays. So a 4x4 Boggle board is a 16 character string. For 3x4 boards, which are 12 character strings, you need to read down the columns to get the right board.
 - Generally the Python and C++ code match 1-1. I developed code in Python, wrote tests for it, and then translated it to C++ (sometimes with help from GitHub Copilot). The APIs are identical and they pass the same tests. Most CLI tools let you toggle between the C++ and Python implementations with the `--python` flag.
 - Most CLI tools require you to set the size of the Boggle board. 3x3 is the default. If you want 4x4, set `--size 44`.
