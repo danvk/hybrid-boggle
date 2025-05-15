@@ -11,7 +11,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  public:
   OrderlyTreeBuilder(Trie* t) : BoardClassBoggler<M, N>(t) {
     for (int i = 0; i < M * N; i++) {
-      cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
+      cell_to_order_[BoardClassBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
     used_ordered_ = 0;
   }
@@ -134,7 +134,7 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoDFS(
     int i, int n, int length, Trie* t, EvalNodeArena& arena
 ) {
-  auto& neighbors = BucketBoggler<M, N>::NEIGHBORS[i];
+  auto& neighbors = BoardClassBoggler<M, N>::NEIGHBORS[i];
   auto n_neighbors = neighbors[0];
   for (int j = 1; j <= n_neighbors; j++) {
     auto idx = neighbors[j];
@@ -149,7 +149,11 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
 
     if (!is_dupe) {
       auto new_root = root_->AddWordWork(
-          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
+          choices_,
+          used_ordered_,
+          BoardClassBoggler<M, N>::SPLIT_ORDER,
+          word_score,
+          arena
       );
       assert(new_root == root_);
     }
@@ -185,7 +189,7 @@ bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
   uint64_t choice_mark = GetChoiceMark(
       choices_,
       used_ordered_,
-      BucketBoggler<M, N>::SPLIT_ORDER,
+      BoardClassBoggler<M, N>::SPLIT_ORDER,
       this->num_letters_,
       max_choice_mark
   );
