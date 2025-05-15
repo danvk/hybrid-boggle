@@ -44,10 +44,10 @@ def main():
         bb.collect_words = True
 
     start_s = time.time()
-    bb.ParseBoard(board)
-    bound = bb.UpperBound(500_000)
+    bb.parse_board(board)
+    bound = bb.upper_bound(500_000)
     elapsed_s = time.time() - start_s
-    d = bb.Details()
+    d = bb.details()
     print(
         f"{elapsed_s:.02f}s {bound} (max={d.max_nomark}, sum={d.sum_union}) {bb.as_string()}"
     )

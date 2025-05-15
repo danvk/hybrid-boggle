@@ -53,7 +53,7 @@ class IBucketBreaker:
         self.log_breaker_progress = log_breaker_progress
 
     def SetBoard(self, board: str):
-        return self.bb.ParseBoard(board)
+        return self.bb.parse_board(board)
 
     def Break(self) -> IBucketBreakDetails:
         self.details_ = IBucketBreakDetails(
@@ -66,7 +66,7 @@ class IBucketBreaker:
             # root_score_bailout=None,
         )
         self.elim_ = 0
-        self.orig_reps_ = self.bb.NumReps()
+        self.orig_reps_ = self.bb.num_reps()
         start_time_s = time.time()
         self.AttackBoard()
 
@@ -116,31 +116,31 @@ class IBucketBreaker:
         for i, split in enumerate(splits):
             bd = [*cells]
             bd[cell] = split
-            # C++ version uses ParseBoard() + Cell() here.
-            assert self.bb.ParseBoard(" ".join(bd))
+            # C++ version uses parse_board() + Cell() here.
+            assert self.bb.parse_board(" ".join(bd))
             self.AttackBoard(level + 1, i + 1, len(splits))
 
     def AttackBoard(self, level: int = 0, num: int = 1, out_of: int = 1) -> None:
         # TODO: debug output
-        # reps = self.bb.NumReps()
+        # reps = self.bb.num_reps()
 
         self.details_.by_level[level] += 1
         start_s = time.time()
-        ub = self.bb.UpperBound(self.best_score)
+        ub = self.bb.upper_bound(self.best_score)
         elapsed_s = time.time() - start_s
         if self.log_breaker_progress:
             indent = " " * level
-            d = self.bb.Details()
+            d = self.bb.details()
             incomp = " (incomplete)" if ub >= self.best_score else ""
             sys.stderr.write(
                 f"{indent}{num}/{out_of} {ub}{incomp} (max={d.max_nomark}, sum={d.sum_union}) {self.bb.as_string()}\n"
             )
         self.details_.secs_by_level[level] += elapsed_s
         if level == 0:
-            # self.details_.root_score_bailout = (ub, self.bb.Details().bailout_cell)
+            # self.details_.root_score_bailout = (ub, self.bb.details().bailout_cell)
             self.details_.root_bound = ub
         if ub <= self.best_score:
-            self.elim_ += self.bb.NumReps()
+            self.elim_ += self.bb.num_reps()
             # self.details_.max_depth = max(self.details_.max_depth, level)
             self.details_.elim_level[level] += 1
         else:

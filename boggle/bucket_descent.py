@@ -65,8 +65,8 @@ def bucket_score(
     scores = []
     for idx in boards:
         bd = class_for_board(buckets, classes, idx)
-        bb.ParseBoard(bd)
-        scores.append(bb.UpperBound(1_000_000))
+        bb.parse_board(bd)
+        scores.append(bb.upper_bound(1_000_000))
     return sum(scores) / len(scores)
 
 
@@ -81,7 +81,7 @@ def class_to_buckets(classes: str) -> list[int]:
 
 def main():
     random.seed(2025)
-    t = Trie.CreateFromFile("wordlists/enable2k.txt")
+    t = Trie.create_from_file("wordlists/enable2k.txt")
     assert t
     num_classes = 5
     w, h = 3, 3

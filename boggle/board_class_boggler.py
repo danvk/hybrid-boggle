@@ -21,7 +21,7 @@ class BoardClassBoggler:
         self.dims = dims
         self.cells = []
 
-    def ParseBoard(self, board: str):
+    def parse_board(self, board: str):
         cells = board.split(" ")
         if len(cells) != self.dims[0] * self.dims[1] or not all(cells):
             return False
@@ -29,7 +29,7 @@ class BoardClassBoggler:
         self.bd_ = [b if b != "." else "" for b in cells]
         return True
 
-    def NumReps(self) -> int:
+    def num_reps(self) -> int:
         return math.prod(len(cell) for cell in self.bd_)
 
     def as_string(self):

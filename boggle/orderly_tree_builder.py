@@ -39,7 +39,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.letter_counts = [0] * 26
         self.dupe_mask = 0
 
-    def BuildTree(self, arena: PyArena = None):
+    def build_tree(self, arena: PyArena = None):
         root = SumNode()
         root.letter = ROOT_NODE
         root.points = 0
@@ -59,36 +59,32 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         if arena:
             arena.add_node(root)
 
-        self.trie_.ResetMarks()
+        self.trie_.reset_marks()
         for cell in range(len(self.bd_)):
-            self.DoAllDescents(cell, 0, self.trie_, choices, arena)
+            self.do_all_descents(cell, 0, self.trie_, choices, arena)
         self.root = None
-        self.trie_.ResetMarks()
+        self.trie_.reset_marks()
         assert self.letter_counts == [0] * 26
         return root
 
-    def SumUnion(self):
-        # This _could_ be computed if there were a need.
-        return 0
-
-    def DoAllDescents(
+    def do_all_descents(
         self, cell: int, length: int, t: PyTrie, choices: list[int], arena
     ):
         choices.append((cell, 0))
         old_mask = self.dupe_mask
         for j, char in enumerate(self.bd_[cell]):
             cc = ord(char) - LETTER_A
-            if t.StartsWord(cc):
+            if t.starts_word(cc):
                 cell_order = self.cell_to_order[cell]
                 choices[cell_order] = j
                 old_count = self.letter_counts[cc]
                 self.letter_counts[cc] += 1
                 if old_count == 1:
                     self.dupe_mask |= 1 << cc
-                self.DoDFS(
+                self.do_dfs(
                     cell,
                     length + (2 if cc == LETTER_Q else 1),
-                    t.Descend(cc),
+                    t.descend(cc),
                     choices,
                     arena,
                 )
@@ -96,7 +92,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.dupe_mask = old_mask
         choices.pop()
 
-    def DoDFS(
+    def do_dfs(
         self,
         cell: int,
         length: int,
@@ -109,9 +105,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         for idx in self.neighbors[cell]:
             if not self.used_ & (1 << idx):
-                self.DoAllDescents(idx, length, t, choices, arena)
+                self.do_all_descents(idx, length, t, choices, arena)
 
-        if t.IsWord():
+        if t.is_word():
             word_score = SCORES[length]
             is_dupe = self.dupe_mask > 0 and self.check_for_dupe(t, choices)
 
@@ -149,9 +145,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             return False
 
         this_mark = (self.used_ordered_ << self.shift) + choice_mark
-        prev_paths: set[int] | 0 = t.Mark()
+        prev_paths: set[int] | 0 = t.mark()
         if not prev_paths:
-            t.SetMark({this_mark})
+            t.set_mark({this_mark})
             return False
 
         if this_mark in prev_paths:
@@ -208,18 +204,18 @@ def main():
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
     # etb = TreeBuilder(trie, dims)
-    # assert etb.ParseBoard(board)
+    # assert etb.parse_board(board)
     # e_arena = etb.create_arena()
-    # classic_tree = etb.BuildTree(e_arena, dedupe=True)
+    # classic_tree = etb.build_tree(e_arena, dedupe=True)
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     otb = builder(trie, dims)
     o_arena = otb.create_arena()
-    assert otb.ParseBoard(board)
+    assert otb.parse_board(board)
     arenas = []
     arenas.append(o_arena)
     start_s = time.time()
-    orderly_tree = otb.BuildTree(o_arena)
+    orderly_tree = otb.build_tree(o_arena)
     elapsed_s = time.time() - start_s
 
     # print("EvalTreeBuilder:    ", end="")

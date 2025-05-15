@@ -16,7 +16,7 @@ def get_py_trie():
 
 @functools.cache
 def get_cpp_trie():
-    return Trie.CreateFromFile("wordlists/enable2k.txt")
+    return Trie.create_from_file("wordlists/enable2k.txt")
 
 
 PARAMS = [

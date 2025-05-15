@@ -42,7 +42,7 @@ def float_dict_to_array(c: defaultdict[int, float]):
 
 @dataclass
 class BreakDetails:
-    """Details shared between hybrid and ibuckets."""
+    """details shared between hybrid and ibuckets."""
 
     num_reps: int
     elapsed_s: float
@@ -125,7 +125,7 @@ class HybridTreeBreaker:
         self.log_breaker_progress = log_breaker_progress
 
     def SetBoard(self, board: str):
-        return self.etb.ParseBoard(board)
+        return self.etb.parse_board(board)
 
     def Break(self) -> HybridBreakDetails:
         self.cells = self.etb.as_string().split(" ")
@@ -150,10 +150,10 @@ class HybridTreeBreaker:
             test_secs=0.0,
             best_board=None,
         )
-        self.orig_reps_ = self.details_.num_reps = self.etb.NumReps()
+        self.orig_reps_ = self.details_.num_reps = self.etb.num_reps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
-        tree = self.etb.BuildTree(arena)
+        tree = self.etb.build_tree(arena)
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")

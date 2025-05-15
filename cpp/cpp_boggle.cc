@@ -21,11 +21,11 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
   // TODO: do I care about buffer_protocol() here?
   py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
       .def(py::init<Trie *>())
-      .def("ParseBoard", &BB::ParseBoard)
-      .def("UpperBound", &BB::UpperBound)
+      .def("parse_board", &BB::ParseBoard)
+      .def("upper_bound", &BB::UpperBound)
       .def("as_string", &BB::as_string)
-      .def("Details", &BB::Details)
-      .def("NumReps", &BB::NumReps);
+      .def("details", &BB::Details)
+      .def("num_reps", &BB::NumReps);
 }
 
 template <typename TB>
@@ -34,16 +34,15 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
   py::class_<TB>(m, pyclass_name.c_str(), py::buffer_protocol())
       .def(py::init<Trie *>())
       .def(
-          "BuildTree",
+          "build_tree",
           &TB::BuildTree,
           py::return_value_policy::reference,
           py::arg("arena"),
           py::arg("dedupe") = false
       )
-      .def("ParseBoard", &TB::ParseBoard)
+      .def("parse_board", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
-      .def("SumUnion", &TB::SumUnion)
-      .def("NumReps", &TB::NumReps)
+      .def("num_reps", &TB::NumReps)
       .def("create_arena", &TB::CreateArena);
 }
 
@@ -65,24 +64,24 @@ PYBIND11_MODULE(cpp_boggle, m) {
   // TODO: add docstrings for all methods
   py::class_<Trie>(m, "Trie")
       .def(py::init())
-      .def("StartsWord", &Trie::StartsWord)
-      .def("Descend", &Trie::Descend, py::return_value_policy::reference)
-      .def("IsWord", &Trie::IsWord)
-      .def("Mark", py::overload_cast<>(&Trie::Mark))
-      .def("SetMark", py::overload_cast<uintptr_t>(&Trie::Mark))
+      .def("starts_word", &Trie::StartsWord)
+      .def("descend", &Trie::Descend, py::return_value_policy::reference)
+      .def("is_word", &Trie::IsWord)
+      .def("mark", py::overload_cast<>(&Trie::Mark))
+      .def("set_mark", py::overload_cast<uintptr_t>(&Trie::Mark))
       // Possible that these should be ::reference_internal instead. See
       // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
-      .def("AddWord", &Trie::AddWord, py::return_value_policy::reference)
-      .def("FindWord", &Trie::FindWord, py::return_value_policy::reference)
-      .def("Size", &Trie::Size)
-      .def("NumNodes", &Trie::NumNodes)
-      .def("ResetMarks", &Trie::ResetMarks)
-      .def("SetAllMarks", &Trie::SetAllMarks)
+      .def("add_word", &Trie::AddWord, py::return_value_policy::reference)
+      .def("find_word", &Trie::FindWord, py::return_value_policy::reference)
+      .def("size", &Trie::Size)
+      .def("num_nodes", &Trie::NumNodes)
+      .def("reset_marks", &Trie::ResetMarks)
+      .def("set_all_marks", &Trie::SetAllMarks)
       .def_static(
-          "ReverseLookup",
+          "reverse_lookup",
           py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup)
       )
-      .def_static("CreateFromFile", &Trie::CreateFromFile);
+      .def_static("create_from_file", &Trie::CreateFromFile);
 
   declare_boggler<2, 2>(m, "Boggler22");
   declare_boggler<2, 3>(m, "Boggler23");

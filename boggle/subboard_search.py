@@ -20,7 +20,7 @@ def main():
     (board3,) = sys.argv[1:]
     assert len(board3) == 12
 
-    t = Trie.CreateFromFile("wordlists/enable2k.txt")
+    t = Trie.create_from_file("wordlists/enable2k.txt")
     assert t
     boggler = Boggler(t)
 

@@ -126,8 +126,8 @@ def main():
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     etb = OrderlyTreeBuilder(trie, dims)
-    etb.ParseBoard(board)
-    t = etb.BuildTree()  # dedupe=False)
+    etb.parse_board(board)
+    t = etb.build_tree()  # dedupe=False)
     # assert_invariants(t, cells)
     # dedupe_subtrees(t)
 
