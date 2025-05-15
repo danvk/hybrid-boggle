@@ -25,6 +25,8 @@ class Trie {
 
   bool IsWord() const { return is_word_; }
   void SetIsWord() { is_word_ = true; }
+  void SetWordId(uint32_t word_id) { word_id_ = word_id; }
+  uint32_t WordId() const { return word_id_; }
 
   void Mark(uintptr_t m) { mark_ = m; }
   uintptr_t Mark() { return mark_; }
@@ -53,6 +55,7 @@ class Trie {
   bool is_word_;
   uintptr_t mark_;
   Trie* children_[26];
+  uint32_t word_id_;
 };
 
 #endif
