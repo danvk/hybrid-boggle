@@ -89,8 +89,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, bool de
   auto root = root_;
   root_ = NULL;
   dict_->ResetMarks();
-  cout << "len(found_word)=" << found_words_.size()
-       << ", num_overflow=" << num_overflow_ << endl;
+  // cout << "len(found_word)=" << found_words_.size()
+  //      << ", num_overflow=" << num_overflow_ << endl;
   for (auto word_set : found_words_) {
     delete word_set;
   }
