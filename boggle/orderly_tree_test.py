@@ -1,6 +1,5 @@
 import itertools
 import math
-import time
 
 import pytest
 from cpp_boggle import Trie
@@ -224,7 +223,6 @@ def test_orderly_bound33(make_trie, get_tree_builder):
         t.assert_orderly(SPLIT_ORDER[(3, 3)])
     assert t.bound > 500
 
-    # node_counts = t.node_counts()
     failures = t.orderly_bound(450, cells, SPLIT_ORDER[(3, 3)], [])
     # https://www.danvk.org/boggle/?board=stsaseblt&multiboggle=1&dims=33
     assert failures == snapshot([(470, "stsaseblt")])
@@ -232,7 +230,7 @@ def test_orderly_bound33(make_trie, get_tree_builder):
 
 # Invariants:
 # - eval_all on a tree should yield the same score before and after any amount of forcing.
-# - this score should match what you get from ibuckets
+# - this score should match what you get from ibuckets (assuming no repeat letters)
 @pytest.mark.parametrize("is_python", [True, False])
 def test_force_invariants22(is_python):
     dims = (2, 2)
@@ -288,6 +286,8 @@ def test_force_invariants22(is_python):
     assert len(choices_to_trees[-1]) == math.prod(num_letters)
     assert len(choices_to_trees) == 5
 
+    # Since the board has no repeat letters, the ibuckets bound, multiboggle score,
+    # and true score are all identical to the fully-forced bound.
     boggler = (PyBoggler if is_python else cpp_boggler)(trie, dims)
     ibb = PyBucketBoggler(trie, dims)
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
@@ -306,6 +306,7 @@ def test_force_invariants22(is_python):
         t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
         assert score == (t.bound if t else 0)
         assert score == PyBoggler.multiboggle_score(boggler, bd.replace(" ", ""))
+        assert score == boggler.score(bd.replace(" ", ""))
         # print(t.to_string(etb))
 
 
@@ -396,20 +397,18 @@ def test_force_invariants44():
 
     assert forced_scores == direct_scores
 
-    # These scores should all match max_nomark from ibuckets.
-    # indices = [base_cells[i].index(c) for i, c in enumerate(cells)]
-    # ibb = cpp_bucket_boggler(trie, dims)
-    # for seq, root_score in forced_scores.items():
-    #     for cell in unforced_cells:
-    #         indices[cell] = seq[cell]
-    #         cells[cell] = base_cells[cell][seq[cell]]
-    #     bd = " ".join(cells)
-    #     assert ibb.ParseBoard(bd)
-    #     ibb.UpperBound(123_456)
-    #     ibuckets_score = ibb.Details().max_nomark
-    #     forced_score = t.score_with_forces(indices)
-    #     assert forced_score == root_score
-    #     assert ibuckets_score == root_score
+    # These scores should all match the multiboggle score
+    indices = [base_cells[i].index(c) for i, c in enumerate(cells)]
+    boggler = cpp_boggler(trie, dims)
+    for seq, root_score in forced_scores.items():
+        for cell in unforced_cells:
+            indices[cell] = seq[cell]
+            cells[cell] = base_cells[cell][seq[cell]]
+        bd = "".join(cells)
+        multiboggle_score = PyBoggler.multiboggle_score(boggler, bd)
+        forced_score = t.score_with_forces(indices)
+        assert forced_score == root_score
+        assert multiboggle_score == root_score
 
 
 def test_missing_top_choice():
