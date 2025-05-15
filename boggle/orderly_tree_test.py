@@ -290,8 +290,8 @@ def test_force_invariants22(is_python):
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         i0, i1, i2, i3 = idx
         bd = "".join(cells[i][letter] for i, letter in enumerate(idx))
-        score == boggler.score(bd)
-        assert score == all_scores[0][idx]
+        score = boggler.score(bd)
+        assert score == all_scores[0][idx], f"{score} {bd}"
         assert score == all_scores[1][idx]
         assert score == all_scores[2][idx]
         assert score == all_scores[3][idx]
