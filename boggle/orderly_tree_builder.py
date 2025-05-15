@@ -61,13 +61,13 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         self.trie_.reset_marks()
         for cell in range(len(self.bd_)):
-            self.DoAllDescents(cell, 0, self.trie_, choices, arena)
+            self.do_all_descents(cell, 0, self.trie_, choices, arena)
         self.root = None
         self.trie_.reset_marks()
         assert self.letter_counts == [0] * 26
         return root
 
-    def DoAllDescents(
+    def do_all_descents(
         self, cell: int, length: int, t: PyTrie, choices: list[int], arena
     ):
         choices.append((cell, 0))
@@ -81,7 +81,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.letter_counts[cc] += 1
                 if old_count == 1:
                     self.dupe_mask |= 1 << cc
-                self.DoDFS(
+                self.do_dfs(
                     cell,
                     length + (2 if cc == LETTER_Q else 1),
                     t.descend(cc),
@@ -92,7 +92,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.dupe_mask = old_mask
         choices.pop()
 
-    def DoDFS(
+    def do_dfs(
         self,
         cell: int,
         length: int,
@@ -105,7 +105,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         for idx in self.neighbors[cell]:
             if not self.used_ & (1 << idx):
-                self.DoAllDescents(idx, length, t, choices, arena)
+                self.do_all_descents(idx, length, t, choices, arena)
 
         if t.is_word():
             word_score = SCORES[length]
