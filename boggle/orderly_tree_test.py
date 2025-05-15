@@ -213,9 +213,7 @@ def test_orderly_force22(is_python):
 def test_orderly_bound33(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-9.txt")
     board = "lnrsy chkmpt lnrsy aeiou lnrsy aeiou bdfgjvwxz lnrsy chkmpt"
-    # board = "lnrsy chkmpt lnrsy aeiou aeiou aeiou bdfgjvwxz lnrsy chkmpt"
     cells = board.split(" ")
-    # num_letters = [len(cell) for cell in cells]
     otb = get_tree_builder(trie, dims=(3, 3))
     otb.ParseBoard(board)
     arena = otb.create_arena()
@@ -228,12 +226,9 @@ def test_orderly_bound33(make_trie, get_tree_builder):
 
     # node_counts = t.node_counts()
     start_s = time.time()
-    failures = t.orderly_bound(500, cells, SPLIT_ORDER[(3, 3)], [])
+    failures = t.orderly_bound(450, cells, SPLIT_ORDER[(3, 3)], [])
     print(time.time() - start_s)
-    # XXX lower the cutoff to get a board out
-    # break_all reports 889 points for this board, but ibucket_solver reports 512
-    assert failures == snapshot([])
-    # assert False
+    assert failures == snapshot([(470, "stsaseblt")])
 
 
 # Invariants:
