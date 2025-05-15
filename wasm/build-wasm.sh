@@ -7,5 +7,5 @@ emcc \
     -sEXPORTED_FUNCTIONS=FS \
     -sFORCE_FILESYSTEM=1 \
     -o wasm/boggle.js \
-    --emit-tsd boggle.d.ts \
+    --emit-tsd boggle-wasm.ts \
     cpp/wasm_boggle.cc cpp/trie.cc
