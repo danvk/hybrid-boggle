@@ -36,7 +36,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
-        self.shift = 64 - 1 - dims[0] * dims[1]
+        self.shift = 64 - dims[0] * dims[1]
         self.letter_counts = [0] * 26
         self.dupe_mask = 0
 
@@ -139,8 +139,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             self.num_letters,
             1 << self.shift,
         )
-        # word_order = "".join(self.bd_[cell][choice] for cell, choice in letters)
-        # word = self.lookup[t]
         if choice_mark > (1 << self.shift):
             self.num_overflow += 1
             return False
