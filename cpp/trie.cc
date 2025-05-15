@@ -104,7 +104,6 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   while (!feof(f) && fscanf(f, "%s", line)) {
     if (BogglifyWord(line)) {
       t->AddWord(line)->SetWordId(count++);
-      assert(count <= 262143);
     }
   }
   fclose(f);
