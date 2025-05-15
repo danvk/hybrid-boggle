@@ -65,8 +65,8 @@ def bucket_score(
     scores = []
     for idx in boards:
         bd = class_for_board(buckets, classes, idx)
-        bb.ParseBoard(bd)
-        scores.append(bb.UpperBound(1_000_000))
+        bb.parse_board(bd)
+        scores.append(bb.upper_bound(1_000_000))
     return sum(scores) / len(scores)
 
 

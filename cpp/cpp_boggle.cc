@@ -21,11 +21,11 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
   // TODO: do I care about buffer_protocol() here?
   py::class_<BB>(m, pyclass_name.c_str(), py::buffer_protocol())
       .def(py::init<Trie *>())
-      .def("ParseBoard", &BB::ParseBoard)
-      .def("UpperBound", &BB::UpperBound)
+      .def("parse_board", &BB::ParseBoard)
+      .def("upper_bound", &BB::UpperBound)
       .def("as_string", &BB::as_string)
-      .def("Details", &BB::Details)
-      .def("NumReps", &BB::NumReps);
+      .def("details", &BB::Details)
+      .def("num_reps", &BB::NumReps);
 }
 
 template <typename TB>

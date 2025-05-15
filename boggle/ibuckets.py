@@ -35,10 +35,10 @@ class PyBucketBoggler(BoardClassBoggler):
         self.words = None
         self.lookup_table = None
 
-    def Details(self):
+    def details(self):
         return self.details_
 
-    def UpperBound(self, bailout_score: int):
+    def upper_bound(self, bailout_score: int):
         self.details_ = ScoreDetails(0, 0, -1)
         self.used_ = 0
         self.runs_ = self.trie_.mark() + 1

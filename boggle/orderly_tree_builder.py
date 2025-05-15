@@ -208,14 +208,14 @@ def main():
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
     # etb = TreeBuilder(trie, dims)
-    # assert etb.ParseBoard(board)
+    # assert etb.parse_board(board)
     # e_arena = etb.create_arena()
     # classic_tree = etb.BuildTree(e_arena, dedupe=True)
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     otb = builder(trie, dims)
     o_arena = otb.create_arena()
-    assert otb.ParseBoard(board)
+    assert otb.parse_board(board)
     arenas = []
     arenas.append(o_arena)
     start_s = time.time()
