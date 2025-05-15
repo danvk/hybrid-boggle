@@ -225,9 +225,8 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     assert t.bound > 500
 
     # node_counts = t.node_counts()
-    start_s = time.time()
     failures = t.orderly_bound(450, cells, SPLIT_ORDER[(3, 3)], [])
-    print(time.time() - start_s)
+    # https://www.danvk.org/boggle/?board=stsaseblt&multiboggle=1&dims=33
     assert failures == snapshot([(470, "stsaseblt")])
 
 
@@ -322,8 +321,7 @@ def test_build_invariants44():
     root = otb.BuildTree(arena)
     assert root.bound == snapshot(3858)
 
-    # XXX this is no longer true
-    # this is a better bound than orderly, for which this is a worst-case scenario
+    # the orderly bound is only a bit better for this board thanks to all the repeat "e"s.
     ibb = cpp_bucket_boggler(trie, dims)
     assert ibb.ParseBoard(board)
     ibb.UpperBound(123_456)
@@ -332,18 +330,13 @@ def test_build_invariants44():
 
     scores = eval_all(root, cells)
 
-    # the scores converge once you force all the cells
+    # the scores converge on the multiboggle score once you force all the cells
     best_score = 0
     boggler = cpp_boggler(trie, (4, 4))
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         bd = "".join(cells[i][letter] for i, letter in enumerate(idx))
-        if "q" in bd:
-            continue
-        # assert ibb.ParseBoard(bd)
-        # ibb.UpperBound(123_456)
-        # score = ibb.Details().max_nomark
         score = PyBoggler.multiboggle_score(boggler, bd)
-        assert score == scores[idx], f"{idx} {bd}"
+        assert score == scores[idx]
         best_score = max(score, best_score)
 
     assert best_score == snapshot(1975)
