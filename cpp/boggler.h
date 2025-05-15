@@ -2,6 +2,8 @@
 #ifndef BOGGLER_4
 #define BOGGLER_4
 
+#include <unordered_set>
+
 #include "board_class_boggler.h"
 #include "constants.h"
 #include "trie.h"

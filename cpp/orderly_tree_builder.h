@@ -172,6 +172,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     }
   }
 }
+
 uint64_t GetChoiceMark(
     const int* choices,
     unsigned int used_ordered,
