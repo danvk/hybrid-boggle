@@ -35,8 +35,7 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
           "build_tree",
           &TB::BuildTree,
           py::return_value_policy::reference,
-          py::arg("arena"),
-          py::arg("dedupe") = false
+          py::arg("arena")
       )
       .def("parse_board", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
