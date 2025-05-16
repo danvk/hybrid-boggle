@@ -10,6 +10,8 @@
 
 import argparse
 
+from tqdm import tqdm
+
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.neighbors import NEIGHBORS
 from boggle.trie import bogglify_word
@@ -80,6 +82,20 @@ def main():
             candidate_words.append(word)
 
     print(f"{len(candidate_words)} candidate words")
+
+    best = (0, "")
+    for path in tqdm(paths, smoothing=0):
+        for word in candidate_words:
+            cells = [""] * n
+            for i, cell in enumerate(path):
+                cells[cell] = word[i]
+            bd = "".join(cells)
+            score = boggler.score(bd)
+            if score > best[0]:
+                best = (score, bd, word, path)
+                print(best)
+
+    print(best)
 
 
 if __name__ == "__main__":
