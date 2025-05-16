@@ -10,7 +10,7 @@ from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Lift all the way to breaking")
+    parser = argparse.ArgumentParser(description="Score boggle boards")
     add_standard_args(parser, python=True)
     parser.add_argument(
         "files", metavar="FILE", nargs="*", help="Files containing boards, or stdin"

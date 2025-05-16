@@ -10,7 +10,9 @@
 
 import argparse
 
+from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.neighbors import NEIGHBORS
+from boggle.trie import bogglify_word
 
 
 def rec(
@@ -43,13 +45,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Find the highest-scoring board with a 16-letter word.",
     )
-    parser.add_argument(
-        "--size",
-        type=int,
-        choices=(33, 34, 44, 55),
-        default=33,
-        help="Size of the boggle board.",
-    )
+    add_standard_args(parser, python=True)
     parser.add_argument(
         "--require_q",
         action="store_true",
@@ -57,6 +53,7 @@ def main():
     )
 
     args = parser.parse_args()
+    _, boggler = get_trie_and_boggler_from_args(args)
     w, h = dims = args.size // 10, args.size % 10
     assert 3 <= w <= 5
     assert 3 <= h <= 5
@@ -73,7 +70,16 @@ def main():
     paths: list[list[int]] = []
     for start in uniq_starts[dims]:
         rec(start, n - 1, [False] * n, [start], NEIGHBORS[(w, h)], paths)
-    print((w, h), len(paths))
+    print(f"{len(paths)} candidate paths for {w}x{h}")
+
+    candidate_words: list[str] = []
+    for word in open(args.dictionary):
+        word = word.strip()
+        word = bogglify_word(word)
+        if word is not None and len(word) == n and ("q" in word or not args.require_q):
+            candidate_words.append(word)
+
+    print(f"{len(candidate_words)} candidate words")
 
 
 if __name__ == "__main__":
