@@ -8,13 +8,23 @@
 - 4x4: 68115 = 37948 + 17681 + 12486
 """
 
+import argparse
+
 from boggle.neighbors import NEIGHBORS
 
 
-def rec(cell: int, num_left: int, used: list[bool], seq: list[int], neighbors):
+def rec(
+    cell: int,
+    num_left: int,
+    used: list[bool],
+    seq: list[int],
+    neighbors,
+    out: list[list[int]],
+):
     if num_left == 0:
-        # print(seq)
-        return 1  # success! a hamiltonian circuit
+        # success! a hamiltonian circuit
+        out.append([*seq])
+        return
 
     # try each un-visited neighbor
     count = 0
@@ -22,7 +32,7 @@ def rec(cell: int, num_left: int, used: list[bool], seq: list[int], neighbors):
     for neighbor in neighbors[cell]:
         if not used[neighbor]:
             seq.append(neighbor)
-            count += rec(neighbor, num_left - 1, used, seq, neighbors)
+            rec(neighbor, num_left - 1, used, seq, neighbors, out)
             seq.pop()
 
     used[cell] = False
@@ -30,16 +40,40 @@ def rec(cell: int, num_left: int, used: list[bool], seq: list[int], neighbors):
 
 
 def main():
-    w, h = 4, 4
+    parser = argparse.ArgumentParser(
+        description="Find the highest-scoring board with a 16-letter word.",
+    )
+    parser.add_argument(
+        "--size",
+        type=int,
+        choices=(33, 34, 44, 55),
+        default=33,
+        help="Size of the boggle board.",
+    )
+    parser.add_argument(
+        "--require_q",
+        action="store_true",
+        help='Require a "qu" to form a w*h+1 letter word.',
+    )
+
+    args = parser.parse_args()
+    w, h = dims = args.size // 10, args.size % 10
+    assert 3 <= w <= 5
+    assert 3 <= h <= 5
     n = w * h
-    total = 0
-    # for start in (0, 1, 4):  # 3x3
-    # for start in (0, 1, 4, 5):  # 3x4
-    for start in (0, 1, 5):  # 4x4
-        count = rec(start, n - 1, [False] * n, [start], NEIGHBORS[(w, h)])
-        print(start, count)
-        total += count
-    print((w, h), total)
+
+    uniq_starts = {
+        (2, 2): (0,),
+        (2, 3): (0, 1),
+        (3, 3): (0, 1, 4),
+        (3, 4): (0, 1, 4, 5),
+        (4, 4): (0, 1, 5),
+    }
+
+    paths: list[list[int]] = []
+    for start in uniq_starts[dims]:
+        rec(start, n - 1, [False] * n, [start], NEIGHBORS[(w, h)], paths)
+    print((w, h), len(paths))
 
 
 if __name__ == "__main__":
