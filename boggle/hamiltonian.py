@@ -8,11 +8,15 @@
 - 4x4: 68115 = 37948 + 17681 + 12486
 
 Best 4x4 boards with ENABLE2K:
-- 17 letters: qaicdrneetasnnil
-- 16 letters: hclbaiaertnssese
+- 17 letters: qaicdrneetasnnil ("quadricentennials")
+- 16 letters: hclbaiaertnssese ("charitablenesses")
 
-With OSPD5:
-- 17 letters: NONE
+With YAWL:
+- 17 letters: qressatstiseremr ("quartermistresses")
+- 16 letters: usaupltreaiernsd ("supernaturalised")
+
+This analysis cannot be done for OSPD5, SOWPODS, NASPA23, and TWL06 because
+they don't contain 16-letter words. This makes sense for Scrabble word lists!
 """
 
 import argparse
