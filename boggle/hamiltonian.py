@@ -6,6 +6,13 @@
 - 3x3: 220 = 138 + 50 + 32 possible paths
 - 3x4: 2757 = 1309 + 612 + 470 + 366
 - 4x4: 68115 = 37948 + 17681 + 12486
+
+Best 4x4 boards with ENABLE2K:
+- 17 letters: qaicdrneetasnnil
+- 16 letters: hclbaiaertnssese
+
+With OSPD5:
+- 17 letters: NONE
 """
 
 import argparse
