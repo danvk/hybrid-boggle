@@ -231,14 +231,6 @@ Wordlist | 16 letters | 17 letters
 
 This analysis only works with ENABLE2K and YAWL. It's not possible for the other wordlists (OSPD, NASPA, TWL, SOWPODS) since they don't have words longer than 15 letters. They were created for Scrabble, after all, which is played on a 15x15 grid.
 
-### Fibonacci Scoring
-
-It's surprising that 8+ letter words all net 11 points. It feels like longer words should continue to earn more. What if we used "Fibonacci scoring", with the following score table:
-
-Letters | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17
--- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | --
-Points | 1 | 1 | 2 | 3 | 5 | 8 | 13 | 21 | 34 | 55 | 89 | 144 | 233 | 377 | 610
-
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
 [33]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
