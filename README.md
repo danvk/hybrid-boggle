@@ -205,18 +205,18 @@ While the goal of this project was to find and prove the highest-scoring Boggle 
 
 ### Most word-dense boards
 
-Instead of the highest-scoring board, what if we want to find the board with the most words on it? Shifting to this problem just requires making the `SCORES` array contain all `1`s (https://github.com/danvk/hybrid-boggle/commit/5536e2fb784435bc2d8af19c8e317ff927c81b23). Here are the hill-climbing results:
+Instead of the highest-scoring board, what if we want to find the board with the most words on it? Shifting to this problem just requires making the `SCORES` array contain all `1`s ([5536e2f]). Here are the hill-climbing results.
 
 Wordlist | 4x4 | 5x5
 --: | -- | --
 **ENABLE2K** | ❓ `gesorntreaieslps` ([1158](https://www.danvk.org/boggle/?board=gesorntreaieslps)) | ❓ `ligdrmanesietildsracsepes` ([10406](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes))
-**NASPA23**  | ❓ `perslatgsineters` ([3923](https://www.danvk.org/boggle/?board=perslatgsineters&wordlist=naspa23)) | ❓ `ligdrmanesietildsracsepes` ([11371](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
-**OSPD5**    | ❓ `segsrntreiaeslps` ([3827](https://www.danvk.org/boggle/?board=segsrntreiaeslps&wordlist=ospd5)) | ❓ `dlpmeseasicrtndoaiegsplsr` ([10473](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
+**NASPA23**  | ❓ `gesorntreaiespls` ([1229](https://www.danvk.org/boggle/?board=gesorntreaiespls&wordlist=naspa23)) | ❓ `ligdrmanesietildsracsepes` ([11371](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
+**OSPD5**    | ❓ `gesorntreaiespls` ([1211](https://www.danvk.org/boggle/?board=gesorntreaiespls&wordlist=ospd5)) | ❓ `dlpmeseasicrtndoaiegsplsr` ([10473](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
 **TWL06**    | ❓ `aresstapenildres` ([3701](https://www.danvk.org/boggle/?board=aresstapenildres&wordlist=twl06)) | ❓ `rdgassentmliteicarsdseper` ([10769](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
 **YAWL**     | ❓ `bestlatepirsseng` ([4540](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=yawl)) | ❓ `dlpmeseasicrtndoaiegpllsr` ([13479](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegpllsr&wordlist=yawl))
-**SOWPODS**  | ❓ `bestlatepirsseng` ([4808](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=sowpods)) | ❓ `degosrsniceitalstrepuopsd` ([14488](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
+**SOWPODS**  | ❓ `sdestrnteiaespls` ([1514](https://www.danvk.org/boggle/?board=sdestrnteiaespls&wordlist=sowpods)) | ❓ `degosrsniceitalstrepuopsd` ([14488](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
 
-I've confirmed that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that these boards are global optima as well.
+I've confirmed that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that these boards are likely to be global optima as well.
 
 ### Highest-scoring boards containing a 16- or 17-letter word
 
@@ -260,3 +260,4 @@ Points | 1 | 1 | 2 | 3 | 5 | 8 | 13 | 21 | 34 | 55 | 89 | 144 | 233 | 377 | 610
 [10406 points]: https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes
 [orderly trees]: https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 [Hamiltonian cycles]: https://en.wikipedia.org/wiki/Hamiltonian_path
+[5536e2f]: https://github.com/danvk/hybrid-boggle/commit/5536e2fb784435bc2d8af19c8e317ff927c81b23
