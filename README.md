@@ -181,7 +181,7 @@ If you're trying to follow the code, here are a few pointers that will help:
 
 ## Results for other wordlists
 
-Here are the results for different wordlists. See [wordlists/README.md](wordlists/README.md) for background.
+Here are the results for different wordlists. See [wordlists/README.md](wordlists/README.md) for background. Note that only ENABLE2K and YAWL contain 16+ letter words.
 
 Wordlist | 3x3 | 3x4 | 4x4 | 5x5
 --: | -- | -- | -- | --
