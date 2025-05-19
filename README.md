@@ -205,7 +205,7 @@ While the goal of this project was to find and prove the highest-scoring Boggle 
 
 ### Most word-dense boards
 
-Instead of the highest-scoring board, what if we want to find the board with the most words on it? Shifting to this problem just requires making the `SCORES` array contain all `1`s (5536e2fb784435bc2d8af19c8e317ff927c81b23). Here are the hill-climbing results:
+Instead of the highest-scoring board, what if we want to find the board with the most words on it? Shifting to this problem just requires making the `SCORES` array contain all `1`s (https://github.com/danvk/hybrid-boggle/commit/5536e2fb784435bc2d8af19c8e317ff927c81b23). Here are the hill-climbing results:
 
 Wordlist | 4x4 | 5x5
 --: | -- | --
