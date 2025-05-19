@@ -11,7 +11,7 @@ There are five word lists in this repo:
 - [OSPD]: the Official Scrabble Players Dictionary, this is intended for casual Scrabble play and omits many obscure words. This file comes from the [scrabblewords] repo. Its longest word is 12 letters.
 - [SOWPODS]: aka CSW (Collins Scrabble Words). This is the union of OSPD and OSW. It includes both American and British spellings of words. This file comes from the [scrabblewords] repo (`British/CSW21.txt`). Its longest word is 15 letters.
 - [TWL06]: 2006 Tournament Word List (Official Scrabble Dictionary). This was a popular word list in the 2000s and is helpful for comparing against other Boggle-related content on the web. Its longest word is 15 letters.
-- [YAWL]: Yet Another Word List. Compiled by Mendel Leo Cooper (a.k.a. thegrendel), this is a superset of ENABLE2K and OSW (Official Scrabble Words). This files comes from the yawl repo. Last updated 2008. Its longest word is 45 letters ("[pneumonoultramicroscopicsilicovolcanoconiosis]")
+- [YAWL]: Yet Another Word List. Compiled by Mendel Leo Cooper (a.k.a. thegrendel), this is a superset of ENABLE2K and OSW (Official Scrabble Words). This files comes from the yawl repo. Last updated 2008. Its longest word is 45 letters ("[pneumonoultramicroscopicsilicovolcanoconiosis]").
 
 Some words aren't valid in Boggle. Specifically, words must be three letters or longer, and all Qs must be followed by a U. Words longer than 16 letters are kept to support 5x5 Boggle.
 
@@ -19,14 +19,14 @@ You can pass a different word list to most of the CLI tools in this repo with th
 
 Word counts:
 
-|          File |    Raw | Boggle OK |
-| ------------- | ------ | --------- |
-|  enable2k.txt | 173528 |    173402 |
-| naspa2023.txt | 196601 |    196431 |
-|     ospd5.txt | 109928 |    109762 |
-|   sowpods.txt | 279078 |    278846 |
-|     twl06.txt | 178691 |    178549 |
-|      yawl.txt | 264097 |    263904 |
+|          File |     Raw |  Boggle OK |
+| ------------: | ------: | ---------: |
+|  enable2k.txt | 173,528 |    173,402 |
+| naspa2023.txt | 196,601 |    196,431 |
+|     ospd5.txt | 109,928 |    109,762 |
+|   sowpods.txt | 279,078 |    278,846 |
+|     twl06.txt | 178,691 |    178,549 |
+|      yawl.txt | 264,097 |    263,904 |
 
 There's also `enable2k.jpa14.txt`, which is a filtered version of `enable2k.txt` that only includes the 14 "qualified" letters from [this 2010 blog post]. It has 42,625 words.
 

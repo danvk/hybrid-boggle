@@ -209,14 +209,14 @@ Instead of the highest-scoring board, what if we want to find the board with the
 
 Wordlist | 4x4 | 5x5
 --: | -- | --
-**ENABLE2K** | ❓ `gesorntreaieslps` ([1158](https://www.danvk.org/boggle/?board=gesorntreaieslps)) | ❓ `ligdrmanesietildsracsepes` ([10406](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes))
-**NASPA23**  | ❓ `gesorntreaiespls` ([1229](https://www.danvk.org/boggle/?board=gesorntreaiespls&wordlist=naspa23)) | ❓ `ligdrmanesietildsracsepes` ([11371](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
-**OSPD5**    | ❓ `gesorntreaiespls` ([1211](https://www.danvk.org/boggle/?board=gesorntreaiespls&wordlist=ospd5)) | ❓ `dlpmeseasicrtndoaiegsplsr` ([10473](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
-**TWL06**    | ❓ `gesorntreaieslps` ([1182](https://www.danvk.org/boggle/?board=gesorntreaieslps&wordlist=twl06)) | ❓ `rdgassentmliteicarsdseper` ([10769](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
-**YAWL**     | ❓ `sdestrnteiaespls` ([1458](https://www.danvk.org/boggle/?board=sdestrnteiaespls&wordlist=yawl)) | ❓ `dlpmeseasicrtndoaiegpllsr` ([13479](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegpllsr&wordlist=yawl))
-**SOWPODS**  | ❓ `sdestrnteiaespls` ([1514](https://www.danvk.org/boggle/?board=sdestrnteiaespls&wordlist=sowpods)) | ❓ `degosrsniceitalstrepuopsd` ([14488](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
+**ENABLE2K** | ❓ `gesorntreaieslps` ([1158](https://www.danvk.org/boggle/?board=gesorntreaieslps))                  | ❓ `dlpmeseasicrtndoaiegsplsr` ([2552](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr))
+**NASPA23**  | ❓ `gesorntreaiespls` ([1229](https://www.danvk.org/boggle/?board=gesorntreaiespls&wordlist=naspa23)) | ❓ `dlpmeseasicrtndoaiegsplsr` ([2748](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=naspa23))
+**OSPD5**    | ❓ `gesorntreaiespls` ([1211](https://www.danvk.org/boggle/?board=gesorntreaiespls&wordlist=ospd5))   | ❓ `aocespsrapmetildaneslsgdr` ([2638](https://www.danvk.org/boggle/?board=aocespsrapmetildaneslsgdr&wordlist=ospd5))
+**TWL06**    | ❓ `gesorntreaieslps` ([1182](https://www.danvk.org/boggle/?board=gesorntreaieslps&wordlist=twl06))   | ❓ `lmidnsaesogntrcdeiaerslps` ([2584](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
+**YAWL**     | ❓ `sdestrnteiaespls` ([1458](https://www.danvk.org/boggle/?board=sdestrnteiaespls&wordlist=yawl))    | ❓ `dlpmeseasicrtndoaiegsplsr` ([3278](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=yawl))
+**SOWPODS**  | ❓ `sdestrnteiaespls` ([1514](https://www.danvk.org/boggle/?board=sdestrnteiaespls&wordlist=sowpods)) | ❓ `lmidnsaesogntrcdeiaerslps` ([3390](https://www.danvk.org/boggle/?board=lmidnsaesogntrcdeiaerslps&wordlist=sowpods))
 
-`gesorntreaieslps` is also in the [top ten] for ENABLE2K for points. I've confirmed that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that these boards are likely to be global optima as well.
+`gesorntreaieslps` is also in the [top ten] for ENABLE2K for points. I've confirmed that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that at least the 4x4 boards are likely to be global optima as well.
 
 ### Highest-scoring boards containing a 16- or 17-letter word
 
