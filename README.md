@@ -199,6 +199,31 @@ If you have a few thousand dollars of compute burning a hole in your pocket and 
 
 You can find lists of the highest-scoring boards found via exhaustive search in the [`results`](/results) directory.
 
+## Side Quests
+
+While the goal of this project was to find and prove the highest-scoring Boggle board, the same code can be used to answer many other important Boggle questions.
+
+### Most word-dense boards
+
+Instead of the highest-scoring board, what if we want to find the board with the most words on it? Shifting to this problem just requires making the `SCORES` array contain all `1`s (5536e2fb784435bc2d8af19c8e317ff927c81b23). Here are the hill-climbing results:
+
+...
+
+I've confirmed that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that these boards are global optima as well.
+
+### Highest-scoring boards containing a 16- or 17-letter word
+
+While there are 16 cells on a Boggle board, one of the dice has a "Qu" on it, so the longest word you can form has 17 letters. One might ask, what's the highest-scoring board that contains a 16- or 17-letter word?
+
+This can be answered directly and combines two interesting problems: enumerating [Hamiltonian cycles] on a Boggle graph, and quickly scoring Boggle boards. There are only ~68,000 distinct paths through all 16 cells on a Boggle board, and there are only ~2,000 16-letter words. (There are only a handful of 17-letter words containing a "q".) So we can exhaustively search the cross product of these in an hour or two to get the answer (`hamiltonian.py`):
+
+Wordlist | 16 letters | 17 letters
+--: | --- | ---
+**ENABLE2K** | [hclbaiaertnssese](https://www.danvk.org/boggle/?board=hclbaiaertnssese) (2149) ”charitablenesses” | [qaicdrneetasnnil](https://www.danvk.org/boggle/?board=qaicdrneetasnnil) (1391) ”quadricentennials”
+**YAWL** | [usaupltreaiernsd](https://www.danvk.org/boggle/?board=usaupltreaiernsd&wordlist=yawl) (2988) ”supernaturalised” | [qressatstiseremr](https://www.danvk.org/boggle/?board=qressatstiseremr&wordlist=yawl) (1935) ”quartermistresses”
+
+This analysis only works with ENABLE2K and YAWL. It's not possible for the other wordlists (OSPD, NASPA, TWL, SOWPODS) since they don't have words longer than 15 letters. They were created for Scrabble, after all, which is played on a 15x15 grid.
+
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists
 [33]: https://www.danvk.org/wp/2009-08-08/breaking-3x3-boggle/index.html
@@ -219,3 +244,4 @@ You can find lists of the highest-scoring boards found via exhaustive search in 
 [3625 points]: https://www.danvk.org/boggle/?board=perslatgsineters
 [10406 points]: https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes
 [orderly trees]: https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
+[Hamiltonian cycles]: https://en.wikipedia.org/wiki/Hamiltonian_path
