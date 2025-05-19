@@ -207,7 +207,14 @@ While the goal of this project was to find and prove the highest-scoring Boggle 
 
 Instead of the highest-scoring board, what if we want to find the board with the most words on it? Shifting to this problem just requires making the `SCORES` array contain all `1`s (5536e2fb784435bc2d8af19c8e317ff927c81b23). Here are the hill-climbing results:
 
-...
+Wordlist | 4x4 | 5x5
+--: | -- | --
+**ENABLE2K** | ❓ `gesorntreaieslps` ([1158](https://www.danvk.org/boggle/?board=gesorntreaieslps)) | ❓ `ligdrmanesietildsracsepes` ([10406](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes))
+**NASPA23**  | ❓ `perslatgsineters` ([3923](https://www.danvk.org/boggle/?board=perslatgsineters&wordlist=naspa23)) | ❓ `ligdrmanesietildsracsepes` ([11371](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
+**OSPD5**    | ❓ `segsrntreiaeslps` ([3827](https://www.danvk.org/boggle/?board=segsrntreiaeslps&wordlist=ospd5)) | ❓ `dlpmeseasicrtndoaiegsplsr` ([10473](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
+**TWL06**    | ❓ `aresstapenildres` ([3701](https://www.danvk.org/boggle/?board=aresstapenildres&wordlist=twl06)) | ❓ `rdgassentmliteicarsdseper` ([10769](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
+**YAWL**     | ❓ `bestlatepirsseng` ([4540](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=yawl)) | ❓ `dlpmeseasicrtndoaiegpllsr` ([13479](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegpllsr&wordlist=yawl))
+**SOWPODS**  | ❓ `bestlatepirsseng` ([4808](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=sowpods)) | ❓ `degosrsniceitalstrepuopsd` ([14488](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
 
 I've confirmed that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that these boards are global optima as well.
 
@@ -223,6 +230,14 @@ Wordlist | 16 letters | 17 letters
 **YAWL** | [usaupltreaiernsd](https://www.danvk.org/boggle/?board=usaupltreaiernsd&wordlist=yawl) (2988) ”supernaturalised” | [qressatstiseremr](https://www.danvk.org/boggle/?board=qressatstiseremr&wordlist=yawl) (1935) ”quartermistresses”
 
 This analysis only works with ENABLE2K and YAWL. It's not possible for the other wordlists (OSPD, NASPA, TWL, SOWPODS) since they don't have words longer than 15 letters. They were created for Scrabble, after all, which is played on a 15x15 grid.
+
+### Fibonacci Scoring
+
+It's surprising that 8+ letter words all net 11 points. It feels like longer words should continue to earn more. What if we used "Fibonacci scoring", with the following score table:
+
+Letters | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17
+-- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | --
+Points | 1 | 1 | 2 | 3 | 5 | 8 | 13 | 21 | 34 | 55 | 89 | 144 | 233 | 377 | 610
 
 [performance-boggle]: https://github.com/danvk/performance-boggle
 [ENABLE2K word list]: https://github.com/danvk/hybrid-boggle/tree/main/wordlists

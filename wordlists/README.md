@@ -6,12 +6,12 @@ The score of a Boggle board depends on your choice of dictionary. There are a fe
 
 There are five word lists in this repo:
 
-- [ENABLE2K]: This is the default word lists, compiled in 1997 and 2000 by Alan Beale. Check out [his web site] for more background and a fun trip back to 2000.
-- [NASPA23]: aka TWL aka OTCWL aka OWL aka NWL. This is the official word list for competitive Scrabble play in the United States and Canada. This file comes from the [scrabblewords] repo.
-- [OSPD]: the Official Scrabble Players Dictionary, this is intended for casual Scrabble play and omits many obscure words. This file comes from the [scrabblewords] repo.
-- [YAWL]: Yet Another Word List. Compiled by Mendel Leo Cooper (a.k.a. thegrendel), this is a superset of ENABLE2K and OSW (Official Scrabble Words). This files comes from the yawl repo. Last updated 2008.
-- [SOWPODS]: aka CSW (Collins Scrabble Words). This is the union of OSPD and OSW. It includes both American and British spellings of words. This file comes from the [scrabblewords] repo (`British/CSW21.txt`).
-- [TWL06]: 2006 Tournament Word List (Official Scrabble Dictionary). This was a popular word list in the 2000s and is helpful for comparing against other Boggle-related content on the web.
+- [ENABLE2K]: This is the default word lists, compiled in 1997 and 2000 by Alan Beale. Check out [his web site] for more background and a fun trip back to 2000. The longest word is 28 letters ("[ethylenediaminetetraacetates]").
+- [NASPA23]: aka TWL aka OTCWL aka OWL aka NWL. This is the official word list for competitive Scrabble play in the United States and Canada. This file comes from the [scrabblewords] repo. Since it's designed for Scrabble, it only contains words up to 15 letters.
+- [OSPD]: the Official Scrabble Players Dictionary, this is intended for casual Scrabble play and omits many obscure words. This file comes from the [scrabblewords] repo. Its longest word is 12 letters.
+- [SOWPODS]: aka CSW (Collins Scrabble Words). This is the union of OSPD and OSW. It includes both American and British spellings of words. This file comes from the [scrabblewords] repo (`British/CSW21.txt`). Its longest word is 15 letters.
+- [TWL06]: 2006 Tournament Word List (Official Scrabble Dictionary). This was a popular word list in the 2000s and is helpful for comparing against other Boggle-related content on the web. Its longest word is 15 letters.
+- [YAWL]: Yet Another Word List. Compiled by Mendel Leo Cooper (a.k.a. thegrendel), this is a superset of ENABLE2K and OSW (Official Scrabble Words). This files comes from the yawl repo. Last updated 2008. Its longest word is 45 letters ("[pneumonoultramicroscopicsilicovolcanoconiosis]")
 
 Some words aren't valid in Boggle. Specifically, words must be three letters or longer, and all Qs must be followed by a U. Words longer than 16 letters are kept to support 5x5 Boggle.
 
@@ -39,3 +39,5 @@ There's also `enable2k.jpa14.txt`, which is a filtered version of `enable2k.txt`
 [SOWPODS]: https://en.wikipedia.org/wiki/Collins_Scrabble_Words
 [TWL06]: https://www.freescrabbledictionary.com/twl06/
 [this 2010 blog post]: https://web.archive.org/web/20101207194405/http://www.pathcom.com/~vadco/deep.html#acknowledgements:~:text=The%20lexicon%20and%20character%20set%20choices
+[Pneumonoultramicroscopicsilicovolcanoconiosis]: https://en.wikipedia.org/wiki/Pneumonoultramicroscopicsilicovolcanoconiosis
+[ethylenediaminetetraacetates]: https://en.wiktionary.org/wiki/ethylenediaminetetraacetate
