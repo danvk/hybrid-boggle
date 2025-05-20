@@ -8,6 +8,7 @@ import math
 import random
 from collections import Counter
 from dataclasses import dataclass
+from typing import Sequence
 
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import LETTER_A, LETTER_Z, PyBoggler
@@ -22,8 +23,11 @@ class Options:
     max_stall: int = 2000
 
 
-def initial_board(num_lets: int, opts: Options = None) -> list[int]:
-    return [random.randint(LETTER_A, LETTER_Z) for _ in range(num_lets)]
+A_TO_Z = [*range(LETTER_A, LETTER_Z + 1)]
+
+
+def initial_board(num_lets: int, letters: Sequence[int]) -> list[int]:
+    return [random.choice(letters) for _ in range(num_lets)]
 
 
 # TODO: make this operate on strings like hillclimb.neighbors
@@ -67,7 +71,7 @@ def temperature(n: int, opts: Options) -> float:
 
 
 def anneal(boggler: PyBoggler, num_lets: int, opts: Options):
-    last_board = initial_board(num_lets, opts)
+    last_board = initial_board(num_lets, A_TO_Z)
     best_score = 0
     last_accept = 0
 
