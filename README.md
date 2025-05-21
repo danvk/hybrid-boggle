@@ -201,7 +201,7 @@ Wordlist       | 3x3 | 3x4 | 4x4 | 5x5
 
 If you have a thousand dollars of compute burning a hole in your pocket and you'd like to confirm some of the 4x4 results, please let me know!
 
-You can find lists of the highest-scoring boards found via exhaustive search, as well as the best found via hillclimbing, in the [`results`](/results) directory. The unconfirmed 4x4 boards are found quite consistently by the hillclimbing algorithm, which means it's quite likely they're global optima. The 5x5 boards are found [less consistently], which means that a deeper search might uncover new, higher-scoring boards.
+You can find lists of the highest-scoring boards found via exhaustive search, as well as the best found via hillclimbing, in the [`results`](/results) directory. The unconfirmed 4x4 boards are found quite consistently by the hillclimbing algorithm, which means it's quite likely they're global optima. The 5x5 boards are found [less consistently](/results/hillclimb-5x5.yawl.txt), which means that a deeper search might uncover new, higher-scoring boards.
 
 ## Side Quests
 
