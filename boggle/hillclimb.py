@@ -17,15 +17,23 @@ import multiprocessing
 import random
 import time
 from collections import Counter
+from typing import Sequence
 
 from cpp_boggle import Symmetry
 
-from boggle.anneal import initial_board
+from boggle.anneal import A_TO_Z, initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
-from boggle.trie import LETTER_A
 
 
-def neighbors(board: str):
+def get_valid_letters(args):
+    exclude = {ord(c) for c in args.exclude_letters}
+    valid_letters = [c for c in A_TO_Z if c not in exclude]
+    if len(valid_letters) < 26:
+        print(f"Will use {len(valid_letters)} letters.")
+    return valid_letters
+
+
+def neighbors(board: str, valid_letters: Sequence[int]):
     """Find all boards within a distance of 1 of this one.
 
     This includes:
@@ -40,7 +48,7 @@ def neighbors(board: str):
         current = ord(c)
         prefix = board[:i]
         suffix = board[i + 1 :]
-        for j in range(LETTER_A, LETTER_A + 26):
+        for j in valid_letters:
             if j == current:
                 continue
             n = prefix + chr(j) + suffix
@@ -81,11 +89,14 @@ def hillclimb(task: int):
     w, h = hillclimb.dims
     boggler = hillclimb.boggler
     num_lets = w * h
+    valid_letters = get_valid_letters(args)
 
     sym = Symmetry(w, h)
 
     pool = [
-        sym.canonicalize("".join(chr(x) for x in initial_board(num_lets)))
+        sym.canonicalize(
+            "".join(chr(x) for x in initial_board(num_lets, valid_letters))
+        )
         for _ in range(args.pool_size)
     ]
 
@@ -106,7 +117,9 @@ def hillclimb(task: int):
     num_iter = 0
     while True:
         num_iter += 1
-        ns = {sym.canonicalize(n) for seed in pool for n in neighbors(seed)}
+        ns = {
+            sym.canonicalize(n) for seed in pool for n in neighbors(seed, valid_letters)
+        }
         scores = [(get_score(n), n) for n in ns]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
@@ -164,7 +177,11 @@ def main():
         default=1,
         help="Number of concurrent hillclimbing runs to perform.",
     )
-    # TODO: character list
+    parser.add_argument(
+        "--exclude_letters",
+        type=str,
+        help="List of characters to exclude from the search, e.g. 'qzj'",
+    )
     add_standard_args(parser, random_seed=True, python=True)
 
     args = parser.parse_args()
