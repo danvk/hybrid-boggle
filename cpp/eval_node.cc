@@ -650,7 +650,7 @@ void SumNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
     } else {
       auto slot = bound_;
       auto& wordlist = wordlists[slot];
-      count = wordlist.size() - 1;
+      count = wordlist.size();
     }
     auto word_score = points_;
     points_ = bound_ = word_score * count;

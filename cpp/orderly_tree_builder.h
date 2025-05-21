@@ -178,6 +178,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     if (dupe_mask_ > 0) {
       auto slot = word_node->bound_;
       if (slot == 0) {
+        // Fresh find!
         word_node->points_ = word_score;
         word_node->bound_ = t->WordId() | (1 << 23);
       } else if (slot & (1 << 23)) {
@@ -191,7 +192,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
           assert(slot < (1 << 23));
           word_node->bound_ = slot;
         } else {
-          // it's a duplicate
+          num_dupes_ += 1;
         }
       } else {
         // there are already 2+ words on this node; maybe there should be a third.
@@ -200,7 +201,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
         if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {
           word_list.push_back(word_id);
         } else {
-          // num_dupes_ += 1;
+          num_dupes_ += 1;
         }
       }
     } else {
