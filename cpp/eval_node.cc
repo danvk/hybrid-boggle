@@ -641,8 +641,8 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
 }
 
 void SumNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
-  // decode points
   if (bound_) {
+    // A word was found on this node; decode the points.
     int count;
     if (bound_ & (1 << 23)) {
       // just one word stored inline

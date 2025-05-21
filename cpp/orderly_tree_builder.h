@@ -42,13 +42,11 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static const int shift_ = 64 - M * N;
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
   uint32_t dupe_mask_;
-  vector<unordered_set<uint64_t>*> found_words_;
   vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
-  bool CheckForDupe(Trie* t);
 };
 
 template <int M, int N>
@@ -58,14 +56,13 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
+  word_lists_.clear();
   word_lists_.reserve(1000);
-  found_words_.reserve(1000);
   for (int i = 0; i < 26; i++) {
     letter_counts_[i] = 0;
   }
   dupe_mask_ = 0;
   num_overflow_ = 0;
-  dict_->ResetMarks();
   for (int cell = 0; cell < M * N; cell++) {
     num_letters_[cell] = strlen(bd_[cell]);
   }
@@ -77,28 +74,22 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   }
   auto root = root_;
   root_ = NULL;
-  dict_->ResetMarks();
-  // cout << "len(found_word)=" << found_words_.size()
-  //      << ", num_overflow=" << num_overflow_ << endl;
-  for (auto word_set : found_words_) {
-    delete word_set;
-  }
-  found_words_.clear();
 
-  cout << "Number of nodes: " << word_lists_.size() << endl;
-  cout << "Dupes prevented: " << num_dupes_ << endl;
-  unordered_map<int, int> counts;
-  int max_count = 0;
-  for (auto& wl : word_lists_) {
-    int count = wl.size();
-    counts[count] += 1;
-    max_count = max(max_count, count);
-  }
-  for (int i = 0; i <= max_count; i++) {
-    cout << i << "\t" << counts[i] << endl;
-  }
+  // cout << "Number of nodes: " << word_lists_.size() << endl;
+  // cout << "Dupes prevented: " << num_dupes_ << endl;
+  // unordered_map<int, int> counts;
+  // int max_count = 0;
+  // for (auto& wl : word_lists_) {
+  //   int count = wl.size();
+  //   counts[count] += 1;
+  //   max_count = max(max_count, count);
+  // }
+  // for (int i = 0; i <= max_count; i++) {
+  //   cout << i << "\t" << counts[i] << endl;
+  // }
 
   root->SetPointsAndBound(word_lists_);
+  word_lists_.clear();
 
   // arena.PrintStats();
 
@@ -167,7 +158,6 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
 
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
-    // auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
 
     SumNode* word_node;
     auto new_root = root_->AddWordWork(
@@ -232,41 +222,6 @@ uint64_t GetChoiceMark(
     }
   }
   return idx;
-}
-
-template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
-  uint64_t max_choice_mark = 1ULL << shift_;
-  uint64_t choice_mark = GetChoiceMark(
-      choices_,
-      used_ordered_,
-      BucketBoggler<M, N>::SPLIT_ORDER,
-      this->num_letters_,
-      max_choice_mark
-  );
-
-  if (choice_mark > max_choice_mark) {
-    num_overflow_++;
-    return false;
-  }
-
-  auto prev_paths = (unordered_set<uint64_t>*)(t->Mark());
-
-  uint64_t this_mark = (static_cast<uint64_t>(used_ordered_) << shift_) + choice_mark;
-  if (prev_paths == nullptr) {
-    auto new_paths = new unordered_set<uint64_t>;
-    // This is around the median for the board class for perslatgsineters (19005578)
-    // with three buckets ("aeijou bcdfgmpqvwxz hklnrsty").
-    new_paths->reserve(100);
-    new_paths->insert(this_mark);
-    t->Mark((uintptr_t)new_paths);
-    found_words_.push_back(new_paths);
-    return false;
-  }
-
-  auto result = prev_paths->emplace(this_mark);
-  auto is_dupe = !result.second;
-  return is_dupe;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
