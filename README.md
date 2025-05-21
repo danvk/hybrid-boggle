@@ -167,7 +167,11 @@ To build the Docker image for AMD64 on a Mac, run:
 
 You can find builds of this image on dockerhub under [danvk/boggle].
 
-The image that was used to exhaustively search for the best 4x4 board was [danvk/boggle:2025-03-13].
+The image that was used to exhaustively search for the best 4x4 board was [danvk/boggle:2025-03-13]. The command used for that search was:
+
+    poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 3500 --size 44 --switchover_score 8000 --num_threads 189
+
+Full per-task output available upon request (it's a ~600MB ndjson file).
 
 ## Guide to the Code
 
@@ -183,21 +187,21 @@ If you're trying to follow the code, here are a few pointers that will help:
 
 Here are the results for different wordlists. See [wordlists/README.md](wordlists/README.md) for background. Note that only ENABLE2K and YAWL contain 16+ letter words.
 
-Wordlist | 3x3 | 3x4 | 4x4 | 5x5
---: | -- | -- | -- | --
-**ENABLE2K** | ✅ `streaedlp` ([545](https://www.danvk.org/boggle/?board=streaedlp)) | ✅ `perslatesind` ([1651](https://www.danvk.org/boggle/?board=perslatesind&dims=34)) | ✅ `perslatgsineters` ([3625](https://www.danvk.org/boggle/?board=perslatgsineters)) | ❓ `ligdrmanesietildsracsepes` ([10406](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes))
-**NASPA23**  | ✅ `lepsartes` ([581](https://www.danvk.org/boggle/?board=lepsartes&wordlist=naspa23)) | ✅ `perslatesind` ([1718](https://www.danvk.org/boggle/?board=perslatesind&wordlist=naspa23&dims=34)) | ❓ `perslatgsineters` ([3923](https://www.danvk.org/boggle/?board=perslatgsineters&wordlist=naspa23)) | ❓ `ligdrmanesietildsracsepes` ([11371](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
-**OSPD5**     | ✅ `lepsartes` ([573](https://www.danvk.org/boggle/?board=lepsartes&wordlist=ospd5)) | ✅ `perslatesind` ([1701](https://www.danvk.org/boggle/?board=perslatesind&wordlist=ospd5&dims=34)) | ❓ `segsrntreiaeslps` ([3827](https://www.danvk.org/boggle/?board=segsrntreiaeslps&wordlist=ospd5)) | ❓ `dlpmeseasicrtndoaiegsplsr` ([10473](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
-**TWL06**     | ✅ `lepsartes` ([555](https://www.danvk.org/boggle/?board=lepsartes&wordlist=twl06)) | ✅ `perslatesind` ([1668](https://www.danvk.org/boggle/?board=perslatesind&wordlist=twl06&dims=34)) | ❓ `aresstapenildres` ([3701](https://www.danvk.org/boggle/?board=aresstapenildres&wordlist=twl06)) | ❓ `rdgassentmliteicarsdseper` ([10769](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
-**YAWL**  | ✅ `stleaeprd` ([659](https://www.danvk.org/boggle/?board=lepsartes&wordlist=yawl)) | ✅ `bindlatesers` ([1959](https://www.danvk.org/boggle/?board=bindlatesers&wordlist=yawl&dims=34)) | ❓ `bestlatepirsseng` ([4540](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=yawl)) | ❓ `dlpmeseasicrtndoaiegpllsr` ([13479](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegpllsr&wordlist=yawl))
+Wordlist       | 3x3 | 3x4 | 4x4 | 5x5
+-----------:   | -- | -- | -- | --
+**ENABLE2K**   | ✅ `streaedlp` ([545](https://www.danvk.org/boggle/?board=streaedlp))                  | ✅ `perslatesind` ([1651](https://www.danvk.org/boggle/?board=perslatesind&dims=34))                  | ✅ `perslatgsineters` ([3625](https://www.danvk.org/boggle/?board=perslatgsineters))                  | ❓ `ligdrmanesietildsracsepes` ([10406](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes))
+**NASPA23**    | ✅ `lepsartes` ([581](https://www.danvk.org/boggle/?board=lepsartes&wordlist=naspa23)) | ✅ `perslatesind` ([1718](https://www.danvk.org/boggle/?board=perslatesind&wordlist=naspa23&dims=34)) | ❓ `perslatgsineters` ([3923](https://www.danvk.org/boggle/?board=perslatgsineters&wordlist=naspa23)) | ❓ `ligdrmanesietildsracsepes` ([11371](https://www.danvk.org/boggle/?board=ligdrmanesietildsracsepes&wordlist=naspa23))
+**OSPD5**      | ✅ `lepsartes` ([573](https://www.danvk.org/boggle/?board=lepsartes&wordlist=ospd5))   | ✅ `perslatesind` ([1701](https://www.danvk.org/boggle/?board=perslatesind&wordlist=ospd5&dims=34))   | ❓ `segsrntreiaeslps` ([3827](https://www.danvk.org/boggle/?board=segsrntreiaeslps&wordlist=ospd5))   | ❓ `dlpmeseasicrtndoaiegsplsr` ([10473](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=ospd5))
+**TWL06**      | ✅ `lepsartes` ([555](https://www.danvk.org/boggle/?board=lepsartes&wordlist=twl06))   | ✅ `perslatesind` ([1668](https://www.danvk.org/boggle/?board=perslatesind&wordlist=twl06&dims=34))   | ❓ `aresstapenildres` ([3701](https://www.danvk.org/boggle/?board=aresstapenildres&wordlist=twl06))   | ❓ `rdgassentmliteicarsdseper` ([10769](https://www.danvk.org/boggle/?board=rdgassentmliteicarsdseper&wordlist=twl06))
+**YAWL**       | ✅ `stleaeprd` ([659](https://www.danvk.org/boggle/?board=lepsartes&wordlist=yawl))    | ✅ `bindlatesers` ([1959](https://www.danvk.org/boggle/?board=bindlatesers&wordlist=yawl&dims=34))    | ❓ `bestlatepirsseng` ([4540](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=yawl))    | ❓ `degosrsniceitalstrepuopsd` ([13625](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegpllsr&wordlist=yawl))
 **SOWPODS**    | ✅ `streaedlb` ([676](https://www.danvk.org/boggle/?board=lepsartes&wordlist=sowpods)) | ✅ `drpseiaestng` ([2073](https://www.danvk.org/boggle/?board=drpseiaestng&wordlist=sowpods&dims=34)) | ❓ `bestlatepirsseng` ([4808](https://www.danvk.org/boggle/?board=bestlatepirsseng&wordlist=sowpods)) | ❓ `degosrsniceitalstrepuopsd` ([14488](https://www.danvk.org/boggle/?board=degosrsniceitalstrepuopsd&wordlist=sowpods))
 
 - ✅ means this is proven to be the globally optimal board via exhaustive search (`break_all.py`).
 - ❓ means that this is the best board found to date using [hill climbing] (`hillclimb.py`), but there may still be a better board out there. (Please send a pull request if you find a better one!)
 
-If you have a few thousand dollars of compute burning a hole in your pocket and you'd like to fill out the global optimum 4x4 column, please let me know!
+If you have a thousand dollars of compute burning a hole in your pocket and you'd like to confirm some of the 4x4 results, please let me know!
 
-You can find lists of the highest-scoring boards found via exhaustive search in the [`results`](/results) directory.
+You can find lists of the highest-scoring boards found via exhaustive search, as well as the best found via hillclimbing, in the [`results`](/results) directory. The unconfirmed 4x4 boards are found quite consistently by the hillclimbing algorithm, which means it's quite likely they're global optima. The 5x5 boards are found [less consistently], which means that a deeper search might uncover new, higher-scoring boards.
 
 ## Side Quests
 
@@ -223,7 +227,7 @@ Wordlist | 4x4 | 5x5
 **YAWL**     | ❓ `sdestrnteiaespls` ([1458](https://www.danvk.org/boggle/?board=sdestrnteiaespls&wordlist=yawl))    | ❓ `dlpmeseasicrtndoaiegsplsr` ([3278](https://www.danvk.org/boggle/?board=dlpmeseasicrtndoaiegsplsr&wordlist=yawl))
 **SOWPODS**  | ❓ `sdestrnteiaespls` ([1514](https://www.danvk.org/boggle/?board=sdestrnteiaespls&wordlist=sowpods)) | ❓ `lmidnsaesogntrcdeiaerslps` ([3390](https://www.danvk.org/boggle/?board=lmidnsaesogntrcdeiaerslps&wordlist=sowpods))
 
-`gesorntreaieslps` is also in the [top ten] for ENABLE2K for points. I've [confirmed] that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that at least the 4x4 boards are likely to be global optima as well. (These are based on 10 hillclimbing runs; the 5x5 boards may shift with a deeper search.)
+`gesorntreaieslps` is also in the [top ten] for ENABLE2K for points. I've [confirmed] that the 3x4 hill-climbing winner for ENABLE2K is also the global optimum, which suggests that at least the 4x4 boards are likely to be global optima as well. (These are based on 10 hillclimbing runs; the 5x5 boards may shift with a deeper search.) Full results are in the [`results`](/results) directory.
 
 ### Highest-scoring boards containing a 16- or 17-letter word
 
