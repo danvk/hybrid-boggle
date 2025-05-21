@@ -180,7 +180,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
       if (slot == 0) {
         slot = word_lists_.size();
         word_lists_.push_back({t->WordId()});
-        assert(slot < (1 << 40));
+        assert(slot < (1 << 24));
         word_node->bound_ = slot & 0xffffff;
         // word_node->points_ = slot >> 24;
       } else {
