@@ -110,7 +110,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_property_readonly("bound", &SumNode::Bound)
       .def_readonly("points", &SumNode::points_)
       .def("node_count", &SumNode::NodeCount)
-      .def("add_word", &SumNode::AddWord, py::return_value_policy::reference)
+      // .def("add_word", &SumNode::AddWord, py::return_value_policy::reference)
       .def(
           "orderly_force_cell",
           &SumNode::OrderlyForceCell,

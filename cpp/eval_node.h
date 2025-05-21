@@ -26,7 +26,7 @@ class SumNode {
       vector<int> choices,
       unsigned int used_ordered,
       vector<int> split_order,
-      int points,
+      SumNode** leaf,
       EvalNodeArena& arena
   );
 
@@ -34,7 +34,7 @@ class SumNode {
       int choices[],
       unsigned int used_ordered,
       const int split_order[],
-      int points,
+      SumNode** leaf,
       EvalNodeArena& arena
   );
 

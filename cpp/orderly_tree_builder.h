@@ -42,6 +42,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
   uint32_t dupe_mask_;
   vector<unordered_set<uint64_t>*> found_words_;
+  vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -56,6 +57,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
+  word_lists_.reserve(1000);
   found_words_.reserve(1000);
   for (int i = 0; i < 26; i++) {
     letter_counts_[i] = 0;
@@ -149,10 +151,13 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
 
     if (!is_dupe) {
+      SumNode* word_node;
       auto new_root = root_->AddWordWork(
-          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
+          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, &word_node, arena
       );
       assert(new_root == root_);
+      word_node->points_ += word_score;
+      word_node->bound_ += word_score;
     }
   }
 }

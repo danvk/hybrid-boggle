@@ -61,12 +61,13 @@ SumNode* SumNode::AddWordWork(
     int choices[],
     unsigned int used_ordered,
     const int split_order[],
-    int points,
+    SumNode** leaf,
     EvalNodeArena& arena
 ) {
   if (used_ordered == 0) {
-    points_ += points;
-    bound_ += points;
+    // points_ += points;
+    // bound_ += points;
+    *leaf = this;
     return this;
   }
 
@@ -136,7 +137,7 @@ SumNode* SumNode::AddWordWork(
     );
   }
   auto new_letter_child =
-      letter_child->AddWordWork(choices, used_ordered, split_order, points, arena);
+      letter_child->AddWordWork(choices, used_ordered, split_order, leaf, arena);
   if (new_letter_child != letter_child) {
     const auto& old_letter_child = letter_child;
     bool patched = false;
@@ -165,10 +166,10 @@ void SumNode::AddWord(
     vector<int> choices,
     unsigned int used_ordered,
     vector<int> split_order,
-    int points,
+    SumNode** leaf,
     EvalNodeArena& arena
 ) {
-  auto r = AddWordWork(choices.data(), used_ordered, split_order.data(), points, arena);
+  auto r = AddWordWork(choices.data(), used_ordered, split_order.data(), leaf, arena);
   assert(r == this);
 }
 
