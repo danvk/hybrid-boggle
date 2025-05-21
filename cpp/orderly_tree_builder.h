@@ -181,7 +181,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
       // auto slot = word_node->bound_;
       if (slot == 0) {
         slot = word_lists_.size();
-        word_lists_.push_back({static_cast<uint32_t>(length), t->WordId()});
+        word_lists_.push_back({static_cast<uint32_t>(word_score), t->WordId()});
         // assert(slot < (1 << 24));
         word_node->bound_ = slot & 0xffffff;
         assert(word_node->bound_ != 0);
