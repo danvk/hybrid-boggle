@@ -174,12 +174,15 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     assert(new_root == root_);
 
     if (dupe_mask_ > 0) {
-      auto slot = word_node->bound_;
+      assert(word_node->points_ == 0);
+      auto slot = (word_node->points_ << 24) + word_node->bound_;
+      // auto slot = word_node->bound_;
       if (slot == 0) {
         slot = word_lists_.size();
         word_lists_.push_back({t->WordId()});
-        assert(slot < (1 << 23));
-        word_node->bound_ = slot;
+        assert(slot < (1 << 40));
+        word_node->bound_ = slot & 0xffffff;
+        // word_node->points_ = slot >> 24;
       } else {
         auto& word_list = word_lists_[slot];
         auto word_id = t->WordId();
