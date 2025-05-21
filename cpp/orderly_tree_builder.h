@@ -37,6 +37,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
   int num_letters_[M * N];
+  int num_dupes_;
 
   static const int shift_ = 64 - M * N;
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
@@ -68,6 +69,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   for (int cell = 0; cell < M * N; cell++) {
     num_letters_[cell] = strlen(bd_[cell]);
   }
+  word_lists_.push_back({});  // start with 1
+  num_dupes_ = 0;
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -81,6 +84,20 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     delete word_set;
   }
   found_words_.clear();
+
+  cout << "Number of nodes: " << word_lists_.size() << endl;
+  cout << "Dupes prevented: " << num_dupes_ << endl;
+  unordered_map<int, int> counts;
+  int max_count = 0;
+  for (auto& wl : word_lists_) {
+    int count = wl.size();
+    counts[count] += 1;
+    max_count = max(max_count, count);
+  }
+  for (int i = 0; i <= max_count; i++) {
+    cout << i << "\t" << counts[i] << endl;
+  }
+
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
@@ -147,17 +164,31 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   }
 
   if (t->IsWord()) {
-    auto word_score = kWordScores[length];
-    auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
+    // auto word_score = kWordScores[length];
+    // auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
 
-    if (!is_dupe) {
-      SumNode* word_node;
-      auto new_root = root_->AddWordWork(
-          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, &word_node, arena
-      );
-      assert(new_root == root_);
-      word_node->points_ += word_score;
-      word_node->bound_ += word_score;
+    SumNode* word_node;
+    auto new_root = root_->AddWordWork(
+        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, &word_node, arena
+    );
+    assert(new_root == root_);
+
+    if (dupe_mask_ > 0) {
+      auto slot = word_node->bound_;
+      if (slot == 0) {
+        slot = word_lists_.size();
+        word_lists_.push_back({t->WordId()});
+        assert(slot < (1 << 23));
+        word_node->bound_ = slot;
+      } else {
+        auto& word_list = word_lists_[slot];
+        auto word_id = t->WordId();
+        if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {
+          word_list.push_back(word_id);
+        } else {
+          num_dupes_ += 1;
+        }
+      }
     }
   }
 }

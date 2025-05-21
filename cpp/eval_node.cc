@@ -88,16 +88,16 @@ SumNode* SumNode::AddWordWork(
       break;
     }
   }
-  int old_choice_bound = 0;
+  // int old_choice_bound = 0;
   SumNode* new_me = this;
   if (!choice_child) {
     choice_child = arena.NewChoiceNodeWithCapacity(1);
     choice_child->cell_ = cell;
-    choice_child->bound_ = 0;
+    // choice_child->bound_ = 0;
     new_me = AddChild(choice_child, arena);
     sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
   } else {
-    old_choice_bound = choice_child->bound_;
+    // old_choice_bound = choice_child->bound_;
   }
 
   // TODO: might be cleaner to call a helper on ChoiceNode here
@@ -113,7 +113,7 @@ SumNode* SumNode::AddWordWork(
     unsigned int num_choices = std::popcount(used_ordered);
     letter_child = arena.NewSumNodeWithCapacity(num_choices == 1 ? 0 : 1);
     letter_child->letter_ = letter;
-    letter_child->bound_ = 0;
+    // letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
       const auto& old_choice_child = choice_child;
@@ -154,10 +154,10 @@ SumNode* SumNode::AddWordWork(
     letter_child = new_letter_child;
   }
 
-  if (letter_child->bound_ > old_choice_bound) {
-    choice_child->bound_ = letter_child->bound_;
-    new_me->bound_ += (choice_child->bound_ - old_choice_bound);
-  }
+  // if (letter_child->bound_ > old_choice_bound) {
+  //   choice_child->bound_ = letter_child->bound_;
+  //   new_me->bound_ += (choice_child->bound_ - old_choice_bound);
+  // }
 
   return new_me;
 }

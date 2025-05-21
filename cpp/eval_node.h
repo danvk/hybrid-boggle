@@ -19,7 +19,7 @@ class EvalNodeArena;
 
 class SumNode {
  public:
-  SumNode() : points_(0), num_children_(0) {}
+  SumNode() : bound_(0), points_(0), num_children_(0) {}
   ~SumNode() {}
 
   void AddWord(
