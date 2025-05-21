@@ -176,29 +176,35 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     assert(new_root == root_);
 
     if (dupe_mask_ > 0) {
-      // assert(word_node->points_ == 0);
-      auto slot = (word_node->points_ << 24) + word_node->bound_;
-      // auto slot = word_node->bound_;
+      auto slot = word_node->bound_;
       if (slot == 0) {
-        slot = word_lists_.size();
-        word_lists_.push_back({static_cast<uint32_t>(word_score), t->WordId()});
-        // assert(slot < (1 << 24));
-        word_node->bound_ = slot & 0xffffff;
-        assert(word_node->bound_ != 0);
-        assert(slot >> 24 == 0);
-        word_node->points_ = slot >> 24;
-        auto reslot = (word_node->points_ << 24) + word_node->bound_;
-        assert(slot == reslot);
+        word_node->points_ = word_score;
+        word_node->bound_ = t->WordId() | (1 << 23);
+      } else if (slot & (1 << 23)) {
+        uint32_t old_word_id = slot & ((1 << 23) - 1);
+        uint32_t new_word_id = t->WordId();
+        if (old_word_id != new_word_id) {
+          // This is the first collision; move everything to a word_list.
+          slot = word_lists_.size();
+          assert(slot > 0);
+          word_lists_.push_back({old_word_id, new_word_id});
+          assert(slot < (1 << 23));
+          word_node->bound_ = slot;
+        } else {
+          // it's a duplicate
+        }
       } else {
+        // there are already 2+ words on this node; maybe there should be a third.
         auto& word_list = word_lists_[slot];
         auto word_id = t->WordId();
         if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {
           word_list.push_back(word_id);
         } else {
-          num_dupes_ += 1;
+          // num_dupes_ += 1;
         }
       }
     } else {
+      // If there's no chance of a duplicate, just count points.
       word_node->points_ += word_score;
     }
   }

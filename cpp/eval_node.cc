@@ -643,11 +643,17 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
 void SumNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
   // decode points
   if (bound_) {
-    auto slot = (points_ << 24) + bound_;
-    auto& wordlist = wordlists[slot];
-    auto points = wordlist[0];
-    auto count = wordlist.size() - 1;
-    points_ = bound_ = points * count;
+    int count;
+    if (bound_ & (1 << 23)) {
+      // just one word stored inline
+      count = 1;
+    } else {
+      auto slot = bound_;
+      auto& wordlist = wordlists[slot];
+      count = wordlist.size() - 1;
+    }
+    auto word_score = points_;
+    points_ = bound_ = word_score * count;
   } else {
     bound_ = points_;
   }
