@@ -639,3 +639,32 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   }
   return out;
 }
+
+void SumNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
+  // decode points
+  if (bound_) {
+    auto slot = (points_ << 24) + bound_;
+    auto& wordlist = wordlists[slot];
+    auto points = wordlist[0];
+    auto count = wordlist.size() - 1;
+    points_ = bound_ = points * count;
+  } else {
+    bound_ = points_;
+  }
+
+  for (int i = 0; i < num_children_; i++) {
+    auto& child = children_[i];
+    child->SetPointsAndBound(wordlists);
+    bound_ += child->bound_;
+  }
+}
+
+void ChoiceNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
+  uint32_t bound = 0;
+  for (int i = 0; i < num_children_; i++) {
+    auto& child = children_[i];
+    child->SetPointsAndBound(wordlists);
+    bound = max(bound, child->bound_);
+  }
+  bound_ = bound;
+}

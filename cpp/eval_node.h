@@ -49,6 +49,8 @@ class SumNode {
 
   void PrintJSON() const;
 
+  void SetPointsAndBound(vector<vector<uint32_t>>& wordlists);
+
   // Shallow copy -- excludes children
   void CopyFrom(SumNode& other);
 
@@ -88,6 +90,8 @@ class ChoiceNode {
   SumNode* children_[];
 
   void PrintJSON() const;
+
+  void SetPointsAndBound(vector<vector<uint32_t>>& wordlists);
 
   // Shallow copy -- excludes children
   void CopyFrom(ChoiceNode& other);

@@ -98,6 +98,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     cout << i << "\t" << counts[i] << endl;
   }
 
+  root->SetPointsAndBound(word_lists_);
+
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
@@ -164,7 +166,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   }
 
   if (t->IsWord()) {
-    // auto word_score = kWordScores[length];
+    auto word_score = kWordScores[length];
     // auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
 
     SumNode* word_node;
@@ -179,9 +181,10 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
       // auto slot = word_node->bound_;
       if (slot == 0) {
         slot = word_lists_.size();
-        word_lists_.push_back({t->WordId()});
+        word_lists_.push_back({static_cast<uint32_t>(length), t->WordId()});
         // assert(slot < (1 << 24));
         word_node->bound_ = slot & 0xffffff;
+        assert(word_node->bound_ != 0);
         assert(slot >> 24 == 0);
         word_node->points_ = slot >> 24;
         auto reslot = (word_node->points_ << 24) + word_node->bound_;
@@ -195,6 +198,8 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
           num_dupes_ += 1;
         }
       }
+    } else {
+      word_node->points_ += word_score;
     }
   }
 }
