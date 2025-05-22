@@ -63,11 +63,7 @@ void Trie::CopyFromIndexedTrie(IndexedTrie& t, char** tip) {
       bytes_allocated += size;
       auto compact_child = new (*tip) Trie;
       *tip += size;
-      auto offset = (char*)compact_child - (char*)this;
-      assert(offset < (1ULL << 32));
-      children_[num_children++] = offset;
-      // assert(this + offset == compact_child);
-      // compact_child->num_alloced_ = child->NumChildren();
+      children_[num_children++] = compact_child;
       compact_child->CopyFromIndexedTrie(*child, tip);
     }
   }
