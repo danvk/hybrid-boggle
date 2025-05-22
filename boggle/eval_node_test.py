@@ -70,7 +70,7 @@ def test_orderly_merge():
         ],
     )
     root = letter_node(letter=ROOT_NODE, children=[t0, t1])
-    root.set_computed_fields(num_letters)
+    root.decode_points_and_bound()
     # print(root.to_dot(cells))
     arena = create_eval_node_arena_py()
     force = root.orderly_force_cell(0, num_letters[0], arena)

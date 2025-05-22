@@ -27,7 +27,6 @@ from boggle.trie import PyTrie, make_lookup_table
 class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
     root: SumNode
-    cell_counts: list[int]
     num_letters_: list[int]
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
@@ -47,7 +46,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.root = root
         self.used_ = 0
         self.used_ordered_ = 0
-        self.cell_counts = [0] * len(self.bd_)
         self.num_letters = [len(cell) for cell in self.bd_]
         self.num_overflow = 0
         self.letter_counts = [0] * 26
@@ -65,6 +63,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.root = None
         self.trie_.reset_marks()
         assert self.letter_counts == [0] * 26
+        root.decode_points_and_bound()
         return root
 
     def do_all_descents(
@@ -118,7 +117,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                     SPLIT_ORDER[self.dims],
                     word_score,
                     arena,
-                    self.cell_counts,
                 )
 
         self.used_ordered_ ^= 1 << self.cell_to_order[cell]
