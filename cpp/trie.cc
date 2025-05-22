@@ -15,25 +15,16 @@ static inline int idx(char x) { return x - 'a'; }
 
 // Initially, this node is empty
 Trie::Trie() {
-  for (int i = 0; i < kNumLetters; i++) children_[i] = NULL;
   is_word_ = false;
   mark_ = 0;
 }
 
-Trie* Trie::AddWord(const char* wd) {
-  if (!wd) return NULL;
-  if (!*wd) {
-    SetIsWord();
-    return this;
-  }
-  int c = idx(*wd);
-  if (!StartsWord(c)) children_[c] = new Trie;
-  return Descend(c)->AddWord(wd + 1);
-}
-
 Trie::~Trie() {
+  int idx = 0;
   for (int i = 0; i < kNumLetters; i++) {
-    if (children_[i]) delete children_[i];
+    if (StartsWord(i)) {
+      delete children_[idx++];
+    }
   }
 }
 
@@ -66,6 +57,28 @@ bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
 }
 
 void Trie::ResetMarks() { SetAllMarks(0); }
+
+void Trie::CopyFromIndexedTrie(IndexedTrie& t) {
+  uint32_t indices = 0;
+  int num_children = 0;
+  for (int i = 0; i < kNumLetters; i++) {
+    if (t.StartsWord(i)) {
+      indices |= (1 << i);
+
+      auto child = t.Descend(i);
+      auto buf = malloc(sizeof(Trie) + child->NumChildren() * sizeof(Trie*));
+      auto compact_child = children_[num_children++] = new (buf) Trie;
+      compact_child->num_alloced_ = child->NumChildren();
+      compact_child->CopyFromIndexedTrie(*child);
+    }
+  }
+  // cout << "num_children=" << num_children << ", indices=" << indices << endl;
+  num_children_ = num_children;
+  assert(num_children_ == num_alloced_);
+  child_indices_ = indices;
+  SetWordId(t.WordId());
+  is_word_ = t.IsWord();
+}
 
 // static
 string Trie::ReverseLookup(const Trie* base, const Trie* child) {
@@ -100,15 +113,20 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   }
 
   int count = 0;
-  unique_ptr<Trie> t(new Trie);
+  IndexedTrie t;
   while (!feof(f) && fscanf(f, "%s", line)) {
     if (BogglifyWord(line)) {
-      t->AddWord(line)->SetWordId(count++);
+      t.AddWord(line)->SetWordId(count++);
     }
   }
   fclose(f);
 
-  return t;
+  auto buf = malloc(sizeof(Trie) + t.NumChildren() * sizeof(Trie*));
+  unique_ptr<Trie> compact_trie(new (buf) Trie);
+  compact_trie->num_alloced_ = t.NumChildren();
+  compact_trie->CopyFromIndexedTrie(t);
+
+  return compact_trie;
 }
 
 unique_ptr<Trie> Trie::CreateFromFileStr(const string& filename) {
@@ -135,4 +153,27 @@ unique_ptr<Trie> Trie::CreateFromFileStr(const string& filename) {
   }
   word[dst] = word[src];
   return true;
+}
+
+// Initially, this node is empty
+IndexedTrie::IndexedTrie() {
+  for (int i = 0; i < kNumLetters; i++) children_[i] = NULL;
+  is_word_ = false;
+}
+
+IndexedTrie* IndexedTrie::AddWord(const char* wd) {
+  if (!wd) return NULL;
+  if (!*wd) {
+    SetIsWord();
+    return this;
+  }
+  int c = idx(*wd);
+  if (!StartsWord(c)) children_[c] = new IndexedTrie;
+  return Descend(c)->AddWord(wd + 1);
+}
+
+IndexedTrie::~IndexedTrie() {
+  for (int i = 0; i < kNumLetters; i++) {
+    if (children_[i]) delete children_[i];
+  }
 }
