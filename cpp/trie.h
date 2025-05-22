@@ -63,16 +63,16 @@ class Trie {
   Trie* Descend(int i) const {
     auto index = std::popcount(child_indices_ & ((1 << i) - 1));
     // cout << " " << i << " -> " << index << std::endl;
-    if (index >= num_children_) {
-      cout << "i=" << i << ", child_indices_=" << child_indices_
-           << ", num_children=" << num_children_ << endl;
-    }
-    assert(index < num_children_);
+    // if (index >= num_children_) {
+    //   cout << "i=" << i << ", child_indices_=" << child_indices_
+    //        << ", num_children=" << num_children_ << endl;
+    // }
+    // assert(index < num_children_);
     return children_[index];
   }
 
-  bool IsWord() const { return is_word_; }
-  void SetIsWord() { is_word_ = true; }
+  bool IsWord() const { return child_indices_ & (1 << 31); }
+  void SetIsWord() { child_indices_ |= (1 << 31); }
 
   void SetWordId(uint32_t word_id) { word_id_ = word_id; }
   uint32_t WordId() const { return word_id_; }
@@ -102,9 +102,6 @@ class Trie {
   static bool IsBoggleWord(const char* word);
 
  private:
-  bool is_word_;           // TODO: this could go in an unused bit in child_indices_
-  uint32_t num_children_;  // TODO: remove
-  uint32_t num_alloced_;   // TODO: remove
   uint32_t child_indices_;
   uint32_t word_id_;
   uintptr_t mark_;

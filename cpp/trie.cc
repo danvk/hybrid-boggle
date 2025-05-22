@@ -14,10 +14,7 @@ using namespace std;
 static inline int idx(char x) { return x - 'a'; }
 
 // Initially, this node is empty
-Trie::Trie() {
-  is_word_ = false;
-  mark_ = 0;
-}
+Trie::Trie() { mark_ = 0; }
 
 Trie::~Trie() {
   int idx = 0;
@@ -72,16 +69,18 @@ void Trie::CopyFromIndexedTrie(IndexedTrie& t, char** tip) {
       bytes_allocated += size;
       auto compact_child = children_[num_children++] = new (*tip) Trie;
       *tip += size;
-      compact_child->num_alloced_ = child->NumChildren();
+      // compact_child->num_alloced_ = child->NumChildren();
       compact_child->CopyFromIndexedTrie(*child, tip);
     }
   }
   // cout << "num_children=" << num_children << ", indices=" << indices << endl;
-  num_children_ = num_children;
-  assert(num_children_ == num_alloced_);
+  // num_children_ = num_children;
+  // assert(num_children_ == num_alloced_);
   child_indices_ = indices;
   SetWordId(t.WordId());
-  is_word_ = t.IsWord();
+  if (t.IsWord()) {
+    SetIsWord();
+  }
 }
 
 // static
@@ -134,9 +133,10 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   bytes_allocated += size;
   unique_ptr<Trie> compact_trie(new (buf) Trie);
   buf += size;
-  compact_trie->num_alloced_ = t.NumChildren();
+  // compact_trie->num_alloced_ = t.NumChildren();
   compact_trie->CopyFromIndexedTrie(t, &buf);
-  cout << "allocated " << bytes_allocated << " bytes" << endl;
+  cout << "allocated " << bytes_allocated << " bytes; sizeof(Trie) = " << sizeof(Trie)
+       << endl;
   assert(buf == base + bytes_needed);
 
   return compact_trie;
