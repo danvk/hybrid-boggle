@@ -58,7 +58,7 @@ For earlier posts, check out this [2014 compendium].
 
 ## Development and usage
 
-This repo is a mix of Python and C++, with the bridge provided by [pybind11]. The C++ is adapted from the [performance-boggle] repo. Python is used for testing, prototyping, and wrapping the C++ code. All of the C++ code has a matching Python equivalent.
+This repo is a mix of Python and C++, with the bridge provided by [pybind11]. The C++ was originally adapted from the [performance-boggle] repo. Python is used for testing, prototyping, and wrapping the C++ code. All of the C++ code has a matching Python equivalent.
 
 Setup:
 
