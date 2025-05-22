@@ -57,16 +57,15 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, EvalNodeArena& arena) {
   return AddChildImpl(this, child, arena);
 }
 
-SumNode* SumNode::AddWordWork(
+SumNode* SumNode::AddWord(
     int choices[],
     unsigned int used_ordered,
     const int split_order[],
-    int points,
-    EvalNodeArena& arena
+    EvalNodeArena& arena,
+    SumNode** leaf
 ) {
   if (used_ordered == 0) {
-    points_ += points;
-    bound_ += points;
+    *leaf = this;
     return this;
   }
 
@@ -87,16 +86,12 @@ SumNode* SumNode::AddWordWork(
       break;
     }
   }
-  int old_choice_bound = 0;
   SumNode* new_me = this;
   if (!choice_child) {
     choice_child = arena.NewChoiceNodeWithCapacity(1);
     choice_child->cell_ = cell;
-    choice_child->bound_ = 0;
     new_me = AddChild(choice_child, arena);
     sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
-  } else {
-    old_choice_bound = choice_child->bound_;
   }
 
   // TODO: might be cleaner to call a helper on ChoiceNode here
@@ -112,7 +107,6 @@ SumNode* SumNode::AddWordWork(
     unsigned int num_choices = std::popcount(used_ordered);
     letter_child = arena.NewSumNodeWithCapacity(num_choices == 1 ? 0 : 1);
     letter_child->letter_ = letter;
-    letter_child->bound_ = 0;
     auto new_choice_child = choice_child->AddChild(letter_child, arena);
     if (new_choice_child != choice_child) {
       const auto& old_choice_child = choice_child;
@@ -136,7 +130,7 @@ SumNode* SumNode::AddWordWork(
     );
   }
   auto new_letter_child =
-      letter_child->AddWordWork(choices, used_ordered, split_order, points, arena);
+      letter_child->AddWord(choices, used_ordered, split_order, arena, leaf);
   if (new_letter_child != letter_child) {
     const auto& old_letter_child = letter_child;
     bool patched = false;
@@ -153,23 +147,7 @@ SumNode* SumNode::AddWordWork(
     letter_child = new_letter_child;
   }
 
-  if (letter_child->bound_ > old_choice_bound) {
-    choice_child->bound_ = letter_child->bound_;
-    new_me->bound_ += (choice_child->bound_ - old_choice_bound);
-  }
-
   return new_me;
-}
-
-void SumNode::AddWord(
-    vector<int> choices,
-    unsigned int used_ordered,
-    vector<int> split_order,
-    int points,
-    EvalNodeArena& arena
-) {
-  auto r = AddWordWork(choices.data(), used_ordered, split_order.data(), points, arena);
-  assert(r == this);
 }
 
 template <typename Node, typename Child>
@@ -637,4 +615,55 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     }
   }
   return out;
+}
+
+static const uint32_t FRESH_MASK = 1 << 23;
+
+// See orderly_tree_builder.h for an explanation of the encoding.
+void SumNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
+  if (bound_) {
+    // A word was found on this node; decode the points.
+    int count;
+    if (bound_ & FRESH_MASK) {
+      // just one word stored inline
+      count = 1;
+    } else {
+      auto slot = bound_;
+      auto& wordlist = wordlists[slot];
+      count = wordlist.size();
+    }
+    auto word_score = points_;
+    points_ = bound_ = word_score * count;
+  } else {
+    bound_ = points_;
+  }
+
+  for (int i = 0; i < num_children_; i++) {
+    auto& child = children_[i];
+    child->DecodePointsAndBound(wordlists);
+    bound_ += child->bound_;
+  }
+}
+
+void ChoiceNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
+  uint32_t bound = 0;
+  for (int i = 0; i < num_children_; i++) {
+    auto& child = children_[i];
+    child->DecodePointsAndBound(wordlists);
+    bound = max(bound, child->bound_);
+  }
+  bound_ = bound;
+}
+
+void SumNode::AddWordWithPointsForTesting(
+    vector<int> choices,
+    unsigned int used_ordered,
+    vector<int> split_order,
+    int points,
+    EvalNodeArena& arena
+) {
+  SumNode* node;
+  auto r = AddWord(choices.data(), used_ordered, split_order.data(), arena, &node);
+  assert(r == this);
+  node->points_ += points;
 }

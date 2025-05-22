@@ -49,21 +49,21 @@ class SumNode:
     def __init__(self):
         self.children = []
         self.points = 0
+        self.bound = 0
 
     def add_word(
         self,
         choices: Sequence[int],
         used_ordered: int,
         split_order: Sequence[int],
-        points: int,
         arena: PyArena,
-        cell_counts: list[int] = None,
     ):
-        """Add a word to this tree. choices is a list of (cell, letter index) tuples."""
+        """Add a word to this tree. choices is a list of (cell, letter index) tuples.
+
+        Returns the SumNode corresponding to these choices (either new or existing).
+        """
         if used_ordered == 0:
-            self.points += points
-            self.bound += points
-            return
+            return self
 
         # some choices values may uninitialized here, but we only access the ones that are
         # initialized based on the bitmap
@@ -79,19 +79,13 @@ class SumNode:
             if c.cell == cell:
                 choice_child = c
                 break
-        old_choice_bound = 0
         if not choice_child:
             choice_child = ChoiceNode()
             choice_child.cell = cell
-            choice_child.bound = 0
             self.children.append(choice_child)
-            if cell_counts:
-                cell_counts[cell] += 1
             if arena:
                 arena.add_node(choice_child)
             self.children.sort(key=lambda c: c.cell)
-        else:
-            old_choice_bound = choice_child.bound
 
         letter_child = None
         for c in choice_child.children:
@@ -107,12 +101,20 @@ class SumNode:
             if arena:
                 arena.add_node(letter_child)
 
-        letter_child.add_word(
-            choices, used_ordered, split_order, points, arena, cell_counts
-        )
-        if letter_child.bound > old_choice_bound:
-            choice_child.bound = letter_child.bound
-        self.bound += choice_child.bound - old_choice_bound
+        return letter_child.add_word(choices, used_ordered, split_order, arena)
+
+    def decode_points_and_bound(self, wordlists=None):
+        """Decode bound and points as set by OrderlyTreeBuilder."""
+        if isinstance(self.bound, set):
+            count = len(self.bound)
+            word_score = self.points
+            self.points = count * word_score
+
+        bound = self.points
+        for child in self.children:
+            child.decode_points_and_bound(wordlists)
+            bound += child.bound
+        self.bound = bound
 
     def orderly_force_cell(
         self, cell: int, num_lets: int, arena: PyArena
@@ -255,12 +257,6 @@ class SumNode:
             child.score_with_forces(forces) if child else 0 for child in self.children
         )
 
-    def set_computed_fields(self, num_letters: Sequence[int]):
-        for c in self.children:
-            if c:
-                c.set_computed_fields(num_letters)
-        self.bound = self.points + sum(c.bound for c in self.children if c)
-
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
         """Ensure that the tree is "orderly" in the following sense:
 
@@ -310,6 +306,17 @@ class SumNode:
             out["children"] = [c.to_json(max_depth - 1) for c in self.children if c]
         return out
 
+    def add_word_with_points_for_testing(
+        self,
+        choices: Sequence[int],
+        used_ordered: int,
+        split_order: Sequence[int],
+        points: int,
+        arena: PyArena,
+    ):
+        word_node = self.add_word(choices, used_ordered, split_order, arena)
+        word_node.points += points
+
 
 class ChoiceNode:
     cell: int
@@ -323,6 +330,7 @@ class ChoiceNode:
 
     def __init__(self):
         self.children = []
+        self.bound = 0
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
@@ -349,11 +357,13 @@ class ChoiceNode:
             else 0
         )
 
-    def set_computed_fields(self, num_letters: Sequence[int]):
-        for c in self.children:
-            if c:
-                c.set_computed_fields(num_letters)
-        self.bound = max(c.bound for c in self.children if c) if self.children else 0
+    def decode_points_and_bound(self, wordlists=None):
+        # See corresponding method on SumNode.
+        bound = 0
+        for child in self.children:
+            child.decode_points_and_bound(wordlists)
+            bound = max(bound, child.bound)
+        self.bound = bound
 
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
         idx = split_order.index(self.cell)

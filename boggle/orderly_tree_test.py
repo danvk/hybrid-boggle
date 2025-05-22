@@ -219,7 +219,6 @@ def test_orderly_bound33(make_trie, get_tree_builder):
     t = otb.build_tree(arena)
     if isinstance(t, SumNode):
         t.assert_invariants(otb)
-        print(otb.cell_counts)
         t.assert_orderly(SPLIT_ORDER[(3, 3)])
     assert t.bound > 500
 

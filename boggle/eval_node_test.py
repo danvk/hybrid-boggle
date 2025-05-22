@@ -22,13 +22,15 @@ def test_add_word(create_arena):
     # all three choices are used
     used_ordered = 0b111
 
-    root.add_word([0, 0, 0], used_ordered, regular_order, 1, arena)  # ban
-    root.add_word([1, 0, 0], used_ordered, regular_order, 1, arena)  # can
-    root.add_word([0, 0, 1], used_ordered, regular_order, 1, arena)  # bar
-    root.add_word([0, 1, 2], used_ordered, regular_order, 1, arena)  # bed
-    root.add_word([0, 2, 2], used_ordered, regular_order, 1, arena)  # bid
-    root.add_word([2, 2, 2], used_ordered, regular_order, 1, arena)  # did
-    root.add_word([2, 1, 1], used_ordered, other_order, 1, arena)  # dre
+    add_word = root.add_word_with_points_for_testing
+    add_word([0, 0, 0], used_ordered, regular_order, 1, arena)  # ban
+    add_word([1, 0, 0], used_ordered, regular_order, 1, arena)  # can
+    add_word([0, 0, 1], used_ordered, regular_order, 1, arena)  # bar
+    add_word([0, 1, 2], used_ordered, regular_order, 1, arena)  # bed
+    add_word([0, 2, 2], used_ordered, regular_order, 1, arena)  # bid
+    add_word([2, 2, 2], used_ordered, regular_order, 1, arena)  # did
+    add_word([2, 1, 1], used_ordered, other_order, 1, arena)  # dre
+    root.decode_points_and_bound([])
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(root, cells)) == snapshot(
@@ -69,7 +71,7 @@ def test_orderly_merge():
         ],
     )
     root = letter_node(letter=ROOT_NODE, children=[t0, t1])
-    root.set_computed_fields(num_letters)
+    root.decode_points_and_bound()
     # print(root.to_dot(cells))
     arena = create_eval_node_arena_py()
     force = root.orderly_force_cell(0, num_letters[0], arena)

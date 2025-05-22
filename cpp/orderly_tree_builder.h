@@ -29,24 +29,19 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
-  int SumUnion() const { return 0; }
-
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
   int num_letters_[M * N];
-
-  static const int shift_ = 64 - M * N;
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
   uint32_t dupe_mask_;
-  vector<unordered_set<uint64_t>*> found_words_;
+  vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
-  bool CheckForDupe(Trie* t);
 };
 
 template <int M, int N>
@@ -56,29 +51,39 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
-  found_words_.reserve(1000);
+  word_lists_.clear();
+  word_lists_.reserve(1000);
   for (int i = 0; i < 26; i++) {
     letter_counts_[i] = 0;
   }
   dupe_mask_ = 0;
   num_overflow_ = 0;
-  dict_->ResetMarks();
   for (int cell = 0; cell < M * N; cell++) {
     num_letters_[cell] = strlen(bd_[cell]);
   }
+  word_lists_.push_back({});  // start with 1
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
   auto root = root_;
   root_ = NULL;
-  dict_->ResetMarks();
-  // cout << "len(found_word)=" << found_words_.size()
-  //      << ", num_overflow=" << num_overflow_ << endl;
-  for (auto word_set : found_words_) {
-    delete word_set;
-  }
-  found_words_.clear();
+
+  // cout << "Number of nodes: " << word_lists_.size() << endl;
+  // unordered_map<int, int> counts;
+  // int max_count = 0;
+  // for (auto& wl : word_lists_) {
+  //   int count = wl.size();
+  //   counts[count] += 1;
+  //   max_count = max(max_count, count);
+  // }
+  // for (int i = 0; i <= max_count; i++) {
+  //   cout << i << "\t" << counts[i] << endl;
+  // }
+
+  root->DecodePointsAndBound(word_lists_);
+  word_lists_.clear();
+
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
@@ -131,6 +136,67 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
   }
 }
 
+// We want to avoid double-counting words that use the exact same cells. To do so with
+// minimal overhead, we use a binary encoding in the SumNodes during tree building.
+// Since most SumNodes have zero or one words on them, it greatly reduces overhead to
+// store a single word inline on the SumNode. Space is limited there, so we repurpose
+// the bound_ field and fill it in later (DecodePointsAndBound).
+//
+// - If the path to the SumNode does not contain a repeated letter (e.g. RISE):
+//   - points_ = number of points scored for all words on this SumNode.
+//   - bound_ = 0
+// - If it does contain a repeat letter (e.g. SERE):
+//   - points_ = number of points scored for _each_ word
+//   - if bound_ = 0 -> no words on this SumNode
+//   - if bound_ & FRESH_MASK:
+//     - There is one word on this SumNode.
+//     - It has WordId = bound_ & (FRESH_MASK - 1)
+//   - otherwise:
+//     - There are multiple distinct words on this SumNode.
+//     - They're listed in word_lists_[bound_].
+//
+// After tree construction, this all needs to be decoded to set points_ and bound_ to
+// their proper values. This is done with SumNode::DecodePointsAndBound().
+// See https://github.com/danvk/hybrid-boggle/issues/117 and linked PRs.
+
+static const uint32_t FRESH_MASK = 1 << 23;
+
+void EncodeWordInSumNode(
+    SumNode* word_node, Trie* t, int word_score, vector<vector<uint32_t>>& word_lists
+) {
+  auto slot = word_node->bound_;
+  if (slot == 0) {
+    // Fresh find! Inline the word into word_node->bound_ and mark it.
+    // All words on a SumNode have the same score, which is convenient to store here.
+    word_node->points_ = word_score;
+    word_node->bound_ = t->WordId() | FRESH_MASK;
+  } else if (slot & FRESH_MASK) {
+    // The previous word was the first and is inlined into word_node->bound_.
+    uint32_t old_word_id = slot & (FRESH_MASK - 1);
+    uint32_t new_word_id = t->WordId();
+    if (old_word_id != new_word_id) {
+      // This is the first collision; move everything to a word_list.
+      slot = word_lists.size();
+      // assert(slot > 0);
+      word_lists.push_back({old_word_id, new_word_id});
+      assert(slot < FRESH_MASK);
+      word_node->bound_ = slot;
+    } else {
+      // It's a duplicate with the previous word.
+    }
+  } else {
+    // There are already 2+ words on this node; maybe there should be a third.
+    // This search is O(N), but I've never seen N>6 and it's usually 2.
+    auto& word_list = word_lists[slot];
+    auto word_id = t->WordId();
+    if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {
+      word_list.push_back(word_id);
+    } else {
+      // duplicate
+    }
+  }
+}
+
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoDFS(
     int i, int n, int length, Trie* t, EvalNodeArena& arena
@@ -146,73 +212,20 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
 
   if (t->IsWord()) {
     auto word_score = kWordScores[length];
-    auto is_dupe = (dupe_mask_ > 0) && CheckForDupe(t);
 
-    if (!is_dupe) {
-      auto new_root = root_->AddWordWork(
-          choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, word_score, arena
-      );
-      assert(new_root == root_);
+    SumNode* word_node;
+    auto new_root = root_->AddWord(
+        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, arena, &word_node
+    );
+    assert(new_root == root_);
+
+    if (dupe_mask_ > 0) {
+      EncodeWordInSumNode(word_node, t, word_score, word_lists_);
+    } else {
+      // If there's no chance of a duplicate, just count points.
+      word_node->points_ += word_score;
     }
   }
-}
-
-uint64_t GetChoiceMark(
-    const int* choices,
-    unsigned int used_ordered,
-    const int* split_order,
-    const int* num_letters,
-    uint64_t max_value
-) {
-  uint64_t idx = 0;
-  while (used_ordered) {
-    int order_index = __builtin_ctz(used_ordered);
-    int cell = split_order[order_index];
-    int letter = choices[order_index];
-
-    used_ordered &= used_ordered - 1;
-    idx *= num_letters[cell];
-    idx += letter;
-    if (idx > max_value) {
-      return max_value + 1;
-    }
-  }
-  return idx;
-}
-
-template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::CheckForDupe(Trie* t) {
-  uint64_t max_choice_mark = 1ULL << shift_;
-  uint64_t choice_mark = GetChoiceMark(
-      choices_,
-      used_ordered_,
-      BucketBoggler<M, N>::SPLIT_ORDER,
-      this->num_letters_,
-      max_choice_mark
-  );
-
-  if (choice_mark > max_choice_mark) {
-    num_overflow_++;
-    return false;
-  }
-
-  auto prev_paths = (unordered_set<uint64_t>*)(t->Mark());
-
-  uint64_t this_mark = (static_cast<uint64_t>(used_ordered_) << shift_) + choice_mark;
-  if (prev_paths == nullptr) {
-    auto new_paths = new unordered_set<uint64_t>;
-    // This is around the median for the board class for perslatgsineters (19005578)
-    // with three buckets ("aeijou bcdfgmpqvwxz hklnrsty").
-    new_paths->reserve(100);
-    new_paths->insert(this_mark);
-    t->Mark((uintptr_t)new_paths);
-    found_words_.push_back(new_paths);
-    return false;
-  }
-
-  auto result = prev_paths->emplace(this_mark);
-  auto is_dupe = !result.second;
-  return is_dupe;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
