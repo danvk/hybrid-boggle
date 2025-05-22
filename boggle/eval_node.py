@@ -114,6 +114,9 @@ class SumNode:
             choice_child.bound = letter_child.bound
         self.bound += choice_child.bound - old_choice_bound
 
+    def decode_points_and_bound(self, wordlists):
+        pass
+
     def orderly_force_cell(
         self, cell: int, num_lets: int, arena: PyArena
     ) -> list[Self]:

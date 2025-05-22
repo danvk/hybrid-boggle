@@ -29,6 +29,7 @@ def test_add_word(create_arena):
     root.add_word([0, 2, 2], used_ordered, regular_order, 1, arena)  # bid
     root.add_word([2, 2, 2], used_ordered, regular_order, 1, arena)  # did
     root.add_word([2, 1, 1], used_ordered, other_order, 1, arena)  # dre
+    root.decode_points_and_bound([])
 
     # This asserts that the C++ and Python trees stay in sync
     assert outsource(eval_node_to_string(root, cells)) == snapshot(

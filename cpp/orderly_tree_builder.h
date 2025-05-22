@@ -88,7 +88,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   //   cout << i << "\t" << counts[i] << endl;
   // }
 
-  root->SetPointsAndBound(word_lists_);
+  root->DecodePointsAndBound(word_lists_);
   word_lists_.clear();
 
   // arena.PrintStats();

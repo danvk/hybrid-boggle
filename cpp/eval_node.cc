@@ -640,7 +640,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   return out;
 }
 
-void SumNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
+void SumNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
   if (bound_) {
     // A word was found on this node; decode the points.
     int count;
@@ -660,17 +660,29 @@ void SumNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
 
   for (int i = 0; i < num_children_; i++) {
     auto& child = children_[i];
-    child->SetPointsAndBound(wordlists);
+    child->DecodePointsAndBound(wordlists);
     bound_ += child->bound_;
   }
 }
 
-void ChoiceNode::SetPointsAndBound(vector<vector<uint32_t>>& wordlists) {
+void ChoiceNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
   uint32_t bound = 0;
   for (int i = 0; i < num_children_; i++) {
     auto& child = children_[i];
-    child->SetPointsAndBound(wordlists);
+    child->DecodePointsAndBound(wordlists);
     bound = max(bound, child->bound_);
   }
   bound_ = bound;
+}
+
+void SumNode::AddWordWithPointsForTesting(
+    vector<int> choices,
+    unsigned int used_ordered,
+    vector<int> split_order,
+    int points,
+    EvalNodeArena& arena
+) {
+  SumNode* node;
+  AddWord(choices, used_ordered, split_order, &node, arena);
+  node->points_ += points;
 }

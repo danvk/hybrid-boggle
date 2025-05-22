@@ -49,8 +49,6 @@ class SumNode {
 
   void PrintJSON() const;
 
-  void SetPointsAndBound(vector<vector<uint32_t>>& wordlists);
-
   // Shallow copy -- excludes children
   void CopyFrom(SumNode& other);
 
@@ -75,6 +73,18 @@ class SumNode {
   vector<ChoiceNode*> GetChildren();
   SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
 
+  // Decode the points_ and bound_ fields as set by OrderlyTreeBuilder,
+  // setting them to the correct values for this entire tree.
+  void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);
+
+  void AddWordWithPointsForTesting(
+      vector<int> choices,
+      unsigned int used_ordered,
+      vector<int> split_order,
+      int points,
+      EvalNodeArena& arena
+  );
+
  private:
 };
 
@@ -91,8 +101,6 @@ class ChoiceNode {
 
   void PrintJSON() const;
 
-  void SetPointsAndBound(vector<vector<uint32_t>>& wordlists);
-
   // Shallow copy -- excludes children
   void CopyFrom(ChoiceNode& other);
 
@@ -101,6 +109,9 @@ class ChoiceNode {
   int NodeCount() const;
   vector<SumNode*> GetChildren();
   ChoiceNode* AddChild(SumNode* child, EvalNodeArena& arena);
+
+  // See corresponding method on SumNode
+  void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);
 
  private:
 };
