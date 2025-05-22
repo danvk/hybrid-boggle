@@ -138,14 +138,16 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
   }
 }
 
-// To avoid double-counting words that use the exact same cells with minimal overhead,
-// we use a binary encoding in the SumNodes during tree building. Since most SumNodes
-// have zero or one words on them, it greatly reduces
+// We want to avoid double-counting words that use the exact same cells. To do so with
+// minimal overhead, we use a binary encoding in the SumNodes during tree building.
+// Since most SumNodes have zero or one words on them, it greatly reduces overhead to
+// store a single word inline on the SumNode. Space is limited there, so we repurpose
+// the bound_ field and fill it in later (DecodePointsAndBound).
 //
-// - If the path to the SumNode does not contain a repeated letter (e.g. SERE):
+// - If the path to the SumNode does not contain a repeated letter (e.g. RISE):
 //   - points_ = number of points scored for all words on this SumNode.
 //   - bound_ = 0
-// - If it does contain a repeat letter:
+// - If it does contain a repeat letter (e.g. SERE):
 //   - points_ = number of points scored for _each_ word
 //   - if bound_ = 0 -> no words on this SumNode
 //   - if bound_ & FRESH_MASK:
@@ -154,9 +156,11 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
 //   - otherwise:
 //     - There are multiple distinct words on this SumNode.
 //     - They're listed in word_lists_[bound_].
+//
 // After tree construction, this all needs to be decoded to set points_ and bound_ to
 // their proper values. This is done with SumNode::DecodePointsAndBound().
 // See https://github.com/danvk/hybrid-boggle/issues/117 and linked PRs.
+
 static const uint32_t FRESH_MASK = 1 << 23;
 
 void EncodeWordInSumNode(
@@ -184,6 +188,7 @@ void EncodeWordInSumNode(
     }
   } else {
     // There are already 2+ words on this node; maybe there should be a third.
+    // This search is O(N), but I've never seen N>6 and it's usually 2.
     auto& word_list = word_lists[slot];
     auto word_id = t->WordId();
     if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {

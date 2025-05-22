@@ -9,7 +9,6 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 
 import argparse
 import time
-from typing import Sequence
 
 from boggle.arena import PyArena, create_eval_node_arena_py
 from boggle.args import add_standard_args, get_trie_from_args
@@ -46,7 +45,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
-        self.num_overflow = 0
         self.letter_counts = [0] * 26
         # This tracks whether any of the 26 letters has been used more than once.
         # If so, we need to check for duplicate paths to the same word. This check
@@ -112,7 +110,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 arena,
             )
             if self.dupe_mask > 0:
-                # The C++ version uses a binary encoding here, but we just use a set.
+                # The C++ version uses a binary encoding, but we just stuff everything in a set.
                 if word_node.bound:
                     word_node.bound.add(t.word_id)
                     assert word_node.points == word_score

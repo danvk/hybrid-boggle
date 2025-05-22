@@ -619,6 +619,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
 
 static const uint32_t FRESH_MASK = 1 << 23;
 
+// See orderly_tree_builder.h for an explanation of the encoding.
 void SumNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
   if (bound_) {
     // A word was found on this node; decode the points.

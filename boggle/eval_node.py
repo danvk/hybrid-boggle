@@ -358,7 +358,7 @@ class ChoiceNode:
         )
 
     def decode_points_and_bound(self, wordlists=None):
-        """Unlike the C++ version, this doesn't do any decoding. But it does set bound."""
+        # See corresponding method on SumNode.
         bound = 0
         for child in self.children:
             child.decode_points_and_bound(wordlists)
