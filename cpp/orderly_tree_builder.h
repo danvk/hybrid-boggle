@@ -157,7 +157,7 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
 // After tree construction, this all needs to be decoded to set points_ and bound_ to
 // their proper values. This is done with SumNode::DecodePointsAndBound().
 // See https://github.com/danvk/hybrid-boggle/issues/117 and linked PRs.
-uint32_t FRESH_MASK = 1 << 23;
+static const uint32_t FRESH_MASK = 1 << 23;
 
 void EncodeWordInSumNode(
     SumNode* word_node, Trie* t, int word_score, vector<vector<uint32_t>>& word_lists

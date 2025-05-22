@@ -71,6 +71,7 @@ class SumNode {
 
   // Decode the points_ and bound_ fields as set by OrderlyTreeBuilder,
   // setting them to the correct values for this entire tree.
+  // See comment near EncodeWordInSumNode for details on the encoding.
   void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);
 
   // Wrapper with pybind11-friendly parameter types.

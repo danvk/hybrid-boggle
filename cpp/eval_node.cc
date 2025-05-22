@@ -617,11 +617,13 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   return out;
 }
 
+static const uint32_t FRESH_MASK = 1 << 23;
+
 void SumNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
   if (bound_) {
     // A word was found on this node; decode the points.
     int count;
-    if (bound_ & (1 << 23)) {
+    if (bound_ & FRESH_MASK) {
       // just one word stored inline
       count = 1;
     } else {
