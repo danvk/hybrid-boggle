@@ -29,8 +29,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
-  int SumUnion() const { return 0; }
-
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
@@ -39,7 +37,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int num_letters_[M * N];
   int num_dupes_;
 
-  static const int shift_ = 64 - M * N;
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
   uint32_t dupe_mask_;
   vector<vector<uint32_t>> word_lists_;
@@ -67,7 +64,6 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     num_letters_[cell] = strlen(bd_[cell]);
   }
   word_lists_.push_back({});  // start with 1
-  num_dupes_ = 0;
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -76,7 +72,6 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   root_ = NULL;
 
   // cout << "Number of nodes: " << word_lists_.size() << endl;
-  // cout << "Dupes prevented: " << num_dupes_ << endl;
   // unordered_map<int, int> counts;
   // int max_count = 0;
   // for (auto& wl : word_lists_) {
@@ -199,29 +194,6 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
       word_node->points_ += word_score;
     }
   }
-}
-
-uint64_t GetChoiceMark(
-    const int* choices,
-    unsigned int used_ordered,
-    const int* split_order,
-    const int* num_letters,
-    uint64_t max_value
-) {
-  uint64_t idx = 0;
-  while (used_ordered) {
-    int order_index = __builtin_ctz(used_ordered);
-    int cell = split_order[order_index];
-    int letter = choices[order_index];
-
-    used_ordered &= used_ordered - 1;
-    idx *= num_letters[cell];
-    idx += letter;
-    if (idx > max_value) {
-      return max_value + 1;
-    }
-  }
-  return idx;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
