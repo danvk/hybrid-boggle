@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <queue>
+#include <type_traits>
 #include <utility>
 
 using namespace std;
@@ -16,14 +17,7 @@ static inline int idx(char x) { return x - 'a'; }
 // Initially, this node is empty
 Trie::Trie() { mark_ = 0; }
 
-Trie::~Trie() {
-  int idx = 0;
-  for (int i = 0; i < kNumLetters; i++) {
-    if (StartsWord(i)) {
-      delete children_[idx++];
-    }
-  }
-}
+Trie::~Trie() {}
 
 size_t Trie::Size() {
   size_t size = 0;
@@ -65,10 +59,14 @@ void Trie::CopyFromIndexedTrie(IndexedTrie& t, char** tip) {
       indices |= (1 << i);
 
       auto child = t.Descend(i);
-      auto size = sizeof(Trie) + child->NumChildren() * sizeof(Trie*);
+      auto size = Trie::SizeForNode(child->NumChildren());
       bytes_allocated += size;
-      auto compact_child = children_[num_children++] = new (*tip) Trie;
+      auto compact_child = new (*tip) Trie;
       *tip += size;
+      auto offset = (char*)compact_child - (char*)this;
+      assert(offset < (1ULL << 32));
+      children_[num_children++] = offset;
+      // assert(this + offset == compact_child);
       // compact_child->num_alloced_ = child->NumChildren();
       compact_child->CopyFromIndexedTrie(*child, tip);
     }
@@ -129,14 +127,17 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   auto base = buf;
   bytes_allocated = 0;
 
-  auto size = sizeof(Trie) + t.NumChildren() * sizeof(Trie*);
+  auto size = Trie::SizeForNode(t.NumChildren());
   bytes_allocated += size;
   unique_ptr<Trie> compact_trie(new (buf) Trie);
   buf += size;
   // compact_trie->num_alloced_ = t.NumChildren();
   compact_trie->CopyFromIndexedTrie(t, &buf);
   cout << "allocated " << bytes_allocated << " bytes; sizeof(Trie) = " << sizeof(Trie)
-       << endl;
+       << "; alignment_of(Trie) = " << alignment_of<Trie>() << endl;
+
+  cout << (uintptr_t)buf << endl;
+  cout << (uintptr_t)(base + bytes_needed) << endl;
   assert(buf == base + bytes_needed);
 
   return compact_trie;
@@ -192,7 +193,7 @@ IndexedTrie::~IndexedTrie() {
 }
 
 int IndexedTrie::BytesNeeded() {
-  int bytes_needed = sizeof(Trie) + sizeof(Trie*) * NumChildren();
+  int bytes_needed = Trie::SizeForNode(NumChildren());
   for (int i = 0; i < kNumLetters; i++) {
     if (StartsWord(i)) bytes_needed += Descend(i)->BytesNeeded();
   }

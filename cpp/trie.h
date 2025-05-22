@@ -62,13 +62,9 @@ class Trie {
   // Requires: StartsWord(i)
   Trie* Descend(int i) const {
     auto index = std::popcount(child_indices_ & ((1 << i) - 1));
-    // cout << " " << i << " -> " << index << std::endl;
-    // if (index >= num_children_) {
-    //   cout << "i=" << i << ", child_indices_=" << child_indices_
-    //        << ", num_children=" << num_children_ << endl;
-    // }
-    // assert(index < num_children_);
-    return children_[index];
+    auto offset = children_[index];
+    auto child = (char*)this + offset;
+    return (Trie*)child;
   }
 
   bool IsWord() const { return child_indices_ & (1 << 31); }
@@ -101,11 +97,21 @@ class Trie {
   static bool BogglifyWord(char* word);
   static bool IsBoggleWord(const char* word);
 
+  static size_t SizeForNode(int num_children) {
+    auto size = sizeof(Trie) + num_children * sizeof(uint32_t);
+    auto offset = size % alignment_of<Trie>();
+    if (offset) {
+      size += (alignment_of<Trie>() - offset);
+    }
+    assert(size % alignment_of<Trie>() == 0);
+    return size;
+  }
+
  private:
   uint32_t child_indices_;
   uint32_t word_id_;
   uintptr_t mark_;
-  Trie* children_[];
+  uint32_t children_[];
 };
 
 #endif
