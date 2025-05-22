@@ -35,8 +35,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
   int num_letters_[M * N];
-  int num_dupes_;
-
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
   uint32_t dupe_mask_;
   vector<vector<uint32_t>> word_lists_;
