@@ -19,7 +19,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import ROOT_NODE, SumNode, countr_zero
+from boggle.eval_node import ROOT_NODE, SumNode
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_lookup_table
 
@@ -34,7 +34,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
-        self.shift = 64 - dims[0] * dims[1]
         self.letter_counts = [0] * 26
         self.dupe_mask = 0
 
@@ -57,11 +56,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         if arena:
             arena.add_node(root)
 
-        self.trie_.reset_marks()
         for cell in range(len(self.bd_)):
             self.do_all_descents(cell, 0, self.trie_, choices, arena)
         self.root = None
-        self.trie_.reset_marks()
         assert self.letter_counts == [0] * 26
         root.decode_points_and_bound()
         return root
@@ -108,79 +105,29 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         if t.is_word():
             word_score = SCORES[length]
-            is_dupe = self.dupe_mask > 0 and self.check_for_dupe(t, choices)
-
-            if not is_dupe:
-                self.root.add_word(
-                    choices,
-                    self.used_ordered_,
-                    SPLIT_ORDER[self.dims],
-                    word_score,
-                    arena,
-                )
+            word_node = self.root.add_word(
+                choices,
+                self.used_ordered_,
+                SPLIT_ORDER[self.dims],
+                arena,
+            )
+            if self.dupe_mask > 0:
+                # The C++ version uses a binary encoding here, but we just use a set.
+                if word_node.bound:
+                    word_node.bound.add(t.word_id)
+                    assert word_node.points == word_score
+                else:
+                    word_node.bound = {t.word_id}
+                    word_node.points = word_score
+            else:
+                word_node.points += word_score
+                assert word_node.bound == 0
 
         self.used_ordered_ ^= 1 << self.cell_to_order[cell]
         self.used_ ^= 1 << cell
 
-    def check_for_dupe(
-        self,
-        t: PyTrie,
-        choices: list[int],
-    ) -> bool:
-        """Returns true if an equivalent path to the same word has already been found.
-
-        See https://github.com/danvk/hybrid-boggle/issues/117 for discussion of "equivalent".
-        """
-        choice_mark = get_choice_mark(
-            choices,
-            self.used_ordered_,
-            self.split_order,
-            self.num_letters,
-            1 << self.shift,
-        )
-        if choice_mark > (1 << self.shift):
-            self.num_overflow += 1
-            return False
-
-        this_mark = (self.used_ordered_ << self.shift) + choice_mark
-        prev_paths: set[int] | 0 = t.mark()
-        if not prev_paths:
-            t.set_mark({this_mark})
-            return False
-
-        if this_mark in prev_paths:
-            return True
-        prev_paths.add(this_mark)
-        return False
-
     def create_arena(self):
         return create_eval_node_arena_py()
-
-
-def get_choice_mark(
-    choices: Sequence[int],
-    used_ordered: int,
-    split_order: Sequence[int],
-    num_letters: Sequence[int],
-    max_value: int,
-) -> int:
-    """This encodes the choices on the cells in a number in [0, max_value).
-
-    Cell order is not encoded. Returns max_value on overflow.
-    """
-    idx = 0
-    while used_ordered:
-        order_index = countr_zero(used_ordered)
-        cell = split_order[order_index]
-        letter = choices[order_index]
-
-        # remove the cell from used_ordered
-        used_ordered &= used_ordered - 1
-        idx *= num_letters[cell]
-        idx += letter
-        if idx > max_value:
-            return max_value
-    return idx
 
 
 mark = 1

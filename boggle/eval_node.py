@@ -56,13 +56,14 @@ class SumNode:
         choices: Sequence[int],
         used_ordered: int,
         split_order: Sequence[int],
-        points: int,
         arena: PyArena,
     ):
-        """Add a word to this tree. choices is a list of (cell, letter index) tuples."""
+        """Add a word to this tree. choices is a list of (cell, letter index) tuples.
+
+        Returns the SumNode corresponding to these choices (either new or existing).
+        """
         if used_ordered == 0:
-            self.points += points
-            return
+            return self
 
         # some choices values may uninitialized here, but we only access the ones that are
         # initialized based on the bitmap
@@ -100,10 +101,15 @@ class SumNode:
             if arena:
                 arena.add_node(letter_child)
 
-        letter_child.add_word(choices, used_ordered, split_order, points, arena)
+        return letter_child.add_word(choices, used_ordered, split_order, arena)
 
     def decode_points_and_bound(self, wordlists=None):
-        """Unlike the C++ version, this doesn't do any decoding. But it does set bound."""
+        """Decode bound and points as set by OrderlyTreeBuilder."""
+        if isinstance(self.bound, set):
+            count = len(self.bound)
+            word_score = self.points
+            self.points = count * word_score
+
         bound = self.points
         for child in self.children:
             child.decode_points_and_bound(wordlists)
@@ -299,6 +305,17 @@ class SumNode:
         if self.children:
             out["children"] = [c.to_json(max_depth - 1) for c in self.children if c]
         return out
+
+    def add_word_with_points_for_testing(
+        self,
+        choices: Sequence[int],
+        used_ordered: int,
+        split_order: Sequence[int],
+        points: int,
+        arena: PyArena,
+    ):
+        word_node = self.add_word(choices, used_ordered, split_order, arena)
+        word_node.points += points
 
 
 class ChoiceNode:

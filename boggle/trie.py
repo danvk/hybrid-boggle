@@ -12,6 +12,7 @@ class PyTrie:
         self._is_word = False
         self._mark = 0
         self._children = [None] * 26
+        self.word_id = None
 
     def starts_word(self, i: int):
         return self._children[i] is not None
@@ -115,9 +116,11 @@ def bogglify_word(word: str) -> str | None:
 def make_py_trie(dict_input: str):
     t = PyTrie()
 
+    next_id = 0
     for word in open(dict_input):
         word = word.strip()
         word = bogglify_word(word)
         if word is not None:
-            t.add_word(word)
+            t.add_word(word).word_id = next_id
+            next_id += 1
     return t
