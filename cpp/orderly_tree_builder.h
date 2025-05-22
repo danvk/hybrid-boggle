@@ -160,8 +160,8 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     auto word_score = kWordScores[length];
 
     SumNode* word_node;
-    auto new_root = root_->AddWordWork(
-        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, &word_node, arena
+    auto new_root = root_->AddWord(
+        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, arena, &word_node
     );
     assert(new_root == root_);
 
