@@ -138,6 +138,62 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
   }
 }
 
+// To avoid double-counting words that use the exact same cells with minimal overhead,
+// we use a binary encoding in the SumNodes during tree building. Since most SumNodes
+// have zero or one words on them, it greatly reduces
+//
+// - If the path to the SumNode does not contain a repeated letter (e.g. SERE):
+//   - points_ = number of points scored for all words on this SumNode.
+//   - bound_ = 0
+// - If it does contain a repeat letter:
+//   - points_ = number of points scored for _each_ word
+//   - if bound_ = 0 -> no words on this SumNode
+//   - if bound_ & FRESH_MASK:
+//     - There is one word on this SumNode.
+//     - It has WordId = bound_ & (FRESH_MASK - 1)
+//   - otherwise:
+//     - There are multiple distinct words on this SumNode.
+//     - They're listed in word_lists_[bound_].
+// After tree construction, this all needs to be decoded to set points_ and bound_ to
+// their proper values. This is done with SumNode::DecodePointsAndBound().
+// See https://github.com/danvk/hybrid-boggle/issues/117 and linked PRs.
+uint32_t FRESH_MASK = 1 << 23;
+
+void EncodeWordInSumNode(
+    SumNode* word_node, Trie* t, int word_score, vector<vector<uint32_t>>& word_lists
+) {
+  auto slot = word_node->bound_;
+  if (slot == 0) {
+    // Fresh find! Inline the word into word_node->bound_ and mark it.
+    // All words on a SumNode have the same score, which is convenient to store here.
+    word_node->points_ = word_score;
+    word_node->bound_ = t->WordId() | FRESH_MASK;
+  } else if (slot & FRESH_MASK) {
+    // The previous word was the first and is inlined into word_node->bound_.
+    uint32_t old_word_id = slot & (FRESH_MASK - 1);
+    uint32_t new_word_id = t->WordId();
+    if (old_word_id != new_word_id) {
+      // This is the first collision; move everything to a word_list.
+      slot = word_lists.size();
+      // assert(slot > 0);
+      word_lists.push_back({old_word_id, new_word_id});
+      assert(slot < FRESH_MASK);
+      word_node->bound_ = slot;
+    } else {
+      // It's a duplicate with the previous word.
+    }
+  } else {
+    // There are already 2+ words on this node; maybe there should be a third.
+    auto& word_list = word_lists[slot];
+    auto word_id = t->WordId();
+    if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {
+      word_list.push_back(word_id);
+    } else {
+      // duplicate
+    }
+  }
+}
+
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoDFS(
     int i, int n, int length, Trie* t, EvalNodeArena& arena
@@ -161,34 +217,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     assert(new_root == root_);
 
     if (dupe_mask_ > 0) {
-      auto slot = word_node->bound_;
-      if (slot == 0) {
-        // Fresh find!
-        word_node->points_ = word_score;
-        word_node->bound_ = t->WordId() | (1 << 23);
-      } else if (slot & (1 << 23)) {
-        uint32_t old_word_id = slot & ((1 << 23) - 1);
-        uint32_t new_word_id = t->WordId();
-        if (old_word_id != new_word_id) {
-          // This is the first collision; move everything to a word_list.
-          slot = word_lists_.size();
-          assert(slot > 0);
-          word_lists_.push_back({old_word_id, new_word_id});
-          assert(slot < (1 << 23));
-          word_node->bound_ = slot;
-        } else {
-          num_dupes_ += 1;
-        }
-      } else {
-        // there are already 2+ words on this node; maybe there should be a third.
-        auto& word_list = word_lists_[slot];
-        auto word_id = t->WordId();
-        if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {
-          word_list.push_back(word_id);
-        } else {
-          num_dupes_ += 1;
-        }
-      }
+      EncodeWordInSumNode(word_node, t, word_score, word_lists_);
     } else {
       // If there's no chance of a duplicate, just count points.
       word_node->points_ += word_score;
