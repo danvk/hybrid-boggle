@@ -58,7 +58,9 @@ bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
 
 void Trie::ResetMarks() { SetAllMarks(0); }
 
-void Trie::CopyFromIndexedTrie(IndexedTrie& t) {
+static int bytes_allocated = 0;
+
+void Trie::CopyFromIndexedTrie(IndexedTrie& t, char** tip) {
   uint32_t indices = 0;
   int num_children = 0;
   for (int i = 0; i < kNumLetters; i++) {
@@ -66,10 +68,12 @@ void Trie::CopyFromIndexedTrie(IndexedTrie& t) {
       indices |= (1 << i);
 
       auto child = t.Descend(i);
-      auto buf = malloc(sizeof(Trie) + child->NumChildren() * sizeof(Trie*));
-      auto compact_child = children_[num_children++] = new (buf) Trie;
+      auto size = sizeof(Trie) + child->NumChildren() * sizeof(Trie*);
+      bytes_allocated += size;
+      auto compact_child = children_[num_children++] = new (*tip) Trie;
+      *tip += size;
       compact_child->num_alloced_ = child->NumChildren();
-      compact_child->CopyFromIndexedTrie(*child);
+      compact_child->CopyFromIndexedTrie(*child, tip);
     }
   }
   // cout << "num_children=" << num_children << ", indices=" << indices << endl;
@@ -121,10 +125,19 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   }
   fclose(f);
 
-  auto buf = malloc(sizeof(Trie) + t.NumChildren() * sizeof(Trie*));
+  auto bytes_needed = t.BytesNeeded();
+  auto buf = (char*)malloc(bytes_needed);
+  auto base = buf;
+  bytes_allocated = 0;
+
+  auto size = sizeof(Trie) + t.NumChildren() * sizeof(Trie*);
+  bytes_allocated += size;
   unique_ptr<Trie> compact_trie(new (buf) Trie);
+  buf += size;
   compact_trie->num_alloced_ = t.NumChildren();
-  compact_trie->CopyFromIndexedTrie(t);
+  compact_trie->CopyFromIndexedTrie(t, &buf);
+  cout << "allocated " << bytes_allocated << " bytes" << endl;
+  assert(buf == base + bytes_needed);
 
   return compact_trie;
 }
@@ -173,7 +186,15 @@ IndexedTrie* IndexedTrie::AddWord(const char* wd) {
 }
 
 IndexedTrie::~IndexedTrie() {
+  // for (int i = 0; i < kNumLetters; i++) {
+  //   if (children_[i]) delete children_[i];
+  // }
+}
+
+int IndexedTrie::BytesNeeded() {
+  int bytes_needed = sizeof(Trie) + sizeof(Trie*) * NumChildren();
   for (int i = 0; i < kNumLetters; i++) {
-    if (children_[i]) delete children_[i];
+    if (StartsWord(i)) bytes_needed += Descend(i)->BytesNeeded();
   }
+  return bytes_needed;
 }

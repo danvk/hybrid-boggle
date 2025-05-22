@@ -12,6 +12,7 @@ import argparse
 import random
 import time
 
+from boggle.anneal import A_TO_Z
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 from boggle.boggler import LETTER_A
 from boggle.hillclimb import neighbors
@@ -56,8 +57,8 @@ def main():
     if args.variations_on:
         board = args.variations_on
         assert len(board) == w * h
-        boards1 = neighbors(board)
-        boards = {bd for n1 in boards1 for bd in neighbors(n1)}
+        boards1 = neighbors(board, A_TO_Z)
+        boards = {bd for n1 in boards1 for bd in neighbors(n1, A_TO_Z)}
         boards.update(boards1)
         boards.add(board)
         boards = [*boards]

@@ -39,6 +39,7 @@ class IndexedTrie {
     }
     return count;
   }
+  int BytesNeeded();
 
   // Trie construction
   // Returns a pointer to the new Trie node at the end of the word.
@@ -90,7 +91,7 @@ class Trie {
   void ResetMarks();
   Trie* FindWord(const char* wd);
 
-  void CopyFromIndexedTrie(IndexedTrie& t);
+  void CopyFromIndexedTrie(IndexedTrie& t, char** tip);
 
   static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
   static string ReverseLookup(const Trie* base, const Trie* child);
