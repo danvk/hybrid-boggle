@@ -40,6 +40,8 @@ The general approach is [branch and bound][bnb]:
 
 Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations. [This post] describes several of the techniques used to do so in this repo.
 
+I plan to publish a paper about this result and the methodology behind it. You can find an in-progress draft of that paper [here](/paper/).
+
 Here are the blog posts I've written about this project in 2025:
 
 - [Finding the Globally-Optimal 3x4 Boggle Board][post1]: Explanation of the project and the work I did back in 2009.
