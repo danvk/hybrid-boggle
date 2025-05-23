@@ -61,10 +61,11 @@ class Trie {
 
   // Requires: StartsWord(i)
   Trie* Descend(int i) const {
-    // auto index = std::popcount(child_indices_ & ((1 << i) - 1));
+    // TODO: move the popcount to the boggler?
+    auto index = std::popcount(child_indices_ & ((1 << i) - 1));
     // return children_[index];
     // return children_[i];
-    auto offset = children_ + i * sizeof(Trie);
+    auto offset = children_ + index * sizeof(Trie);
     auto child = (char*)this + offset;
     return (Trie*)child;
   }

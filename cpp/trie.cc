@@ -65,7 +65,7 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
       continue;
     }
     // copy the node to the new tree
-    auto size = Trie::SizeForNode(26);
+    auto size = Trie::SizeForNode(node->NumChildren());
     bytes_allocated += size;
     auto compact_node = new (*tip) Trie;
     *tip += size;
@@ -83,7 +83,7 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
         q.push(make_tuple(node->Descend(i), compact_node, num_children++));
       } else {
         // compact_node->children_[i] = 0;
-        q.push(make_tuple(nullptr, compact_node, num_children++));
+        // q.push(make_tuple(nullptr, compact_node, num_children++));
       }
     }
     compact_node->SetWordId(node->WordId());
@@ -229,8 +229,8 @@ IndexedTrie::~IndexedTrie() {
 }
 
 int IndexedTrie::BytesNeeded() {
-  // int bytes_needed = Trie::SizeForNode(NumChildren());
-  int bytes_needed = Trie::SizeForNode(26);
+  int bytes_needed = Trie::SizeForNode(NumChildren());
+  // int bytes_needed = Trie::SizeForNode(26);
   for (int i = 0; i < kNumLetters; i++) {
     if (StartsWord(i)) bytes_needed += Descend(i)->BytesNeeded();
   }
