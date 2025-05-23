@@ -73,8 +73,8 @@ class Trie {
   bool IsWord() const { return child_indices_ & (1 << 31); }
   void SetIsWord() { child_indices_ |= (1 << 31); }
 
-  void SetWordId(uint32_t word_id) { word_id_ = word_id; }
-  uint32_t WordId() const { return word_id_; }
+  void SetWordId(uint32_t word_id) {}
+  uint32_t WordId() const { return 0; }
 
   void Mark(uintptr_t m) { mark_ = m; }
   uintptr_t Mark() { return mark_; }
@@ -112,10 +112,9 @@ class Trie {
     return size;
   }
 
-// TODO: add back
-//  private:
+  // TODO: add back
+  //  private:
   uint32_t child_indices_;
-  uint32_t word_id_;
   uint32_t children_;
   uintptr_t mark_;
 };
