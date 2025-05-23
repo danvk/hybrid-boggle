@@ -61,7 +61,7 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
     // iterate layer by layer
     auto [node, parent, child_index] = q.front();
     q.pop();
-    if (node == nullptr) {
+    if (node == 0) {
       continue;
     }
     // copy the node to the new tree
@@ -70,7 +70,7 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
     auto compact_node = new (*tip) Trie;
     *tip += size;
     if (parent) {
-      parent->children_[child_index] = compact_node;
+      parent->children_[child_index] = (char*)compact_node - (char*)parent;
     } else {
       compact_root = unique_ptr<Trie>(compact_node);
     }
@@ -81,7 +81,7 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
         compact_node->child_indices_ |= (1 << i);
         q.push(make_tuple(node->Descend(i), compact_node, num_children++));
       } else {
-        compact_node->children_[i] = nullptr;
+        compact_node->children_[i] = 0;
         q.push(make_tuple(nullptr, compact_node, num_children++));
       }
     }
@@ -95,29 +95,29 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
 }
 
 void Trie::CopyFromIndexedTrie(IndexedTrie& t, char** tip) {
-  uint32_t indices = 0;
-  int num_children = 0;
-  for (int i = 0; i < kNumLetters; i++) {
-    if (t.StartsWord(i)) {
-      indices |= (1 << i);
+  // uint32_t indices = 0;
+  // int num_children = 0;
+  // for (int i = 0; i < kNumLetters; i++) {
+  //   if (t.StartsWord(i)) {
+  //     indices |= (1 << i);
 
-      auto child = t.Descend(i);
-      auto size = Trie::SizeForNode(child->NumChildren());
-      bytes_allocated += size;
-      auto compact_child = new (*tip) Trie;
-      *tip += size;
-      children_[num_children++] = compact_child;
-      compact_child->CopyFromIndexedTrie(*child, tip);
-    }
-  }
-  // cout << "num_children=" << num_children << ", indices=" << indices << endl;
-  // num_children_ = num_children;
-  // assert(num_children_ == num_alloced_);
-  child_indices_ = indices;
-  SetWordId(t.WordId());
-  if (t.IsWord()) {
-    SetIsWord();
-  }
+  //     auto child = t.Descend(i);
+  //     auto size = Trie::SizeForNode(child->NumChildren());
+  //     bytes_allocated += size;
+  //     auto compact_child = new (*tip) Trie;
+  //     *tip += size;
+  //     children_[num_children++] = compact_child;
+  //     compact_child->CopyFromIndexedTrie(*child, tip);
+  //   }
+  // }
+  // // cout << "num_children=" << num_children << ", indices=" << indices << endl;
+  // // num_children_ = num_children;
+  // // assert(num_children_ == num_alloced_);
+  // child_indices_ = indices;
+  // SetWordId(t.WordId());
+  // if (t.IsWord()) {
+  //   SetIsWord();
+  // }
 }
 
 // static

@@ -63,7 +63,11 @@ class Trie {
   Trie* Descend(int i) const {
     // auto index = std::popcount(child_indices_ & ((1 << i) - 1));
     // return children_[index];
-    return children_[i];
+    // return children_[i];
+    // TODO: children_[0] + i*sizeof(Trie)
+    auto offset = children_[i];
+    auto child = (char*)this + offset;
+    return (Trie*)child;
   }
 
   bool IsWord() const { return child_indices_ & (1 << 31); }
@@ -112,7 +116,8 @@ class Trie {
   uint32_t child_indices_;
   uint32_t word_id_;
   uintptr_t mark_;
-  Trie* children_[];
+  uint32_t children_[];
+  // TODO: first_child offset only
 };
 
 #endif
