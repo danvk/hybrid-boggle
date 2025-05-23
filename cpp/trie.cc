@@ -69,9 +69,10 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
     bytes_allocated += size;
     auto compact_node = new (*tip) Trie;
     *tip += size;
-    if (parent) {
-      parent->children_[child_index] = (char*)compact_node - (char*)parent;
-    } else {
+    if (parent && child_index == 0) { // Record the first child offset when it's added
+      parent->children_ = (char*)compact_node - (char*)parent;
+    }
+    if (!parent) {
       compact_root = unique_ptr<Trie>(compact_node);
     }
     // add the children to the queue for the next level
@@ -81,7 +82,7 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
         compact_node->child_indices_ |= (1 << i);
         q.push(make_tuple(node->Descend(i), compact_node, num_children++));
       } else {
-        compact_node->children_[i] = 0;
+        // compact_node->children_[i] = 0;
         q.push(make_tuple(nullptr, compact_node, num_children++));
       }
     }

@@ -64,8 +64,7 @@ class Trie {
     // auto index = std::popcount(child_indices_ & ((1 << i) - 1));
     // return children_[index];
     // return children_[i];
-    // TODO: children_[0] + i*sizeof(Trie)
-    auto offset = children_[i];
+    auto offset = children_ + i * sizeof(Trie);
     auto child = (char*)this + offset;
     return (Trie*)child;
   }
@@ -102,7 +101,8 @@ class Trie {
   static bool IsBoggleWord(const char* word);
 
   static size_t SizeForNode(int num_children) {
-    auto size = sizeof(Trie) + num_children * sizeof(Trie::children_[0]);
+    auto size = sizeof(Trie);
+    // + num_children * sizeof(Trie::children_);
     auto offset = size % alignment_of<Trie>();
     if (offset) {
       size += (alignment_of<Trie>() - offset);
@@ -115,9 +115,8 @@ class Trie {
 //  private:
   uint32_t child_indices_;
   uint32_t word_id_;
+  uint32_t children_;
   uintptr_t mark_;
-  uint32_t children_[];
-  // TODO: first_child offset only
 };
 
 #endif
