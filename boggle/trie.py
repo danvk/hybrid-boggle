@@ -124,3 +124,24 @@ def make_py_trie(dict_input: str):
             t.add_word(word).word_id = next_id
             next_id += 1
     return t
+
+
+if __name__ == "__main__":
+    t = make_py_trie("wordlists/enable2k.txt")
+    from collections import Counter
+
+    count = Counter()
+    q = [t]
+    while q:
+        node = q.pop()
+        nc = 0
+        for c in node._children:
+            if not c:
+                continue
+            nc += 1
+            q.append(c)
+        count[nc] += 1
+
+    print(f"{t.size()=}")
+    print(f"{t.num_nodes()=}")
+    print(count.most_common())
