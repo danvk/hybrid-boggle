@@ -86,6 +86,7 @@ class Trie {
   Trie* FindWord(const char* wd);
 
   void CopyFromIndexedTrie(IndexedTrie& t, char** tip);
+  static unique_ptr<Trie> CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip);
 
   static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
   static string ReverseLookup(const Trie* base, const Trie* child);

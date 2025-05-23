@@ -51,6 +51,47 @@ void Trie::ResetMarks() { SetAllMarks(0); }
 
 static int bytes_allocated = 0;
 
+unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
+  // copy from one tree to another in BFS
+  // (current node, parent pointer, child index)
+  queue<tuple<IndexedTrie*, Trie*, int>> q;
+  q.push({&root, nullptr, -1});
+  unique_ptr<Trie> compact_root;
+  while (!q.empty()) {
+    // iterate layer by layer
+    queue<tuple<IndexedTrie*, Trie*, int>> next_level;
+    while (!q.empty()) {
+      auto [node, parent, child_index] = q.front();
+      q.pop();
+      // copy the node to the new tree
+      auto size = Trie::SizeForNode(node->NumChildren());
+      bytes_allocated += size;
+      auto compact_node = new (*tip) Trie;
+      *tip += size;
+      if (parent) {
+        parent->children_[child_index] = compact_node;
+      } else {
+        compact_root = unique_ptr<Trie>(compact_node);
+      }
+      // add the children to the queue for the next level
+      int num_children = 0;
+      for (int i = 0; i < kNumLetters; i++) {
+        if (node->StartsWord(i)) {
+          compact_node->child_indices_ |= (1 << i);
+          next_level.push(make_tuple(node->Descend(i), compact_node, num_children++));
+        }
+      }
+      compact_node->SetWordId(node->WordId());
+      if (node->IsWord()) {
+        compact_node->SetIsWord();
+      }
+    }
+    q = move(next_level);
+  }
+
+  return compact_root;
+}
+
 void Trie::CopyFromIndexedTrie(IndexedTrie& t, char** tip) {
   uint32_t indices = 0;
   int num_children = 0;
@@ -123,12 +164,7 @@ unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   auto base = buf;
   bytes_allocated = 0;
 
-  auto size = Trie::SizeForNode(t.NumChildren());
-  bytes_allocated += size;
-  unique_ptr<Trie> compact_trie(new (buf) Trie);
-  buf += size;
-  // compact_trie->num_alloced_ = t.NumChildren();
-  compact_trie->CopyFromIndexedTrie(t, &buf);
+  auto compact_trie = CopyFromIndexedTrieBFS(t, &buf);
   cout << "allocated " << bytes_allocated << " bytes; sizeof(Trie) = " << sizeof(Trie)
        << "; alignment_of(Trie) = " << alignment_of<Trie>() << endl;
 
