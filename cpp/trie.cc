@@ -59,34 +59,30 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
   unique_ptr<Trie> compact_root;
   while (!q.empty()) {
     // iterate layer by layer
-    queue<tuple<IndexedTrie*, Trie*, int>> next_level;
-    while (!q.empty()) {
-      auto [node, parent, child_index] = q.front();
-      q.pop();
-      // copy the node to the new tree
-      auto size = Trie::SizeForNode(node->NumChildren());
-      bytes_allocated += size;
-      auto compact_node = new (*tip) Trie;
-      *tip += size;
-      if (parent) {
-        parent->children_[child_index] = compact_node;
-      } else {
-        compact_root = unique_ptr<Trie>(compact_node);
-      }
-      // add the children to the queue for the next level
-      int num_children = 0;
-      for (int i = 0; i < kNumLetters; i++) {
-        if (node->StartsWord(i)) {
-          compact_node->child_indices_ |= (1 << i);
-          next_level.push(make_tuple(node->Descend(i), compact_node, num_children++));
-        }
-      }
-      compact_node->SetWordId(node->WordId());
-      if (node->IsWord()) {
-        compact_node->SetIsWord();
+    auto [node, parent, child_index] = q.front();
+    q.pop();
+    // copy the node to the new tree
+    auto size = Trie::SizeForNode(node->NumChildren());
+    bytes_allocated += size;
+    auto compact_node = new (*tip) Trie;
+    *tip += size;
+    if (parent) {
+      parent->children_[child_index] = compact_node;
+    } else {
+      compact_root = unique_ptr<Trie>(compact_node);
+    }
+    // add the children to the queue for the next level
+    int num_children = 0;
+    for (int i = 0; i < kNumLetters; i++) {
+      if (node->StartsWord(i)) {
+        compact_node->child_indices_ |= (1 << i);
+        q.push(make_tuple(node->Descend(i), compact_node, num_children++));
       }
     }
-    q = move(next_level);
+    compact_node->SetWordId(node->WordId());
+    if (node->IsWord()) {
+      compact_node->SetIsWord();
+    }
   }
 
   return compact_root;
