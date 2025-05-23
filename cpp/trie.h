@@ -106,7 +106,8 @@ class Trie {
     return size;
   }
 
- private:
+// TODO: add back
+//  private:
   uint32_t child_indices_;
   uint32_t word_id_;
   uintptr_t mark_;
