@@ -61,8 +61,9 @@ class Trie {
 
   // Requires: StartsWord(i)
   Trie* Descend(int i) const {
-    auto index = std::popcount(child_indices_ & ((1 << i) - 1));
-    return children_[index];
+    // auto index = std::popcount(child_indices_ & ((1 << i) - 1));
+    // return children_[index];
+    return children_[i];
   }
 
   bool IsWord() const { return child_indices_ & (1 << 31); }
