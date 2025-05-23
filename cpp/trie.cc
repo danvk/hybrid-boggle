@@ -69,8 +69,8 @@ unique_ptr<Trie> Trie::CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip) {
     bytes_allocated += size;
     auto compact_node = new (*tip) Trie;
     *tip += size;
-    if (parent && child_index == 0) { // Record the first child offset when it's added
-      parent->children_ = (char*)compact_node - (char*)parent;
+    if (parent && child_index == 0) {  // Record the first child offset when it's added
+      parent->children_ = compact_node;
     }
     if (!parent) {
       compact_root = unique_ptr<Trie>(compact_node);
