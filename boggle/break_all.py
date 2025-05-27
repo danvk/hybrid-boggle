@@ -12,6 +12,7 @@ import random
 import time
 from dataclasses import dataclass
 
+from cpp_boggle import HybridTreeBreaker
 from google.cloud import storage
 from tqdm import tqdm
 
@@ -21,7 +22,6 @@ from boggle.args import (
 )
 from boggle.board_id import from_board_id, is_canonical_board_id, parse_classes
 from boggle.boggler import PyBoggler
-from boggle.breaker import HybridTreeBreaker
 from boggle.dimensional_bogglers import (
     cpp_bucket_boggler,
     cpp_orderly_tree_builder,
@@ -131,26 +131,27 @@ def break_worker(task: str | int):
 
     assert breaker.SetBoard(board)
     details = breaker.Break()
-    if details.failures:
-        for failure in details.failures:
-            print(f"Found unbreakable board for {task}: {failure}")
-        # good_boards += details.failures
-    # depths[details.max_depth] += 1
-    # times[round(10 * details.elapsed_s) / 10] += 1
-    # all_details.append((task, details))
-    with open(f"{args.output_base}-{me}.ndjson", "a") as out:
-        # It's convenient to have id first when viewing.
-        summary = {"id": task, **details.asdict()}
-        if args.omit_times:
-            del summary["elapsed_s"]
-            del summary["secs_by_level"]
-            del summary["test_secs"]
-            del summary["bound_secs"]
-        out.write(json.dumps(summary))
-        out.write("\n")
-        if args.log_per_board_stats:
-            print(f"{task}: {board}")
-            print(json.dumps(summary, indent=2))
+    if False:
+        if details.failures:
+            for failure in details.failures:
+                print(f"Found unbreakable board for {task}: {failure}")
+            # good_boards += details.failures
+        # depths[details.max_depth] += 1
+        # times[round(10 * details.elapsed_s) / 10] += 1
+        # all_details.append((task, details))
+        with open(f"{args.output_base}-{me}.ndjson", "a") as out:
+            # It's convenient to have id first when viewing.
+            summary = {"id": task, **details.asdict()}
+            if args.omit_times:
+                del summary["elapsed_s"]
+                del summary["secs_by_level"]
+                del summary["test_secs"]
+                del summary["bound_secs"]
+            out.write(json.dumps(summary))
+            out.write("\n")
+            if args.log_per_board_stats:
+                print(f"{task}: {board}")
+                print(json.dumps(summary, indent=2))
 
     # Upload the file to Google Cloud Storage if 10 minutes have passed
     current_time_secs = time.time()
@@ -164,7 +165,8 @@ def break_worker(task: str | int):
         )
         last_upload_time_secs = current_time_secs
 
-    return details.failures
+    # return details.failures
+    return []
 
 
 def get_breaker(args) -> BreakingBundle:

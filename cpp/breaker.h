@@ -14,8 +14,10 @@ class HybridTreeBreaker {
   HybridTreeBreaker(
       OrderlyTreeBuilder<M, N>& etb,
       Boggler<M, N>& boggler,
+      pair<int, int> dims,
       int best_score,
-      int switchover_score
+      int switchover_score,
+      bool log_breaker_progress
   )
       : etb_(etb),
         boggler_(boggler),

@@ -60,9 +60,23 @@ void declare_breaker(py::module &m) {
   constexpr int N = 4;
   using BR = HybridTreeBreaker<M, N>;
   py::class_<BR>(m, "HybridTreeBreaker")
-      .def(py::init<OrderlyTreeBuilder<M, N> &, Boggler<M, N> &, int, int>())
-      .def("set_board", &BR::SetBoard)
-      .def("break", &BR::Break);
+      .def(
+          py::init<
+              OrderlyTreeBuilder<M, N> &,
+              Boggler<M, N> &,
+              pair<int, int>,
+              int,
+              int,
+              bool>(),
+          py::arg("etb"),
+          py::arg("boggler"),
+          py::arg("dims"),
+          py::arg("best_score"),
+          py::arg("switchover_score"),
+          py::arg("log_breaker_progress")
+      )
+      .def("SetBoard", &BR::SetBoard)
+      .def("Break", &BR::Break);
 }
 
 PYBIND11_MODULE(cpp_boggle, m) {
