@@ -53,6 +53,8 @@ class HybridTreeBreaker {
 
     cout << "total_nodes: " << arena->NumNodes()
          << ", total_bytes=" << arena->BytesAllocated() << endl;
+    cout << "n_force=" << n_force_ << " n_bound=" << n_bound_ << " n_test=" << n_test_
+         << endl;
   }
 
   void AttackTree(
