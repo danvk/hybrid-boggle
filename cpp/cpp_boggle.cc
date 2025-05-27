@@ -8,6 +8,7 @@ using std::vector;
 
 #include "arena.h"
 #include "boggler.h"
+#include "breaker.h"
 #include "eval_node.h"
 #include "ibuckets.h"
 #include "orderly_tree_builder.h"
@@ -52,6 +53,16 @@ void declare_boggler(py::module &m, const string &pyclass_name) {
       .def("find_words", &BB::FindWords)
       .def("cell", &BB::Cell)
       .def("set_cell", &BB::SetCell);
+}
+
+void declare_breaker(py::module &m) {
+  constexpr int M = 4;
+  constexpr int N = 4;
+  using BR = HybridTreeBreaker<M, N>;
+  py::class_<BR>(m, "HybridTreeBreaker")
+      .def(py::init<OrderlyTreeBuilder<M, N> &, Boggler<M, N> &, int, int>())
+      .def("set_board", &BR::SetBoard)
+      .def("break", &BR::Break);
 }
 
 PYBIND11_MODULE(cpp_boggle, m) {
@@ -148,4 +159,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<Symmetry>(m, "Symmetry")
       .def(py::init<int, int>())
       .def("canonicalize", &Symmetry::Canonicalize);
+
+  declare_breaker(m);
 }

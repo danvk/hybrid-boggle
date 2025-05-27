@@ -30,9 +30,10 @@ class BoardClassBoggler {
   static const int NEIGHBORS[M * N][9];
   static const int SPLIT_ORDER[M * N];
 
+  char bd_[M * N][27];  // null-terminated lists of possible letters
+
  protected:
   Trie* dict_;
-  char bd_[M * N][27];  // null-terminated lists of possible letters
   unsigned int used_;
   char board_rep_[27 * M * N];  // for as_string()
 };
