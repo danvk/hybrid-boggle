@@ -63,8 +63,7 @@ class SumNode {
       const vector<pair<int, int>>& preset_cells
   ) const;
 
-  vector<const SumNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
-      const;
+  vector<SumNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena);
 
   vector<ChoiceNode*> GetChildren();
   SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);

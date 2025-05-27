@@ -15,7 +15,7 @@ class HybridTreeBreaker {
       OrderlyTreeBuilder<M, N>& etb,
       Boggler<M, N>& boggler,
       int best_score,
-      int switchover_score,
+      int switchover_score
   )
       : etb_(etb),
         boggler_(boggler),
@@ -43,7 +43,7 @@ class HybridTreeBreaker {
 
     auto arena = etb_.CreateArena();
     auto tree = etb_.BuildTree(*arena);
-    auto num_nodes = arena->NodeCount();
+    auto num_nodes = arena->NumNodes();
     cout << "init_nodes: " << num_nodes << ", init_bytes=" << arena->BytesAllocated()
          << endl;
     vector<pair<int, int>> choices;
@@ -75,14 +75,14 @@ class HybridTreeBreaker {
     auto trees = tree.OrderlyForceCell(cell, num_lets, arena);
 
     assert(trees.size() == num_lets);
-    choices.append({0, 0});
+    choices.push_back({0, 0});
     for (int letter = 0; letter < num_lets; letter++) {
       auto t = trees[letter];
       if (!t) {
         continue;  // this can happen on truly dead-end paths
       }
       *choices.rbegin() = {cell, letter};
-      AttackTree(t, level + 1, choices, arena);
+      AttackTree(*t, level + 1, choices, arena);
     }
     choices.pop_back();
     arena.ResetLevel(arena_level);

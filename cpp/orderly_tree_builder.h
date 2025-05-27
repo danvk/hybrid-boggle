@@ -25,7 +25,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   using BoardClassBoggler<M, N>::used_;
 
   /** Build an EvalTree for the current board. */
-  const SumNode* BuildTree(EvalNodeArena& arena);
+  SumNode* BuildTree(EvalNodeArena& arena);
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
@@ -45,7 +45,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 };
 
 template <int M, int N>
-const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
+SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated

@@ -555,9 +555,9 @@ void SumNode::SetChildrenFromVector(const vector<ChoiceNode*>& children) {
   memcpy(&children_[0], &children[0], num_children_ * sizeof(ChoiceNode*));
 }
 
-vector<const SumNode*> SumNode::OrderlyForceCell(
+vector<SumNode*> SumNode::OrderlyForceCell(
     int cell, int num_lets, EvalNodeArena& arena
-) const {
+) {
   if (!num_children_) {
     throw runtime_error("tried to force empty cell");
     return {this};
@@ -565,7 +565,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
 
   vector<ChoiceNode*> non_cell_children;
   non_cell_children.reserve(num_children_ - 1);
-  const ChoiceNode* top_choice = NULL;
+  ChoiceNode* top_choice = NULL;
   for (int i = 0; i < num_children_; i++) {
     auto& child = children_[i];
     if (child->cell_ == cell) {
@@ -580,15 +580,15 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     // completely irrelevant to the bound. It's exceptionally rare that this would
     // happen on a high-scoring board class. Returning N copies of ourselves is not
     // the most efficient way to deal with this, but it's expedient.
-    vector<const SumNode*> out(num_lets, this);
+    vector<SumNode*> out(num_lets, this);
     return out;
   }
 
   int non_cell_points = points_;
 
-  vector<const SumNode*> out(num_lets, nullptr);
+  vector<SumNode*> out(num_lets, nullptr);
   for (int i = 0; i < top_choice->num_children_; i++) {
-    const auto& child = top_choice->children_[i];
+    auto& child = top_choice->children_[i];
     out[child->letter_] = merge_orderly_tree_children(
         child, &non_cell_children[0], non_cell_children.size(), non_cell_points, arena
     );
