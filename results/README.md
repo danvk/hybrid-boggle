@@ -4,6 +4,9 @@ This directory contains the results of hillclimbing runs, as well the results of
 
 All of these boards have been "canonicalized" to account for the various types of symmetry. See `boggle/canonicalize.py` for details.
 
+The [hillclimber] has a few parameters (pool size, excluded letters). The relevant command is included at the top of each file.
+
 The `most-words` directory contains the results of a search for boards with the most words, rather than the most points. This requires a patch to the `SCORES` array. See [`most-words` branch][mw].
 
 [mw]: https://github.com/danvk/hybrid-boggle/tree/most-words
+[hillclimber]: https://github.com/danvk/hybrid-boggle/blob/main/boggle/hillclimb.py
