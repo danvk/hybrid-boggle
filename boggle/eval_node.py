@@ -587,7 +587,6 @@ def merge_orderly_choice_children(
     n = ChoiceNode()
     n.cell = in_a.cell
     n.children = out
-    n.points = 0
     n.bound = max(child.bound for child in n.children)
     arena.add_node(n)
     return n
