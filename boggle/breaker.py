@@ -14,6 +14,8 @@ wastes memory and is slower than the DFS (orderly_bound).
 """
 
 import dataclasses
+import json
+import sys
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -271,3 +273,37 @@ class HybridTreeBreaker:
             print(
                 f"{time_fmt} {self.details_.n_bound} {choices} -> {tree.bound=} {bound_elapsed_s:.03}s / test {len(boards_to_test)} in {elapsed_s:.03}s"
             )
+
+
+# Invoked as a script, this merges multiple output NDJSON files into a single summary.
+if __name__ == "__main__":
+    out = None
+    for file in sys.argv[1:]:
+        for line_num, line in enumerate(open(file)):
+            details = json.loads(line)
+            if not out:
+                out = details
+                continue
+            for k, v in details.items():
+                if k not in out:
+                    out[k] = v
+                elif k == "id":
+                    out[k] = max(v, out[k])
+                elif isinstance(v, (float, int)):
+                    out[k] += v
+                elif k == "failures":
+                    out[k] += v
+                elif k == "best_board":
+                    if v and v[0] > out[k][0]:
+                        out[k] = v
+                elif isinstance(v, list):
+                    if len(out[k]) < len(v):
+                        out[k] += [0] * (len(v) - len(out[k]))
+                    for i, val in enumerate(v):
+                        out[k][i] += val
+                elif isinstance(v, dict):
+                    for sk, val in v.items():
+                        out[k][sk] = out[k].get(sk, 0) + val
+                else:
+                    raise ValueError(f"{file}:{line_num} {k}: {v}")
+    print(json.dumps(out))
