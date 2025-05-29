@@ -9,3 +9,4 @@ The [hillclimber] has a few parameters (pool size, excluded letters). The releva
 The `most-words` directory contains the results of a search for boards with the most words, rather than the most points. This requires a patch to the `SCORES` array. See [`most-words` branch][mw].
 
 [mw]: https://github.com/danvk/hybrid-boggle/tree/most-words
+[hillclimber]: https://github.com/danvk/hybrid-boggle/blob/main/boggle/hillclimb.py
