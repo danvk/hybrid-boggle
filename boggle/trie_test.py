@@ -56,6 +56,8 @@ def test_bogglify_word():
 def test_load_file():
     t = Trie.create_from_file("testdata/boggle-words-4.txt")
     assert not t.is_word()
+    print(f"{t.size()=}")
+    print(f"{t.num_nodes()=}")
 
     assert t.find_word("wood") is not None
     assert t.find_word("woxd") is None
