@@ -26,7 +26,7 @@ from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 
 
 def get_valid_letters(args):
-    exclude = {ord(c) for c in args.exclude_letters}
+    exclude = {ord(c) for c in (args.exclude_letters or "")}
     valid_letters = [c for c in A_TO_Z if c not in exclude]
     if len(valid_letters) < 26:
         print(f"Will use {len(valid_letters)} letters.")
