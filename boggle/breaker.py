@@ -294,7 +294,7 @@ if __name__ == "__main__":
                 elif k == "failures":
                     out[k] += v
                 elif k == "best_board":
-                    if v and v[0] > out[k][0]:
+                    if out[k] is None or (v and v[0] > out[k][0]):
                         out[k] = v
                 elif isinstance(v, list):
                     if len(out[k]) < len(v):
