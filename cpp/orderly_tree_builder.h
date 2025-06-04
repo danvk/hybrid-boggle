@@ -219,12 +219,12 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     );
     assert(new_root == root_);
 
-    if (dupe_mask_ > 0) {
-      EncodeWordInSumNode(word_node, t, word_score, word_lists_);
-    } else {
-      // If there's no chance of a duplicate, just count points.
-      word_node->points_ += word_score;
-    }
+    // if (dupe_mask_ > 0) {
+    //   EncodeWordInSumNode(word_node, t, word_score, word_lists_);
+    // } else {
+    // If there's no chance of a duplicate, just count points.
+    word_node->points_ += word_score;
+    // }
   }
 }
 
