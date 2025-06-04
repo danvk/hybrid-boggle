@@ -8,9 +8,7 @@ import argparse
 import heapq
 import itertools
 import math
-import sys
 
-from cpp_boggle import Boggler44, Trie
 from tqdm import tqdm
 
 from boggle.args import add_standard_args, get_trie_from_args
