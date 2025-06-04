@@ -35,6 +35,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.lookup = make_lookup_table(trie)
         self.letter_counts = [0] * 26
         self.dupe_mask = 0
+        self.raw_multiboggle = False
 
     def build_tree(self, arena: PyArena = None):
         root = SumNode()
@@ -109,7 +110,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 SPLIT_ORDER[self.dims],
                 arena,
             )
-            if self.dupe_mask > 0:
+            if self.raw_multiboggle:
+                word_node.points += word_score
+            elif self.dupe_mask > 0:
                 # The C++ version uses a binary encoding, but we just stuff everything in a set.
                 if word_node.bound:
                     word_node.bound.add(t.word_id)
@@ -141,7 +144,14 @@ def main():
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
     parser.add_argument("board", type=str, help="Board class to bound.")
+    parser.add_argument(
+        "--raw_multiboggle",
+        action="store_true",
+        help="Do not dedupe words on SumNodes. (Requires --python)",
+    )
     args = parser.parse_args()
+    if args.raw_multiboggle:
+        assert args.python, "--raw_multiboggle require --python"
     board = args.board
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
@@ -153,6 +163,8 @@ def main():
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     otb = builder(trie, dims)
+    if args.raw_multiboggle:
+        otb.raw_multiboggle = True
     o_arena = otb.create_arena()
     assert otb.parse_board(board)
     arenas = []
