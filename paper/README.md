@@ -617,7 +617,8 @@ Using a canonical order for the cells naturally synchronizes choices across subt
 | 3x4 (a) | 51,317 | 4,397 |
 | 3x4 (b) | 194,425 | 10,018 |
 | 4x4 | 514,182 | 53,037 |
-| 5x5 | 1,910,956 | … |
+| 5x5 | 1,910,956 | 433,505 |
+
 - 2x2 is `ab cd ef gh` from the [insights post](https://www.danvk.org/2025/02/21/orderly-boggle.html)
 - 3x3 is the 5M board class from earlier in the paper (containing the best board)
 - 3x4 (a) is board_id=27916 with three letter classes from [this sheet](https://docs.google.com/spreadsheets/d/1uG-KFJFdOS7MQcibcdloTtQEQAdwror6VA0BO0AhkYQ/edit?gid=1619399799#gid=1619399799)
