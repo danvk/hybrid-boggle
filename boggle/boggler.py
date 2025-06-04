@@ -82,7 +82,8 @@ class PyBoggler:
 
         self._used[i] = False
 
-    def find_words(self, lets: str, multiboggle: bool) -> list[list[int]]:
+    def find_words(self, lets: str, multiboggle) -> list[list[int]]:
+        """multiboggle is either False, "raw" or "dedupe"."""
         self._seq = []
         self._found_words = set()
         self.set_board(lets)
@@ -101,16 +102,14 @@ class PyBoggler:
                 self.find_words_dfs(i, d, multiboggle, out)
         return out
 
-    def find_words_dfs(
-        self, i: int, t: PyTrie, multiboggle: bool, out: list[list[int]]
-    ):
+    def find_words_dfs(self, i: int, t: PyTrie, multiboggle, out: list[list[int]]):
         self._used[i] = True
         self._seq.append(i)
 
         if t.is_word():
             if multiboggle:
                 key = (id(t), tuple(sorted(self._seq)))
-                should_count = key not in self._found_words
+                should_count = multiboggle == "raw" or (key not in self._found_words)
                 if should_count:
                     self._found_words.add(key)
             else:
