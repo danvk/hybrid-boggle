@@ -39,12 +39,17 @@ def main_class():
 
     _t, boggler = get_trie_and_boggler_from_args(args)
 
+    best = None
     for letters in tqdm(itertools.product(*cells), total=total):
         board = "".join(letters)
         score = boggler.score(board)
+        if not best or score > best[0]:
+            best = (score, board)
         if score < cutoff:
             continue
         print(f"{score}\t{board}")
+
+    print(f"Best: {best}")
 
 
 if __name__ == "__main__":

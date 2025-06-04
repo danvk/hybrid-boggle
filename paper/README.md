@@ -45,7 +45,7 @@ def score(board, trie):
  def score_dfs(board, idx, parent_node, used):
    score = 0
    used[idx] = True
-   if trie_node.has_child(board[idx]):
+   if parent_node.has_child(board[idx]):
      trie_node = parent_node.child(board[idx])
      if trie_node.is_word() and not trie_node.is_visited():
        score += SCORE[trie_node.length()]
@@ -84,7 +84,7 @@ The most straightforward way to prove that a board is the highest-scoring is by 
 | 3x4 | 26^12/4 ≈ 2.4e16 | 400k bd/s | ~2000 years |
 | 4x4 | 26^16/8 ≈ 5.5e21 | 200k bd/s | ~900M years |
 
-An objection is that not all 26^16 combinations of letters can be rolled with the standard 16 Boggle dice. Determining whether a particular letter combination can be rolled is a Set-Cover problem, which is NP-Complete. A greedy approach works well for this small problem, however, and we can estimate that approximately 1 in 12 combinations of letters can be rolled. While this reduces the search space, it’s not enough to make exhaustive search feasible.
+An objection is that not all 26^16 combinations of letters can be rolled with the standard 16 Boggle dice. Determining whether a particular letter combination can be rolled is a Set-Cover problem, which is NP-Complete. A greedy approach works well for this small problem, however, and we can estimate that approximately 1 in 12 combinations of letters can be rolled. While this reduces the search space, it’s not enough to make exhaustive search feasible, and this will not wind up being a useful constraint.
 
 Two observations suggest a path towards a solution:
 
@@ -135,7 +135,26 @@ For example, here’s a 3x3 board class where each cell can be one of two letter
 
 This board class contains 2^9 = 512 possible boards. Here are a few of them:
 
-TODO: examples of boards in board class
+| A | G | M |
+| --- | --- | --- |
+| D | I | P |
+| E | L | R |
+
+*agmdipelr: 85 points*
+
+| b | h | m |
+| --- | --- | --- |
+| c | i | p |
+| e | l | r |
+
+*bhmcipelr: 62 points*
+
+| b | h | m |
+| --- | --- | --- |
+| d | j | p |
+| f | k | qu |
+
+*bhmdjpfkq: 0 points*
 
 Analogous to the `B_i` notation for boards, we can indicate the possible letters on a cell in a board class as `C_i`. On this board class, for example, `C_0 = {A, B}`.
 
@@ -143,7 +162,7 @@ We can carve the 26 letters of the alphabet up into distinct “buckets” to re
 
 The following bucketings were found via a heuristic search:
 
-| **Number of Buckets** | **Buckets** |
+| **N** | **Buckets** |
 | --- | --- |
 | 2 | {aeiosuy, bcdfghjklmnpqrtvwxz} |
 | 3 | {aeijou, bcdfgmpqvwxz, hklnrsty} |
@@ -151,9 +170,31 @@ The following bucketings were found via a heuristic search:
 
 Using three buckets with 4x4 Boggle, for example, we have only 3^16 / 8 ≈ 5.4e6 board classes to consider, a dramatic reduction from the 5.5e21 individual boards. Of course, this will be in vain if operations on board classes are proportionally slower. Fortunately, this will not prove to be the case.
 
-To “branch” from a board class, we split one of its cells into the individual possibilities:
+To “branch” from a board class, we split one of its cells into the individual possibilities. For example, starting with this board class containing 5,062,500 boards:
 
-TODO: image of splitting a board class into smaller board classes
+| lnrsy | chkmpt | lnrsy |
+| --- | --- | --- |
+| aeiou | aeiou | aeiou |
+| chkmpt | lnrsy | bdfgjqvwxz |
+
+we might split the middle cell to get five board classes containing 1,012,500 boards each:
+
+| lnrsy | chkmpt | lnrsy |
+| --- | --- | --- |
+| aeiou | a | aeiou |
+| chkmpt | lnrsy | bdfgjqvwxz |
+
+| lnrsy | chkmpt | lnrsy |
+| --- | --- | --- |
+| aeiou | e | aeiou |
+| chkmpt | lnrsy | bdfgjqvwxz |
+
+…
+
+| lnrsy | chkmpt | lnrsy |
+| --- | --- | --- |
+| aeiou | u | aeiou |
+| chkmpt | lnrsy | bdfgjqvwxz |
 
 Since the center and edge cells have the greatest connectivity, we split these first before splitting the corners.
 
@@ -163,7 +204,7 @@ Board classes still have all the same symmetries as a Boggle board. This allows 
 
 Next we need to construct an upper bound. One possible bound is the score of every word that can appear on any board in the board class.
 
-- Bound_Sum(C) = \sum_{unique words on any board B \in C} Score(length(word))
+- sum_bound(C) = \sum_{unique words on any board B \in C} SCORE[word]
 
 This can be calculated in a similar manner to an ordinary Boggle solver, except that we need two loops now: one for neighbors, and a new one for each possible letter on each cell:
 
@@ -192,17 +233,23 @@ def sum_bound(board_class, trie):
    return score
 ```
 
-Clearly we have `Bound_Sum(C) >= Score(B) \forall B \in C` because every word on every possible board contributes to the bound.
+Clearly we have `sum_bound(C) >= Score(B) \forall B \in C` because every word on every possible board contributes to the bound.
 
-A nice property of this bound is that, if `|C| = 1`, then `Bound_Sum(C) = max(Score(B) \forall B in C)`, that is to say, it converges on the true Boggle score.
+A useful property of this bound is that, if `|C| = 1`, then `sum_bound(C) = max(Score(B) \forall B in C)`, that is to say, it converges on the true Boggle score.
 
-Unfortunately, this bound is imprecise because it doesn’t take into account that some letter choices are mutually exclusive. For example:
+Unfortunately, this bound is imprecise because it doesn’t take into account that some letter choices are mutually exclusive. For example, consider this 2x2 board class containing two individual boards:
 
-TODO: example of why sum bound is loose
+| F | {A, U} |
+| --- | --- |
+| . | R |
+
+There are two words here, “far” and “fur.” These each count for 1 point, so the sum bound of the board class is 2. No individual board can contain both of these words, however, since the A and the U are mutually exclusive.
+
+This proves problematic for large board classes. For example, the sum_bound of the 5,062,500 board class above is 109,524 points, but the best board in that class only scores 545 points. To get a better bound, we need to take into account that choices on cells are exclusive.
 
 ### The max bound
 
-To get a concrete board, we must make a specific choice of letter for each cell. We can model this by taking the the max across the letter possibilities on a cell instead of the union. In doing so, we dispense with any attempt to enforce the constraint that a word can only be found once.
+We can model this by taking the the max across the letter possibilities on a cell instead of the sum. In doing so, we dispense with any attempt to enforce the constraint that a word can only be found once.
 
 ```
 # Listing N: Calcluating max bound on a Boggle board class
@@ -237,9 +284,29 @@ We can see that this is a valid bound because, for any particular board `B` in a
 
 So `max_bound(C) >= score(B) \forall B \in C`. In practice, this bound is considerably tighter than the sum bound (see Table N). However, because it double-counts words, the max bound for a board class containing a single board may be greater than the score of that board. (This can only happen if the board contains a repeated letter.)
 
-TODO: Table N containing bounds for sum and max
+For example, here are the sum and max bounds for the 5,062,500 board 3x3 class and each of its five splits:
 
-TODO: Example of why max_bound is imprecise
+| **Center Cell** | **Sum Bound** | **Max Bound** | **True Max** |
+| --- | --- | --- | --- |
+| aeiou | 109,524 | 9,460 | 545 |
+| a | 56,576 | 6,120 | 545 |
+| e | 72,026 | 7,023 | 520 |
+| i | 60,244 | 6,231 | 503 |
+| o | 49,533 | 5,525 | 392 |
+| u | 38,214 | 4,464 | 326 |
+
+The max bound is an order of magnitude tighter than the sum bound in all cases. It’s still imprecise, however, because it might choose different letters for a cell along different search paths in the DFS. Consider this 2x2 board class:
+
+| T | I |
+| --- | --- |
+| {A, E} | R |
+
+Starting with the “T:”
+
+- If we go down, we can form “TAR” by picking the “A” but we cannot form any words if we pick the “E.” So the “T” → {A, E} path in the `max_bound` DFS nets 1 point.
+- If we go right to “I”, we can only score points by picking the “E” for this cell to form “TIE” and “TIER.” So the “T” → “I” → {A, E} path nets 2 points.
+
+The points from these two paths are added. But no single board can have both an “A” and an “E” on the bottom left cell, so neither board in this class contains both “TAR” and “TIE.” This is why the max bound is imprecise. It enforces that we make a choice on each cell, but not that this choice be consistent across all paths through that cell.
 
 The minimum of two upper bounds is also an upper bound, so we can also use:
 
@@ -266,7 +333,7 @@ Previously `max_bound` was calculated using recursive function calls. Our next s
 First, we refactor `max_bound` to use two functions. These will become two types of nodes in our tree:
 
 ```
-# Listing N: Calcluating max bound with two mutally recursive functions
+# Listing N: Calculating max bound with two mutally recursive functions
 def max_bound(board_class, trie):
   bound = 0
   for i = 0..m*n-1:
@@ -417,15 +484,13 @@ So if we can show that `Force(T, B) = Multi(B)` for all boards in a board class,
 
 For most boards, `Multi(B)` is close to `Board(B)`. Since we have considerable “wiggle room” between the average score of a board (~40 points) and the score of the best board (3625), working with the Multiboggle score is an acceptable concession. What we’ll seek is boards `B` with `Multi(B) >= S_high`. For each of these, we can confirm whether `Score(B) >= S_high` as well using a regular Boggle solver.
 
-While `Multi(B)` is usually close to `Score(B)`, there are some pathological cases where this breaks down. For example, the board in Figure N has `Score(B) = 189`, but `Multi(B) = 21953`! (The word “reservers” can be found in NNN distinct ways.) We will partially address this issue later in the paper.
+While `Multi(B)` is usually close to `Score(B)`, there are some pathological cases where this breaks down. For example, the board in Figure N has `Score(B) = 189`, but `Multi(B) = 21953`! (The word “reservers” can be found in 100 distinct ways.) We will partially address this issue later in the paper.
 
 | E | E | E | S |
 | --- | --- | --- | --- |
 | R | V | R | R |
 | E | E | E | S |
 | R | S | R | S |
-
-TODO: how many ways can “reservers” be found? B=[eeesrvrreeesrsrs](https://www.danvk.org/boggle/?board=eeesrvrreeesrsrs&multiboggle=1), S(B) = 189 but Multi(B) = 21953.
 
 ### Sum/Choice Satisfiability is NP-Hard
 
@@ -477,7 +542,7 @@ def add_word(node: SumNode, path: Path, points: int):
 
   letter_child = choice_child.children[letter]
   if not letter_child:
-    choice_children[letter] = letter_child = SumNode()
+    choice_child.children[letter] = letter_child = SumNode()
 
   return add_word(letter_child, path[1:], points)
 ```
@@ -531,7 +596,7 @@ def choice_step(board_class, idx, trie_node, choices, root):
 
 def sum_step(board_class, idx, trie_node, choices, root):
   if trie_node.is_word():
-    ordered_choices = sorted(choices, key=lambda a, b: ORDER[a[0]] > ORDER[b[0]])
+    ordered_choices = sorted(choices, key=lambda c: -ORDER[c[0]])
     score = SCORE[trie_node.length()]
     root.add_word(ordered_choices, score)
   for n_idx in NEIGHBORS[idx]:
@@ -548,14 +613,17 @@ Using a canonical order for the cells naturally synchronizes choices across subt
 | **Board** | **max_bound** | **Orderly bound** |
 | --- | --- | --- |
 | 2x2 | 14 | 8 |
-| 3x3 | 9,359 | 1,449 |
-| 3x4 | 36,134 | 3,858 |
-| 3x4 | 51,317 | 4,397 |
-| 3x4 | 194,482 | 9,884 |
-| 4x4 | … | … |
-| 5x5 | … | … |
-
-TODO: figure out which boards these were, fill in table
+| 3x3 | 9,460 | 1,523 |
+| 3x4 (a) | 51,317 | 4,397 |
+| 3x4 (b) | 194,425 | 10,018 |
+| 4x4 | 514,182 | 53,037 |
+| 5x5 | 1,910,956 | … |
+- 2x2 is `ab cd ef gh` from the [insights post](https://www.danvk.org/2025/02/21/orderly-boggle.html)
+- 3x3 is the 5M board class from earlier in the paper (containing the best board)
+- 3x4 (a) is board_id=27916 with three letter classes from [this sheet](https://docs.google.com/spreadsheets/d/1uG-KFJFdOS7MQcibcdloTtQEQAdwror6VA0BO0AhkYQ/edit?gid=1619399799#gid=1619399799)
+- 3x4 (b) is board_id=234556 with 3 buckets, which contains best board perslatesind.
+- 4x4 is the best board’s class w/ three buckets
+- 5x5 is the (possible) best board’s class w/ three buckets
 
 By construction, no choice node `n` in an Orderly Tree will have `ORDER[n.cell]` greater than any of its parents. So if a path begins 14→6 in the tree, then it may only continue to cells 1 or 4, since those are higher numbers. (14→6→9 is a valid path, but it would be added to the tree as 14→9→6.) Intuitively, if cell `A` has a child on cell `B`, then this represents all the paths through the board that skip cells between `A` and `B` in the canonical order.
 
@@ -605,15 +673,15 @@ def branch(o: Orderly(N)) -> list(Orderly(N-1)):
   top_choice = o.children[0]
   if top_choice.cell != N:
     # edge case: the choice on the top cell is irrelevant, so o is Orderly(N-1).
-    return [o for letter in letters(N)]
+    return [o for letter in letters_for_cell(N)]
 
   other_choices = o.children[1:]
   skip_tree = SumNode(children=other_choices, points=o.points)  # Orderly(N-1)
   return [
-    merge(top_choice.children(letter), skip_tree)  # both are Orderly(N-1)
+    merge(top_choice.children[letter], skip_tree)  # both are Orderly(N-1)
     if top_choice.has_choice(choice)
     else skip_tree  # no words use this letter on the top choice cell
-    for letter in letters(N)
+    for letter in letters_for_cell(N)
   ]
 ```
 
@@ -864,7 +932,11 @@ Hillclimbing is also effective at solving this problem. For 3x4 Boggle, the “w
 
 These boards have significant overlap with the highest-scoring boards. The #1 wordiest board for ENABLE2K is gesorntreaieslps with 1,158 words and 3,569 points. This is also the #8 highest-scoring board.
 
-TODO: show this board as 4x4
+| G | E | S | O |
+| --- | --- | --- | --- |
+| R | N | T | R |
+| E | A | I | E |
+| S | L | P | S |
 
 ### Variation: Powers of Two Boggle
 
@@ -872,13 +944,18 @@ It’s surprising that you get more points for longer words, but only up to eigh
 
 Hillclimbing is *not* effective at finding the highest-scoring board in this version of Boggle. The best board found in 50 hillclimbing runs was `cineqetnsniasesl` (28,542 points). However, we can exhaustively search all boards containing a 17-letter word to find `rpqaselinifcoita` (44,726 points). Over a third of this board’s points come from the word “prequalifications.”
 
-TODO: show this board as 4x4
+| R | P | Q | A |
+| --- | --- | --- | --- |
+| S | E | L | I |
+| N | I | F | C |
+| O | I | T | A |
 
 This failure gives us some insights into why hillclimbing is effective at finding the highest-scoring and wordiest boards. Those scores both produce a smooth fitness landscape, where single character variations on a board produce relatively small changes in its score. This means that the optimal boards are surrounded by other high-scoring boards, and hill climbing is likely to reach the summit if it gets anywhere near it. There’s nowhere for a great board to “hide,” surrounded by mediocre boards.
 
 Contrast this with powers of two Boggle, where a one character change is likely to remove the longest word on a great board.
 
-TODO: what is the highest-scoring neighbor of `rpqaselinifcoita` with powers of two?
+- highest-scoring neighbor of powers of two: rvqaselinifcoita (20084)
+- highest-scoring neighbor of regular winner: perslatgsineders (3488)
 
 ## Future Work
 
@@ -898,7 +975,14 @@ Here are a few alternative approaches that would be interesting to explore:
 - **SMT/ILP solvers** The NP-Hard proof showed that Boggle maximization maps onto well-known problems. These problems are often tackled using ILP Solvers like Z3, OR-Tools or Gurobi. A preliminary investigation didn’t show much promise here, but this is a large field and there may be some better way to frame the problem.
 - **GPU acceleration** The process described in this paper relies entirely on the CPU. But the biggest advances in recent years have come from GPUs. It’s not immediately clear how Boggle maximization as described here could be GPU accelerated since the algorithm is tree-heavy and full of data dependencies. Still, there might be another way to frame the problem that results in better acceleration.
 
-TODO: show best-known 5x5 board
+| L | I | G | D | R |
+| --- | --- | --- | --- | --- |
+| M | A | N | E | S |
+| I | E | T | I | L |
+| D | S | R | A | C |
+| S | E | P | E | S |
+
+*Best known 5x5 board for ENABLE2K (10,406 points)*
 
 ## Conclusions
 
