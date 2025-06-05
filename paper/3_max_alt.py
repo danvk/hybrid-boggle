@@ -23,7 +23,6 @@ def choice_step(board_class, idx, parent_node, used):
     max_score = 0
     used[idx] = True
     letters = board_class[idx]
-    # TODO: rewrite as comprehension?
     for letter in letters:
         if parent_node.has_child(letter):
             max_score = max(
@@ -38,7 +37,6 @@ def sum_step(board_class, idx, trie_node, used):
     score = 0
     if trie_node.is_word():
         score += SCORES[trie_node.length()]
-    # TODO: rewrite as comprehension?
     for n_idx in NEIGHBORS[idx]:
         if not used.get(n_idx):
             score += choice_step(board_class, n_idx, trie_node, used)
