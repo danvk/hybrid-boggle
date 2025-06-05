@@ -109,24 +109,23 @@ def to_dot_help(
     depth: int,
 ) -> tuple[str, str]:
     me = prefix
-    label = ""
     attrs = ""
+    b = bound(node)
+    label = f"{b}"
     if isinstance(node, ChoiceNode):
         me += f"_{node.cell}"
         attrs += ' style="rounded, filled"'
-        label = f"{node.cell}" if depth > 1 else f"cell={node.cell}"
     else:
         attrs += ' penwidth="1"'
-        if node.points:
-            label = f"+{node.points}\\n{node.trie_node.word().upper()}"
-        else:
-            label = "+"
+        if depth == 0:
+            label = f"bound={b}"
 
     dot = [f'{me} [label="{label}"{attrs}];']
-    b = bound(node)
-    dot.append(
-        f'subgraph cluster_{me} {{ {me}; penwidth="0" label="bound={b}"; labelloc="b"; }}'
-    )
+    # b = bound(node)
+    # bound_label = f"bound={b}" if depth == 0 else f"{b}"
+    # dot.append(
+    #     f'subgraph cluster_{me} {{ {me}; penwidth="0" margin=0 label="{bound_label}"; labelloc="b"; }}'
+    # )
 
     if isinstance(node, ChoiceNode):
         for letter, child in sorted(node.children.items()):
