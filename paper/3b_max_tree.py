@@ -91,7 +91,7 @@ def bound(n: SumNode | ChoiceNode) -> int:
 
 
 def to_dot(node: SumNode, cells: list[str]):
-    _root_id, dot = to_dot_help(node, cells, "r")
+    _root_id, dot = to_dot_help(node, cells, "r", 0)
     return f"""graph {{
 rankdir=LR;
 nodesep=0.1;
@@ -106,6 +106,7 @@ def to_dot_help(
     node: SumNode | ChoiceNode,
     cells: list[str],
     prefix: str,
+    depth: int,
 ) -> tuple[str, str]:
     me = prefix
     label = ""
@@ -113,7 +114,7 @@ def to_dot_help(
     if isinstance(node, ChoiceNode):
         me += f"_{node.cell}"
         attrs += ' style="rounded, filled"'
-        label = f"{node.cell}"
+        label = f"{node.cell}" if depth > 1 else f"cell={node.cell}"
     else:
         attrs += ' penwidth="1"'
         if node.points:
@@ -122,15 +123,19 @@ def to_dot_help(
             label = "+"
 
     dot = [f'{me} [label="{label}"{attrs}];']
+    b = bound(node)
+    dot.append(
+        f'subgraph cluster_{me} {{ {me}; penwidth="0" label="bound={b}"; labelloc="b"; }}'
+    )
 
     if isinstance(node, ChoiceNode):
         for letter, child in sorted(node.children.items()):
-            child_id, child_dot = to_dot_help(child, cells, f"{me}{letter}")
+            child_id, child_dot = to_dot_help(child, cells, f"{me}{letter}", depth + 1)
             dot.append(child_dot)
             dot.append(f'{me} -- {child_id} [label="{letter.upper()}"]')
     else:
         for i, child in enumerate(node.children):
-            child_id, child_dot = to_dot_help(child, cells, f"{me}{i}")
+            child_id, child_dot = to_dot_help(child, cells, f"{me}{i}", depth + 1)
             dot.append(child_dot)
             dot.append(f"{me} -- {child_id}")
 
