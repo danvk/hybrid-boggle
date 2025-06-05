@@ -16,7 +16,7 @@ class Trie:
 
     def __init__(self):
         self._is_word = False
-        self._mark = 0
+        self._mark = False
         self._children = [None] * 26
 
     def has_child(self, letter: str):
@@ -97,3 +97,13 @@ def make_trie(dict_input: str):
         if word is not None:
             t.add_word(word)._length = len(word) + word.count("q")
     return t
+
+
+def make_lookup_table(t: Trie, prefix="", out=None) -> dict[Trie, str]:
+    """Construct a Trie -> str table for debugging."""
+    out = out or {}
+    out[t] = prefix
+    for i, child in enumerate(t._children):
+        if child:
+            make_lookup_table(child, prefix + chr(i + LETTER_A), out)
+    return out
