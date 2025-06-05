@@ -37,10 +37,12 @@ class ChoiceNode:
 class SumNode:
     points: int = 0
     children: list[ChoiceNode]
+    trie_node: Trie
 
     def __init__(self, points: int):
         self.points = points
         self.children = []
+        self.trie_node = None
 
 
 # Listing 3b: Calculating max bound with a tree
@@ -57,9 +59,9 @@ def choice_step(board_class, idx, parent_node, used) -> ChoiceNode:
     letters = board_class[idx]
     for letter in letters:
         if parent_node.has_child(letter):
-            node.children[letter] = sum_step(
-                board_class, idx, parent_node.child(letter), used
-            )
+            n = sum_step(board_class, idx, parent_node.child(letter), used)
+            if bound(n):
+                node.children[letter] = n
     used[idx] = False
     return node
 
@@ -68,9 +70,12 @@ def sum_step(board_class, idx, trie_node, used) -> SumNode:
     node = SumNode(points=0)
     if trie_node.is_word():
         node.points = SCORES[trie_node.length()]
+        node.trie_node = trie_node
     for n_idx in NEIGHBORS[idx]:
         if not used.get(n_idx):
-            node.children.append(choice_step(board_class, n_idx, trie_node, used))
+            n = choice_step(board_class, n_idx, trie_node, used)
+            if bound(n):
+                node.children.append(n)
     return node
 
 
@@ -85,6 +90,53 @@ def bound(n: SumNode | ChoiceNode) -> int:
 # /Listing
 
 
+def to_dot(node: SumNode, cells: list[str]):
+    _root_id, dot = to_dot_help(node, cells, "r")
+    return f"""graph {{
+rankdir=LR;
+nodesep=0.1;
+node [shape="rect" penwidth="0" fontname="Comic Sans MS"];
+edge [fontname="Comic Sans MS"];
+{dot}
+}}
+"""
+
+
+def to_dot_help(
+    node: SumNode | ChoiceNode,
+    cells: list[str],
+    prefix: str,
+) -> tuple[str, str]:
+    me = prefix
+    label = ""
+    attrs = ""
+    if isinstance(node, ChoiceNode):
+        me += f"_{node.cell}"
+        attrs += ' style="rounded, filled"'
+        label = f"{node.cell}"
+    else:
+        attrs += ' penwidth="1"'
+        if node.points:
+            label = f"+{node.points}\\n{node.trie_node.word().upper()}"
+        else:
+            label = "+"
+
+    dot = [f'{me} [label="{label}"{attrs}];']
+
+    if isinstance(node, ChoiceNode):
+        for letter, child in sorted(node.children.items()):
+            child_id, child_dot = to_dot_help(child, cells, f"{me}{letter}")
+            dot.append(child_dot)
+            dot.append(f'{me} -- {child_id} [label="{letter.upper()}"]')
+    else:
+        for i, child in enumerate(node.children):
+            child_id, child_dot = to_dot_help(child, cells, f"{me}{i}")
+            dot.append(child_dot)
+            dot.append(f"{me} -- {child_id}")
+
+    return me, "\n".join(dot)
+
+
 def main():
     t = make_trie("wordlists/enable2k.txt")
     # assert sum_bound("abcdefghijklmnop", t) == 18
@@ -94,8 +146,9 @@ def main():
     m, n = LEN_TO_DIMS[len(board_class)]
     NEIGHBORS = ALL_NEIGHBORS[(m, n)]
     tree = build_tree(board_class, t)
-    points = bound(tree)
-    print(f"{board_class}: {points}")
+    # points = bound(tree)
+    # print(f"{board_class}: {points}")
+    print(to_dot(tree, board_class))
     # poetry run python -m paper.3b_max_tree lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz
     # ['lnrsy', 'chkmpt', 'lnrsy', 'aeiou', 'aeiou', 'aeiou', 'chkmpt', 'lnrsy', 'bdfgjqvwxz']: 9460
 

@@ -4,7 +4,7 @@ LETTER_A = ord("a")
 
 
 def to_idx(letter: str):
-    assert "a" <= letter <= "z"
+    # assert "a" <= letter <= "z"
     return ord(letter) - LETTER_A
 
 
@@ -13,6 +13,7 @@ class Trie:
     _mark: int
     _is_word: bool
     _length: int
+    _word: str
 
     def __init__(self):
         self._is_word = False
@@ -20,7 +21,7 @@ class Trie:
         self._children = [None] * 26
 
     def has_child(self, letter: str):
-        return self._children[to_idx(letter)] is not None
+        return "a" <= letter <= "z" and self._children[to_idx(letter)] is not None
 
     def child(self, letter: str):
         return self._children[to_idx(letter)]
@@ -36,6 +37,9 @@ class Trie:
 
     def length(self):
         return self._length
+
+    def word(self) -> str:
+        return self._word
 
     # ---
 
@@ -95,15 +99,7 @@ def make_trie(dict_input: str):
         word = word.strip()
         word = bogglify_word(word)
         if word is not None:
-            t.add_word(word)._length = len(word) + word.count("q")
+            n = t.add_word(word)
+            n._length = len(word) + word.count("q")
+            n._word = word
     return t
-
-
-def make_lookup_table(t: Trie, prefix="", out=None) -> dict[Trie, str]:
-    """Construct a Trie -> str table for debugging."""
-    out = out or {}
-    out[t] = prefix
-    for i, child in enumerate(t._children):
-        if child:
-            make_lookup_table(child, prefix + chr(i + LETTER_A), out)
-    return out
