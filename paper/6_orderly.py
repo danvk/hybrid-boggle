@@ -4,7 +4,7 @@ from boggle.boggler import SCORES
 from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.neighbors import NEIGHBORS as ALL_NEIGHBORS
 from boggle.split_order import SPLIT_ORDER
-from paper.sum_choice_tree import ChoiceNode, SumNode, bound, to_dot
+from paper.sum_choice_tree import ChoiceNode, SumNode, bound, num_nodes, to_dot
 from paper.trie import make_trie
 
 m = 4
@@ -84,11 +84,14 @@ def main():
     global m, n, NEIGHBORS, ORDER
     m, n = LEN_TO_DIMS[len(board_class)]
     NEIGHBORS = ALL_NEIGHBORS[(m, n)]
-    ORDER = [-x for x in SPLIT_ORDER[(m, n)]]
+    ORDER = [0] * (m * n)
+    for i, x in enumerate(SPLIT_ORDER[(m, n)]):
+        ORDER[x] = m * n - i
     tree = build_orderly_tree(board_class, t)
     points = bound(tree)
-    sys.stderr.write(f"{board_class}: {points}\n")
-    print(to_dot(tree, board_class))
+    n_nodes = num_nodes(tree)
+    sys.stderr.write(f"{board_class}: {points}, {n_nodes=}\n")
+    # print(to_dot(tree, board_class))
     # poetry run python -m paper.3b_max_tree lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz
     # ['lnrsy', 'chkmpt', 'lnrsy', 'aeiou', 'aeiou', 'aeiou', 'chkmpt', 'lnrsy', 'bdfgjqvwxz']: 9460
 

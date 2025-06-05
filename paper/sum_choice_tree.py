@@ -29,6 +29,11 @@ def bound(n: SumNode | ChoiceNode) -> int:
     raise ValueError(n)
 
 
+def num_nodes(n: SumNode | ChoiceNode) -> int:
+    children = n.children if isinstance(n, SumNode) else n.children.values()
+    return 1 + sum(num_nodes(c) for c in children)
+
+
 def to_dot(node: SumNode, cells: list[str]):
     _root_id, dot = to_dot_help(node, cells, "r", 0)
     return f"""graph {{
