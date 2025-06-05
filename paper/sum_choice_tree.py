@@ -54,17 +54,27 @@ def to_dot_help(
     if isinstance(node, ChoiceNode):
         me += f"_{node.cell}"
         attrs += ' style="rounded, filled"'
+        label = f"{node.cell}" if depth > 1 else f"cell={node.cell}"
     else:
         attrs += ' penwidth="1"'
-        if depth == 0:
-            label = f"bound={b}"
+        # if depth == 0:
+        #     label = f"bound={b}"
+        if node.points:
+            word = (
+                f"\\n{node.trie_node.word().upper()}"
+                if getattr(node, "trie_node")
+                else ""
+            )
+            label = f"+{node.points}{word}"
+        else:
+            label = "+"
 
     dot = [f'{me} [label="{label}"{attrs}];']
-    # b = bound(node)
-    # bound_label = f"bound={b}" if depth == 0 else f"{b}"
-    # dot.append(
-    #     f'subgraph cluster_{me} {{ {me}; penwidth="0" margin=0 label="{bound_label}"; labelloc="b"; }}'
-    # )
+    b = bound(node)
+    bound_label = f"bound={b}" if depth == 0 else f"{b}"
+    dot.append(
+        f'subgraph cluster_{me} {{ {me}; penwidth="0" margin=0 label="{bound_label}"; labelloc="b"; }}'
+    )
 
     if isinstance(node, ChoiceNode):
         for letter, child in sorted(node.children.items()):
