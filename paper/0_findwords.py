@@ -2,7 +2,7 @@ import sys
 
 from boggle.boggler import SCORES
 from boggle.neighbors import NEIGHBORS as ALL_NEIGHBORS
-from paper.trie import Trie, make_lookup_table, make_trie
+from paper.trie import Trie, make_trie
 
 m = 4
 n = 4
@@ -40,8 +40,6 @@ def main():
     t = make_trie("wordlists/enable2k.txt")
     assert score("abcdefghijklmnop", t) == 18
     t.reset_marks()
-    # global lookup
-    # lookup = make_lookup_table(t)
     (board,) = sys.argv[1:]
     points = score(board, t)
     print(f"{board}: {points}")
