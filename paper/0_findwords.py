@@ -37,9 +37,11 @@ def score_dfs(board: str, idx: int, parent_node: Trie, used) -> int:
 
 
 def main():
-    global lookup
     t = make_trie("wordlists/enable2k.txt")
-    lookup = make_lookup_table(t)
+    assert score("abcdefghijklmnop", t) == 18
+    t.reset_marks()
+    # global lookup
+    # lookup = make_lookup_table(t)
     (board,) = sys.argv[1:]
     points = score(board, t)
     print(f"{board}: {points}")

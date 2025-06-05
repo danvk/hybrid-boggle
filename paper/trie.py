@@ -63,7 +63,7 @@ class Trie:
         return 1 + sum(c.num_nodes() for c in self._children if c)
 
     def reset_marks(self):
-        self.set_mark(0)
+        self._mark = False
         for child in self._children:
             if not child:
                 continue
