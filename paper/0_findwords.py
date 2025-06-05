@@ -14,20 +14,21 @@ lookup = None
 def score(board: str, trie: Trie) -> int:
     score = 0
     for i in range(m * n):
-        score += score_dfs(board, i, trie.child(board[i]), {})
+        score += score_dfs(board, i, trie, {})
     return score
 
 
-def score_dfs(board: str, idx: int, trie_node: Trie, used) -> int:
+def score_dfs(board: str, idx: int, parent_node: Trie, used) -> int:
     score = 0
     used[idx] = True
-    if trie_node.is_word() and not trie_node.is_visited():
-        print(f"{lookup[trie_node]}: {trie_node.length()}")
-        score += SCORES[trie_node.length()]
-        trie_node.set_visited()
-    for n_idx in NEIGHBORS[idx]:
-        if not used.get(n_idx) and trie_node.has_child(board[n_idx]):
-            score += score_dfs(board, n_idx, trie_node.child(board[n_idx]), used)
+    if parent_node.has_child(board[idx]):
+        trie_node = parent_node.child(board[idx])
+        if trie_node.is_word() and not trie_node.is_visited():
+            score += SCORES[trie_node.length()]
+            trie_node.set_visited()
+        for n_idx in NEIGHBORS[idx]:
+            if not used.get(n_idx):
+                score += score_dfs(board, n_idx, trie_node, used)
     used[idx] = False
     return score
 
