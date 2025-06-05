@@ -3,6 +3,7 @@ import sys
 from boggle.boggler import SCORES
 from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.neighbors import NEIGHBORS as ALL_NEIGHBORS
+from boggle.split_order import SPLIT_ORDER
 from paper.sum_choice_tree import ChoiceNode, SumNode, bound, to_dot
 from paper.trie import make_trie
 
@@ -24,7 +25,6 @@ def find(xs, fn):
     return None
 
 
-# Listing 5: add_word to sum/choice tree
 def add_word(node: SumNode, path: Path, points: int):
     if len(path) == 0:
         node.points += points
@@ -43,12 +43,10 @@ def add_word(node: SumNode, path: Path, points: int):
     return add_word(letter_child, path[1:], points)
 
 
-ORDER = [3, 7, 5, 2, 11, 15, 13, 10, 9, 14, 12, 8, 1, 6, 4, 0]
+ORDER = SPLIT_ORDER[(4, 4)]
 
 
-# /Listing
-
-
+# Listing 6: Building an orderly tree
 def build_orderly_tree(board_class, trie):
     root = SumNode()
     for i in range(m * n):
@@ -75,14 +73,18 @@ def sum_step(board_class, idx, trie_node, choices, root):
             choice_step(board_class, n_idx, trie_node, choices, root)
 
 
+# /Listing
+
+
 def main():
     t = make_trie("wordlists/enable2k.txt")
     # assert sum_bound("abcdefghijklmnop", t) == 18
     # t.reset_marks()
     board_class = sys.argv[1:]
-    global m, n, NEIGHBORS
+    global m, n, NEIGHBORS, ORDER
     m, n = LEN_TO_DIMS[len(board_class)]
     NEIGHBORS = ALL_NEIGHBORS[(m, n)]
+    ORDER = [-x for x in SPLIT_ORDER[(m, n)]]
     tree = build_orderly_tree(board_class, t)
     points = bound(tree)
     sys.stderr.write(f"{board_class}: {points}\n")
