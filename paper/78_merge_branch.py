@@ -32,6 +32,7 @@ def add_word(node: SumNode, path: Path, points: int):
     if not choice_child:
         choice_child = ChoiceNode(cell=cell)
         node.children.append(choice_child)
+        node.children.sort(key=lambda c: -ORDER[c.cell])
 
     letter_child = choice_child.children.get(letter)
     if not letter_child:
@@ -93,7 +94,7 @@ def merge(a: SumNode, b: SumNode) -> SumNode:
 def merge_choice(a: ChoiceNode, b: ChoiceNode) -> ChoiceNode:
     children = {**a.children}
     for choice, bc in b.children.items():
-        ac = children[choice]
+        ac = children.get(choice)
         children[choice] = merge(ac, bc) if ac else bc
     return ChoiceNode(cell=a.cell, children=children)
 
@@ -154,3 +155,26 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+Compare:
+
+$ time poetry run python -m boggle.orderly_tree_builder 'lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz' --force --python --raw_multiboggle
+1.56s OrderlyTreeBuilder: t.bound=1523, 333492 nodes
+  cell=4 letter='a' t.bound=1198, 86420 nodes
+  cell=4 letter='e' t.bound=1417, 98585 nodes
+  cell=4 letter='i' t.bound=994, 81062 nodes
+  cell=4 letter='o' t.bound=862, 75474 nodes
+  cell=4 letter='u' t.bound=753, 60457 nodes
+poetry run python -m boggle.orderly_tree_builder  --force --python   2.77s user 0.08s system 95% cpu 2.984 total
+
+$ time poetry run python -m paper.78_merge_branch lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz
+['lnrsy', 'chkmpt', 'lnrsy', 'aeiou', 'aeiou', 'aeiou', 'chkmpt', 'lnrsy', 'bdfgjqvwxz']: 1523, n_nodes=333492
+  cell=4 letter='a' bound=1198 num_nodes=86420
+  cell=4 letter='e' bound=1417 num_nodes=98585
+  cell=4 letter='i' bound=994 num_nodes=81062
+  cell=4 letter='o' bound=862 num_nodes=75474
+  cell=4 letter='u' bound=753 num_nodes=60457
+poetry run python -m paper.78_merge_branch lnrsy chkmpt lnrsy aeiou aeiou      3.59s user 0.08s system 96% cpu 3.806 total
+
+"""
