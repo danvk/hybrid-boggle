@@ -5,9 +5,9 @@ class ChoiceNode:
     cell: int
     children: dict[str, "SumNode"]
 
-    def __init__(self, cell: int):
+    def __init__(self, cell: int, children=None):
         self.cell = cell
-        self.children = {}
+        self.children = children or {}
 
 
 class SumNode:
@@ -15,9 +15,9 @@ class SumNode:
     children: list[ChoiceNode]
     trie_node: Trie
 
-    def __init__(self, points: int = 0):
+    def __init__(self, points: int = 0, children=None):
         self.points = points
-        self.children = []
+        self.children = children or []
         self.trie_node = None
 
 

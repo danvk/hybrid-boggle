@@ -43,7 +43,6 @@ def add_word(node: SumNode, path: Path, points: int):
 ORDER = SPLIT_ORDER[(4, 4)]
 
 
-# Listing 6: Building an orderly tree
 def build_orderly_tree(board_class, trie):
     root = SumNode()
     for i in range(m * n):
@@ -70,6 +69,56 @@ def sum_step(board_class, idx, trie_node, choices, root):
             choice_step(board_class, n_idx, trie_node, choices, root)
 
 
+def group_by(xs, fn):
+    d = {}
+    for x in xs:
+        v = fn(x)
+        d.setdefault(v, [])
+        d[v].append(x)
+    return [*d.values()]
+
+
+# Listing 7: merge operation on orderly trees
+# def merge(a: Orderly(N), b: Orderly(N)) -> Orderly(N):
+def merge(a: SumNode, b: SumNode) -> SumNode:
+    cell_to_child = {c.cell: c for c in a.children}
+    for bc in b.children:
+        ac = cell_to_child.get(bc.cell)
+        cell_to_child[bc.cell] = merge_choice(ac, bc) if ac else bc
+    children = sorted(cell_to_child.values(), key=lambda c: -ORDER[c.cell])
+    return SumNode(points=a.points + b.points, children=children)
+
+
+# def merge_choice(a: OrderlyChoice(N), b: OrderlyChoice(N)) -> OrderlyChoice(N):
+def merge_choice(a: ChoiceNode, b: ChoiceNode) -> ChoiceNode:
+    children = {**a.children}
+    for choice, bc in b.children.items():
+        ac = children[choice]
+        children[choice] = merge(ac, bc) if ac else bc
+    return ChoiceNode(cell=a.cell, children=children)
+
+
+# /Listing
+
+
+# Listing 8: branch operation on orderly trees
+# def branch(o: Orderly(N)) -> list(Orderly(N-1)):
+def branch(o: SumNode, top_cell: int, board_class: list[str]) -> list[SumNode]:
+    top_choice = o.children[0]
+    if top_choice.cell != top_cell:
+        # edge case: the choice on the top cell is irrelevant, so o is Orderly(N-1).
+        return [o for _letter in board_class[top_cell]]
+
+    other_choices = o.children[1:]
+    skip_tree = SumNode(children=other_choices, points=o.points)  # Orderly(N-1)
+    return [
+        merge(top_choice.children[letter], skip_tree)  # both are Orderly(N-1)
+        if top_choice.children.get(letter)
+        else skip_tree  # no words use this letter on the top choice cell
+        for letter in board_class[top_cell]
+    ]
+
+
 # /Listing
 
 
@@ -81,13 +130,23 @@ def main():
     global m, n, NEIGHBORS, ORDER
     m, n = LEN_TO_DIMS[len(board_class)]
     NEIGHBORS = ALL_NEIGHBORS[(m, n)]
+    split_order = SPLIT_ORDER[(m, n)]
     ORDER = [0] * (m * n)
-    for i, x in enumerate(SPLIT_ORDER[(m, n)]):
+    for i, x in enumerate(split_order):
         ORDER[x] = m * n - i
     tree = build_orderly_tree(board_class, t)
     points = bound(tree)
     n_nodes = num_nodes(tree)
     sys.stderr.write(f"{board_class}: {points}, {n_nodes=}\n")
+
+    cell = split_order[0]
+    subtrees = branch(tree, cell, board_class)
+    assert len(subtrees) == len(board_class[cell])
+    for letter, subtree in zip(board_class[cell], subtrees):
+        b = bound(subtree)
+        n = num_nodes(subtree)
+        print(f"  {cell=} {letter=} bound={b} num_nodes={n}")
+
     # print(to_dot(tree, board_class))
     # poetry run python -m paper.3b_max_tree lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz
     # ['lnrsy', 'chkmpt', 'lnrsy', 'aeiou', 'aeiou', 'aeiou', 'chkmpt', 'lnrsy', 'bdfgjqvwxz']: 9460

@@ -149,6 +149,9 @@ def main():
         action="store_true",
         help="Do not dedupe words on SumNodes. (Requires --python)",
     )
+    parser.add_argument(
+        "--force", action="store_true", help="Force top cell after building"
+    )
     args = parser.parse_args()
     if args.raw_multiboggle:
         assert args.python, "--raw_multiboggle require --python"
@@ -178,6 +181,16 @@ def main():
 
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
+
+    tree = orderly_tree
+    if args.force:
+        cell = SPLIT_ORDER[dims][0]
+        letters = cells[cell]
+        subtrees = tree.orderly_force_cell(cell, len(letters), o_arena)
+        assert len(subtrees) == len(letters)
+        for i, (letter, subtree) in enumerate(zip(letters, subtrees)):
+            letter = letters[i]
+            print(f"  {cell=} {letter=} {tree_stats(subtree)}")
 
 
 if __name__ == "__main__":
