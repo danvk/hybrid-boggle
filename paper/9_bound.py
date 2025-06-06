@@ -110,7 +110,6 @@ def bound_step(
     if idx == N:
         record_candidate_board(choices)  # complete board that can't be eliminated
         return
-    # TODO: what if you run out of choices before hitting idx==N?
 
     # Explore each possible choice for the next cell in the canonical order.
     cell = CELL_ORDER[idx]

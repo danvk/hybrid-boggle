@@ -11,7 +11,10 @@ import argparse
 import time
 
 from boggle.arena import PyArena, create_eval_node_arena_py
-from boggle.args import add_standard_args, get_trie_from_args
+from boggle.args import (
+    add_standard_args,
+    get_trie_from_args,
+)
 from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.dimensional_bogglers import (
@@ -152,6 +155,12 @@ def main():
     parser.add_argument(
         "--force", action="store_true", help="Force top cell after building"
     )
+    parser.add_argument(
+        "--bound",
+        type=int,
+        default=0,
+        help="If set, run orderly_bound after tree building with this as the cutoff",
+    )
     args = parser.parse_args()
     if args.raw_multiboggle:
         assert args.python, "--raw_multiboggle require --python"
@@ -191,6 +200,11 @@ def main():
         for i, (letter, subtree) in enumerate(zip(letters, subtrees)):
             letter = letters[i]
             print(f"  {cell=} {letter=} {tree_stats(subtree)}")
+
+    if args.bound:
+        boards = tree.orderly_bound(args.bound, cells, SPLIT_ORDER[dims], [])
+        for score, board in boards:
+            print(f"{score} {board}")
 
 
 if __name__ == "__main__":
