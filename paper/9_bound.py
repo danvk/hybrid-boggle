@@ -86,14 +86,8 @@ def record_candidate_board(choices: list[char], bound: int):
 # Assumes N >= 1
 # def OrderlyBound(root: Orderly(N), S_high: int):
 def orderly_bound(root: SumNode, board_class: list[str], S_high: int):
-    stack: list[ChoiceNode] = []
-    advance(root, stack)
+    stack = root.children
     bound_step(root.points, 0, [], stack, board_class, S_high)
-
-
-def advance(node: SumNode, stack: list[ChoiceNode]):
-    for child in node.children:
-        stack.append(child)
 
 
 def bound_step(
@@ -108,20 +102,21 @@ def bound_step(
     if b < S_high:
         return  # This board class has been eliminated
     if idx == N:
-        record_candidate_board(choices, b)  # complete board that can't be eliminated
+        # complete board that can't be eliminated
+        record_candidate_board(choices, b)
         return
 
     # Explore each possible choice for the next cell in the canonical order.
     cell = CELL_ORDER[idx]
     for letter in board_class[cell]:
-        next_nodes = [n for n in stack if n.cell == idx]
-        next_stack = [n for n in stack if n.cell != idx]
+        next_nodes = [n for n in stack if n.cell == cell]
+        next_stack = [n for n in stack if n.cell != cell]
         next_points = points
         next_choices = choices + [letter]
         for node in next_nodes:
             letter_node = node.children.get(letter)
             if letter_node:
-                advance(letter_node, next_stack)
+                next_stack += letter_node.children
                 next_points += letter_node.points
 
         bound_step(next_points, idx + 1, next_choices, next_stack, board_class, S_high)

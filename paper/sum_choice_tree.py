@@ -22,11 +22,16 @@ class SumNode:
 
 
 def bound(n: SumNode | ChoiceNode) -> int:
+    if hasattr(n, "bound"):
+        return n.bound
     if isinstance(n, SumNode):
-        return n.points + sum(bound(c) for c in n.children)
+        b = n.points + sum(bound(c) for c in n.children)
     elif isinstance(n, ChoiceNode):
-        return max(bound(c) for c in n.children.values()) if n.children else 0
-    raise ValueError(n)
+        b = max(bound(c) for c in n.children.values()) if n.children else 0
+    else:
+        raise ValueError(n)
+    n.bound = b
+    return b
 
 
 def num_nodes(n: SumNode | ChoiceNode) -> int:
