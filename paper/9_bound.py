@@ -127,8 +127,6 @@ def bound_step(
 
 def main():
     t = make_trie("wordlists/enable2k.txt")
-    # assert sum_bound("abcdefghijklmnop", t) == 18
-    # t.reset_marks()
     s_high_str, *board_class = sys.argv[1:]
     cutoff = int(s_high_str)
     global m, n, N, NEIGHBORS, ORDER, CELL_ORDER
@@ -146,10 +144,14 @@ def main():
     sys.stderr.write(f"{board_class}: {points}, {n_nodes=}\n")
 
     orderly_bound(tree, board_class, cutoff)
-    # print(to_dot(tree, board_class))
-    # poetry run python -m paper.3b_max_tree lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz
-    # ['lnrsy', 'chkmpt', 'lnrsy', 'aeiou', 'aeiou', 'aeiou', 'chkmpt', 'lnrsy', 'bdfgjqvwxz']: 9460
 
 
 if __name__ == "__main__":
     main()
+
+
+"""
+$ time poetry run python -m boggle.orderly_tree_builder 'lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz' --python --raw_multiboggle --bound 500 > /tmp/golden.txt
+$ time poetry run python -m paper.9_bound 500 lnrsy chkmpt lnrsy aeiou aeiou aeiou chkmpt lnrsy bdfgjqvwxz > /tmp/paper.txt
+
+"""
