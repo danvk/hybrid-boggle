@@ -217,7 +217,7 @@ def sum_bound(board_class: list[str], trie: Trie) -> int:
         score += sum_bound_dfs(board_class, i, trie, {})
     return score
 
-def sum_bound_dfs(board_class: str, idx: int, parent_node: Trie, used) -> int:
+def sum_bound_dfs(board_class: list[str], idx: int, parent_node: Trie, used) -> int:
     score = 0
     used[idx] = True
     letters = board_class[idx]
@@ -462,7 +462,6 @@ def sum_step(board_class, board, idx, trie_node, used):
     score = 0
     if trie_node.is_word():
         score += SCORES[trie_node.length()]
-        print(f"+{score}: {trie_node.word()}")
     for n_idx in NEIGHBORS[idx]:
         if not used.get(n_idx):
             score += choice_step(board_class, board, n_idx, trie_node, used)
