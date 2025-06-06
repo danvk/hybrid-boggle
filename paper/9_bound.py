@@ -86,40 +86,36 @@ def record_candidate_board(choices: list[char], bound: int):
 # Assumes N >= 1
 # def OrderlyBound(root: Orderly(N), S_high: int):
 def orderly_bound(root: SumNode, board_class: list[str], S_high: int):
-    stack = root.children
-    bound_step(root.points, 0, [], stack, board_class, S_high)
+    def step(
+        points: int,
+        idx: int,
+        choices: list[char],  # letters chosen on previous cells
+        stack: list[ChoiceNode],
+    ):
+        b = points + sum(bound(n) for n in stack)
+        if b < S_high:
+            return  # This board class has been eliminated
+        if idx == N:
+            # complete board that can't be eliminated
+            record_candidate_board(choices, b)
+            return
 
+        # Explore each possible choice for the next cell in the canonical order.
+        cell = CELL_ORDER[idx]
+        for letter in board_class[cell]:
+            next_nodes = [n for n in stack if n.cell == cell]
+            next_stack = [n for n in stack if n.cell != cell]
+            next_points = points
+            next_choices = choices + [letter]
+            for node in next_nodes:
+                letter_node = node.children.get(letter)
+                if letter_node:
+                    next_stack += letter_node.children
+                    next_points += letter_node.points
 
-def bound_step(
-    points: int,
-    idx: int,
-    choices: list[char],  # letters chosen on previous cells
-    stack: list[ChoiceNode],
-    board_class: list[str],
-    S_high: int,
-):
-    b = points + sum(bound(n) for n in stack)
-    if b < S_high:
-        return  # This board class has been eliminated
-    if idx == N:
-        # complete board that can't be eliminated
-        record_candidate_board(choices, b)
-        return
+            step(next_points, idx + 1, next_choices, next_stack)
 
-    # Explore each possible choice for the next cell in the canonical order.
-    cell = CELL_ORDER[idx]
-    for letter in board_class[cell]:
-        next_nodes = [n for n in stack if n.cell == cell]
-        next_stack = [n for n in stack if n.cell != cell]
-        next_points = points
-        next_choices = choices + [letter]
-        for node in next_nodes:
-            letter_node = node.children.get(letter)
-            if letter_node:
-                next_stack += letter_node.children
-                next_points += letter_node.points
-
-        bound_step(next_points, idx + 1, next_choices, next_stack, board_class, S_high)
+    step(root.points, 0, [], root.children)
 
 
 # /Listing
