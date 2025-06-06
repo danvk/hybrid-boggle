@@ -214,7 +214,7 @@ Wordlist       | 3x3 | 3x4
 **YAWL**       | ✅ `stleaeprd` ([659](https://www.danvk.org/boggle/?board=lepsartes&wordlist=yawl))    | ✅ `bindlatesers` ([1959](https://www.danvk.org/boggle/?board=bindlatesers&wordlist=yawl&dims=34))
 **SOWPODS**    | ✅ `streaedlb` ([676](https://www.danvk.org/boggle/?board=lepsartes&wordlist=sowpods)) | ✅ `drpseiaestng` ([2073](https://www.danvk.org/boggle/?board=drpseiaestng&wordlist=sowpods&dims=34))
 
-If you have a thousand dollars of compute burning a hole in your pocket and you'd like to confirm some of the other 4x4 results, please let me know!
+If you have a few hundred dollars of compute burning a hole in your pocket and you'd like to confirm some of the other 4x4 results, please let me know!
 
 You can find lists of the highest-scoring boards found via exhaustive search, as well as the best found via hillclimbing, in the [`results`](/results) directory. The unconfirmed 4x4 boards are found quite consistently by the hillclimbing algorithm, which means it's quite likely they're global optima. The 5x5 boards are found [less consistently](/results/hillclimb-5x5.yawl.txt), which means that a deeper search might uncover new, higher-scoring boards.
 
