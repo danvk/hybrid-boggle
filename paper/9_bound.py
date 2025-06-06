@@ -74,12 +74,12 @@ type char = str
 N = n
 
 
-def record_candidate_board(choices: list[char]):
+def record_candidate_board(choices: list[char], bound: int):
     cells = [""] * N
     for cell, choice in zip(SPLIT_ORDER[(m, n)], choices):
         cells[cell] = choice
     bd = "".join(cells)
-    print(f"Candidate board: {bd}")
+    print(f"{bound} {bd}")
 
 
 # Listing 9: OrderlyBound
@@ -108,7 +108,7 @@ def bound_step(
     if b < S_high:
         return  # This board class has been eliminated
     if idx == N:
-        record_candidate_board(choices)  # complete board that can't be eliminated
+        record_candidate_board(choices, b)  # complete board that can't be eliminated
         return
 
     # Explore each possible choice for the next cell in the canonical order.
@@ -138,7 +138,7 @@ def main():
     cutoff = int(s_high_str)
     global m, n, N, NEIGHBORS, ORDER, CELL_ORDER
     m, n = LEN_TO_DIMS[len(board_class)]
-    N = n
+    N = m * n
     NEIGHBORS = ALL_NEIGHBORS[(m, n)]
     CELL_ORDER = SPLIT_ORDER[(m, n)]
     ORDER = [0] * (m * n)
