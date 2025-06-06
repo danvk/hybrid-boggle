@@ -188,18 +188,32 @@ def main():
     # print("EvalTreeBuilder:    ", end="")
     # print(tree_stats(classic_tree))
 
-    print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
+    print(f"{elapsed_s:.02f} s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
 
     tree = orderly_tree
     if args.force:
         cell = SPLIT_ORDER[dims][0]
         letters = cells[cell]
+        start_s = time.time()
         subtrees = tree.orderly_force_cell(cell, len(letters), o_arena)
+        elapsed_s = time.time() - start_s
+        print(f"{elapsed_s:.04f} s orderly_force_cell")
         assert len(subtrees) == len(letters)
         for i, (letter, subtree) in enumerate(zip(letters, subtrees)):
             letter = letters[i]
             print(f"  {cell=} {letter=} {tree_stats(subtree)}")
+
+        start_s = time.time()
+        for letter in letters:
+            cells[cell] = letter
+            board = " ".join(cells)
+            assert otb.parse_board(board)
+            arena = otb.create_arena()
+            subtree = otb.build_tree(arena)
+            print(f"  {cell=} {letter=} {subtree.bound}")
+        elapsed_s = time.time() - start_s
+        print(f"{elapsed_s:.04f} s build all subtrees")
 
     if args.bound:
         boards = tree.orderly_bound(args.bound, cells, SPLIT_ORDER[dims], [])

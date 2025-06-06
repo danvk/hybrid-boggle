@@ -82,9 +82,9 @@ def record_candidate_board(choices: list[char], bound: int):
     print(f"{bound} {bd}")
 
 
-# Listing 9: OrderlyBound
+# Listing 9: orderly_bound
 # Assumes N >= 1
-# def OrderlyBound(root: Orderly(N), S_high: int):
+# def orderly_bound(root: Orderly(N), S_high: int):
 def orderly_bound(root: SumNode, board_class: list[str], S_high: int):
     def step(
         points: int,
@@ -100,7 +100,7 @@ def orderly_bound(root: SumNode, board_class: list[str], S_high: int):
             record_candidate_board(choices, b)
             return
 
-        # Explore each possible choice for the next cell in the canonical order.
+        # Try each letter on the next cell in the canonical order.
         cell = CELL_ORDER[idx]
         for letter in board_class[cell]:
             next_nodes = [n for n in stack if n.cell == cell]
