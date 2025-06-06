@@ -40,7 +40,7 @@ The general approach is [branch and bound][bnb]:
 
 Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations.
 
-📝 If you want the full details, check out the work-in-progres paper: [A Computational Proof of the Highest-Scoring Boggle Board](/paper/). I intend to eventually publish this.
+📝 For the full details, check out the work-in-progress paper: [A Computational Proof of the Highest-Scoring Boggle Board](/paper/). I intend to eventually publish this. 📝
 
 Here are the blog posts I've written about this project in 2025:
 
