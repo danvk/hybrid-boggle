@@ -26,7 +26,7 @@ The words that can be found on a Boggle board are determined by the letters on t
 
 We adopt the following terminology and conventions:
 
-- `B` refers to a Boggle board. To refer to a specific Boggle board, we write the out the letters of the board in column-major order. (This distinction is only important for non-square dimensions such as 2x3 and 3x4 Boggle, which lack reflectional symmetry.)
+- `B` refers to a Boggle board. To refer to a specific Boggle board, we write out the letters of the board in column-major order. (This distinction is only important for non-square dimensions such as 2x3 and 3x4 Boggle, which lack reflectional symmetry.)
 - Because one of the Boggle dice contains a “Qu” (two letters), we adopt the convention that `q` indicates a Qu cell. So `qaicdrneetasnnil` refers to the board in Figure N.
 - Boggle dice use uppercase letters (except for Qu), but we typically use lowercase. No meaningful distinction is drawn between uppercase and lowercase.
 - The cells on an MxN board are numbered `0…M*N-1` in column-major order, as shown in Figure N. We refer to the letter on cell `i` of board `B` as `B_i`.
