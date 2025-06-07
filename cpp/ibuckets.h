@@ -270,6 +270,38 @@ unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
   return score;
 }
 
+// 4x5
+template<>
+unsigned int BucketBoggler<4, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+  unsigned int score = 0;
+  used_ ^= (1 << i);
+  switch(i) {
+    case 0: REC3(1, 5, 6); break;
+    case 1: REC5(0, 2, 5, 6, 7); break;
+    case 2: REC5(1, 3, 6, 7, 8); break;
+    case 3: REC5(2, 4, 7, 8, 9); break;
+    case 4: REC3(3, 8, 9); break;
+    case 5: REC5(0, 1, 6, 10, 11); break;
+    case 6: REC8(0, 1, 2, 5, 7, 10, 11, 12); break;
+    case 7: REC8(1, 2, 3, 6, 8, 11, 12, 13); break;
+    case 8: REC8(2, 3, 4, 7, 9, 12, 13, 14); break;
+    case 9: REC5(3, 4, 8, 13, 14); break;
+    case 10: REC5(5, 6, 11, 15, 16); break;
+    case 11: REC8(5, 6, 7, 10, 12, 15, 16, 17); break;
+    case 12: REC8(6, 7, 8, 11, 13, 16, 17, 18); break;
+    case 13: REC8(7, 8, 9, 12, 14, 17, 18, 19); break;
+    case 14: REC5(8, 9, 13, 18, 19); break;
+    case 15: REC3(10, 11, 16); break;
+    case 16: REC5(10, 11, 12, 15, 17); break;
+    case 17: REC5(11, 12, 13, 16, 18); break;
+    case 18: REC5(12, 13, 14, 17, 19); break;
+    case 19: REC3(13, 14, 18); break;
+  }
+  score += CountWord(i, len, t);
+  used_ ^= (1 << i);
+  return score;
+}
+
 // 5x5
 template<>
 unsigned int BucketBoggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
