@@ -10,13 +10,15 @@ _This is an in-progress draft of a paper explaining the methodology used by this
 
 ## Abstract
 
-- TODO
+Finding all the words on a Boggle board is a classic computer programming problem. With a fast Boggle solver, local optimization techniques such as hillclimbing and simulated annealing can be used to find particularly high-scoring boards. The sheer number of possible Boggle boards has historically prevented an exhaustive search for the global optimum board. We apply Branch and Bound and a tailor-made data structure to perform the first such search. We find that the best boards found via hillclimbing are, in fact, the global optima.
 
 ## Introduction
 
-- What is Boggle? How do you play?
-- Prior art
-- Preview of our results
+Boggle is a word search game invented in 1972 by Allan D. Turoff and currently sold by Hasbro. Competitors shake up 16 dice to form a 4x4 grid of letters. The goal is to find as many words as possible in three minutes. Letters can be connected up, down, left, right and diagonally, and words need not be found in a straight line. The same die cannot be used twice in a word. Longer words count for more points (3/4 letters=1 point, 5=2, 6=3, 7=5, ≥8=11 points).
+
+Finding all the words on a Boggle board has become a classic computer programming problem. It is often assigned in classes, used as an interview question and, more recently, given as a task to LLMs. With a fast Boggle solver, it’s natural to search for particularly high-scoring boards. Typically this is done via hillclimbing, simulated annealing or genetic algorithms. Searches of this kind date back to at least 1982. While these searches do produce high-scoring boards, they cannot make definitive statements about whether they are *the* highest-scoring board.
+
+This paper takes a different approach. By using Branch and Bound, data structures and algorithms tailor-made for Boggle, and a large amount of compute, we’re able to establish for the first time that the best Boggle boards found via hillclimbing are, in fact, the global optima.
 
 ## Terminology and Conventions
 
@@ -24,9 +26,9 @@ The words that can be found on a Boggle board are determined by the letters on t
 
 We adopt the following terminology and conventions:
 
-- `B` refers to a Boggle board. To refer to a specific Boggle board, we write the out the letters of the board in column-major order. (This distinction is only important for non-square dimensions such as 2x3 and 3x4 Boggle, which lack reflectional symmetry.)
+- `B` refers to a Boggle board. To refer to a specific Boggle board, we write out the letters of the board in column-major order. (This distinction is only important for non-square dimensions such as 2x3 and 3x4 Boggle, which lack reflectional symmetry.)
 - Because one of the Boggle dice contains a “Qu” (two letters), we adopt the convention that `q` indicates a Qu cell. So `qaicdrneetasnnil` refers to the board in Figure N.
-- TODO: say something about lowercase vs. uppercase (no meaningful distinction)
+- Boggle dice use uppercase letters (except for Qu), but we typically use lowercase. No meaningful distinction is drawn between uppercase and lowercase.
 - The cells on an MxN board are numbered `0…M*N-1` in column-major order, as shown in Figure N. We refer to the letter on cell `i` of board `B` as `B_i`.
 - `Words(B)` is the set of all words that can be found on the board `B`.
 - `Score(B)` is the sum of the point value of these words, `\sum_{w \in Words(B)} Points(Length(w))`. We refer to this as the score of the board.
@@ -391,14 +393,14 @@ The top-level call to `max_bound` can be modeled as a `SumNode` with each cell a
 BuildTree(C) -> SumNode
 ```
 
+A direct translation of the call graph results in numerous “dead paths” that do not lead to any points. These can be pruned to produce a more compact tree.
+
 The bound for each node can be computed as:
 
 ```
 Bound(n: SumNode) = n.points + sum(Bound(c) for c in n.children)
 Bound(n: ChoiceNode) = max(Bound(c) for c in n.children)
 ```
-
-TODO: note that this generates a lot of dead paths? Might only be worth mentioning if I include the code listing.
 
 In practice, the bound can be stored explicitly on each node and updated as we modify the tree. Here’s what one of these trees looks like for the TAR/TIER board from earlier:
 
@@ -571,17 +573,25 @@ This shift in perspectives allows us to establish the critical result:
 
 - Theorem: anagramming words before adding them preserves the invariant
 
-This can be seen by treating the `Force` operation as a sum across all SumNodes with points in the tree, conditioned on whether the path to that node is realized in the board:
+This can be seen by treating the `Force` operation as a sum across all SumNodes with points in the tree, conditioned on whether the path to that node is realized in the board. We can define the path to a node by tracing it back to the root:
 
 ```
-Force(T, B) = sum(node.points \forall node in T | Path(node)_i = B_i \forall i)
+Path(node: SumNode) =
+  [] if node is the root
+  Path(node.parent.parent) ++ [(node.parent.cell, node.letter)]
 ```
 
-Then this is a natural consequence of `AND` being commutative.
+Then we can reformulate `Force` as a sum across compatible paths:
 
-TODO: tighten up the formalism around this
+```
+Force(T, B) = sum(
+  node.points
+  \forall node in T
+  s.t. AND(B_{n.cell} = n.letter \forall n in Path(node))
+)
+```
 
-TODO: is this a better way to explain the invariant to begin with?
+The anagramming theorem is a natural consequence of `AND` being commutative.
 
 Previously, words were added to the tree in the order in which they were spelled. We can see now, however, that this was a choice. To get more consistent ordering and lower bounds, we can define a canonical order for the cells and sort the paths to words accordingly before adding them to the tree.
 
@@ -631,7 +641,9 @@ Here’s the orderly tree for the TAR/TIER board class from earlier, ordered by 
 
 *Orderly Tree for “t ae i r”; Bound(node) is marked under each node.*
 
-Note that the tree is smaller (29 vs. 56 nodes) and the bound on the root node has dropped from 13 to 7. Using an Orderly Tree helped for this small board class, but the effect is more dramatic for larger board classes:
+Note that the tree is smaller (29 vs. 56 nodes) and the bound on the root node has dropped from 13 to 7. Before, there were 8 ChoiceNodes with cell=1, but now there are only 2.
+
+Using an Orderly Tree helped for this small board class, but the effect is more dramatic for larger board classes:
 
 | **Board** | **max_bound** | **Orderly bound** |
 | --- | --- | --- |
@@ -643,14 +655,6 @@ Note that the tree is smaller (29 vs. 56 nodes) and the bound on the root node h
 | 3x4 (c) | 69,889 | 4,452 |
 | 4x4 (a) | 176,937 | 11,576 |
 | 4x4 (b) | 514,182 | 53,037 |
-
-- 2x2 is `t ae i r`
-- 3x3 (b) is the 5M board class from earlier in the paper (containing the best board)
-- 3x4 (a) is board_id=27916 with three letter classes from [this sheet](https://docs.google.com/spreadsheets/d/1uG-KFJFdOS7MQcibcdloTtQEQAdwror6VA0BO0AhkYQ/edit?gid=1619399799#gid=1619399799)
-- 3x4 (b) is board_id=234556 with 3 buckets, which contains best board perslatesind.
-- 4x4 (b) is the best board’s class w/ three buckets
-- 5x5 is the (possible) best board’s class w/ three buckets: 1,910,956 → 433,505
-- 3x3 (a), 3x4 (c) and 4x4 (a) are classes for random boards, see [Log (post-PR)](https://www.notion.so/Log-post-PR-1f9d37156a098043860bf53c45c6a777?pvs=21) for June 6, 2025 for full commands.
 
 By construction, no ChoiceNode `n` in an Orderly Tree will have `ORDER[n.cell]` greater than any of its parents. So if a path begins 14→6 in the tree, then it may only continue to cells 1 or 4, since those are higher numbers. (14→6→9 is a valid path, but it would be added to the tree as 14→9→6.) Intuitively, if cell `A` has a child on cell `B`, then this represents all the paths through the board that skip cells between `A` and `B` in the canonical order.
 
@@ -700,18 +704,16 @@ def merge_choice(a: ChoiceNode, b: ChoiceNode) -> ChoiceNode:
 
 With the “merge” helper, we can define the “branch” operation:
 
-TODO: this depends on the children being sorted, but this is never mentioned.
-
 ```
 # Listing 8: branch operation on orderly trees
 # def branch(o: Orderly(N)) -> list(Orderly(N-1)):
 def branch(o: SumNode, top_cell: int, board_class: list[str]) -> list[SumNode]:
-    top_choice = o.children[0]
-    if top_choice.cell != top_cell:
+    top_choice = find(o.children, lambda c: c.cell == top_cell)
+    if not top_choice:
         # edge case: the choice on the top cell is irrelevant, so o is Orderly(N-1).
         return [o for _letter in board_class[top_cell]]
 
-    other_choices = o.children[1:]
+    other_choices = [c for c in o.children if c.cell != top_cell]
     skip_tree = SumNode(children=other_choices, points=o.points)  # Orderly(N-1)
     return [
         merge(top_choice.children[letter], skip_tree)  # both are Orderly(N-1)
@@ -724,8 +726,6 @@ def branch(o: SumNode, top_cell: int, board_class: list[str]) -> list[SumNode]:
 - Lemma: Force(merge(T1, T2), B) = Force(T1, B) + Force(T2, B) \forall B \in T1 \union T2
 
 The `branch` function splits the tree into two parts: one that includes the words that go through the “top” cell (`top_choice`) and another (`skip_tree`) that includes all the words that don’t. Each child of `top_choice` corresponds to a particular choice of letter on that cell. Every word must fall into one of these two groups (goes through the cell or doesn’t). Adding their bounds will produce a valid bound for this choice of letters. Since the `merge` operation preserves the invariant, the resulting tree will have a valid bound.
-
-TODO: it might be helpful to define Force1, i.e. forcing just the top cell.
 
 TODO: a visual would convey the intuition here, that “branch” is just a merge.
 
@@ -868,7 +868,7 @@ Observations:
 
 The `branch` and `OrderlyBound` operations work well together. In practice, we build the tree for a board class, then call `branch` some number of times before switching over to `OrderlyBound`. The optimal switchover point is highly variable, but switching when `root.bound <= 1.5*S_high` seems to work well in practice.
 
-TODO: get some stats on number of `advance` calls, max number of cells in each stack.
+For the 5M board 3x3 class, calling `orderly_bound` with `S_high=500` results in 55,483 calls to `step` and a maximum stack size of 167. The most times a single node is added to the stack is 1,289.
 
 TODO: get some stats about how fast OrderlyBound is vs. OrderlyMerge and how much memory they use.
 
@@ -924,7 +924,7 @@ Here are some examples of the effect this deduping has on the root bound for Ord
 - eeesrvrreeesrsrs: 21953 → 13253 (true score is 189)
 - 4x4 board class containing perslatgsineters: 53037 → 36881
 
-Since the bound for this board class is so much lower, we expect the Branch and Bound procedure to process it much more quickly. In practice, this is close to a 5x speedup on this board class. This optimization has the greatest impact on the highest-scoring board classes, which take the greatest time to process.
+Since the bound for this board class is so much lower, we expect the Branch and Bound procedure to process it much more quickly. In practice, this is a 5x speedup on this board class. This optimization has the greatest impact on the highest-scoring board classes, which take the greatest time to process.
 
 ### Final Branch and Bound Algorithm
 
@@ -934,7 +934,7 @@ Here’s the final Branch and Bound algorithm for finding Boggle boards `B` with
 2. For each board class `C`, build an Orderly Tree with deduping.
 3. Repeatedly call `branch` until either:
     1. `node.bound < S_high` in which case this board class can be eliminated
-    2. `node.bound <= 1.5 * S_high` in which case we switch to `OrderlyBound`. This will output a list of boards `B \in C` such that `MultiDedupe(B) >= S_high`.
+    2. `node.bound <= 1.5 * S_high` in which case we switch to `OrderlyBound`. This will output a list of boards `B \in C` such that `DeMulti(B) >= S_high`.
 4. For each such board `B`, check whether `Score(B) >= S_high`.
 
 This will produce a list of all boards `B` (up to symmetry) with `Score(B) >= S_high`. If two congruent boards fall in the same board class, it will produce both of them.
@@ -1021,6 +1021,7 @@ There is also a 5x5 version of Boggle (”Big Boggle”), and there was a limite
 | 3x3 | 70s |
 | 3x4 | 6h |
 | 4x4 | 7500h |
+| 4x5 |  |
 | 5x5 | ~10M years |
 
 Here are a few alternative approaches that would be interesting to explore:
