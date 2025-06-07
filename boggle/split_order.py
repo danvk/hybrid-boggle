@@ -57,6 +57,40 @@ def to_idx5(x, y):
     return x * 5 + y
 
 
+# c E E c
+# E O O E
+# X C C X
+# E O O E
+# c E E c
+
+SPLIT_ORDER_45 = tuple(
+    to_idx5(x, y)
+    for x, y in (
+        (1, 2),  # center (C)
+        (2, 2),
+        (1, 1),  # off-center (O)
+        (2, 1),
+        (1, 3),
+        (2, 3),
+        (0, 2),  # side-center (X)
+        (3, 2),
+        (1, 0),  # edges (E)
+        (2, 0),
+        (0, 1),
+        (0, 3),
+        (3, 1),
+        (3, 3),
+        (1, 4),
+        (2, 4),
+        (0, 0),  # corners (c)
+        (3, 0),
+        (0, 4),
+        (3, 4),
+    )
+)
+assert len(SPLIT_ORDER_45) == 20
+assert len(set(SPLIT_ORDER_45)) == 20
+
 SPLIT_ORDER_55 = tuple(
     to_idx5(x, y)
     for x, y in (
@@ -97,5 +131,6 @@ SPLIT_ORDER: dict[tuple[int, int], Sequence[int]] = {
     (3, 3): SPLIT_ORDER_33,
     (3, 4): SPLIT_ORDER_34,
     (4, 4): SPLIT_ORDER_44,
+    (4, 5): SPLIT_ORDER_45,
     (5, 5): SPLIT_ORDER_55,
 }
