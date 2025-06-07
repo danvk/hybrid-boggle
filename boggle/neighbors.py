@@ -30,6 +30,7 @@ NEIGHBORS23 = init_neighbors(2, 3)
 NEIGHBORS33 = init_neighbors(3, 3)
 NEIGHBORS34 = init_neighbors(3, 4)
 NEIGHBORS44 = init_neighbors(4, 4)
+NEIGHBORS45 = init_neighbors(4, 5)
 NEIGHBORS55 = init_neighbors(5, 5)
 
 NEIGHBORS = {
@@ -38,5 +39,6 @@ NEIGHBORS = {
     (3, 3): NEIGHBORS33,
     (3, 4): NEIGHBORS34,
     (4, 4): NEIGHBORS44,
+    (4, 5): NEIGHBORS45,
     (5, 5): NEIGHBORS55,
 }

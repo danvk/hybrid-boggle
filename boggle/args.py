@@ -15,7 +15,7 @@ def add_standard_args(
     parser.add_argument(
         "--size",
         type=int,
-        choices=(22, 23, 33, 34, 44, 55),
+        choices=(22, 23, 33, 34, 44, 45, 55),
         default=33,
         help="Size of the boggle board.",
     )

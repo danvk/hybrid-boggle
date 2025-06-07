@@ -84,6 +84,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
   declare_boggler<3, 3>(m, "Boggler33");
   declare_boggler<3, 4>(m, "Boggler34");
   declare_boggler<4, 4>(m, "Boggler44");
+  declare_boggler<4, 5>(m, "Boggler45");
   declare_boggler<5, 5>(m, "Boggler55");
 
   declare_bucket_boggler<2, 2>(m, "BucketBoggler22");
@@ -91,6 +92,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
   declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
   declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
   declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
+  declare_bucket_boggler<4, 5>(m, "BucketBoggler45");
   declare_bucket_boggler<5, 5>(m, "BucketBoggler55");
 
   declare_tree_builder<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22");
@@ -98,6 +100,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
   declare_tree_builder<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33");
   declare_tree_builder<OrderlyTreeBuilder<3, 4>>(m, "OrderlyTreeBuilder34");
   declare_tree_builder<OrderlyTreeBuilder<4, 4>>(m, "OrderlyTreeBuilder44");
+  declare_tree_builder<OrderlyTreeBuilder<4, 5>>(m, "OrderlyTreeBuilder45");
   declare_tree_builder<OrderlyTreeBuilder<5, 5>>(m, "OrderlyTreeBuilder55");
 
   py::class_<ScoreDetails>(m, "ScoreDetails")
