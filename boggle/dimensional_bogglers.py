@@ -4,18 +4,21 @@ from cpp_boggle import (
     Boggler33,
     Boggler34,
     Boggler44,
+    Boggler45,
     Boggler55,
     BucketBoggler22,
     BucketBoggler23,
     BucketBoggler33,
     BucketBoggler34,
     BucketBoggler44,
+    BucketBoggler45,
     BucketBoggler55,
     OrderlyTreeBuilder22,
     OrderlyTreeBuilder23,
     OrderlyTreeBuilder33,
     OrderlyTreeBuilder34,
     OrderlyTreeBuilder44,
+    OrderlyTreeBuilder45,
     OrderlyTreeBuilder55,
 )
 
@@ -25,6 +28,7 @@ Bogglers = {
     (3, 3): Boggler33,
     (3, 4): Boggler34,
     (4, 4): Boggler44,
+    (4, 5): Boggler45,
     (5, 5): Boggler55,
 }
 
@@ -34,6 +38,7 @@ BucketBogglers = {
     (3, 3): BucketBoggler33,
     (3, 4): BucketBoggler34,
     (4, 4): BucketBoggler44,
+    (4, 5): BucketBoggler45,
     (5, 5): BucketBoggler55,
 }
 
@@ -43,6 +48,7 @@ OrderlyTreeBuilders = {
     (3, 3): OrderlyTreeBuilder33,
     (3, 4): OrderlyTreeBuilder34,
     (4, 4): OrderlyTreeBuilder44,
+    (4, 5): OrderlyTreeBuilder45,
     (5, 5): OrderlyTreeBuilder55,
 }
 
@@ -66,5 +72,6 @@ LEN_TO_DIMS = {
     9: (3, 3),
     12: (3, 4),
     16: (4, 4),
+    20: (4, 5),
     25: (5, 5),
 }
