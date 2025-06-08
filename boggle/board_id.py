@@ -173,7 +173,7 @@ def main():
     parser.add_argument(
         "--size",
         type=int,
-        choices=(33, 34, 44, 55),
+        choices=(33, 34, 44, 45, 55),
         default=33,
         help="Size of the boggle board.",
     )
