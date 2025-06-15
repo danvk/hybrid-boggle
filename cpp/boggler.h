@@ -380,11 +380,12 @@ void Boggler<M, N>::FindWordsDFS(
 
   auto& neighbors = BoardClassBoggler<M, N>::NEIGHBORS[i];
   auto n_neighbors = neighbors[0];
+  auto child_indices = t->child_indices_;
   for (int j = 1; j <= n_neighbors; j++) {
     auto idx = neighbors[j];
     if ((used_ & (1 << idx)) == 0) {
       int cc = bd_[idx];
-      if (cc != -1 && t->StartsWord(cc)) {
+      if (cc != -1 && (1 << i) & child_indices) {
         FindWordsDFS(idx, t->Descend(cc), multiboggle, out);
       }
     }

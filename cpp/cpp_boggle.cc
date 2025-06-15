@@ -67,7 +67,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("set_mark", py::overload_cast<uintptr_t>(&Trie::Mark))
       // Possible that these should be ::reference_internal instead. See
       // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
-      .def("add_word", &Trie::AddWord, py::return_value_policy::reference)
+      // .def("add_word", &Trie::AddWord, py::return_value_policy::reference)
       .def("find_word", &Trie::FindWord, py::return_value_policy::reference)
       .def("size", &Trie::Size)
       .def("num_nodes", &Trie::NumNodes)
