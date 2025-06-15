@@ -1,6 +1,6 @@
 # Hybrid Boggle
 
-An attempt to find the highest-scoring [Boggle] board, and prove that it's the best.
+The code in this repo has been used to complete the first-ever exhaustive search for the highest-scoring 4x4 [Boggle] board. See press coverage in the [Financial Times] ([archive]) and discussion on [Hacker News].
 
 ## Results
 
@@ -11,27 +11,20 @@ These are the best (and best known) boards with the [ENABLE2K word list].
 - ✅ 4x4: `perslatgsineters` [3625 points], [proven optimal][35] in 2025.
 - ❓ 5x5: `ligdrmanesietildsracsepes`, [10406 points], found via hill climbing, optimality unknown.
 
-For other wordlists, [see below](#results-for-other-wordlists).
-
-The 3x4 board should be read down columns first:
-
-```
-P L S
-E A I
-R T N
-S E D
-```
-
-For square boards, you can read them however you like; every way is equivalent.
+Exhaustive searches have also been completed for a few other wordlists, [see below](#results-for-other-wordlists).
 
 To get a feel for Boggle, try the [online Boggle Solver][3625 points], which is an interactive WASM build of part of this repo.
 
 ## Methodology
 
+For the full details, check out the work-in-progress paper, which I intend to eventually publish:
+
+📝 [A Computational Proof of the Highest-Scoring Boggle Board][paper] (PDF, 2025)
+
 The general approach is [branch and bound][bnb]:
 
 - Find a very high-scoring board using [simulated annealing] or [hill climbing]. Call its score `S`.
-- Carve up the enormous space of all possible MxN Boggle boards into a smaller number of "board classes," where each class contains millions, billions or trillions of individual boards.
+- Carve up the enormous space of all possible MxN Boggle boards into a smaller number of [board classes], where each class contains millions, billions or trillions of individual boards.
 - For each board class `C`:
   - Calculate an [upper bound], `B`, on the highest-scoring board in the board class.
   - If `B < S` then we can throw out the whole class. It does not contain the best board.
@@ -39,8 +32,6 @@ The general approach is [branch and bound][bnb]:
   - If `C` contains a single board, then it is a candidate for the best board.
 
 Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations.
-
-📝 For the full details, check out the work-in-progress paper: [A Computational Proof of the Highest-Scoring Boggle Board](/paper/). I intend to eventually publish this. 📝
 
 Here are the blog posts I've written about this project in 2025:
 
@@ -268,9 +259,9 @@ This analysis only works with ENABLE2K and YAWL. It's impossible for the other w
 [bnb]: https://www.danvk.org/2025/02/10/boggle34.html#how-did-i-find-the-optimal-3x3-board-in-2009
 [simulated annealing]: https://github.com/danvk/hybrid-boggle/blob/main/boggle/anneal.py
 [hill climbing]: https://github.com/danvk/hybrid-boggle/blob/main/boggle/hillclimb.py
+[board classes]: https://www.danvk.org/2025/02/10/boggle34.html#board-classes
 [upper bound]: https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/index.html
 [np-hard]: https://stackoverflow.com/questions/79381817/calculate-an-upper-bound-on-a-tree-containing-sum-nodes-choice-nodes-and-requi
-[This post]: https://www.danvk.org/2025/02/13/boggle2025.html
 [pybind11]: https://pybind11.readthedocs.io/en/stable/index.html
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
 [danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general
@@ -284,3 +275,7 @@ This analysis only works with ENABLE2K and YAWL. It's impossible for the other w
 [5536e2f]: https://github.com/danvk/hybrid-boggle/commit/5536e2fb784435bc2d8af19c8e317ff927c81b23
 [top ten]: https://github.com/danvk/hybrid-boggle/blob/main/results/best-boards-4x4.enable2k.txt
 [confirmed]: https://github.com/danvk/hybrid-boggle/issues/132#issuecomment-2887347092
+[Financial Times]: https://www.ft.com/content/0ab64ced-1ed1-466d-acd3-78510d10c3a1
+[archive]: https://archive.ph/siaAO
+[Hacker News]: https://news.ycombinator.com/item?id=44082892
+[paper]: https://github.com/danvk/boggle-paper/blob/main/paper.pdf
