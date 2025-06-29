@@ -23,7 +23,6 @@ class SumNode {
   ~SumNode() {}
 
   uint32_t bound_ : 24;
-  int8_t letter_;
   uint16_t points_;
   uint8_t num_children_;
   uint8_t capacity_;
@@ -88,13 +87,14 @@ class SumNode {
 
 class ChoiceNode {
  public:
-  ChoiceNode() : num_children_(0) {}
+  ChoiceNode() : num_children_(0), child_letters_(0) {}
   ~ChoiceNode() {}
 
   int8_t cell_;
   uint8_t num_children_;
   uint8_t capacity_;
   uint32_t bound_;
+  uint32_t child_letters_;  // bitmask of which letters this node's children represent
   SumNode* children_[];
 
   void PrintJSON() const;
@@ -106,7 +106,10 @@ class ChoiceNode {
 
   int NodeCount() const;
   vector<SumNode*> GetChildren();
-  ChoiceNode* AddChild(SumNode* child, EvalNodeArena& arena);
+  ChoiceNode* AddChild(SumNode* child, int letter, EvalNodeArena& arena);
+
+  // Find child SumNode for given letter using popcount on child_letters_ bitmask
+  SumNode* GetChildForLetter(int letter) const;
 
   // See corresponding method on SumNode
   void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);

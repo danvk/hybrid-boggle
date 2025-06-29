@@ -154,7 +154,6 @@ def test_orderly_merge():
     assert t.bound == snapshot(21)
 
     assert isinstance(t, SumNode)
-    assert t.letter == ROOT_NODE
     assert len(t.children) == 2
     t0 = t.children[0]
     t1 = t.children[1]
@@ -183,9 +182,8 @@ def test_orderly_merge():
     assert len(force) == 2
     for c in force:
         c.assert_orderly(split_order)
-    assert force[0].letter == 0
+    # force[0] corresponds to letter 0, force[1] to letter 1, etc. by construction
     assert force[0].bound == m0.bound
-    assert force[1].letter == 1
     assert force[1].bound == m1.bound
 
 

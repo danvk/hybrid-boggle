@@ -39,7 +39,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
     def build_tree(self, arena: PyArena = None):
         root = SumNode()
-        root.letter = ROOT_NODE
         root.points = 0
         root.bound = 0
         self.root = root

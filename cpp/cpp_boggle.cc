@@ -109,7 +109,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
 
   py::class_<SumNode>(m, "SumNode")
-      .def_readonly("letter", &SumNode::letter_)
       .def_property_readonly("bound", &SumNode::Bound)
       .def_readonly("points", &SumNode::points_)
       .def("node_count", &SumNode::NodeCount)
@@ -130,7 +129,9 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_readonly("bound", &ChoiceNode::bound_)
       .def_readonly("cell", &ChoiceNode::cell_)
+      .def_readonly("child_letters", &ChoiceNode::child_letters_)
       .def("node_count", &ChoiceNode::NodeCount)
+      .def("get_child_for_letter", &ChoiceNode::GetChildForLetter, py::return_value_policy::reference)
       .def(
           "get_children", &ChoiceNode::GetChildren, py::return_value_policy::reference
       );

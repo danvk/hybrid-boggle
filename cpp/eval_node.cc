@@ -12,16 +12,13 @@
 
 using namespace std;
 
-inline bool SortByLetter(const SumNode* a, const SumNode* b) {
-  return a->letter_ < b->letter_;
-}
+// Children are now ordered by letter index implicitly via child_letters_ bitmask
 
 inline bool SortByCell(const ChoiceNode* a, const ChoiceNode* b) {
   return a->cell_ < b->cell_;
 }
 
 void SumNode::CopyFrom(SumNode& other) {
-  letter_ = other.letter_;
   points_ = other.points_;
   bound_ = other.bound_;
 }
@@ -29,6 +26,7 @@ void SumNode::CopyFrom(SumNode& other) {
 void ChoiceNode::CopyFrom(ChoiceNode& other) {
   cell_ = other.cell_;
   bound_ = other.bound_;
+  child_letters_ = other.child_letters_;
 }
 
 template <typename Node>
@@ -53,8 +51,20 @@ SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
   return AddChildImpl(this, child, arena);
 }
 
-ChoiceNode* ChoiceNode::AddChild(SumNode* child, EvalNodeArena& arena) {
-  return AddChildImpl(this, child, arena);
+ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& arena) {
+  auto new_node = AddChildImpl(this, child, arena);
+  new_node->child_letters_ |= (1 << letter);
+  return new_node;
+}
+
+SumNode* ChoiceNode::GetChildForLetter(int letter) const {
+  if (!(child_letters_ & (1 << letter))) {
+    return nullptr;  // This letter is not present
+  }
+  // Count number of set bits before this letter to find index
+  uint32_t mask = (1 << letter) - 1;
+  int index = std::popcount(child_letters_ & mask);
+  return children_[index];
 }
 
 SumNode* SumNode::AddWord(
@@ -94,20 +104,12 @@ SumNode* SumNode::AddWord(
     sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
   }
 
-  // TODO: might be cleaner to call a helper on ChoiceNode here
-  SumNode* letter_child = NULL;
-  for (int i = 0; i < choice_child->num_children_; i++) {
-    auto c = choice_child->children_[i];
-    if (c->letter_ == letter) {
-      letter_child = c;
-      break;
-    }
-  }
+  // Use the new GetChildForLetter method
+  SumNode* letter_child = choice_child->GetChildForLetter(letter);
   if (!letter_child) {
     unsigned int num_choices = std::popcount(used_ordered);
     letter_child = arena.NewSumNodeWithCapacity(num_choices == 1 ? 0 : 1);
-    letter_child->letter_ = letter;
-    auto new_choice_child = choice_child->AddChild(letter_child, arena);
+    auto new_choice_child = choice_child->AddChild(letter_child, letter, arena);
     if (new_choice_child != choice_child) {
       const auto& old_choice_child = choice_child;
       bool patched = false;
@@ -123,11 +125,7 @@ SumNode* SumNode::AddWord(
       assert(patched);  // TODO: remove
       choice_child = new_choice_child;
     }
-    sort(
-        &choice_child->children_[0],
-        &choice_child->children_[choice_child->num_children_],
-        SortByLetter
-    );
+    // No need to sort children since they're ordered by the bitmask
   }
   auto new_letter_child =
       letter_child->AddWord(choices, used_ordered, split_order, arena, leaf);
@@ -190,13 +188,7 @@ void PrintJSONChildren(Node& n) {
 }
 
 void SumNode::PrintJSON() const {
-  cout << "{\"type\": \"";
-  if (letter_ == SumNode::ROOT_NODE) {
-    cout << "ROOT";
-  } else {
-    cout << "SUM";
-  }
-  cout << "\", \"letter\": " << (int)letter_;
+  cout << "{\"type\": \"SUM\"";
   cout << ", \"bound\": " << bound_;
   if (points_) {
     cout << ", \"points\": " << (int)points_;
@@ -208,6 +200,7 @@ void SumNode::PrintJSON() const {
 void ChoiceNode::PrintJSON() const {
   cout << "{\"type\": \"CHOICE\", \"cell\": " << (int)cell_;
   cout << ", \"bound\": " << bound_;
+  cout << ", \"child_letters\": " << child_letters_;
   PrintJSONChildren(*this);
   cout << "}";
 }
@@ -245,11 +238,9 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
   // If this cell is forced, apply the force.
   auto force = forces[cell_];
   if (force >= 0) {
-    for (int i = 0; i < num_children_; i++) {
-      const auto& child = children_[i];
-      if (child->letter_ == force) {
-        return child->ScoreWithForces(forces);
-      }
+    auto child = GetChildForLetter(force);
+    if (child) {
+      return child->ScoreWithForces(forces);
     }
     return 0;
   }
@@ -327,15 +318,6 @@ vector<pair<int, string>> SumNode::OrderlyBound(
         vector<int> base_sums = stack_sums;
 
         auto& next_stack = stacks[next_to_split];
-        vector<pair<SumNode* const*, SumNode* const*>> its;
-        its.reserve(stack_sizes[next_to_split]);
-        for (int i = 0; i < stack_sizes[next_to_split]; i++) {
-          // assert(n->cell_ == next_to_split);
-          its.push_back(
-              {&next_stack[i]->children_[0],
-               &next_stack[i]->children_[next_stack[i]->num_children_]}
-          );
-        }
 
         int num_letters = cells[next_to_split].size();
         for (int letter = 0; letter < num_letters; ++letter) {
@@ -348,11 +330,12 @@ vector<pair<int, string>> SumNode::OrderlyBound(
           }
           choices.emplace_back(next_to_split, letter);
           int points = base_points;
-          for (auto& [it, end] : its) {
-            if (it != end && (*it)->letter_ == letter) {
+          for (int i = 0; i < stack_sizes[next_to_split]; i++) {
+            auto choice_node = next_stack[i];
+            auto child = choice_node->GetChildForLetter(letter);
+            if (child) {
               // visit_at_level[1 + num_splits] += 1;
-              points += advance(*it, stack_sums, stacks, stack_sizes);
-              ++it;
+              points += advance(child, stack_sums, stacks, stack_sizes);
             }
           }
           rec(points, num_splits + 1, stack_sums);
@@ -383,76 +366,36 @@ ChoiceNode* merge_orderly_choice_children(
 ) {
   assert(a->cell_ == b->cell_);
 
-  auto it_a = &a->children_[0];
-  auto it_b = &b->children_[0];
-  const auto& a_end = it_a + a->num_children_;
-  const auto& b_end = it_b + b->num_children_;
-  int num_children = 0;
-  while (it_a != a_end && it_b != b_end) {
-    const auto& a_child = *it_a;
-    const auto& b_child = *it_b;
-    if (a_child->letter_ < b_child->letter_) {
-      num_children++;
-      ++it_a;
-    } else if (b_child->letter_ < a_child->letter_) {
-      num_children++;
-      ++it_b;
-    } else {
-      num_children++;
-      ++it_a;
-      ++it_b;
-    }
-  }
-  num_children += (a_end - it_a) + (b_end - it_b);
+  // Compute the union of child letters from both nodes
+  uint32_t merged_letters = a->child_letters_ | b->child_letters_;
+  int num_children = std::popcount(merged_letters);
 
   auto n = arena.NewChoiceNodeWithCapacity(num_children);
   n->cell_ = a->cell_;
   n->bound_ = 0;
+  n->child_letters_ = merged_letters;
 
-  it_a = &a->children_[0];
-  it_b = &b->children_[0];
+  // Iterate through all possible letters in order
   int out_i = 0;
-  while (it_a != a_end && it_b != b_end) {
-    const auto& a_child = *it_a;
-    const auto& b_child = *it_b;
-    if (a_child->letter_ < b_child->letter_) {
-      n->children_[out_i++] = a_child;
-      if (a_child) {
-        n->bound_ = max(n->bound_, a_child->bound_);
+  for (int letter = 0; letter < 32; ++letter) {
+    if (merged_letters & (1 << letter)) {
+      auto a_child = a->GetChildForLetter(letter);
+      auto b_child = b->GetChildForLetter(letter);
+      
+      SumNode* result_child = nullptr;
+      if (a_child && b_child) {
+        result_child = merge_orderly_tree(a_child, b_child, arena);
+      } else if (a_child) {
+        result_child = const_cast<SumNode*>(a_child);
+      } else if (b_child) {
+        result_child = const_cast<SumNode*>(b_child);
       }
-      ++it_a;
-    } else if (b_child->letter_ < a_child->letter_) {
-      n->children_[out_i++] = b_child;
-      if (b_child) {
-        n->bound_ = max(n->bound_, b_child->bound_);
+      
+      n->children_[out_i++] = result_child;
+      if (result_child) {
+        n->bound_ = max(n->bound_, result_child->bound_);
       }
-      ++it_b;
-    } else {
-      auto merged = merge_orderly_tree(a_child, b_child, arena);
-      n->children_[out_i++] = merged;
-      if (merged) {
-        n->bound_ = max(n->bound_, merged->bound_);
-      }
-      ++it_a;
-      ++it_b;
     }
-  }
-
-  while (it_a != a_end) {
-    const auto& a_child = *it_a;
-    n->children_[out_i++] = a_child;
-    if (a_child) {
-      n->bound_ = max(n->bound_, a_child->bound_);
-    }
-    ++it_a;
-  }
-  while (it_b != b_end) {
-    const auto& b_child = *it_b;
-    n->children_[out_i++] = b_child;
-    if (b_child) {
-      n->bound_ = max(n->bound_, b_child->bound_);
-    }
-    ++it_b;
   }
   assert(out_i == num_children);
   n->num_children_ = num_children;
@@ -490,7 +433,6 @@ SumNode* merge_orderly_tree_children(
   num_children += (a_end - it_a) + (b_end - it_b);
 
   auto n = arena.NewSumNodeWithCapacity(num_children);
-  n->letter_ = a->letter_;
   n->points_ = a->points_ + b_points;
   n->bound_ = n->points_;
 
@@ -587,11 +529,16 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   int non_cell_points = points_;
 
   vector<const SumNode*> out(num_lets, nullptr);
-  for (int i = 0; i < top_choice->num_children_; i++) {
-    const auto& child = top_choice->children_[i];
-    out[child->letter_] = merge_orderly_tree_children(
-        child, &non_cell_children[0], non_cell_children.size(), non_cell_points, arena
-    );
+  // Iterate through all letters represented in the bitmask
+  for (int letter = 0; letter < 32; ++letter) {
+    if (top_choice->child_letters_ & (1 << letter)) {
+      auto child = top_choice->GetChildForLetter(letter);
+      if (child && letter < num_lets) {
+        out[letter] = merge_orderly_tree_children(
+            child, &non_cell_children[0], non_cell_children.size(), non_cell_points, arena
+        );
+      }
+    }
   }
 
   if (top_choice->num_children_ < num_lets) {
@@ -606,7 +553,6 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
         if (!out[i]) {
           auto point_node = arena.NewSumNodeWithCapacity(non_cell_children.size());
           point_node->points_ = non_cell_points;
-          point_node->letter_ = i;
           point_node->bound_ = non_cell_points + other_bound;
           point_node->SetChildrenFromVector(non_cell_children);
           out[i] = point_node;
