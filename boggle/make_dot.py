@@ -6,7 +6,7 @@ import sys
 
 from boggle.args import add_standard_args
 from boggle.dimensional_bogglers import LEN_TO_DIMS
-from boggle.eval_node import ROOT_NODE, ChoiceNode, SumNode
+from boggle.eval_node import ChoiceNode, SumNode
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import make_py_trie
@@ -48,7 +48,7 @@ def to_dot_help(
     attrs = ""
     if is_dupe:
         attrs = 'color="red"'
-    if isinstance(node, SumNode) and node.letter == ROOT_NODE:
+    if isinstance(node, SumNode) and last_cell is None:
         me += "r"
         attrs += ' penwidth="1"'
     elif isinstance(node, ChoiceNode):
@@ -56,8 +56,8 @@ def to_dot_help(
         color = DOT_FILL_COLORS[node.cell]
         attrs += f' style="rounded, filled" fillcolor="{color}"'
     else:
-        letter = cells[last_cell][node.letter]
-        me += f"_{last_cell}{letter}"
+        # This is a SumNode that represents a choice
+        me += f"_{last_cell}s"
         attrs += ' penwidth="1"'
         if node.points and node.bound != node.points:
             attrs += ' peripheries="2"'

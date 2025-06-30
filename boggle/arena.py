@@ -15,10 +15,9 @@ class PyArena:
         return self.count * 32
 
     def new_node_with_capacity(self, n: int):
-        from boggle.eval_node import ROOT_NODE, SumNode
+        from boggle.eval_node import SumNode
 
         n = SumNode()
-        n.letter = ROOT_NODE
         n.bound = 0
         n.points = 0
         self.count += 1
