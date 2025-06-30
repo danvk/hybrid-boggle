@@ -85,16 +85,19 @@ class SumNode {
 
 class ChoiceNode {
  public:
-  ChoiceNode() : child_letters_(0) {}
+  ChoiceNode() : bound_(0), cell_(0), child_letters_(0), capacity_(0) {}
   ~ChoiceNode() {}
 
-  int8_t cell_;
-  uint8_t capacity_;
-  uint32_t bound_;
-  uint32_t child_letters_;  // bitmask of which letters this node's children represent
+  uint32_t bound_ : 24;
+  uint32_t cell_ : 8;  // Changed to uint32_t bit field to fit in same word
+  uint32_t child_letters_ : 26;
+  uint32_t capacity_ : 6;
   SumNode* children_[];
 
   int NumChildren() const { return std::popcount(child_letters_); }
+  uint32_t Bound() const { return bound_; }
+  uint32_t ChildLetters() const { return child_letters_; }
+  uint32_t Cell() const { return cell_; }
 
   void PrintJSON() const;
 

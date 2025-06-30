@@ -127,9 +127,9 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
-      .def_readonly("bound", &ChoiceNode::bound_)
-      .def_readonly("cell", &ChoiceNode::cell_)
-      .def_readonly("child_letters", &ChoiceNode::child_letters_)
+      .def_property_readonly("bound", &ChoiceNode::Bound)
+      .def_property_readonly("cell", &ChoiceNode::Cell)
+      .def_property_readonly("child_letters", &ChoiceNode::ChildLetters)
       .def("node_count", &ChoiceNode::NodeCount)
       .def("get_child_for_letter", &ChoiceNode::GetChildForLetter, py::return_value_policy::reference)
       .def(

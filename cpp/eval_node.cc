@@ -52,10 +52,12 @@ SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
 }
 
 ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& arena) {
+  assert(letter >= 0 && letter < 26);  // Ensure letter fits in 26-bit field
   uint32_t mask = (1 << letter) - 1;
   int insert_index = std::popcount(child_letters_ & mask);
 
   auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 1);
+  assert(capacity_ + 1 < 64);  // Ensure capacity fits in 6-bit field
   new_node->CopyFrom(*this);
   new_node->child_letters_ |= (1 << letter);
 
@@ -72,6 +74,7 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
 }
 
 SumNode* ChoiceNode::GetChildForLetter(int letter) const {
+  assert(letter >= 0 && letter < 26);  // Ensure letter fits in 26-bit field
   if (!(child_letters_ & (1 << letter))) {
     return nullptr;
   }
