@@ -29,26 +29,17 @@ void ChoiceNode::CopyFrom(ChoiceNode& other) {
   child_letters_ = other.child_letters_;
 }
 
-template <typename Node>
-Node* AddChildImpl(Node* n, decltype(Node::children_[0]) child, EvalNodeArena& arena) {
-  if (n->num_children_ + 1 <= n->capacity_) {
-    n->children_[n->num_children_++] = child;
-    return n;
-  }
-  // cout << "Exceeded capacity!" << endl;
-  Node* clone = arena.NewNodeWithCapacity<Node>(n->capacity_ + 2);
-  clone->CopyFrom(*n);
-  clone->num_children_ = n->num_children_ + 1;
-  // cout << "sizeof(children_[0]) = " << sizeof(children_[0]) << endl;
-  memcpy(
-      &clone->children_[0], &n->children_[0], n->num_children_ * sizeof(n->children_[0])
-  );
-  clone->children_[n->num_children_] = child;
-  return clone;
-}
-
 SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
-  return AddChildImpl(this, child, arena);
+  if (num_children_ + 1 <= capacity_) {
+    children_[num_children_++] = child;
+    return this;
+  }
+  SumNode* clone = arena.NewNodeWithCapacity<SumNode>(capacity_ + 2);
+  clone->CopyFrom(*this);
+  clone->num_children_ = num_children_ + 1;
+  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
+  clone->children_[num_children_] = child;
+  return clone;
 }
 
 ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& arena) {
@@ -57,7 +48,7 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
   int insert_index = std::popcount(child_letters_ & mask);
 
   auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 1);
-  assert(capacity_ + 1 < 64);  // Ensure capacity fits in 6-bit field
+  assert(capacity_ + 2 < 64);  // Ensure capacity fits in 6-bit field
   new_node->CopyFrom(*this);
   new_node->child_letters_ |= (1 << letter);
 
@@ -431,7 +422,7 @@ ChoiceNode* merge_orderly_choice_children(
     if (result_child) {
       n->bound_ = max(n->bound_, result_child->bound_);
     }
-    
+
     remaining_bits &= remaining_bits - 1;  // Clear the lowest set bit
   }
   assert(out_i == num_children);
