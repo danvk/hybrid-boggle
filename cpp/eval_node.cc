@@ -52,16 +52,13 @@ SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
 }
 
 ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& arena) {
-  // Find insertion index based on bitmask ordering
   uint32_t mask = (1 << letter) - 1;
   int insert_index = std::popcount(child_letters_ & mask);
 
-  // Create new node with space for the new child
   auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 1);
   new_node->CopyFrom(*this);
   new_node->child_letters_ |= (1 << letter);
 
-  // Copy children, inserting new child at the correct position
   int old_num_children = NumChildren();
   memcpy(&new_node->children_[0], &children_[0], insert_index * sizeof(children_[0]));
   new_node->children_[insert_index] = child;
@@ -76,9 +73,8 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
 
 SumNode* ChoiceNode::GetChildForLetter(int letter) const {
   if (!(child_letters_ & (1 << letter))) {
-    return nullptr;  // This letter is not present
+    return nullptr;
   }
-  // Count number of set bits before this letter to find index
   uint32_t mask = (1 << letter) - 1;
   int index = std::popcount(child_letters_ & mask);
   return children_[index];
@@ -121,7 +117,6 @@ SumNode* SumNode::AddWord(
     sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
   }
 
-  // Use the new GetChildForLetter method
   SumNode* letter_child = choice_child->GetChildForLetter(letter);
   if (!letter_child) {
     unsigned int num_choices = std::popcount(used_ordered);
@@ -142,7 +137,6 @@ SumNode* SumNode::AddWord(
       assert(patched);  // TODO: remove
       choice_child = new_choice_child;
     }
-    // No need to sort children since they're ordered by the bitmask
   }
   auto new_letter_child =
       letter_child->AddWord(choices, used_ordered, split_order, arena, leaf);
@@ -406,7 +400,6 @@ ChoiceNode* merge_orderly_choice_children(
 ) {
   assert(a->cell_ == b->cell_);
 
-  // Compute the union of child letters from both nodes
   uint32_t merged_letters = a->child_letters_ | b->child_letters_;
   int num_children = std::popcount(merged_letters);
 
@@ -415,7 +408,6 @@ ChoiceNode* merge_orderly_choice_children(
   n->bound_ = 0;
   n->child_letters_ = merged_letters;
 
-  // Iterate through all possible letters in order
   int out_i = 0;
   for (int letter = 0; letter < 32; ++letter) {
     if (merged_letters & (1 << letter)) {
@@ -568,7 +560,6 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   int non_cell_points = points_;
 
   vector<const SumNode*> out(num_lets, nullptr);
-  // Iterate through all letters represented in the bitmask
   for (int letter = 0; letter < 32; ++letter) {
     if (top_choice->child_letters_ & (1 << letter)) {
       auto child = top_choice->GetChildForLetter(letter);
