@@ -28,7 +28,6 @@ class SumNode {
   uint8_t capacity_;
   ChoiceNode* children_[];
 
-  static const int8_t ROOT_NODE = -2;
 
   // Add a new path to the tree, or return an existing one.
   // This does not touch points_ or bound_ on any nodes.

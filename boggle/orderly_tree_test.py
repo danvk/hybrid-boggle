@@ -12,7 +12,6 @@ from boggle.dimensional_bogglers import (
     cpp_orderly_tree_builder,
 )
 from boggle.eval_node import (
-    ROOT_NODE,
     ChoiceNode,
     SumNode,
     eval_all,

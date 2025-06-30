@@ -52,8 +52,22 @@ SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
 }
 
 ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& arena) {
-  auto new_node = AddChildImpl(this, child, arena);
+  // Find insertion index based on bitmask ordering
+  uint32_t mask = (1 << letter) - 1;
+  int insert_index = std::popcount(child_letters_ & mask);
+  
+  // Create new node with space for the new child
+  auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 1);
+  new_node->CopyFrom(*this);
+  new_node->num_children_ = num_children_ + 1;
   new_node->child_letters_ |= (1 << letter);
+  
+  // Copy children, inserting new child at the correct position
+  memcpy(&new_node->children_[0], &children_[0], insert_index * sizeof(children_[0]));
+  new_node->children_[insert_index] = child;
+  memcpy(&new_node->children_[insert_index + 1], &children_[insert_index], 
+         (num_children_ - insert_index) * sizeof(children_[0]));
+  
   return new_node;
 }
 
@@ -541,7 +555,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     }
   }
 
-  if (top_choice->num_children_ < num_lets) {
+  if (std::popcount(top_choice->child_letters_) < num_lets) {
     int other_bound = 0;
     for (auto c : non_cell_children) {
       if (c) {

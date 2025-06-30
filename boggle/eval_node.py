@@ -27,7 +27,6 @@ from typing import Self, Sequence
 
 from boggle.arena import PyArena
 
-ROOT_NODE = -2
 
 
 class SumNode:

@@ -18,7 +18,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import ROOT_NODE, SumNode
+from boggle.eval_node import SumNode
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_lookup_table
 

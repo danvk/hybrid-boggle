@@ -3,7 +3,7 @@ from cpp_boggle import create_eval_node_arena
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.arena import create_eval_node_arena_py
-from boggle.eval_node import ROOT_NODE, ChoiceNode, SumNode, eval_node_to_string
+from boggle.eval_node import ChoiceNode, SumNode, eval_node_to_string
 
 # There are more thorough tests in orderly_tree_test.py
 
@@ -45,9 +45,8 @@ def choice_node(cell, children):
     return n
 
 
-def letter_node(*, letter, points=0, children=[]) -> SumNode:
+def sum_node(*, points=0, children=[]) -> SumNode:
     n = SumNode()
-    n.letter = letter
     n.points = points
     n.children = children
     return n
@@ -59,18 +58,18 @@ def test_orderly_merge():
     t0 = choice_node(
         cell=0,
         children=[
-            letter_node(letter=1, points=1),
-            letter_node(letter=2, points=2),
+            sum_node(points=1),
+            sum_node(points=2),
         ],
     )
     t1 = choice_node(
         cell=1,
         children=[
-            letter_node(letter=0, points=1),
-            letter_node(letter=1, points=2),
+            sum_node(points=1),
+            sum_node(points=2),
         ],
     )
-    root = letter_node(letter=ROOT_NODE, children=[t0, t1])
+    root = sum_node(children=[t0, t1])
     root.decode_points_and_bound()
     # print(root.to_dot(cells))
     arena = create_eval_node_arena_py()
