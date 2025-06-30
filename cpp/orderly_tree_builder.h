@@ -39,14 +39,14 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   uint32_t dupe_mask_;
   vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
-  
+
   // For interning zero-child SumNodes
-  SumNode* canonical_nodes_[128];  // canonical nodes for 1-128 points
+  SumNode* canonical_nodes_[128];         // canonical nodes for 1-128 points
   unique_ptr<EvalNodeArena> temp_arena_;  // temporary arena for initial allocation
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
-  
+
   // Decode points/bounds and intern zero-child nodes, transferring to main arena
   SumNode* DecodeAndIntern(SumNode* node, EvalNodeArena& main_arena);
   ChoiceNode* DecodeAndInternChoice(ChoiceNode* node, EvalNodeArena& main_arena);
@@ -56,7 +56,7 @@ template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
-  
+
   // Step 1: Create canonical zero-child SumNodes in main arena
   for (int points = 1; points <= 128; points++) {
     auto node = arena.NewSumNodeWithCapacity(0);
@@ -64,11 +64,12 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     node->bound_ = points;  // For zero-child nodes, bound equals points
     canonical_nodes_[points - 1] = node;
   }
-  
+
   // Step 2: Create temporary arena for initial tree building
   temp_arena_ = create_eval_node_arena();
-  
-  root_ = temp_arena_->NewRootNodeWithCapacity(M * N);  // this will never be reallocated
+
+  root_ =
+      temp_arena_->NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
   word_lists_.clear();
@@ -103,10 +104,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
 
   // Step 3: Decode and intern, transferring final tree to main arena
   auto interned_root = DecodeAndIntern(root, arena);
-  
+
   // Step 4: Free temporary arena
   temp_arena_.reset();
-  
+
   word_lists_.clear();
 
   // arena.PrintStats();
@@ -254,7 +255,9 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
 }
 
 template <int M, int N>
-SumNode* OrderlyTreeBuilder<M, N>::DecodeAndIntern(SumNode* node, EvalNodeArena& main_arena) {
+SumNode* OrderlyTreeBuilder<M, N>::DecodeAndIntern(
+    SumNode* node, EvalNodeArena& main_arena
+) {
   // First, decode the current node using the existing logic
   if (node->bound_) {
     // A word was found on this node; decode the points.
@@ -289,7 +292,8 @@ SumNode* OrderlyTreeBuilder<M, N>::DecodeAndIntern(SumNode* node, EvalNodeArena&
     // points == 0: keep the temporary node (shouldn't happen in practice)
   }
 
-  // For nodes with children, recursively process children and create new node in main arena
+  // For nodes with children, recursively process children and create new node in main
+  // arena
   auto new_node = main_arena.NewSumNodeWithCapacity(node->num_children_);
   new_node->points_ = node->points_;
   new_node->bound_ = node->points_;  // Will be updated below
@@ -307,7 +311,9 @@ SumNode* OrderlyTreeBuilder<M, N>::DecodeAndIntern(SumNode* node, EvalNodeArena&
 }
 
 template <int M, int N>
-ChoiceNode* OrderlyTreeBuilder<M, N>::DecodeAndInternChoice(ChoiceNode* node, EvalNodeArena& main_arena) {
+ChoiceNode* OrderlyTreeBuilder<M, N>::DecodeAndInternChoice(
+    ChoiceNode* node, EvalNodeArena& main_arena
+) {
   // Create new ChoiceNode in main arena
   int num_children = node->NumChildren();
   auto new_node = main_arena.NewChoiceNodeWithCapacity(num_children);

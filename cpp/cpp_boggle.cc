@@ -131,7 +131,11 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_property_readonly("cell", &ChoiceNode::Cell)
       .def_property_readonly("child_letters", &ChoiceNode::ChildLetters)
       .def("node_count", &ChoiceNode::NodeCount)
-      .def("get_child_for_letter", &ChoiceNode::GetChildForLetter, py::return_value_policy::reference)
+      .def(
+          "get_child_for_letter",
+          &ChoiceNode::GetChildForLetter,
+          py::return_value_policy::reference
+      )
       .def(
           "get_children", &ChoiceNode::GetChildren, py::return_value_policy::reference
       );
