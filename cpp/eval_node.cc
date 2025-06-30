@@ -46,13 +46,28 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
   assert(letter >= 0 && letter < 26);  // Ensure letter fits in 26-bit field
   uint32_t mask = (1 << letter) - 1;
   int insert_index = std::popcount(child_letters_ & mask);
+  int old_num_children = NumChildren();
 
-  auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 1);
+  // Check if we have capacity for the new child
+  if (old_num_children + 1 <= capacity_) {
+    // In-place insertion: shift existing children to make room
+    memmove(
+        &children_[insert_index + 1],
+        &children_[insert_index],
+        (old_num_children - insert_index) * sizeof(children_[0])
+    );
+    children_[insert_index] = child;
+    child_letters_ |= (1 << letter);
+    return this;
+  }
+
+  // Need to allocate new node with more capacity
   assert(capacity_ + 2 < 64);  // Ensure capacity fits in 6-bit field
+  auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 2);
   new_node->CopyFrom(*this);
   new_node->child_letters_ |= (1 << letter);
 
-  int old_num_children = NumChildren();
+  // Copy children in the correct order with the new child inserted
   memcpy(&new_node->children_[0], &children_[0], insert_index * sizeof(children_[0]));
   new_node->children_[insert_index] = child;
   memcpy(
