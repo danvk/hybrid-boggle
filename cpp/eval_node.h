@@ -28,7 +28,6 @@ class SumNode {
   uint8_t capacity_;
   ChoiceNode* children_[];
 
-
   // Add a new path to the tree, or return an existing one.
   // This does not touch points_ or bound_ on any nodes.
   // Returns `this` or a new version of this node if a reallocation happened.
@@ -95,7 +94,7 @@ class ChoiceNode {
   uint32_t child_letters_;  // bitmask of which letters this node's children represent
   SumNode* children_[];
 
-  int num_children() const { return std::popcount(child_letters_); }
+  int NumChildren() const { return std::popcount(child_letters_); }
 
   void PrintJSON() const;
 

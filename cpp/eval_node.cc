@@ -55,19 +55,22 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
   // Find insertion index based on bitmask ordering
   uint32_t mask = (1 << letter) - 1;
   int insert_index = std::popcount(child_letters_ & mask);
-  
+
   // Create new node with space for the new child
   auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 1);
   new_node->CopyFrom(*this);
   new_node->child_letters_ |= (1 << letter);
-  
+
   // Copy children, inserting new child at the correct position
-  int old_num_children = num_children();
+  int old_num_children = NumChildren();
   memcpy(&new_node->children_[0], &children_[0], insert_index * sizeof(children_[0]));
   new_node->children_[insert_index] = child;
-  memcpy(&new_node->children_[insert_index + 1], &children_[insert_index], 
-         (old_num_children - insert_index) * sizeof(children_[0]));
-  
+  memcpy(
+      &new_node->children_[insert_index + 1],
+      &children_[insert_index],
+      (old_num_children - insert_index) * sizeof(children_[0])
+  );
+
   return new_node;
 }
 
@@ -146,7 +149,7 @@ SumNode* SumNode::AddWord(
   if (new_letter_child != letter_child) {
     const auto& old_letter_child = letter_child;
     bool patched = false;
-    for (int i = 0; i < choice_child->num_children(); i++) {
+    for (int i = 0; i < choice_child->NumChildren(); i++) {
       auto& c = choice_child->children_[i];
       if (c == old_letter_child) {
         // TODO: assign through reference
@@ -173,7 +176,7 @@ vector<ChoiceNode*> SumNode::GetChildren() {
 
 vector<SumNode*> ChoiceNode::GetChildren() {
   vector<SumNode*> out;
-  int n_children = num_children();
+  int n_children = NumChildren();
   out.reserve(n_children);
   for (int i = 0; i < n_children; i++) {
     out.push_back(children_[i]);
@@ -202,7 +205,7 @@ void PrintJSONChildren(const SumNode& n) {
 }
 
 void PrintJSONChildren(const ChoiceNode& n) {
-  int n_children = n.num_children();
+  int n_children = n.NumChildren();
   if (n_children) {
     cout << ", \"children\": [";
     bool has_commad = false;
@@ -251,7 +254,7 @@ int SumNode::NodeCount() const {
 
 int ChoiceNode::NodeCount() const {
   int count = 1;
-  int n_children = num_children();
+  int n_children = NumChildren();
   for (int i = 0; i < n_children; i++) {
     const auto& c = children_[i];
     if (c) count += c->NodeCount();
@@ -283,7 +286,7 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
 
   // Otherwise, this is the same as regular scoring.
   unsigned int score = 0;
-  int n_children = num_children();
+  int n_children = NumChildren();
   for (int i = 0; i < n_children; i++) {
     const auto& child = children_[i];
     if (child) {
@@ -418,7 +421,7 @@ ChoiceNode* merge_orderly_choice_children(
     if (merged_letters & (1 << letter)) {
       auto a_child = a->GetChildForLetter(letter);
       auto b_child = b->GetChildForLetter(letter);
-      
+
       SumNode* result_child = nullptr;
       if (a_child && b_child) {
         result_child = merge_orderly_tree(a_child, b_child, arena);
@@ -427,7 +430,7 @@ ChoiceNode* merge_orderly_choice_children(
       } else if (b_child) {
         result_child = const_cast<SumNode*>(b_child);
       }
-      
+
       n->children_[out_i++] = result_child;
       if (result_child) {
         n->bound_ = max(n->bound_, result_child->bound_);
@@ -571,7 +574,11 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
       auto child = top_choice->GetChildForLetter(letter);
       if (child && letter < num_lets) {
         out[letter] = merge_orderly_tree_children(
-            child, &non_cell_children[0], non_cell_children.size(), non_cell_points, arena
+            child,
+            &non_cell_children[0],
+            non_cell_children.size(),
+            non_cell_points,
+            arena
         );
       }
     }
@@ -629,7 +636,7 @@ void SumNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
 
 void ChoiceNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
   uint32_t bound = 0;
-  int n_children = num_children();
+  int n_children = NumChildren();
   for (int i = 0; i < n_children; i++) {
     auto& child = children_[i];
     child->DecodePointsAndBound(wordlists);
