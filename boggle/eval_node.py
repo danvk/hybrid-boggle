@@ -131,14 +131,17 @@ class SumNode:
         non_cell_points = self.points
 
         out = [None] * num_lets
-        # Iterate through children using the bitmask
-        for letter in range(min(num_lets, 32)):
-            if top_choice.child_letters & (1 << letter):
+        # Iterate only over set bits in the bitmask
+        remaining_bits = top_choice.child_letters
+        while remaining_bits:
+            letter = countr_zero(remaining_bits)
+            if letter < num_lets:
                 child = top_choice.get_child_for_letter(letter)
                 if child:
                     out[letter] = merge_orderly_tree_children(
                         child, non_cell_children, non_cell_points, arena
                     )
+            remaining_bits &= remaining_bits - 1  # Clear the lowest set bit
 
         if top_choice.child_letters.bit_count() < num_lets:
             # TODO: if there's >1 of these, this could result in a lot of duplicate work.
@@ -568,24 +571,27 @@ def merge_orderly_choice_children(
     n.child_letters = merged_letters
     n.bound = 0
 
-    # Iterate through all possible letters in order
+    # Iterate only over set bits in the merged bitmask
     out = []
-    for letter in range(32):
-        if merged_letters & (1 << letter):
-            a_child = a.get_child_for_letter(letter)
-            b_child = b.get_child_for_letter(letter)
-            
-            result_child = None
-            if a_child and b_child:
-                result_child = merge_orderly_tree(a_child, b_child, arena)
-            elif a_child:
-                result_child = a_child
-            elif b_child:
-                result_child = b_child
-            
-            out.append(result_child)
-            if result_child:
-                n.bound = max(n.bound, result_child.bound)
+    remaining_bits = merged_letters
+    while remaining_bits:
+        letter = countr_zero(remaining_bits)
+        a_child = a.get_child_for_letter(letter)
+        b_child = b.get_child_for_letter(letter)
+        
+        result_child = None
+        if a_child and b_child:
+            result_child = merge_orderly_tree(a_child, b_child, arena)
+        elif a_child:
+            result_child = a_child
+        elif b_child:
+            result_child = b_child
+        
+        out.append(result_child)
+        if result_child:
+            n.bound = max(n.bound, result_child.bound)
+        
+        remaining_bits &= remaining_bits - 1  # Clear the lowest set bit
 
     n.children = out
     arena.add_node(n)

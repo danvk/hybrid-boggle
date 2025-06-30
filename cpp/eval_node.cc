@@ -409,25 +409,27 @@ ChoiceNode* merge_orderly_choice_children(
   n->child_letters_ = merged_letters;
 
   int out_i = 0;
-  for (int letter = 0; letter < 32; ++letter) {
-    if (merged_letters & (1 << letter)) {
-      auto a_child = a->GetChildForLetter(letter);
-      auto b_child = b->GetChildForLetter(letter);
+  uint32_t remaining_bits = merged_letters;
+  while (remaining_bits) {
+    int letter = std::countr_zero(remaining_bits);
+    auto a_child = a->GetChildForLetter(letter);
+    auto b_child = b->GetChildForLetter(letter);
 
-      SumNode* result_child = nullptr;
-      if (a_child && b_child) {
-        result_child = merge_orderly_tree(a_child, b_child, arena);
-      } else if (a_child) {
-        result_child = const_cast<SumNode*>(a_child);
-      } else if (b_child) {
-        result_child = const_cast<SumNode*>(b_child);
-      }
-
-      n->children_[out_i++] = result_child;
-      if (result_child) {
-        n->bound_ = max(n->bound_, result_child->bound_);
-      }
+    SumNode* result_child = nullptr;
+    if (a_child && b_child) {
+      result_child = merge_orderly_tree(a_child, b_child, arena);
+    } else if (a_child) {
+      result_child = const_cast<SumNode*>(a_child);
+    } else if (b_child) {
+      result_child = const_cast<SumNode*>(b_child);
     }
+
+    n->children_[out_i++] = result_child;
+    if (result_child) {
+      n->bound_ = max(n->bound_, result_child->bound_);
+    }
+    
+    remaining_bits &= remaining_bits - 1;  // Clear the lowest set bit
   }
   assert(out_i == num_children);
 
@@ -560,10 +562,12 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   int non_cell_points = points_;
 
   vector<const SumNode*> out(num_lets, nullptr);
-  for (int letter = 0; letter < 32; ++letter) {
-    if (top_choice->child_letters_ & (1 << letter)) {
+  uint32_t remaining_bits = top_choice->child_letters_;
+  while (remaining_bits) {
+    int letter = std::countr_zero(remaining_bits);
+    if (letter < num_lets) {
       auto child = top_choice->GetChildForLetter(letter);
-      if (child && letter < num_lets) {
+      if (child) {
         out[letter] = merge_orderly_tree_children(
             child,
             &non_cell_children[0],
@@ -573,6 +577,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
         );
       }
     }
+    remaining_bits &= remaining_bits - 1;  // Clear the lowest set bit
   }
 
   if (std::popcount(top_choice->child_letters_) < num_lets) {
