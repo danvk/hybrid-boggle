@@ -202,7 +202,7 @@ def test_orderly_force22(is_python):
         for i, t in enumerate(force)
     )
 
-    assert outsource(txt) == snapshot(external("7e73f64f3fe0*.txt"))
+    assert outsource(txt) == snapshot(external("7dd80d82a00c*.txt"))
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
