@@ -28,7 +28,6 @@ from typing import Self, Sequence
 from boggle.arena import PyArena
 
 
-
 class SumNode:
     points: int
     """Points provided by _this_ node, not children."""
@@ -85,7 +84,7 @@ class SumNode:
             letter_child = SumNode()
             letter_child.bound = 0
             # Update the bitmask and insert child at correct position
-            choice_child.child_letters |= (1 << letter)
+            choice_child.child_letters |= 1 << letter
             # Find insertion index using popcount
             mask = (1 << letter) - 1
             insert_index = (choice_child.child_letters & mask).bit_count()
@@ -429,7 +428,12 @@ def countr_zero(n: int):
 
 
 def _sum_to_list(
-    node: SumNode, cells: list[str], lines: list[str], indent="", prev_cell=None, prev_letter=None
+    node: SumNode,
+    cells: list[str],
+    lines: list[str],
+    indent="",
+    prev_cell=None,
+    prev_letter=None,
 ):
     line = ""
     if prev_cell is None or prev_letter is None:
@@ -456,7 +460,14 @@ def _choice_to_list(node: ChoiceNode, cells: list[str], lines: list[str], indent
             if child_index < len(children):
                 child = children[child_index]
                 if child:
-                    _sum_to_list(child, cells, lines, " " + indent, prev_cell=node.cell, prev_letter=letter)
+                    _sum_to_list(
+                        child,
+                        cells,
+                        lines,
+                        " " + indent,
+                        prev_cell=node.cell,
+                        prev_letter=letter,
+                    )
                 else:
                     print("null!")
                 child_index += 1
@@ -565,7 +576,7 @@ def merge_orderly_choice_children(
 
     # Compute the union of child letters from both nodes
     merged_letters = a.child_letters | b.child_letters
-    
+
     n = ChoiceNode()
     n.cell = a.cell
     n.child_letters = merged_letters
@@ -578,7 +589,7 @@ def merge_orderly_choice_children(
         letter = countr_zero(remaining_bits)
         a_child = a.get_child_for_letter(letter)
         b_child = b.get_child_for_letter(letter)
-        
+
         result_child = None
         if a_child and b_child:
             result_child = merge_orderly_tree(a_child, b_child, arena)
@@ -586,11 +597,11 @@ def merge_orderly_choice_children(
             result_child = a_child
         elif b_child:
             result_child = b_child
-        
+
         out.append(result_child)
         if result_child:
             n.bound = max(n.bound, result_child.bound)
-        
+
         remaining_bits &= remaining_bits - 1  # Clear the lowest set bit
 
     n.children = out
