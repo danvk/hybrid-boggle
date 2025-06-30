@@ -48,9 +48,7 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
   int insert_index = std::popcount(child_letters_ & mask);
   int old_num_children = NumChildren();
 
-  // Check if we have capacity for the new child
   if (old_num_children + 1 <= capacity_) {
-    // In-place insertion: shift existing children to make room
     memmove(
         &children_[insert_index + 1],
         &children_[insert_index],
@@ -61,13 +59,11 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
     return this;
   }
 
-  // Need to allocate new node with more capacity
   assert(capacity_ + 2 < 64);  // Ensure capacity fits in 6-bit field
   auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 2);
   new_node->CopyFrom(*this);
   new_node->child_letters_ |= (1 << letter);
 
-  // Copy children in the correct order with the new child inserted
   memcpy(&new_node->children_[0], &children_[0], insert_index * sizeof(children_[0]));
   new_node->children_[insert_index] = child;
   memcpy(
@@ -438,7 +434,7 @@ ChoiceNode* merge_orderly_choice_children(
       n->bound_ = max(n->bound_, result_child->bound_);
     }
 
-    remaining_bits &= remaining_bits - 1;  // Clear the lowest set bit
+    remaining_bits &= remaining_bits - 1;
   }
   assert(out_i == num_children);
 
@@ -586,10 +582,10 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
         );
       }
     }
-    remaining_bits &= remaining_bits - 1;  // Clear the lowest set bit
+    remaining_bits &= remaining_bits - 1;
   }
 
-  if (std::popcount(top_choice->child_letters_) < num_lets) {
+  if (top_choice->NumChildren() < num_lets) {
     int other_bound = 0;
     for (auto c : non_cell_children) {
       if (c) {
