@@ -326,6 +326,10 @@ class ChoiceNode:
         self.bound = 0
         self.child_letters = 0
 
+    def num_children(self) -> int:
+        """Return the number of children, calculated from the bitmask."""
+        return self.child_letters.bit_count()
+
     def get_child_for_letter(self, letter: int) -> SumNode | None:
         """Find child SumNode for given letter using popcount on child_letters bitmask."""
         if not (self.child_letters & (1 << letter)):

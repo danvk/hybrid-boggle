@@ -59,14 +59,14 @@ ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& aren
   // Create new node with space for the new child
   auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 1);
   new_node->CopyFrom(*this);
-  new_node->num_children_ = num_children_ + 1;
   new_node->child_letters_ |= (1 << letter);
   
   // Copy children, inserting new child at the correct position
+  int old_num_children = num_children();
   memcpy(&new_node->children_[0], &children_[0], insert_index * sizeof(children_[0]));
   new_node->children_[insert_index] = child;
   memcpy(&new_node->children_[insert_index + 1], &children_[insert_index], 
-         (num_children_ - insert_index) * sizeof(children_[0]));
+         (old_num_children - insert_index) * sizeof(children_[0]));
   
   return new_node;
 }
@@ -146,7 +146,7 @@ SumNode* SumNode::AddWord(
   if (new_letter_child != letter_child) {
     const auto& old_letter_child = letter_child;
     bool patched = false;
-    for (int i = 0; i < choice_child->num_children_; i++) {
+    for (int i = 0; i < choice_child->num_children(); i++) {
       auto& c = choice_child->children_[i];
       if (c == old_letter_child) {
         // TODO: assign through reference
@@ -162,30 +162,51 @@ SumNode* SumNode::AddWord(
   return new_me;
 }
 
-template <typename Node, typename Child>
-vector<Child*> GetChildrenImpl(Node& n) {
-  vector<Child*> out;
-  out.reserve(n.num_children_);
-  for (int i = 0; i < n.num_children_; i++) {
-    out.push_back(n.children_[i]);
+vector<ChoiceNode*> SumNode::GetChildren() {
+  vector<ChoiceNode*> out;
+  out.reserve(num_children_);
+  for (int i = 0; i < num_children_; i++) {
+    out.push_back(children_[i]);
   }
   return out;
 }
 
-vector<ChoiceNode*> SumNode::GetChildren() {
-  return GetChildrenImpl<SumNode, ChoiceNode>(*this);
-}
-
 vector<SumNode*> ChoiceNode::GetChildren() {
-  return GetChildrenImpl<ChoiceNode, SumNode>(*this);
+  vector<SumNode*> out;
+  int n_children = num_children();
+  out.reserve(n_children);
+  for (int i = 0; i < n_children; i++) {
+    out.push_back(children_[i]);
+  }
+  return out;
 }
 
-template <typename Node>
-void PrintJSONChildren(Node& n) {
+void PrintJSONChildren(const SumNode& n) {
   if (n.num_children_) {
     cout << ", \"children\": [";
     bool has_commad = false;
     for (int i = 0; i < n.num_children_; i++) {
+      const auto& c = n.children_[i];
+      if (!c) {
+        continue;
+      }
+      if (!has_commad) {
+        has_commad = true;
+      } else {
+        cout << ", ";
+      }
+      c->PrintJSON();
+    }
+    cout << "]";
+  }
+}
+
+void PrintJSONChildren(const ChoiceNode& n) {
+  int n_children = n.num_children();
+  if (n_children) {
+    cout << ", \"children\": [";
+    bool has_commad = false;
+    for (int i = 0; i < n_children; i++) {
       const auto& c = n.children_[i];
       if (!c) {
         continue;
@@ -230,7 +251,8 @@ int SumNode::NodeCount() const {
 
 int ChoiceNode::NodeCount() const {
   int count = 1;
-  for (int i = 0; i < num_children_; i++) {
+  int n_children = num_children();
+  for (int i = 0; i < n_children; i++) {
     const auto& c = children_[i];
     if (c) count += c->NodeCount();
   }
@@ -261,7 +283,8 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
 
   // Otherwise, this is the same as regular scoring.
   unsigned int score = 0;
-  for (int i = 0; i < num_children_; i++) {
+  int n_children = num_children();
+  for (int i = 0; i < n_children; i++) {
     const auto& child = children_[i];
     if (child) {
       score = std::max(score, child->ScoreWithForces(forces));
@@ -412,7 +435,6 @@ ChoiceNode* merge_orderly_choice_children(
     }
   }
   assert(out_i == num_children);
-  n->num_children_ = num_children;
 
   return n;
 }
@@ -607,7 +629,8 @@ void SumNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
 
 void ChoiceNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
   uint32_t bound = 0;
-  for (int i = 0; i < num_children_; i++) {
+  int n_children = num_children();
+  for (int i = 0; i < n_children; i++) {
     auto& child = children_[i];
     child->DecodePointsAndBound(wordlists);
     bound = max(bound, child->bound_);
