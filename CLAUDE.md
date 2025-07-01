@@ -68,7 +68,15 @@ This is a hybrid Python/C++ system for finding optimal Boggle boards through exh
 - Multi-boggle scoring can count duplicate word paths on same board
 
 ### Performance Notes
+
 - C++ implementations are significantly faster for compute-intensive operations
 - Use `--switchover_score` in break_all.py to balance memory vs computation
 - Hill climbing with large `--pool_size` finds better boards but uses more memory
 - Exhaustive search requires substantial compute resources for larger boards (4x4 took ~600 CPU hours)
+- Most ChoiceNodes and SumNodes have a small number of children, typically 0, 1 or 2.
+
+## Code style and norms
+
+- Avoid trivial implementation comments ("call the foo function"). Assume that readers can read code.
+- Use `poetry run ruff format` to format Python and `clang-format -i cpp/*.{h,cc}` to format C++.
+- Use `snake_case` for Python methods and `PascalCase` for C++ methods. Use the pybind11 bridge to make these match.
