@@ -102,6 +102,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   //   cout << i << "\t" << counts[i] << endl;
   // }
 
+  auto start = chrono::high_resolution_clock::now();
   // Step 3: Decode and intern, transferring final tree to main arena
   auto interned_root = DecodeAndIntern(root, arena);
 
@@ -109,6 +110,9 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   temp_arena_.reset();
 
   word_lists_.clear();
+  auto elapsed = chrono::high_resolution_clock::now() - start;
+  cout << "RAM spike lasted for "
+       << chrono::duration_cast<chrono::milliseconds>(elapsed).count() << "ms" << endl;
 
   // arena.PrintStats();
 
