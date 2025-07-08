@@ -177,7 +177,7 @@ def main():
     # print(tree_stats(classic_tree))
 
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
-    print(tree_stats(orderly_tree))
+    # print(tree_stats(orderly_tree))
 
 
 if __name__ == "__main__":

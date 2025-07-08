@@ -39,9 +39,11 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   uint32_t dupe_mask_;
   vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
+  vector<pair<uint8_t[2 * M * N], uint32_t>> words_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
+  void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id);
 };
 
 template <int M, int N>
@@ -52,7 +54,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   used_ = 0;
 
   word_lists_.clear();
-  word_lists_.reserve(1000);
+  // word_lists_.reserve(1000);
   for (int i = 0; i < 26; i++) {
     letter_counts_[i] = 0;
   }
@@ -61,13 +63,26 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   for (int cell = 0; cell < M * N; cell++) {
     num_letters_[cell] = strlen(bd_[cell]);
   }
-  word_lists_.push_back({});  // start with 1
+  // word_lists_.push_back({});  // start with 1
+
+  words_.clear();
+  words_.reserve(2 << 24);  // 16M word paths
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
   auto root = root_;
   root_ = NULL;
+
+  sort(words_.begin(), words_.end(), [](const auto& a, const auto& b) {
+    // Compare the word arrays lexicographically
+    for (int i = 0; i < 2 * M * N; ++i) {
+      if (a.first[i] != b.first[i]) return a.first[i] < b.first[i];
+      if (a.first[i] == '\0' || b.first[i] == '\0') break;
+    }
+    return a.second < b.second;
+  });
+  cout << "words_.size() = " << words_.size() << endl;
 
   // cout << "Number of nodes: " << word_lists_.size() << endl;
   // unordered_map<int, int> counts;
@@ -81,8 +96,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   //   cout << i << "\t" << counts[i] << endl;
   // }
 
-  root->DecodePointsAndBound(word_lists_);
-  word_lists_.clear();
+  // root->DecodePointsAndBound(word_lists_);
+  // word_lists_.clear();
 
   // arena.PrintStats();
 
@@ -211,21 +226,30 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   }
 
   if (t->IsWord()) {
-    auto word_score = kWordScores[length];
-
-    SumNode* word_node;
-    auto new_root = root_->AddWord(
-        choices_, used_ordered_, BucketBoggler<M, N>::SPLIT_ORDER, arena, &word_node
-    );
-    assert(new_root == root_);
-
-    if (dupe_mask_ > 0) {
-      EncodeWordInSumNode(word_node, t, word_score, word_lists_);
-    } else {
-      // If there's no chance of a duplicate, just count points.
-      word_node->points_ += word_score;
-    }
+    AddWord(choices_, used_ordered_, t->WordId());
   }
+}
+
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::AddWord(
+    int* choices, unsigned int used_ordered, uint32_t word_id
+) {
+  // TODO: construct this in-place in the vector
+  uint8_t word[2 * M * N];
+  const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
+
+  int idx = 0;
+  while (used_ordered) {
+    int order_index = std::countr_zero(used_ordered);
+    int cell = split_order[order_index];
+    int letter = choices[order_index];
+    word[idx++] = cell;
+    word[idx++] = letter;
+  }
+  if (idx < 2 * M * N) {
+    word[idx++] = '\0';
+  }
+  words_.push_back({word, word_id});
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
