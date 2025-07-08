@@ -46,6 +46,11 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id);
+
+  static bool WordComparator(
+      const pair<array<uint8_t, 2 * M * N>, uint32_t>& a,
+      const pair<array<uint8_t, 2 * M * N>, uint32_t>& b
+  );
 };
 
 template <int M, int N>
@@ -68,7 +73,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // word_lists_.push_back({});  // start with 1
 
   words_.clear();
-  words_.reserve(2 << 24);  // 16M word paths
+  // words_.reserve(2 << 24);  // 16M word paths
+  words_.reserve(36'000'000);
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -76,15 +82,15 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto root = root_;
   root_ = NULL;
 
-  sort(words_.begin(), words_.end(), [](const auto& a, const auto& b) {
-    // Compare the word arrays lexicographically
-    for (int i = 0; i < 2 * M * N; ++i) {
-      if (a.first[i] != b.first[i]) return a.first[i] < b.first[i];
-      if (a.first[i] == '\0' || b.first[i] == '\0') break;
-    }
-    return a.second < b.second;
-  });
+  sort(words_.begin(), words_.end(), WordComparator);
   cout << "words_.size() = " << words_.size() << endl;
+
+  auto unique_end =
+      unique(words_.begin(), words_.end(), [](const auto& a, const auto& b) {
+        return !WordComparator(a, b) && !WordComparator(b, a);
+      });
+  words_.erase(unique_end, words_.end());
+  cout << "unique words_.size() = " << words_.size() << endl;
 
   // cout << "Number of nodes: " << word_lists_.size() << endl;
   // unordered_map<int, int> counts;
@@ -253,6 +259,19 @@ void OrderlyTreeBuilder<M, N>::AddWord(
     word[idx++] = '\0';
   }
   words_.push_back({word, word_id});
+}
+
+template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::WordComparator(
+    const pair<array<uint8_t, 2 * M * N>, uint32_t>& a,
+    const pair<array<uint8_t, 2 * M * N>, uint32_t>& b
+) {
+  // Compare the word arrays lexicographically
+  for (int i = 0; i < 2 * M * N; ++i) {
+    if (a.first[i] != b.first[i]) return a.first[i] < b.first[i];
+    if (a.first[i] == '\0' || b.first[i] == '\0') break;
+  }
+  return a.second < b.second;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
