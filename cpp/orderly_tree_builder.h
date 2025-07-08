@@ -1,6 +1,8 @@
 #ifndef ORDERLY_TREE_BUILDER_H
 #define ORDERLY_TREE_BUILDER_H
 
+#include <array>
+
 #include "eval_node.h"
 #include "ibuckets.h"
 
@@ -39,7 +41,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   uint32_t dupe_mask_;
   vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
-  vector<pair<uint8_t[2 * M * N], uint32_t>> words_;
+  vector<pair<array<uint8_t, 2 * M * N>, uint32_t>> words_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -235,7 +237,7 @@ void OrderlyTreeBuilder<M, N>::AddWord(
     int* choices, unsigned int used_ordered, uint32_t word_id
 ) {
   // TODO: construct this in-place in the vector
-  uint8_t word[2 * M * N];
+  array<uint8_t, 2 * M * N> word{};
   const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
 
   int idx = 0;
@@ -245,6 +247,7 @@ void OrderlyTreeBuilder<M, N>::AddWord(
     int letter = choices[order_index];
     word[idx++] = cell;
     word[idx++] = letter;
+    used_ordered &= used_ordered - 1;
   }
   if (idx < 2 * M * N) {
     word[idx++] = '\0';
