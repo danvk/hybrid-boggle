@@ -261,6 +261,28 @@ int ChoiceNode::NodeCount() const {
   return count;
 }
 
+int SumNode::WordCount() const {
+  if (num_children_ == 0) {
+    return 1;
+  }
+  int count = 0;
+  for (int i = 0; i < num_children_; i++) {
+    const auto& c = children_[i];
+    if (c) count += c->WordCount();
+  }
+  return count;
+}
+
+int ChoiceNode::WordCount() const {
+  int count = 0;
+  int n_children = NumChildren();
+  for (int i = 0; i < n_children; i++) {
+    const auto& c = children_[i];
+    if (c) count += c->WordCount();
+  }
+  return count;
+}
+
 unsigned int SumNode::ScoreWithForces(const vector<int>& forces) const {
   unsigned int score = points_;
   for (int i = 0; i < num_children_; i++) {

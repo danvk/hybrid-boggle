@@ -177,6 +177,7 @@ def main():
 
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
+    print(f"{orderly_tree.word_count()=}")
 
 
 if __name__ == "__main__":

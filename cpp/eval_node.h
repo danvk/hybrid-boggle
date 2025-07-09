@@ -51,6 +51,7 @@ class SumNode {
   void SetChildrenFromVector(const vector<ChoiceNode*>& children);
 
   int NodeCount() const;
+  int WordCount() const;
   uint32_t Bound() const { return bound_; }
 
   vector<pair<int, string>> OrderlyBound(
@@ -107,6 +108,7 @@ class ChoiceNode {
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
   int NodeCount() const;
+  int WordCount() const;
   vector<SumNode*> GetChildren();
   ChoiceNode* AddChild(SumNode* child, int letter, EvalNodeArena& arena);
 
