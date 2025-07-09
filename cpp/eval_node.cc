@@ -262,10 +262,7 @@ int ChoiceNode::NodeCount() const {
 }
 
 int SumNode::WordCount() const {
-  if (num_children_ == 0) {
-    return 1;
-  }
-  int count = 0;
+  int count = (points_ > 0) ? 1 : 0;
   for (int i = 0; i < num_children_; i++) {
     const auto& c = children_[i];
     if (c) count += c->WordCount();
