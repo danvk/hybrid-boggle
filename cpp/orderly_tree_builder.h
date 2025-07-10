@@ -335,8 +335,14 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
   const auto& ap = a.path;
   const auto& bp = b.path;
 
-  // Compare the word arrays lexicographically
-  for (int i = 0; i < 2 * M * N; ++i) {
+  // We know the arrays are at least four elements long ('qa' is a word)
+  if (ap[0] != bp[0]) return ap[0] < bp[0];
+  if (ap[1] != bp[1]) return ap[1] < bp[1];
+  if (ap[2] != bp[2]) return ap[2] < bp[2];
+  if (ap[3] != bp[3]) return ap[3] < bp[3];
+
+  // Compare the word arrays lexicographically; using strncmp is actually slower here
+  for (int i = 4; i < 2 * M * N; ++i) {
     if (ap[i] != bp[i]) return ap[i] < bp[i];
     if (ap[i] == '\0' || bp[i] == '\0') break;
   }
