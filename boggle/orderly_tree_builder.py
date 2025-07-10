@@ -140,6 +140,73 @@ def tree_stats(t: SumNode) -> str:
     return f"{t.bound=}, {t.node_count()} nodes"
 
 
+def range_to_sum_node(words: Sequence[WordPath], depth: int) -> SumNode:
+    # If there are points on _this_ node, they'll be on a unique first node.
+    n = words[0]
+    points = 0
+    if len(n.path) == depth:
+        points = n.points
+        words = words[1:]
+
+    # Find intervals for each distinct cell
+    child_cells = []
+    child_range_starts = []
+    child_range_ends = []
+    last_cell = None
+    for i, word in enumerate(words):
+        cell = word.path[depth][0]
+        if cell != last_cell:
+            child_cells.append(cell)
+            child_range_starts.append(i)
+            child_range_ends.append(i)
+            last_cell = cell
+        else:
+            child_range_ends[-1] = i
+
+    children = [
+        range_to_choice_node(cell, words[start : end + 1], depth)
+        for cell, start, end in zip(child_cells, child_range_starts, child_range_ends)
+    ]
+    node = SumNode()
+    node.points = points
+    node.children = children
+    node.bound = node.points + sum(child.bound for child in node.children)
+    return node
+
+
+def range_to_choice_node(cell: int, words: Sequence[WordPath], depth: int) -> SumNode:
+    # Find intervals for each distinct letter
+    child_letters = []
+    child_range_starts = []
+    child_range_ends = []
+    last_letter = None
+    for i, word in enumerate(words):
+        letter = word.path[depth][1]
+        if letter != last_letter:
+            child_letters.append(letter)
+            child_range_starts.append(i)
+            child_range_ends.append(i)
+            last_letter = letter
+        else:
+            child_range_ends[-1] = i
+
+    children = [
+        range_to_sum_node(words[start : end + 1], depth + 1)
+        for start, end in zip(child_range_starts, child_range_ends)
+    ]
+
+    letter_mask = 0
+    for letter in child_letters:
+        letter_mask |= 1 << letter
+
+    node = ChoiceNode()
+    node.cell = cell
+    node.child_letters = letter_mask
+    node.children = children
+    node.bound = max(child.bound for child in node.children)
+    return node
+
+
 def main():
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)

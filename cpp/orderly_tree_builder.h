@@ -58,6 +58,14 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
+
+  // TODO: doesn't C++ have a range API now?
+  SumNode* RangeToSumNode(
+      pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+  );
+  ChoiceNode* RangeToChoiceNode(
+      int cell, pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+  );
 };
 
 template <int M, int N>
@@ -79,6 +87,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   }
   // word_lists_.push_back({});  // start with 1
 
+  /*
   count_only_ = true;
   num_paths_ = 0;
   for (int cell = 0; cell < M * N; cell++) {
@@ -88,10 +97,11 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
   cout << "num paths: " << num_paths_ << endl;
   cout << "Count words: " << duration << " ms" << endl;
+  */
 
   count_only_ = false;
   words_.clear();
-  words_.reserve(num_paths_);
+  words_.reserve(36'000'000);
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -99,7 +109,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto root = root_;
   root_ = NULL;
   auto end1 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end1 - end0).count();
+  duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
   cout << "Build word list: " << duration << " ms" << endl;
 
   sort(words_.begin(), words_.end(), WordComparator);
@@ -336,6 +346,86 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
     }
   }
   words.erase(words.begin() + write_idx, words.end());
+}
+
+template <unsigned long N>
+int PathLength(const array<uint8_t, N>& a) {
+  int len = 0;
+  for (int i = 0; i < N; i += 2, len++) {
+    if (a[i] == '\0') break;
+  }
+  return len;
+}
+
+// Endpoints are _inclusive_; equal ends = 1-element list
+template <int M, int N>
+SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
+    pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+) {
+  WordPath *it = range.first, end = range.second;
+  int points = 0;
+  if (PathLength(it->path) == depth) {
+    points = n.points;
+    ++it;
+  }
+
+  // TODO: reserve
+  vector<int> child_cells;
+  vector<WordPath*> child_range_starts;
+  vector<WordPath*> child_range_ends;
+  int last_cell = -1;
+  for (; it != end; ++it) {
+    int cell = it->path[2 * depth];
+    if (cell != last_cell) {
+      child_cells.push_back(cell);
+      child_range_starts.push_back(it);
+      child_range_ends.push_back(it);
+      last_cell = cell;
+    } else {
+      *child_range_ends.rbegin() = it;
+    }
+  }
+
+  auto node = arena.NewSumNodeWithCapacity(child_cells.size());
+  node.bound_ = node.points_ = points;
+  for (int i = 0; i < child_cells.size(); i++) {
+    auto child = RangeToChoiceNode(
+        child_cells[i] - 1, {child_range_starts[i], child_range_ends[i]}, depth, arena
+    );
+    node.children_[i] = child;
+    node.bound_ += child->bound_;
+  }
+  return node;
+}
+
+template <int M, int N>
+ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
+    int cell, pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+) {
+  // TODO: reserve
+  vector<int> child_letters;
+  vector<WordPath*> child_range_starts;
+  vector<WordPath*> child_range_ends;
+  int last_letter = -1;
+  for (; it != end; ++it) {
+    int letter = it->path[2 * depth + 1];
+    if (letter != last_letter) {
+      child_letters.push_back(letter);
+      child_range_starts.push_back(it);
+      child_range_ends.push_back(it);
+      last_cell = cell;
+    } else {
+      *child_range_ends.rbegin() = it;
+    }
+  }
+
+  uint32_t letter_mask = 0;
+  for (auto& letter : child_letters) {
+    letter_mask |= (1 << letter);
+  }
+
+  auto node = arena.NewChoiceNodeWithCapacity(child_letters.size());
+  node->cell_ = cell;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
