@@ -95,6 +95,10 @@ def make_lookup_table(t: PyTrie, prefix="", out=None) -> dict[PyTrie, str]:
     return out
 
 
+def make_id_lookup_table(t: PyTrie):
+    return {t.word_id: word for t, word in make_lookup_table(t).items()}
+
+
 def is_boggle_word(word: str):
     size = len(word)
     if size < 3:

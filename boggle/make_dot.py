@@ -7,7 +7,6 @@ import sys
 from boggle.args import add_standard_args
 from boggle.dimensional_bogglers import LEN_TO_DIMS
 from boggle.eval_node import ChoiceNode, SumNode
-from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import make_py_trie
 
@@ -56,6 +55,7 @@ def to_dot_help(
         color = DOT_FILL_COLORS[node.cell]
         attrs += f' style="rounded, filled" fillcolor="{color}"'
     else:
+        # This is a SumNode that represents a choice
         me += f"_{last_cell}s"
         attrs += ' penwidth="1"'
         if node.points and node.bound != node.points:
@@ -76,14 +76,19 @@ def to_dot_help(
             last_cell=last_cell,
         )
         for i, child in enumerate(node.children)
-        if child
     ]
 
-    for i, (child_id, _) in enumerate(children):
+    child_labels = (
+        node.get_labeled_children()
+        if isinstance(node, ChoiceNode)
+        else [(child.cell, child) for child in node.get_children()]
+    )
+
+    for (label, _), (child_id, _) in zip(child_labels, children):
         attrs = ""
         if isinstance(node, ChoiceNode) and len(children) < len(cells[node.cell]):
             # incomplete set of choices; label them for clarity.
-            attrs = f' [label="{node.children[i].letter}"]'
+            attrs = f' [label="{label}"]'
         dot.append(f"{me} -- {child_id}{attrs};")
     for _, child_dot in children:
         dot.append(child_dot)
@@ -111,6 +116,8 @@ DOT_FILL_COLORS = [
 
 
 def main():
+    from boggle.orderly_tree_builder import OrderlyTreeBuilder
+
     parser = argparse.ArgumentParser(
         prog="DOT renderer",
         description="Visualize what's going on with those trees.",

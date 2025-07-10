@@ -10,6 +10,8 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 import argparse
 import json
 import time
+from dataclasses import dataclass
+from typing import Sequence
 
 from boggle.arena import PyArena, create_eval_node_arena_py
 from boggle.args import add_standard_args, get_trie_from_args
@@ -19,15 +21,24 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import SumNode
+from boggle.eval_node import ChoiceNode, SumNode, countr_zero
+from boggle.make_dot import to_dot
 from boggle.split_order import SPLIT_ORDER
-from boggle.trie import PyTrie, make_lookup_table
+from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
+
+
+@dataclass(order=True)
+class WordPath:
+    path: list[tuple[int, int]]
+    word_id: int
+    points: int  # TODO: could remove
 
 
 class OrderlyTreeBuilder(BoardClassBoggler):
     cell_to_order: dict[int, int]
     root: SumNode
     num_letters_: list[int]
+    words_: list[WordPath]
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
@@ -37,6 +48,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.letter_counts = [0] * 26
         self.dupe_mask = 0
         self.raw_multiboggle = False
+        self.words_ = []
 
     def build_tree(self, arena: PyArena = None):
         root = SumNode()
@@ -60,6 +72,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.root = None
         assert self.letter_counts == [0] * 26
         root.decode_points_and_bound()
+
+        self.words_.sort()
         return root
 
     def do_all_descents(
@@ -103,32 +117,44 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.do_all_descents(idx, length, t, choices, arena)
 
         if t.is_word():
-            word_score = SCORES[length]
-            word_node = self.root.add_word(
-                choices,
-                self.used_ordered_,
-                SPLIT_ORDER[self.dims],
-                arena,
+            # word_score = SCORES[length]
+            path = decode(self.used_ordered_, choices, SPLIT_ORDER[self.dims])
+            self.words_.append(
+                WordPath(path=path, word_id=t.word_id, points=SCORES[length])
             )
-            if self.raw_multiboggle:
-                word_node.points += word_score
-            elif self.dupe_mask > 0:
-                # The C++ version uses a binary encoding, but we just stuff everything in a set.
-                if word_node.bound:
-                    word_node.bound.add(t.word_id)
-                    assert word_node.points == word_score
-                else:
-                    word_node.bound = {t.word_id}
-                    word_node.points = word_score
-            else:
-                word_node.points += word_score
-                assert word_node.bound == 0
 
         self.used_ordered_ ^= 1 << self.cell_to_order[cell]
         self.used_ ^= 1 << cell
 
     def create_arena(self):
         return create_eval_node_arena_py()
+
+
+def decode(used_ordered: int, choices, split_order):
+    out = []
+    while used_ordered:
+        order_index = countr_zero(used_ordered)
+        cell = split_order[order_index]
+        letter = choices[order_index]
+
+        # remove the cell from used_ordered
+        used_ordered &= used_ordered - 1
+        out.append((cell, letter))
+    return out
+
+
+def uniq(xs: Sequence[WordPath]):
+    out: list[WordPath] = []
+    last_path = None
+    last_word_id = None
+    for x in xs:
+        if x.path != last_path:
+            out.append(x)
+            last_path = x.path
+            last_word_id = x.word_id
+        elif x.word_id != last_word_id:
+            out[-1].points += x.points
+    return out
 
 
 mark = 1
@@ -139,8 +165,6 @@ def tree_stats(t: SumNode) -> str:
     mark += 1
     return f"{t.bound=}, {t.node_count()} nodes"
 
-
-"""
 
 def range_to_sum_node(words: Sequence[WordPath], depth: int) -> SumNode:
     # If there are points on _this_ node, they'll be on a unique first node.
@@ -208,7 +232,12 @@ def range_to_choice_node(cell: int, words: Sequence[WordPath], depth: int) -> Su
     node.bound = max(child.bound for child in node.children)
     return node
 
-"""
+
+def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
+    word_id_to_word = make_id_lookup_table(trie)
+    for i, word in enumerate(words):
+        w = word_id_to_word[word.word_id]
+        print(f"{i:3d} {word.path} ({word.points}) {w}")
 
 
 def main():
@@ -250,7 +279,19 @@ def main():
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
     print(f"{orderly_tree.word_count()=}")
-    # print(json.dumps(orderly_tree.to_json(), indent=True))
+    print_word_list(trie, otb.words_)
+
+    print(f"{len(otb.words_)=}")
+    unique_words = uniq(otb.words_)
+    print(f"{len(unique_words)=}")
+    print_word_list(trie, unique_words)
+
+    tree_from_list = range_to_sum_node(unique_words, 0)
+    print(tree_stats(tree_from_list))
+    # print(json.dumps(tree_from_list.to_json(), indent=True))
+
+    with open("tree.dot", "w") as out:
+        out.write(to_dot(tree_from_list, cells=cells))
 
 
 if __name__ == "__main__":

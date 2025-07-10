@@ -357,6 +357,13 @@ class ChoiceNode:
     def word_count(self):
         return sum(child.word_count() for child in self.children)
 
+    def get_labeled_children(self):
+        remaining_bits = self.child_letters
+        while remaining_bits:
+            letter = countr_zero(remaining_bits)
+            child = self.get_child_for_letter(letter)
+            yield (letter, child)
+
     def score_with_forces(self, forces: list[int]) -> int:
         """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
         force = forces[self.cell]
