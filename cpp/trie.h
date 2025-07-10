@@ -43,6 +43,7 @@ class Trie {
   void SetAllMarks(unsigned mark);
   void ResetMarks();
   Trie* FindWord(const char* wd);
+  Trie* FindWordId(int word_id);
 
   static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
   static string ReverseLookup(const Trie* base, const Trie* child);
