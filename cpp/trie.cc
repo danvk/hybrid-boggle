@@ -96,6 +96,7 @@ Trie* Trie::FindWordId(int word_id) {
     return this;
   }
   for (const auto& c : children_) {
+    if (!c) continue;
     auto t = c->FindWordId(word_id);
     if (t) {
       return t;

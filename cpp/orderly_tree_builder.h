@@ -2,6 +2,7 @@
 #define ORDERLY_TREE_BUILDER_H
 
 #include <array>
+#include <iomanip>
 
 #include "constants.h"
 #include "eval_node.h"
@@ -134,7 +135,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   duration = chrono::duration_cast<chrono::milliseconds>(end2 - end1).count();
   cout << "sort list: " << duration << " ms" << endl;
   cout << "words_.size() = " << words_.size() << endl;
-  PrintWordList();
+  // PrintWordList();
 
   // auto unique_end =
   //     unique(words_.begin(), words_.end(), [](const auto& a, const auto& b) {
@@ -355,20 +356,20 @@ bool ArrayEq(const array<uint8_t, N>& a, const array<uint8_t, N>& b) {
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
   int write_idx = 1;
-  WordPath last = words[0];
+  WordPath last = words[0];  // TODO: use a reference or pointer here
 
   auto n = words.size();
   for (int i = 1; i < n; i++) {
     const auto& w = words[i];
     if (!ArrayEq(w.path, last.path)) {
       if (i != write_idx) {
-        cout << "uniq move " << i << " -> " << write_idx << endl;
+        // cout << "uniq move " << i << " -> " << write_idx << endl;
         words[write_idx] = w;
       }
       last = words[write_idx];
       write_idx++;
     } else if (w.word_id != last.word_id) {
-      last.points += w.points;
+      words[write_idx - 1].points += w.points;
     }
     // otherwise: drop it
   }
@@ -478,19 +479,19 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::PrintWordList() {
   int i = 0;
   for (const auto& w : words_) {
-    cout << (i++) << "[";
+    cout << std::setw(3) << (i++) << " [";
     for (int k = 0; k < 2 * M * N; k += 2) {
       if (w.path[k] == '\0') {
         break;
       }
       if (k) cout << ", ";
-      cout << "(" << (int)w.path[k] << ", " << (int)w.path[k + 1] << ")";
+      cout << "(" << (int)(w.path[k] - 1) << ", " << (int)(w.path[k + 1] - 1) << ")";
     }
     cout << "] (" << (int)w.points << ") ";
-    // auto t = dict_->FindWordId(w.word_id);
-    // cout << t << endl;
-    cout << "(" << w.word_id << ")";
-    cout << endl;
+    auto t = dict_->FindWordId(w.word_id);
+    cout << "(" << Trie::ReverseLookup(dict_, t) << ")" << endl;
+    // cout << "(" << w.word_id << ")";
+    // cout << endl;
   }
 }
 
