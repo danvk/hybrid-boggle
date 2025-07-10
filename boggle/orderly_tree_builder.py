@@ -140,6 +140,8 @@ def tree_stats(t: SumNode) -> str:
     return f"{t.bound=}, {t.node_count()} nodes"
 
 
+"""
+
 def range_to_sum_node(words: Sequence[WordPath], depth: int) -> SumNode:
     # If there are points on _this_ node, they'll be on a unique first node.
     n = words[0]
@@ -205,6 +207,8 @@ def range_to_choice_node(cell: int, words: Sequence[WordPath], depth: int) -> Su
     node.children = children
     node.bound = max(child.bound for child in node.children)
     return node
+
+"""
 
 
 def main():

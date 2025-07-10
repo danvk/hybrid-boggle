@@ -123,10 +123,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, *temp_arena_);
   }
-  auto root = root_;
-  root_ = NULL;
   auto end1 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
   cout << "Build word list: " << duration << " ms" << endl;
 
   sort(words_.begin(), words_.end(), WordComparator);
@@ -159,17 +157,14 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   //   cout << i << "\t" << counts[i] << endl;
   // }
 
-  auto start = chrono::high_resolution_clock::now();
-  // Step 3: Decode and intern, transferring final tree to main arena
-  // auto interned_root = DecodeAndIntern(root, arena);
-
-  // Step 4: Free temporary arena
-  // temp_arena_.reset();
+  WordPath* w_start = &words_[0];
+  WordPath* w_end = &words_[words_.size() - 1];
+  root_ = RangeToSumNode({w_start, w_end}, 0, arena);
 
   word_lists_.clear();
-  auto elapsed = chrono::high_resolution_clock::now() - start;
-  cout << "RAM spike lasted for "
-       << chrono::duration_cast<chrono::milliseconds>(elapsed).count() << "ms" << endl;
+  auto end4 = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
+  cout << "build tree: " << duration << " ms" << endl;
 
   // arena.PrintStats();
 
@@ -187,7 +182,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
-  return interned_root;
+  return root_;
 }
 
 template <int M, int N>
@@ -388,12 +383,15 @@ template <int M, int N>
 SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
 ) {
-  WordPath *it = range.first, end = range.second;
+  WordPath* it = range.first;
+  WordPath* end = range.second;
   int points = 0;
   if (PathLength(it->path) == depth) {
-    points = n.points;
+    points = it->points;
     ++it;
   }
+
+  // TOOD: return interned node if no children
 
   // TODO: reserve
   vector<int> child_cells;
@@ -413,13 +411,13 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   }
 
   auto node = arena.NewSumNodeWithCapacity(child_cells.size());
-  node.bound_ = node.points_ = points;
+  node->bound_ = node->points_ = points;
   for (int i = 0; i < child_cells.size(); i++) {
     auto child = RangeToChoiceNode(
         child_cells[i] - 1, {child_range_starts[i], child_range_ends[i]}, depth, arena
     );
-    node.children_[i] = child;
-    node.bound_ += child->bound_;
+    node->children_[i] = child;
+    node->bound_ += child->bound_;
   }
   return node;
 }
@@ -428,6 +426,8 @@ template <int M, int N>
 ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     int cell, pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
 ) {
+  WordPath* it = range.first;
+  WordPath* end = range.second;
   // TODO: reserve
   vector<int> child_letters;
   vector<WordPath*> child_range_starts;
@@ -439,7 +439,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
       child_letters.push_back(letter);
       child_range_starts.push_back(it);
       child_range_ends.push_back(it);
-      last_cell = cell;
+      last_letter = letter;
     } else {
       *child_range_ends.rbegin() = it;
     }
@@ -447,11 +447,20 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
 
   uint32_t letter_mask = 0;
   for (auto& letter : child_letters) {
-    letter_mask |= (1 << letter);
+    letter_mask |= (1 << (letter - 1));
   }
 
   auto node = arena.NewChoiceNodeWithCapacity(child_letters.size());
   node->cell_ = cell;
+  node->child_letters_ = letter_mask;
+  node->bound_ = 0;
+  for (int i = 0; i < child_letters.size(); i++) {
+    auto child =
+        RangeToSumNode({child_range_starts[i], child_range_ends[i]}, depth, arena);
+    node->children_[i] = child;
+    node->bound_ = max(node->bound_, child->bound_);
+  }
+  return node;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
