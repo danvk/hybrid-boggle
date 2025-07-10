@@ -314,6 +314,7 @@ void OrderlyTreeBuilder<M, N>::AddWord(
   const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
 
   int idx = 0;
+  word.path.fill('\0');
   while (used_ordered) {
     int order_index = std::countr_zero(used_ordered);
     int cell = split_order[order_index];
@@ -335,17 +336,9 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
   const auto& ap = a.path;
   const auto& bp = b.path;
 
-  // We know the arrays are at least four elements long ('qa' is a word)
-  if (ap[0] != bp[0]) return ap[0] < bp[0];
-  if (ap[1] != bp[1]) return ap[1] < bp[1];
-  if (ap[2] != bp[2]) return ap[2] < bp[2];
-  if (ap[3] != bp[3]) return ap[3] < bp[3];
-
-  // Compare the word arrays lexicographically; using strncmp is actually slower here
-  for (int i = 4; i < 2 * M * N; i += 2) {
-    if (ap[i] != bp[i]) return ap[i] < bp[i];
-    if (ap[i] == '\0' || bp[i] == '\0') break;
-    if (ap[i + 1] != bp[i + 1]) return ap[i + 1] < bp[i + 1];
+  int result = memcmp(ap.data(), bp.data(), 2 * M * N);
+  if (result != 0) {
+    return result < 0;
   }
 
   return a.word_id < b.word_id;
