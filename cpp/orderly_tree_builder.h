@@ -57,6 +57,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
 
   static bool WordComparator(const WordPath& a, const WordPath& b);
+  static void UniqueWordList(vector<WordPath>& words);
 };
 
 template <int M, int N>
@@ -107,11 +108,12 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "sort list: " << duration << " ms" << endl;
   cout << "words_.size() = " << words_.size() << endl;
 
-  auto unique_end =
-      unique(words_.begin(), words_.end(), [](const auto& a, const auto& b) {
-        return !WordComparator(a, b) && !WordComparator(b, a);
-      });
-  words_.erase(unique_end, words_.end());
+  // auto unique_end =
+  //     unique(words_.begin(), words_.end(), [](const auto& a, const auto& b) {
+  //       return !WordComparator(a, b) && !WordComparator(b, a);
+  //     });
+  // words_.erase(unique_end, words_.end());
+  UniqueWordList(words_);
   auto end3 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end3 - end2).count();
 
@@ -304,6 +306,36 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
   }
 
   return a.word_id < b.word_id;
+}
+
+template <unsigned long N>
+bool ArrayEq(const array<uint8_t, N>& a, const array<uint8_t, N>& b) {
+  for (int i = 0; i < N; i++) {
+    if (a[i] != b[i]) return false;
+    if (a[i] == '\0' || b[i] == '\0') break;
+  }
+  return true;  // they're equal if the have nulls at the spot, or are full-length equal
+}
+
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
+  int write_idx = 1;
+  WordPath& last = words[0];
+
+  auto n = words.size();
+  for (int i = 1; i < n; i++) {
+    const auto& w = words[i];
+    if (!ArrayEq(w.path, last.path)) {
+      if (i != write_idx) {
+        words[write_idx] = w;
+      }
+      last = words[write_idx];
+      write_idx++;
+    } else if (w.word_id != last.word_id) {
+      last.points += w.points;
+    }
+  }
+  words.erase(words.begin() + write_idx, words.end());
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
