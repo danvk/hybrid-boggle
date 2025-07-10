@@ -344,6 +344,19 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
   return a.word_id < b.word_id;
 }
 
+template <>
+bool OrderlyTreeBuilder<4, 4>::WordComparator(const WordPath& a, const WordPath& b) {
+  auto ap = (uint64_t*)a.path.data();
+  auto bp = (uint64_t*)b.path.data();
+
+  if (ap[0] != bp[0]) return ap[0] < bp[0];
+  if (ap[1] != bp[1]) return ap[1] < bp[1];
+  if (ap[2] != bp[2]) return ap[2] < bp[2];
+  if (ap[3] != bp[3]) return ap[3] < bp[3];
+
+  return a.word_id < b.word_id;
+}
+
 template <unsigned long N>
 bool ArrayEq(const array<uint8_t, N>& a, const array<uint8_t, N>& b) {
   for (int i = 0; i < N; i++) {
