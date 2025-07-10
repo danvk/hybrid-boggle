@@ -342,9 +342,10 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
   if (ap[3] != bp[3]) return ap[3] < bp[3];
 
   // Compare the word arrays lexicographically; using strncmp is actually slower here
-  for (int i = 4; i < 2 * M * N; ++i) {
+  for (int i = 4; i < 2 * M * N; i += 2) {
     if (ap[i] != bp[i]) return ap[i] < bp[i];
     if (ap[i] == '\0' || bp[i] == '\0') break;
+    if (ap[i + 1] != bp[i + 1]) return ap[i + 1] < bp[i + 1];
   }
 
   return a.word_id < b.word_id;
