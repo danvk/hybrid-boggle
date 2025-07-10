@@ -59,7 +59,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
 template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
-  // auto start = chrono::high_resolution_clock::now();
+  auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
@@ -85,8 +85,14 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   }
   auto root = root_;
   root_ = NULL;
+  auto end1 = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
+  cout << "Build word list: " << duration << " ms" << endl;
 
   sort(words_.begin(), words_.end(), WordComparator);
+  auto end2 = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end2 - end1).count();
+  cout << "sort list: " << duration << " ms" << endl;
   cout << "words_.size() = " << words_.size() << endl;
 
   auto unique_end =
@@ -94,6 +100,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
         return !WordComparator(a, b) && !WordComparator(b, a);
       });
   words_.erase(unique_end, words_.end());
+  auto end3 = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end3 - end2).count();
+
+  cout << "unique list: " << duration << " ms" << endl;
   cout << "unique words_.size() = " << words_.size() << endl;
 
   // cout << "Number of nodes: " << word_lists_.size() << endl;
