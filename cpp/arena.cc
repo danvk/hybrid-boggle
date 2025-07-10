@@ -37,7 +37,6 @@ ChoiceNode* EvalNodeArena::NewChoiceNodeWithCapacity(uint8_t capacity) {
 
 SumNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
   auto root = NewSumNodeWithCapacity(capacity);
-  root->letter_ = SumNode::ROOT_NODE;  // irrelevant
   root->points_ = 0;
   root->bound_ = 0;
   return root;

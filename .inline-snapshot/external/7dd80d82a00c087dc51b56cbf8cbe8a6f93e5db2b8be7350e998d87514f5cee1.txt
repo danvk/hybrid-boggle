@@ -1,4 +1,4 @@
-0: s (0=0 0/21)
+0: ROOT (21)
  CHOICE (1 <18) points=0
   e (1=0 0/18)
    CHOICE (2 <15) points=0
@@ -33,7 +33,7 @@
     t (3=0 2/2)
     r (3=1 2/2)
 
-1: t (0=1 0/18)
+1: ROOT (18)
  CHOICE (1 <15) points=0
   e (1=0 0/13)
    CHOICE (2 <12) points=0

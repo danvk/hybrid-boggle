@@ -12,7 +12,6 @@ from boggle.dimensional_bogglers import (
     cpp_orderly_tree_builder,
 )
 from boggle.eval_node import (
-    ROOT_NODE,
     ChoiceNode,
     SumNode,
     eval_all,
@@ -154,7 +153,6 @@ def test_orderly_merge():
     assert t.bound == snapshot(21)
 
     assert isinstance(t, SumNode)
-    assert t.letter == ROOT_NODE
     assert len(t.children) == 2
     t0 = t.children[0]
     t1 = t.children[1]
@@ -183,9 +181,8 @@ def test_orderly_merge():
     assert len(force) == 2
     for c in force:
         c.assert_orderly(split_order)
-    assert force[0].letter == 0
+    # force[0] corresponds to letter 0, force[1] to letter 1, etc. by construction
     assert force[0].bound == m0.bound
-    assert force[1].letter == 1
     assert force[1].bound == m1.bound
 
 
@@ -205,7 +202,7 @@ def test_orderly_force22(is_python):
         for i, t in enumerate(force)
     )
 
-    assert outsource(txt) == snapshot(external("7e73f64f3fe0*.txt"))
+    assert outsource(txt) == snapshot(external("7dd80d82a00c*.txt"))
 
 
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)

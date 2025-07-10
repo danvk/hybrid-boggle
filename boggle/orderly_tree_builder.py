@@ -8,6 +8,7 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 """
 
 import argparse
+import json
 import time
 
 from boggle.arena import PyArena, create_eval_node_arena_py
@@ -18,7 +19,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import ROOT_NODE, SumNode
+from boggle.eval_node import SumNode
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_lookup_table
 
@@ -39,7 +40,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
     def build_tree(self, arena: PyArena = None):
         root = SumNode()
-        root.letter = ROOT_NODE
         root.points = 0
         root.bound = 0
         self.root = root
@@ -244,7 +244,9 @@ def main():
     # print(tree_stats(classic_tree))
 
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
-    # print(tree_stats(orderly_tree))
+    print(tree_stats(orderly_tree))
+    print(f"{orderly_tree.word_count()=}")
+    # print(json.dumps(orderly_tree.to_json(), indent=True))
 
 
 if __name__ == "__main__":

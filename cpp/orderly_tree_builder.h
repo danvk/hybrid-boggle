@@ -52,6 +52,10 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   vector<WordPath> words_;
   bool count_only_;
 
+  // For interning zero-child SumNodes
+  SumNode* canonical_nodes_[128];         // canonical nodes for 1-128 points
+  unique_ptr<EvalNodeArena> temp_arena_;  // temporary arena for initial allocation
+
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
@@ -72,7 +76,20 @@ template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
-  root_ = arena.NewRootNodeWithCapacity(M * N);  // this will never be reallocated
+
+  // Step 1: Create canonical zero-child SumNodes in main arena
+  for (int points = 1; points <= 128; points++) {
+    auto node = arena.NewSumNodeWithCapacity(0);
+    node->points_ = points;
+    node->bound_ = points;  // For zero-child nodes, bound equals points
+    canonical_nodes_[points - 1] = node;
+  }
+
+  // Step 2: Create temporary arena for initial tree building
+  // temp_arena_ = create_eval_node_arena();
+
+  // root_ =
+  //    temp_arena_->NewRootNodeWithCapacity(M * N);  // this will never be reallocated
   used_ = 0;
 
   word_lists_.clear();
@@ -104,7 +121,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   words_.reserve(36'000'000);
 
   for (int cell = 0; cell < M * N; cell++) {
-    DoAllDescents(cell, 0, 0, dict_, arena);
+    DoAllDescents(cell, 0, 0, dict_, *temp_arena_);
   }
   auto root = root_;
   root_ = NULL;
@@ -142,8 +159,17 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   //   cout << i << "\t" << counts[i] << endl;
   // }
 
-  // root->DecodePointsAndBound(word_lists_);
-  // word_lists_.clear();
+  auto start = chrono::high_resolution_clock::now();
+  // Step 3: Decode and intern, transferring final tree to main arena
+  // auto interned_root = DecodeAndIntern(root, arena);
+
+  // Step 4: Free temporary arena
+  // temp_arena_.reset();
+
+  word_lists_.clear();
+  auto elapsed = chrono::high_resolution_clock::now() - start;
+  cout << "RAM spike lasted for "
+       << chrono::duration_cast<chrono::milliseconds>(elapsed).count() << "ms" << endl;
 
   // arena.PrintStats();
 
@@ -161,7 +187,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
-  return root;
+  return interned_root;
 }
 
 template <int M, int N>
