@@ -56,7 +56,6 @@ def to_dot_help(
         color = DOT_FILL_COLORS[node.cell]
         attrs += f' style="rounded, filled" fillcolor="{color}"'
     else:
-        # This is a SumNode that represents a choice
         me += f"_{last_cell}s"
         attrs += ' penwidth="1"'
         if node.points and node.bound != node.points:

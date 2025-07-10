@@ -8,6 +8,7 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 """
 
 import argparse
+import json
 import time
 
 from boggle.arena import PyArena, create_eval_node_arena_py
@@ -178,6 +179,7 @@ def main():
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
     print(f"{orderly_tree.word_count()=}")
+    print(json.dumps(orderly_tree.to_json(), indent=True))
 
 
 if __name__ == "__main__":
