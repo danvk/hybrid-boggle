@@ -21,7 +21,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import ChoiceNode, SumNode, countr_zero
+from boggle.eval_node import ChoiceNode, SumNode, countr_zero, eval_node_to_string
 from boggle.make_dot import to_dot
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
@@ -69,12 +69,13 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
         for cell in range(len(self.bd_)):
             self.do_all_descents(cell, 0, self.trie_, choices, arena)
-        self.root = None
         assert self.letter_counts == [0] * 26
-        root.decode_points_and_bound()
-
         self.words_.sort()
-        return root
+        print(f"{len(self.words_)=}")
+        unique_words = uniq(self.words_)
+        print(f"{len(unique_words)=}")
+        print_word_list(self.trie_, unique_words)
+        return range_to_sum_node(unique_words, 0)
 
     def do_all_descents(
         self, cell: int, length: int, t: PyTrie, choices: list[int], arena
@@ -279,19 +280,12 @@ def main():
     print(f"{elapsed_s:.02f}s OrderlyTreeBuilder: ", end="")
     print(tree_stats(orderly_tree))
     print(f"{orderly_tree.word_count()=}")
-    print_word_list(trie, otb.words_)
+    # print_word_list(trie, otb.words_)
 
-    print(f"{len(otb.words_)=}")
-    unique_words = uniq(otb.words_)
-    print(f"{len(unique_words)=}")
-    print_word_list(trie, unique_words)
-
-    tree_from_list = range_to_sum_node(unique_words, 0)
-    print(tree_stats(tree_from_list))
-    # print(json.dumps(tree_from_list.to_json(), indent=True))
-
-    with open("tree.dot", "w") as out:
-        out.write(to_dot(tree_from_list, cells=cells))
+    # with open("tree.dot", "w") as out:
+    #     out.write(to_dot(orderly_tree, cells=cells))
+    with open("tree.txt", "w") as out:
+        out.write(eval_node_to_string(orderly_tree, cells))
 
 
 if __name__ == "__main__":
