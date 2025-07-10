@@ -251,8 +251,8 @@ void OrderlyTreeBuilder<M, N>::AddWord(
     int order_index = std::countr_zero(used_ordered);
     int cell = split_order[order_index];
     int letter = choices[order_index];
-    word[idx++] = cell;
-    word[idx++] = letter;
+    word[idx++] = 1 + cell;
+    word[idx++] = 1 + letter;
     used_ordered &= used_ordered - 1;
   }
   if (idx < 2 * M * N) {
