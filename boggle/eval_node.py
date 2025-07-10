@@ -244,6 +244,11 @@ class SumNode:
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
 
+    def word_count(self):
+        return (1 if self.points else 0) + sum(
+            child.word_count() for child in self.children
+        )
+
     def score_with_forces(self, forces: list[int]) -> int:
         """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
         return self.points + sum(
@@ -348,6 +353,9 @@ class ChoiceNode:
 
     def node_count(self):
         return 1 + sum(child.node_count() for child in self.children if child)
+
+    def word_count(self):
+        return sum(child.word_count() for child in self.children)
 
     def score_with_forces(self, forces: list[int]) -> int:
         """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
