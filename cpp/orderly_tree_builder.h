@@ -44,11 +44,13 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
   int num_letters_[M * N];
+  int num_paths_;
   int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
   uint32_t dupe_mask_;
   vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
   vector<WordPath> words_;
+  bool count_only_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -76,9 +78,19 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   }
   // word_lists_.push_back({});  // start with 1
 
+  count_only_ = true;
+  num_paths_ = 0;
+  for (int cell = 0; cell < M * N; cell++) {
+    DoAllDescents(cell, 0, 0, dict_, arena);
+  }
+  auto end0 = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
+  cout << "num paths: " << num_paths_ << endl;
+  cout << "Count words: " << duration << " ms" << endl;
+
+  count_only_ = false;
   words_.clear();
-  // words_.reserve(2 << 24);  // 16M word paths
-  words_.reserve(36'000'000);
+  words_.reserve(num_paths_);
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -86,7 +98,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto root = root_;
   root_ = NULL;
   auto end1 = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
+  duration = chrono::duration_cast<chrono::milliseconds>(end1 - end0).count();
   cout << "Build word list: " << duration << " ms" << endl;
 
   sort(words_.begin(), words_.end(), WordComparator);
@@ -248,7 +260,10 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   }
 
   if (t->IsWord()) {
-    AddWord(choices_, used_ordered_, t->WordId(), length);
+    if (!count_only_) {
+      AddWord(choices_, used_ordered_, t->WordId(), length);
+    }
+    num_paths_++;
   }
 }
 
