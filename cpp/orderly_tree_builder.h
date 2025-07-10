@@ -3,12 +3,12 @@
 
 #include <array>
 
+#include "constants.h"
 #include "eval_node.h"
 #include "ibuckets.h"
 
 using namespace std;
 
-// TODO: templating on M, N probably isn't helpful, either.
 template <int M, int N>
 class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  public:
@@ -31,6 +31,13 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
+  // TODO: bitpack
+  struct WordPath {
+    array<uint8_t, 2 * M * N> path;
+    uint32_t word_id;
+    uint8_t points;
+  };
+
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
@@ -41,16 +48,13 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   uint32_t dupe_mask_;
   vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
-  vector<pair<array<uint8_t, 2 * M * N>, uint32_t>> words_;
+  vector<WordPath> words_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
-  void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id);
+  void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
 
-  static bool WordComparator(
-      const pair<array<uint8_t, 2 * M * N>, uint32_t>& a,
-      const pair<array<uint8_t, 2 * M * N>, uint32_t>& b
-  );
+  static bool WordComparator(const WordPath& a, const WordPath& b);
 };
 
 template <int M, int N>
@@ -234,16 +238,16 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   }
 
   if (t->IsWord()) {
-    AddWord(choices_, used_ordered_, t->WordId());
+    AddWord(choices_, used_ordered_, t->WordId(), length);
   }
 }
 
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::AddWord(
-    int* choices, unsigned int used_ordered, uint32_t word_id
+    int* choices, unsigned int used_ordered, uint32_t word_id, int length
 ) {
   // TODO: construct this in-place in the vector
-  array<uint8_t, 2 * M * N> word{};
+  WordPath word;
   const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
 
   int idx = 0;
@@ -251,27 +255,30 @@ void OrderlyTreeBuilder<M, N>::AddWord(
     int order_index = std::countr_zero(used_ordered);
     int cell = split_order[order_index];
     int letter = choices[order_index];
-    word[idx++] = 1 + cell;
-    word[idx++] = 1 + letter;
+    word.path[idx++] = 1 + cell;
+    word.path[idx++] = 1 + letter;
     used_ordered &= used_ordered - 1;
   }
   if (idx < 2 * M * N) {
-    word[idx++] = '\0';
+    word.path[idx++] = '\0';
   }
-  words_.push_back({word, word_id});
+  word.points = kWordScores[length];
+  word.word_id = word_id;
+  words_.push_back(word);
 }
 
 template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::WordComparator(
-    const pair<array<uint8_t, 2 * M * N>, uint32_t>& a,
-    const pair<array<uint8_t, 2 * M * N>, uint32_t>& b
-) {
+bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath& b) {
+  const auto& ap = a.path;
+  const auto& bp = b.path;
+
   // Compare the word arrays lexicographically
   for (int i = 0; i < 2 * M * N; ++i) {
-    if (a.first[i] != b.first[i]) return a.first[i] < b.first[i];
-    if (a.first[i] == '\0' || b.first[i] == '\0') break;
+    if (ap[i] != bp[i]) return ap[i] < bp[i];
+    if (ap[i] == '\0' || bp[i] == '\0') break;
   }
-  return a.second < b.second;
+
+  return a.word_id < b.word_id;
 }
 
 #endif  // ORDERLY_TREE_BUILDER_H
