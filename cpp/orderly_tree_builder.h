@@ -148,7 +148,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
 
   cout << "unique list: " << duration << " ms" << endl;
   cout << "unique words_.size() = " << words_.size() << endl;
-  PrintWordList();
+  // PrintWordList();
 
   // cout << "Number of nodes: " << word_lists_.size() << endl;
   // unordered_map<int, int> counts;

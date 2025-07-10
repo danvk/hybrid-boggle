@@ -284,8 +284,8 @@ def main():
 
     # with open("tree.dot", "w") as out:
     #     out.write(to_dot(orderly_tree, cells=cells))
-    with open("tree.txt", "w") as out:
-        out.write(eval_node_to_string(orderly_tree, cells))
+    # with open("tree.txt", "w") as out:
+    #     out.write(eval_node_to_string(orderly_tree, cells))
 
 
 if __name__ == "__main__":
