@@ -7,6 +7,7 @@
 #include "constants.h"
 #include "eval_node.h"
 #include "ibuckets.h"
+#include "packed_array.h"
 
 using namespace std;
 
@@ -32,9 +33,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
-  // TODO: bitpack
   struct WordPath {
-    array<uint8_t, 2 * M * N> path;
+    Packed5Array<2 * M * N> path;
     uint32_t word_id : 24;
     uint8_t points : 8;
   };
@@ -248,18 +248,18 @@ void OrderlyTreeBuilder<M, N>::AddWord(
   const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
 
   int idx = 0;
-  word.path.fill('\0');
+  // word.path.fill('\0');
   while (used_ordered) {
     int order_index = std::countr_zero(used_ordered);
     int cell = split_order[order_index];
     int letter = choices[order_index];
-    word.path[idx++] = 1 + cell;
-    word.path[idx++] = 1 + letter;
+    word.path.set(idx++, 1 + cell);
+    word.path.set(idx++, 1 + letter);
     used_ordered &= used_ordered - 1;
   }
-  if (idx < 2 * M * N) {
-    word.path[idx++] = '\0';
-  }
+  // if (idx < 2 * M * N) {
+  //   word.path[idx++] = '\0';
+  // }
   word.points = kWordScores[length];
   word.word_id = word_id;
   words_.push_back(word);
@@ -270,7 +270,7 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
   const auto& ap = a.path;
   const auto& bp = b.path;
 
-  int result = memcmp(ap.data(), bp.data(), 2 * M * N);
+  int result = memcmp(ap.data, bp.data, sizeof(ap.data));
   if (result != 0) {
     return result < 0;
   }
@@ -279,10 +279,12 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
 }
 
 template <unsigned long N>
-bool ArrayEq(const array<uint8_t, N>& a, const array<uint8_t, N>& b) {
+bool ArrayEq(const Packed5Array<N>& a, const Packed5Array<N>& b) {
   for (int i = 0; i < N; i++) {
-    if (a[i] != b[i]) return false;
-    if (a[i] == '\0' || b[i] == '\0') break;
+    auto av = a.get(i);
+    auto bv = b.get(i);
+    if (av != bv) return false;
+    if (av == '\0' || bv == '\0') break;
   }
   return true;  // they're equal if the have nulls at the spot, or are full-length equal
 }
@@ -312,10 +314,10 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
 }
 
 template <unsigned long N>
-int PathLength(const array<uint8_t, N>& a) {
+int PathLength(const Packed5Array<N>& a) {
   int len = 0;
   for (int i = 0; i < N; i += 2, len++) {
-    if (a[i] == '\0') break;
+    if (a.get(i) == '\0') break;
   }
   return len;
 }
@@ -343,7 +345,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   vector<WordPath*> child_range_ends;
   int last_cell = -1;
   for (; it <= end; ++it) {
-    int cell = it->path[2 * depth];
+    int cell = it->path.get(2 * depth);
     if (cell != last_cell) {
       child_cells.push_back(cell);
       child_range_starts.push_back(it);
@@ -381,7 +383,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   vector<WordPath*> child_range_ends;
   int last_letter = -1;
   for (; it <= end; ++it) {
-    int letter = it->path[2 * depth + 1];
+    int letter = it->path.get(2 * depth + 1);
     if (letter != last_letter) {
       child_letters.push_back(letter);
       child_range_starts.push_back(it);
