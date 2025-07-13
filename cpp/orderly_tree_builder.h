@@ -270,7 +270,7 @@ template <int M, int N>
 bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath& b) {
   const auto& ap = a.path;
   const auto& bp = b.path;
-  auto result = ap <=> bp;
+  auto result = memcmp(ap.data(), bp.data(), 2 * M * N);
   if (result != 0) {
     return result < 0;
   }
@@ -286,7 +286,8 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
   auto n = words.size();
   for (int i = 1; i < n; i++) {
     const auto& w = words[i];
-    if (w.path != last.path) {
+    int result = memcmp(w.path.data(), last.path.data(), 2 * M * N);
+    if (result != 0) {
       if (i != write_idx) {
         // cout << "uniq move " << i << " -> " << write_idx << endl;
         words[write_idx] = w;
@@ -333,9 +334,10 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   if (range_size > 128) {
     // Use extract_equal_ranges for large ranges
     vector<WordPath> word_vec(it, end + 1);
+    const int idx = 2 * depth;
     auto ranges =
-        extract_equal_ranges(word_vec, [depth](const WordPath& a, const WordPath& b) {
-          return a.path[2 * depth] < b.path[2 * depth];
+        extract_equal_ranges(word_vec, [idx](const WordPath& a, const WordPath& b) {
+          return a.path[idx] < b.path[idx];
         });
 
     auto node = arena.NewSumNodeWithCapacity(ranges.size());
@@ -399,9 +401,10 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   if (range_size > 128) {
     // Use extract_equal_ranges for large ranges
     vector<WordPath> word_vec(it, end + 1);
+    const auto idx = 2 * depth + 1;
     auto ranges =
-        extract_equal_ranges(word_vec, [depth](const WordPath& a, const WordPath& b) {
-          return a.path[2 * depth + 1] < b.path[2 * depth + 1];
+        extract_equal_ranges(word_vec, [idx](const WordPath& a, const WordPath& b) {
+          return a.path[idx] < b.path[idx];
         });
 
     uint32_t letter_mask = 0;
