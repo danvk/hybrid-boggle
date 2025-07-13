@@ -334,20 +334,41 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 
   // TOOD: return interned node if no children
 
-  // TODO: reserve or use C array
+  size_t range_size = end - it + 1;
   vector<int> child_cells;
   vector<WordPath*> child_range_starts;
   vector<WordPath*> child_range_ends;
-  int last_cell = -1;
-  for (; it <= end; ++it) {
-    int cell = it->path.get(2 * depth);
-    if (cell != last_cell) {
-      child_cells.push_back(cell);
-      child_range_starts.push_back(it);
-      child_range_ends.push_back(it);
-      last_cell = cell;
-    } else {
-      *child_range_ends.rbegin() = it;
+
+  if (range_size > 128) {
+    // Use extract_equal_ranges for large ranges
+    vector<WordPath> word_vec(it, end + 1);
+    auto ranges = extract_equal_ranges(word_vec, [depth](const WordPath& a, const WordPath& b) {
+      return a.path.get(2 * depth) < b.path.get(2 * depth);
+    });
+    
+    child_cells.reserve(ranges.size());
+    child_range_starts.reserve(ranges.size());
+    child_range_ends.reserve(ranges.size());
+    
+    for (const auto& [cell_value, start_iter, end_iter] : ranges) {
+      child_cells.push_back(cell_value.path.get(2 * depth));
+      // Convert iterators back to pointers
+      child_range_starts.push_back(it + (start_iter - word_vec.begin()));
+      child_range_ends.push_back(it + (end_iter - word_vec.begin()));
+    }
+  } else {
+    // Use original linear scan for small ranges
+    int last_cell = -1;
+    for (; it <= end; ++it) {
+      int cell = it->path.get(2 * depth);
+      if (cell != last_cell) {
+        child_cells.push_back(cell);
+        child_range_starts.push_back(it);
+        child_range_ends.push_back(it);
+        last_cell = cell;
+      } else {
+        *child_range_ends.rbegin() = it;
+      }
     }
   }
 
@@ -372,20 +393,42 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   WordPath* end = range.second;
   // cout << string(depth, ' ') << "RangeToChoiceNode(" << (end - it + 1)
   //      << " words, cell=" << cell << ", depth=" << depth << ")" << endl;
-  // TODO: reserve
+  
+  size_t range_size = end - it + 1;
   vector<int> child_letters;
   vector<WordPath*> child_range_starts;
   vector<WordPath*> child_range_ends;
-  int last_letter = -1;
-  for (; it <= end; ++it) {
-    int letter = it->path.get(2 * depth + 1);
-    if (letter != last_letter) {
-      child_letters.push_back(letter);
-      child_range_starts.push_back(it);
-      child_range_ends.push_back(it);
-      last_letter = letter;
-    } else {
-      *child_range_ends.rbegin() = it;
+
+  if (range_size > 128) {
+    // Use extract_equal_ranges for large ranges
+    vector<WordPath> word_vec(it, end + 1);
+    auto ranges = extract_equal_ranges(word_vec, [depth](const WordPath& a, const WordPath& b) {
+      return a.path.get(2 * depth + 1) < b.path.get(2 * depth + 1);
+    });
+    
+    child_letters.reserve(ranges.size());
+    child_range_starts.reserve(ranges.size());
+    child_range_ends.reserve(ranges.size());
+    
+    for (const auto& [letter_value, start_iter, end_iter] : ranges) {
+      child_letters.push_back(letter_value.path.get(2 * depth + 1));
+      // Convert iterators back to pointers
+      child_range_starts.push_back(it + (start_iter - word_vec.begin()));
+      child_range_ends.push_back(it + (end_iter - word_vec.begin()));
+    }
+  } else {
+    // Use original linear scan for small ranges
+    int last_letter = -1;
+    for (; it <= end; ++it) {
+      int letter = it->path.get(2 * depth + 1);
+      if (letter != last_letter) {
+        child_letters.push_back(letter);
+        child_range_starts.push_back(it);
+        child_range_ends.push_back(it);
+        last_letter = letter;
+      } else {
+        *child_range_ends.rbegin() = it;
+      }
     }
   }
 
