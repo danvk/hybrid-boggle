@@ -333,10 +333,9 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 
   if (range_size > 128) {
     // Use extract_equal_ranges for large ranges
-    vector<WordPath> word_vec(it, end + 1);
     const int idx = 2 * depth;
     auto ranges =
-        extract_equal_ranges(word_vec, [idx](const WordPath& a, const WordPath& b) {
+        extract_equal_ranges(it, end + 1, [idx](const WordPath& a, const WordPath& b) {
           return a.path[idx] < b.path[idx];
         });
 
@@ -345,10 +344,8 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     node->num_children_ = ranges.size();
 
     for (int i = 0; i < ranges.size(); i++) {
-      const auto& [cell_value, start_iter, end_iter] = ranges[i];
+      const auto& [cell_value, range_start, range_end] = ranges[i];
       int cell = cell_value.path[2 * depth];
-      WordPath* range_start = it + (start_iter - word_vec.begin());
-      WordPath* range_end = it + (end_iter - word_vec.begin());
 
       auto child = RangeToChoiceNode(cell - 1, {range_start, range_end}, depth, arena);
       node->children_[i] = child;
@@ -400,10 +397,9 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
 
   if (range_size > 128) {
     // Use extract_equal_ranges for large ranges
-    vector<WordPath> word_vec(it, end + 1);
     const auto idx = 2 * depth + 1;
     auto ranges =
-        extract_equal_ranges(word_vec, [idx](const WordPath& a, const WordPath& b) {
+        extract_equal_ranges(it, end + 1, [idx](const WordPath& a, const WordPath& b) {
           return a.path[idx] < b.path[idx];
         });
 
@@ -419,9 +415,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     node->bound_ = 0;
 
     for (int i = 0; i < ranges.size(); i++) {
-      const auto& [letter_value, start_iter, end_iter] = ranges[i];
-      WordPath* range_start = it + (start_iter - word_vec.begin());
-      WordPath* range_end = it + (end_iter - word_vec.begin());
+      const auto& [letter_value, range_start, range_end] = ranges[i];
 
       auto child = RangeToSumNode({range_start, range_end}, depth + 1, arena);
       node->children_[i] = child;

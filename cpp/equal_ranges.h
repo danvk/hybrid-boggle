@@ -5,26 +5,20 @@
 #ifndef EQUAL_RANGES_H
 #define EQUAL_RANGES_H
 
-template <typename T, typename Compare>
-std::vector<std::tuple<
-    T,
-    typename std::vector<T>::const_iterator,
-    typename std::vector<T>::const_iterator>>
-extract_equal_ranges(const std::vector<T>& sorted_vec, Compare comp) {
-  using Iter = typename std::vector<T>::const_iterator;
+template <typename Iter, typename Compare>
+std::vector<std::tuple<typename std::iterator_traits<Iter>::value_type, Iter, Iter>>
+extract_equal_ranges(Iter first, Iter last, Compare comp) {
+  using T = typename std::iterator_traits<Iter>::value_type;
   std::vector<std::tuple<T, Iter, Iter>> result;
 
-  Iter current = sorted_vec.begin();
-  Iter end = sorted_vec.end();
+  while (first != last) {
+    const T& value = *first;
 
-  while (current != end) {
-    const T& value = *current;
+    Iter lower = std::lower_bound(first, last, value, comp);
+    Iter upper = std::upper_bound(lower, last, value, comp);
 
-    Iter lower = std::lower_bound(current, end, value, comp);
-    Iter upper = std::upper_bound(lower, end, value, comp);
-
-    result.emplace_back(value, lower, upper - 1);  // inclusive last iterator
-    current = upper;
+    result.emplace_back(value, lower, std::prev(upper));  // inclusive [lower, upper-1]
+    first = upper;
   }
 
   return result;
