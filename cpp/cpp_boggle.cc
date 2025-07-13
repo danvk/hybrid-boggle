@@ -11,6 +11,7 @@ using std::vector;
 #include "eval_node.h"
 #include "ibuckets.h"
 #include "orderly_tree_builder.h"
+#include "packed_array.h"
 #include "symmetry.h"
 #include "trie.h"
 
@@ -157,4 +158,10 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<Symmetry>(m, "Symmetry")
       .def(py::init<int, int>())
       .def("canonicalize", &Symmetry::Canonicalize);
+
+  py::class_<Packed5Array<32>>(m, "Packed5Array")
+      .def(py::init())
+      .def("get", &Packed5Array<32>::get)
+      .def("set", &Packed5Array<32>::set)
+      .def("compare", &Packed5Array<32>::compare);
 }

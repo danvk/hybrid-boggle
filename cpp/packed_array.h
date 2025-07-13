@@ -49,6 +49,17 @@ struct Packed5Array {
 
     return (temp >> bit_offset) & 0x1F;
   }
+
+  int compare(const Packed5Array<N>& other) {
+    for (int i = 0; i < N; i++) {
+      auto av = get(i);
+      auto bv = other.get(i);
+      if (av != bv) {
+        return av < bv ? -1 : 1;
+      }
+    }
+    return 0;
+  }
 };
 
 #endif  // PACKED_ARRAY_H
