@@ -131,6 +131,9 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
   cout << "build tree: " << duration << " ms" << endl;
 
+  words_.clear();
+  words_.shrink_to_fit();
+
   // arena.PrintStats();
 
   // This can be used to investigate the layout of EvalNode.
