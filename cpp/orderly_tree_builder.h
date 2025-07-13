@@ -335,9 +335,6 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   // TOOD: return interned node if no children
 
   size_t range_size = end - it + 1;
-  vector<int> child_cells;
-  vector<WordPath*> child_range_starts;
-  vector<WordPath*> child_range_ends;
 
   if (range_size > 128) {
     // Use extract_equal_ranges for large ranges
@@ -346,18 +343,26 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
       return a.path.get(2 * depth) < b.path.get(2 * depth);
     });
     
-    child_cells.reserve(ranges.size());
-    child_range_starts.reserve(ranges.size());
-    child_range_ends.reserve(ranges.size());
+    auto node = arena.NewSumNodeWithCapacity(ranges.size());
+    node->bound_ = node->points_ = points;
+    node->num_children_ = ranges.size();
     
-    for (const auto& [cell_value, start_iter, end_iter] : ranges) {
-      child_cells.push_back(cell_value.path.get(2 * depth));
-      // Convert iterators back to pointers
-      child_range_starts.push_back(it + (start_iter - word_vec.begin()));
-      child_range_ends.push_back(it + (end_iter - word_vec.begin()));
+    for (int i = 0; i < ranges.size(); i++) {
+      const auto& [cell_value, start_iter, end_iter] = ranges[i];
+      int cell = cell_value.path.get(2 * depth);
+      WordPath* range_start = it + (start_iter - word_vec.begin());
+      WordPath* range_end = it + (end_iter - word_vec.begin());
+      
+      auto child = RangeToChoiceNode(cell - 1, {range_start, range_end}, depth, arena);
+      node->children_[i] = child;
+      node->bound_ += child->bound_;
     }
+    return node;
   } else {
     // Use original linear scan for small ranges
+    vector<int> child_cells;
+    vector<WordPath*> child_range_starts;
+    vector<WordPath*> child_range_ends;
     int last_cell = -1;
     for (; it <= end; ++it) {
       int cell = it->path.get(2 * depth);
@@ -370,19 +375,19 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
         *child_range_ends.rbegin() = it;
       }
     }
-  }
 
-  auto node = arena.NewSumNodeWithCapacity(child_cells.size());
-  node->bound_ = node->points_ = points;
-  node->num_children_ = child_cells.size();
-  for (int i = 0; i < child_cells.size(); i++) {
-    auto child = RangeToChoiceNode(
-        child_cells[i] - 1, {child_range_starts[i], child_range_ends[i]}, depth, arena
-    );
-    node->children_[i] = child;
-    node->bound_ += child->bound_;
+    auto node = arena.NewSumNodeWithCapacity(child_cells.size());
+    node->bound_ = node->points_ = points;
+    node->num_children_ = child_cells.size();
+    for (int i = 0; i < child_cells.size(); i++) {
+      auto child = RangeToChoiceNode(
+          child_cells[i] - 1, {child_range_starts[i], child_range_ends[i]}, depth, arena
+      );
+      node->children_[i] = child;
+      node->bound_ += child->bound_;
+    }
+    return node;
   }
-  return node;
 }
 
 template <int M, int N>
@@ -395,9 +400,6 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   //      << " words, cell=" << cell << ", depth=" << depth << ")" << endl;
   
   size_t range_size = end - it + 1;
-  vector<int> child_letters;
-  vector<WordPath*> child_range_starts;
-  vector<WordPath*> child_range_ends;
 
   if (range_size > 128) {
     // Use extract_equal_ranges for large ranges
@@ -406,18 +408,32 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
       return a.path.get(2 * depth + 1) < b.path.get(2 * depth + 1);
     });
     
-    child_letters.reserve(ranges.size());
-    child_range_starts.reserve(ranges.size());
-    child_range_ends.reserve(ranges.size());
-    
+    uint32_t letter_mask = 0;
     for (const auto& [letter_value, start_iter, end_iter] : ranges) {
-      child_letters.push_back(letter_value.path.get(2 * depth + 1));
-      // Convert iterators back to pointers
-      child_range_starts.push_back(it + (start_iter - word_vec.begin()));
-      child_range_ends.push_back(it + (end_iter - word_vec.begin()));
+      int letter = letter_value.path.get(2 * depth + 1);
+      letter_mask |= (1 << (letter - 1));
     }
+
+    auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
+    node->cell_ = cell;
+    node->child_letters_ = letter_mask;
+    node->bound_ = 0;
+    
+    for (int i = 0; i < ranges.size(); i++) {
+      const auto& [letter_value, start_iter, end_iter] = ranges[i];
+      WordPath* range_start = it + (start_iter - word_vec.begin());
+      WordPath* range_end = it + (end_iter - word_vec.begin());
+      
+      auto child = RangeToSumNode({range_start, range_end}, depth + 1, arena);
+      node->children_[i] = child;
+      node->bound_ = max(node->bound_, child->bound_);
+    }
+    return node;
   } else {
     // Use original linear scan for small ranges
+    vector<int> child_letters;
+    vector<WordPath*> child_range_starts;
+    vector<WordPath*> child_range_ends;
     int last_letter = -1;
     for (; it <= end; ++it) {
       int letter = it->path.get(2 * depth + 1);
@@ -430,24 +446,24 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
         *child_range_ends.rbegin() = it;
       }
     }
-  }
 
-  uint32_t letter_mask = 0;
-  for (auto& letter : child_letters) {
-    letter_mask |= (1 << (letter - 1));
-  }
+    uint32_t letter_mask = 0;
+    for (auto& letter : child_letters) {
+      letter_mask |= (1 << (letter - 1));
+    }
 
-  auto node = arena.NewChoiceNodeWithCapacity(child_letters.size());
-  node->cell_ = cell;
-  node->child_letters_ = letter_mask;
-  node->bound_ = 0;
-  for (int i = 0; i < child_letters.size(); i++) {
-    auto child =
-        RangeToSumNode({child_range_starts[i], child_range_ends[i]}, depth + 1, arena);
-    node->children_[i] = child;
-    node->bound_ = max(node->bound_, child->bound_);
+    auto node = arena.NewChoiceNodeWithCapacity(child_letters.size());
+    node->cell_ = cell;
+    node->child_letters_ = letter_mask;
+    node->bound_ = 0;
+    for (int i = 0; i < child_letters.size(); i++) {
+      auto child =
+          RangeToSumNode({child_range_starts[i], child_range_ends[i]}, depth + 1, arena);
+      node->children_[i] = child;
+      node->bound_ = max(node->bound_, child->bound_);
+    }
+    return node;
   }
-  return node;
 }
 
 template <int M, int N>
