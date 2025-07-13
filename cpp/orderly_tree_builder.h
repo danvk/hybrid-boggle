@@ -35,8 +35,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   // TODO: bitpack
   struct WordPath {
     array<uint8_t, 2 * M * N> path;
-    uint32_t word_id;
-    uint8_t points;
+    uint32_t word_id : 24;
+    uint8_t points : 8;
   };
 
  private:
@@ -76,6 +76,8 @@ template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
+  cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
+  cout << "alignment_of<WordPath>=" << alignment_of<WordPath>() << endl;
 
   // int count = CountPaths();
   // auto end0 = chrono::high_resolution_clock::now();
