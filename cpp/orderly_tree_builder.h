@@ -252,6 +252,7 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
       write_idx++;
     } else if (w.word_id != last.word_id) {
       words[write_idx - 1].points += w.points;
+      last.word_id = w.word_id;
     }
     // otherwise: drop it
   }

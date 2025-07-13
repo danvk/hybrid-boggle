@@ -72,6 +72,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         assert self.letter_counts == [0] * 26
         self.words_.sort()
         print(f"{len(self.words_)=}")
+        print_word_list(self.trie_, self.words_)
         unique_words = uniq(self.words_)
         print(f"{len(unique_words)=}")
         print_word_list(self.trie_, unique_words)
@@ -155,6 +156,7 @@ def uniq(xs: Sequence[WordPath]):
             last_word_id = x.word_id
         elif x.word_id != last_word_id:
             out[-1].points += x.points
+            last_word_id = x.word_id
     return out
 
 
@@ -282,8 +284,9 @@ def main():
     print(f"{orderly_tree.word_count()=}")
     # print_word_list(trie, otb.words_)
 
-    with open("tree.dot", "w") as out:
-        out.write(to_dot(orderly_tree, cells=cells))
+    if isinstance(orderly_tree, SumNode):
+        with open("tree.dot", "w") as out:
+            out.write(to_dot(orderly_tree, cells=cells))
     # with open("tree.txt", "w") as out:
     #     out.write(eval_node_to_string(orderly_tree, cells))
 
