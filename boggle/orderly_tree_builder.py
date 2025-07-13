@@ -282,8 +282,8 @@ def main():
     print(f"{orderly_tree.word_count()=}")
     # print_word_list(trie, otb.words_)
 
-    # with open("tree.dot", "w") as out:
-    #     out.write(to_dot(orderly_tree, cells=cells))
+    with open("tree.dot", "w") as out:
+        out.write(to_dot(orderly_tree, cells=cells))
     # with open("tree.txt", "w") as out:
     #     out.write(eval_node_to_string(orderly_tree, cells))
 
