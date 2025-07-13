@@ -331,7 +331,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 
   size_t range_size = end - it + 1;
 
-  if (range_size > 128) {
+  if (range_size > 32) {
     // Use extract_equal_ranges for large ranges
     const int idx = 2 * depth;
     auto ranges =
@@ -395,7 +395,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
 
   size_t range_size = end - it + 1;
 
-  if (range_size > 128) {
+  if (range_size > 32) {
     // Use extract_equal_ranges for large ranges
     const auto idx = 2 * depth + 1;
     auto ranges =
