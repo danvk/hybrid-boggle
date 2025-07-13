@@ -77,6 +77,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
+  cout << "sizeof(WordPath.data)=" << sizeof(words_[0].path.data) << endl;
   cout << "alignment_of<WordPath>=" << alignment_of<WordPath>() << endl;
 
   // int count = CountPaths();
@@ -418,11 +419,12 @@ void OrderlyTreeBuilder<M, N>::PrintWordList() {
   for (const auto& w : words_) {
     cout << std::setw(3) << (i++) << " [";
     for (int k = 0; k < 2 * M * N; k += 2) {
-      if (w.path[k] == '\0') {
+      if (w.path.get(k) == '\0') {
         break;
       }
       if (k) cout << ", ";
-      cout << "(" << (int)(w.path[k] - 1) << ", " << (int)(w.path[k + 1] - 1) << ")";
+      cout << "(" << (int)(w.path.get(k) - 1) << ", " << (int)(w.path.get(k + 1) - 1)
+           << ")";
     }
     cout << "] (" << (int)w.points << ") ";
     auto t = dict_->FindWordId(w.word_id);
