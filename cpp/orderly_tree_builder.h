@@ -330,6 +330,9 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   // TOOD: return interned node if no children
 
   size_t range_size = end - it + 1;
+  if (range_size == 0 && points < 128) {
+    return canonical_nodes_[points - 1];
+  }
 
   if (range_size > 32) {
     // Use extract_equal_ranges for large ranges
