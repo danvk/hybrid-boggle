@@ -76,9 +76,9 @@ template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
-  cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
+  // cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
   // cout << "sizeof(WordPath.data)=" << sizeof(words_[0].path.data()) << endl;
-  cout << "alignment_of<WordPath>=" << alignment_of<WordPath>() << endl;
+  // cout << "alignment_of<WordPath>=" << alignment_of<WordPath>() << endl;
 
   // int count = CountPaths();
   // auto end0 = chrono::high_resolution_clock::now();
