@@ -5,6 +5,7 @@
 #include <iomanip>
 
 #include "constants.h"
+#include "equal_ranges.h"
 #include "eval_node.h"
 #include "ibuckets.h"
 #include "packed_array.h"
