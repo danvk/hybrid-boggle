@@ -68,6 +68,10 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
       int cell, pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
   );
 
+  int CountPaths();
+  void CountAllDescents(int cell, Trie* t);
+  void CountDFS(int cell, Trie* t);
+
   void PrintWordList();
 };
 
@@ -75,6 +79,11 @@ template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
+
+  int count = CountPaths();
+  auto end0 = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
+  cout << "Count paths: " << duration << " ms" << endl;
 
   // Step 1: Create canonical zero-child SumNodes in main arena
   for (int points = 1; points <= 128; points++) {
@@ -86,13 +95,13 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
 
   count_only_ = false;
   words_.clear();
-  words_.reserve(36'000'000);
+  words_.reserve(count);
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, *temp_arena_);
   }
   auto end1 = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
+  duration = chrono::duration_cast<chrono::milliseconds>(end1 - end0).count();
   cout << "Build word list: " << duration << " ms" << endl;
 
   sort(words_.begin(), words_.end(), WordComparator);
@@ -183,6 +192,53 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
     if (!count_only_) {
       AddWord(choices_, used_ordered_, t->WordId(), length);
     }
+    num_paths_++;
+  }
+}
+
+template <int M, int N>
+int OrderlyTreeBuilder<M, N>::CountPaths() {
+  num_paths_ = 0;
+  for (int cell = 0; cell < M * N; cell++) {
+    CountAllDescents(cell, dict_);
+  }
+  return num_paths_;
+}
+
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::CountAllDescents(int cell, Trie* t) {
+  char* c = &bd_[cell][0];
+  int j = 0;
+  while (*c) {
+    auto cc = *c - 'a';
+    if (t->StartsWord(cc)) {
+      int cell_order = cell_to_order_[cell];
+      choices_[cell_order] = j;
+      used_ ^= (1 << cell);
+      used_ordered_ ^= (1 << cell_order);
+
+      CountDFS(cell, t->Descend(cc));
+
+      used_ordered_ ^= (1 << cell_order);
+      used_ ^= (1 << cell);
+    }
+    c++;
+    j++;
+  }
+}
+
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::CountDFS(int i, Trie* t) {
+  auto& neighbors = BucketBoggler<M, N>::NEIGHBORS[i];
+  auto n_neighbors = neighbors[0];
+  for (int j = 1; j <= n_neighbors; j++) {
+    auto idx = neighbors[j];
+    if ((used_ & (1 << idx)) == 0) {
+      CountAllDescents(idx, t);
+    }
+  }
+
+  if (t->IsWord()) {
     num_paths_++;
   }
 }
