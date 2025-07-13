@@ -51,6 +51,7 @@ struct Packed5Array {
   }
 
   int compare(const Packed5Array<N>& other) const {
+    // return memcmp(data, other.data, TotalBytes);
     for (int i = 0; i < N; i++) {
       auto av = get(i);
       auto bv = other.get(i);
