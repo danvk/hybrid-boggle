@@ -280,13 +280,7 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
 
 template <unsigned long N>
 bool ArrayEq(const Packed5Array<N>& a, const Packed5Array<N>& b) {
-  for (int i = 0; i < N; i++) {
-    auto av = a.get(i);
-    auto bv = b.get(i);
-    if (av != bv) return false;
-    if (av == '\0' || bv == '\0') break;
-  }
-  return true;  // they're equal if the have nulls at the spot, or are full-length equal
+  return a.compare(b) == 0;
 }
 
 template <int M, int N>
