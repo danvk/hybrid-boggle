@@ -44,11 +44,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int cell_to_order_[M * N];
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
-  int num_letters_[M * N];
   int num_paths_;
-  int letter_counts_[26];  // TODO: don't need the count here, a 52-bit mask would work
-  uint32_t dupe_mask_;
-  vector<vector<uint32_t>> word_lists_;
   unsigned int num_overflow_;
   vector<WordPath> words_;
   bool count_only_;
@@ -88,37 +84,6 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     canonical_nodes_[points - 1] = node;
   }
 
-  // Step 2: Create temporary arena for initial tree building
-  // temp_arena_ = create_eval_node_arena();
-
-  // root_ =
-  //    temp_arena_->NewRootNodeWithCapacity(M * N);  // this will never be reallocated
-  used_ = 0;
-
-  word_lists_.clear();
-  // word_lists_.reserve(1000);
-  for (int i = 0; i < 26; i++) {
-    letter_counts_[i] = 0;
-  }
-  dupe_mask_ = 0;
-  num_overflow_ = 0;
-  for (int cell = 0; cell < M * N; cell++) {
-    num_letters_[cell] = strlen(bd_[cell]);
-  }
-  // word_lists_.push_back({});  // start with 1
-
-  /*
-  count_only_ = true;
-  num_paths_ = 0;
-  for (int cell = 0; cell < M * N; cell++) {
-    DoAllDescents(cell, 0, 0, dict_, arena);
-  }
-  auto end0 = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
-  cout << "num paths: " << num_paths_ << endl;
-  cout << "Count words: " << duration << " ms" << endl;
-  */
-
   count_only_ = false;
   words_.clear();
   words_.reserve(36'000'000);
@@ -150,23 +115,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "unique words_.size() = " << words_.size() << endl;
   // PrintWordList();
 
-  // cout << "Number of nodes: " << word_lists_.size() << endl;
-  // unordered_map<int, int> counts;
-  // int max_count = 0;
-  // for (auto& wl : word_lists_) {
-  //   int count = wl.size();
-  //   counts[count] += 1;
-  //   max_count = max(max_count, count);
-  // }
-  // for (int i = 0; i <= max_count; i++) {
-  //   cout << i << "\t" << counts[i] << endl;
-  // }
-
   WordPath* w_start = &words_[0];
   WordPath* w_end = &words_[words_.size() - 1];
   auto root = RangeToSumNode({w_start, w_end}, 0, arena);
 
-  word_lists_.clear();
   auto end4 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
   cout << "build tree: " << duration << " ms" << endl;
@@ -194,7 +146,6 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(
     int cell, int n, int length, Trie* t, EvalNodeArena& arena
 ) {
-  auto old_mask = dupe_mask_;
   char* c = &bd_[cell][0];
   int j = 0;
   while (*c) {
@@ -205,82 +156,13 @@ void OrderlyTreeBuilder<M, N>::DoAllDescents(
       used_ ^= (1 << cell);
       used_ordered_ ^= (1 << cell_order);
 
-      auto old_count = letter_counts_[cc]++;
-      if (old_count == 1) {
-        dupe_mask_ |= (1 << cc);
-      }
-
       DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
-
-      letter_counts_[cc]--;
-      dupe_mask_ = old_mask;
 
       used_ordered_ ^= (1 << cell_order);
       used_ ^= (1 << cell);
     }
     c++;
     j++;
-  }
-}
-
-// We want to avoid double-counting words that use the exact same cells. To do so with
-// minimal overhead, we use a binary encoding in the SumNodes during tree building.
-// Since most SumNodes have zero or one words on them, it greatly reduces overhead to
-// store a single word inline on the SumNode. Space is limited there, so we repurpose
-// the bound_ field and fill it in later (DecodePointsAndBound).
-//
-// - If the path to the SumNode does not contain a repeated letter (e.g. RISE):
-//   - points_ = number of points scored for all words on this SumNode.
-//   - bound_ = 0
-// - If it does contain a repeat letter (e.g. SERE):
-//   - points_ = number of points scored for _each_ word
-//   - if bound_ = 0 -> no words on this SumNode
-//   - if bound_ & FRESH_MASK:
-//     - There is one word on this SumNode.
-//     - It has WordId = bound_ & (FRESH_MASK - 1)
-//   - otherwise:
-//     - There are multiple distinct words on this SumNode.
-//     - They're listed in word_lists_[bound_].
-//
-// After tree construction, this all needs to be decoded to set points_ and bound_ to
-// their proper values. This is done with SumNode::DecodePointsAndBound().
-// See https://github.com/danvk/hybrid-boggle/issues/117 and linked PRs.
-
-static const uint32_t FRESH_MASK = 1 << 23;
-
-void EncodeWordInSumNode(
-    SumNode* word_node, Trie* t, int word_score, vector<vector<uint32_t>>& word_lists
-) {
-  auto slot = word_node->bound_;
-  if (slot == 0) {
-    // Fresh find! Inline the word into word_node->bound_ and mark it.
-    // All words on a SumNode have the same score, which is convenient to store here.
-    word_node->points_ = word_score;
-    word_node->bound_ = t->WordId() | FRESH_MASK;
-  } else if (slot & FRESH_MASK) {
-    // The previous word was the first and is inlined into word_node->bound_.
-    uint32_t old_word_id = slot & (FRESH_MASK - 1);
-    uint32_t new_word_id = t->WordId();
-    if (old_word_id != new_word_id) {
-      // This is the first collision; move everything to a word_list.
-      slot = word_lists.size();
-      // assert(slot > 0);
-      word_lists.push_back({old_word_id, new_word_id});
-      assert(slot < FRESH_MASK);
-      word_node->bound_ = slot;
-    } else {
-      // It's a duplicate with the previous word.
-    }
-  } else {
-    // There are already 2+ words on this node; maybe there should be a third.
-    // This search is O(N), but I've never seen N>6 and it's usually 2.
-    auto& word_list = word_lists[slot];
-    auto word_id = t->WordId();
-    if (find(word_list.begin(), word_list.end(), word_id) == word_list.end()) {
-      word_list.push_back(word_id);
-    } else {
-      // duplicate
-    }
   }
 }
 
