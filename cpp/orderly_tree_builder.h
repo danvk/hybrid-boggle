@@ -77,10 +77,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
 
-  int count = CountPaths();
-  auto end0 = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
-  cout << "Count paths: " << duration << " ms" << endl;
+  // int count = CountPaths();
+  // auto end0 = chrono::high_resolution_clock::now();
+  // auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
+  // cout << "Count paths: " << duration << " ms" << endl;
 
   // Step 1: Create canonical zero-child SumNodes in main arena
   for (int points = 1; points <= 128; points++) {
@@ -91,13 +91,13 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   }
 
   words_.clear();
-  words_.reserve(count);
+  words_.reserve(20'000'000);
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
   auto end1 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end1 - end0).count();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
   cout << "Build word list: " << duration << " ms" << endl;
 
   sort(words_.begin(), words_.end(), WordComparator);
@@ -335,7 +335,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 
   // TOOD: return interned node if no children
 
-  // TODO: reserve
+  // TODO: reserve or use C array
   vector<int> child_cells;
   vector<WordPath*> child_range_starts;
   vector<WordPath*> child_range_ends;
