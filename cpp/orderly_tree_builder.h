@@ -270,15 +270,9 @@ template <int M, int N>
 bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath& b) {
   const auto& ap = a.path;
   const auto& bp = b.path;
-
-  // Compare packed arrays element by element since memcmp on packed data is invalid
-  for (int i = 0; i < 2 * M * N; i++) {
-    auto av = ap.get(i);
-    auto bv = bp.get(i);
-    if (av != bv) {
-      return av < bv;
-    }
-    if (av == '\0') break;  // Both are '\0', end of path
+  int result = ap.compare(bp);
+  if (result != 0) {
+    return result < 0;
   }
 
   return a.word_id < b.word_id;

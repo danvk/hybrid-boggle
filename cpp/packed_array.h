@@ -50,7 +50,7 @@ struct Packed5Array {
     return (temp >> bit_offset) & 0x1F;
   }
 
-  int compare(const Packed5Array<N>& other) {
+  int compare(const Packed5Array<N>& other) const {
     for (int i = 0; i < N; i++) {
       auto av = get(i);
       auto bv = other.get(i);
