@@ -45,13 +45,10 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
   int num_paths_;
-  unsigned int num_overflow_;
   vector<WordPath> words_;
-  bool count_only_;
 
   // For interning zero-child SumNodes
-  SumNode* canonical_nodes_[128];         // canonical nodes for 1-128 points
-  unique_ptr<EvalNodeArena> temp_arena_;  // temporary arena for initial allocation
+  SumNode* canonical_nodes_[128];  // canonical nodes for 1-128 points
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -93,12 +90,11 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     canonical_nodes_[points - 1] = node;
   }
 
-  count_only_ = false;
   words_.clear();
   words_.reserve(count);
 
   for (int cell = 0; cell < M * N; cell++) {
-    DoAllDescents(cell, 0, 0, dict_, *temp_arena_);
+    DoAllDescents(cell, 0, 0, dict_, arena);
   }
   auto end1 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end1 - end0).count();
@@ -189,10 +185,7 @@ void OrderlyTreeBuilder<M, N>::DoDFS(
   }
 
   if (t->IsWord()) {
-    if (!count_only_) {
-      AddWord(choices_, used_ordered_, t->WordId(), length);
-    }
-    num_paths_++;
+    AddWord(choices_, used_ordered_, t->WordId(), length);
   }
 }
 
@@ -227,6 +220,7 @@ void OrderlyTreeBuilder<M, N>::CountAllDescents(int cell, Trie* t) {
   }
 }
 
+// TODO: try cogging this
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::CountDFS(int i, Trie* t) {
   auto& neighbors = BucketBoggler<M, N>::NEIGHBORS[i];
