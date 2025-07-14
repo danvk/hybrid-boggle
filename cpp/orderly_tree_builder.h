@@ -59,10 +59,17 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(
-      pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+      const vector<WordPath>& words,
+      pair<int, int> range,
+      int depth,
+      EvalNodeArena& arena
   );
   ChoiceNode* RangeToChoiceNode(
-      int cell, pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+      int cell,
+      const vector<WordPath>& words,
+      pair<int, int> range,
+      int depth,
+      EvalNodeArena& arena
   );
 
   int CountPaths();
@@ -122,9 +129,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // cout << "unique words_.size() = " << words_.size() << endl;
   // PrintWordList();
 
-  WordPath* w_start = &words_[0];
-  WordPath* w_end = &words_[words_.size() - 1];
-  auto root = RangeToSumNode({w_start, w_end}, 0, arena);
+  auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
 
   // auto end4 = chrono::high_resolution_clock::now();
   // duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
@@ -321,21 +326,19 @@ int PathLength(const array<uint8_t, N>& a) {
 // Endpoints are _inclusive_; equal ends = 1-element list
 template <int M, int N>
 SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
-    pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+    const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena
 ) {
-  WordPath* it = range.first;
-  WordPath* end = range.second;
+  int start = range.first;
+  int end = range.second;
   // cout << string(depth, ' ') << "RangeToSumNode(" << (end - it + 1)
   //      << " words, depth=" << depth << ")" << endl;
   int points = 0;
-  if (PathLength(it->path) == depth) {
-    points = it->points;
-    ++it;
+  if (PathLength(words[start].path) == depth) {
+    points = words[start].points;
+    ++start;
   }
 
-  // TOOD: return interned node if no children
-
-  size_t range_size = end - it + 1;
+  size_t range_size = end - start;
   if (range_size == 0 && points < 128) {
     return canonical_nodes_[points - 1];
   }
@@ -343,20 +346,17 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   if (range_size > 32) {
     // Use extract_equal_ranges for large ranges
     const int idx = 2 * depth;
-    auto ranges =
-        extract_equal_ranges(it, end + 1, [idx](const WordPath& a, const WordPath& b) {
-          return a.path[idx] < b.path[idx];
-        });
+    auto ranges = equal_ranges(words, idx, start, end);
 
     auto node = arena.NewSumNodeWithCapacity(ranges.size());
     node->bound_ = node->points_ = points;
     node->num_children_ = ranges.size();
 
     for (int i = 0; i < ranges.size(); i++) {
-      const auto& [cell_value, range_start, range_end] = ranges[i];
-      int cell = cell_value.path[2 * depth];
+      const auto& [cell, range_start, range_end] = ranges[i];
 
-      auto child = RangeToChoiceNode(cell - 1, {range_start, range_end}, depth, arena);
+      auto child =
+          RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena);
       node->children_[i] = child;
       node->bound_ += child->bound_;
     }
@@ -364,18 +364,19 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   } else {
     // Use original linear scan for small ranges
     vector<int> child_cells;
-    vector<WordPath*> child_range_starts;
-    vector<WordPath*> child_range_ends;
+    vector<int> child_range_starts;
+    vector<int> child_range_ends;
     int last_cell = -1;
-    for (; it <= end; ++it) {
-      int cell = it->path[2 * depth];
+    for (int i = start; i < end; i++) {
+      auto& word = words[i];
+      int cell = word.path[2 * depth];
       if (cell != last_cell) {
         child_cells.push_back(cell);
-        child_range_starts.push_back(it);
-        child_range_ends.push_back(it);
+        child_range_starts.push_back(i);
+        child_range_ends.push_back(i + 1);
         last_cell = cell;
       } else {
-        *child_range_ends.rbegin() = it;
+        *child_range_ends.rbegin() = i + 1;
       }
     }
 
@@ -384,7 +385,11 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     node->num_children_ = child_cells.size();
     for (int i = 0; i < child_cells.size(); i++) {
       auto child = RangeToChoiceNode(
-          child_cells[i] - 1, {child_range_starts[i], child_range_ends[i]}, depth, arena
+          child_cells[i] - 1,
+          words,
+          {child_range_starts[i], child_range_ends[i]},
+          depth,
+          arena
       );
       node->children_[i] = child;
       node->bound_ += child->bound_;
@@ -395,26 +400,26 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 
 template <int M, int N>
 ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
-    int cell, pair<WordPath*, WordPath*> range, int depth, EvalNodeArena& arena
+    int cell,
+    const vector<WordPath>& words,
+    pair<int, int> range,
+    int depth,
+    EvalNodeArena& arena
 ) {
-  WordPath* it = range.first;
-  WordPath* end = range.second;
+  int start = range.first;
+  int end = range.second;
   // cout << string(depth, ' ') << "RangeToChoiceNode(" << (end - it + 1)
   //      << " words, cell=" << cell << ", depth=" << depth << ")" << endl;
 
-  size_t range_size = end - it + 1;
+  size_t range_size = end - start;
 
   if (range_size > 32) {
     // Use extract_equal_ranges for large ranges
     const auto idx = 2 * depth + 1;
-    auto ranges =
-        extract_equal_ranges(it, end + 1, [idx](const WordPath& a, const WordPath& b) {
-          return a.path[idx] < b.path[idx];
-        });
+    auto ranges = equal_ranges(words, idx, start, end);
 
     uint32_t letter_mask = 0;
-    for (const auto& [letter_value, start_iter, end_iter] : ranges) {
-      int letter = letter_value.path[2 * depth + 1];
+    for (const auto& [letter, start_iter, end_iter] : ranges) {
       letter_mask |= (1 << (letter - 1));
     }
 
@@ -426,7 +431,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     for (int i = 0; i < ranges.size(); i++) {
       const auto& [letter_value, range_start, range_end] = ranges[i];
 
-      auto child = RangeToSumNode({range_start, range_end}, depth + 1, arena);
+      auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena);
       node->children_[i] = child;
       node->bound_ = max(node->bound_, child->bound_);
     }
@@ -434,18 +439,18 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   } else {
     // Use original linear scan for small ranges
     vector<int> child_letters;
-    vector<WordPath*> child_range_starts;
-    vector<WordPath*> child_range_ends;
+    vector<int> child_range_starts;
+    vector<int> child_range_ends;
     int last_letter = -1;
-    for (; it <= end; ++it) {
-      int letter = it->path[2 * depth + 1];
+    for (int i = start; i < end; i++) {
+      int letter = words[i].path[2 * depth + 1];
       if (letter != last_letter) {
         child_letters.push_back(letter);
-        child_range_starts.push_back(it);
-        child_range_ends.push_back(it);
+        child_range_starts.push_back(i);
+        child_range_ends.push_back(i + 1);
         last_letter = letter;
       } else {
-        *child_range_ends.rbegin() = it;
+        *child_range_ends.rbegin() = i + 1;
       }
     }
 
@@ -460,7 +465,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     node->bound_ = 0;
     for (int i = 0; i < child_letters.size(); i++) {
       auto child = RangeToSumNode(
-          {child_range_starts[i], child_range_ends[i]}, depth + 1, arena
+          words, {child_range_starts[i], child_range_ends[i]}, depth + 1, arena
       );
       node->children_[i] = child;
       node->bound_ = max(node->bound_, child->bound_);

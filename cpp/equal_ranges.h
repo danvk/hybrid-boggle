@@ -16,6 +16,7 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
   if (a >= b) return result;
   int first = xs[a].path[offset];
   int last = xs[b - 1].path[offset];
+
   if (first == last) {
     result.emplace_back(first, a, b);
     return result;
@@ -25,11 +26,12 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
     result.emplace_back(last, a + 1, b);
     return result;
   }
+
   int mid_idx = a + ((b - a) / 2);
-  T mid = xs[mid_idx];
+  int mid = xs[mid_idx].path[offset];
   if (mid == first) {
     // Find equal_ranges for the second half and add to the first range.
-    auto ranges = equal_ranges(xs, mid_idx, b);
+    auto ranges = equal_ranges(xs, offset, mid_idx, b);
     auto& first_range = ranges[0];
     assert(std::get<0>(first_range) == mid);
     assert(std::get<1>(first_range) == mid_idx);
@@ -38,7 +40,7 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
     return result;
   } else if (mid == last) {
     // Find equal ranges for the back half and add to the last range
-    auto ranges = equal_ranges(xs, a, mid_idx + 1);
+    auto ranges = equal_ranges(xs, offset, a, mid_idx + 1);
     auto& last_range = ranges.back();
     assert(std::get<0>(last_range) == mid);
     assert(std::get<2>(last_range) == mid_idx + 1);
@@ -47,14 +49,14 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
     return result;
   } else {
     // Search both halves and smoosh them together
-    auto low_ranges = equal_ranges(xs, a, mid_idx + 1);
-    auto hi_ranges = equal_ranges(xs, mid_idx, b);
+    auto low_ranges = equal_ranges(xs, offset, a, mid_idx + 1);
+    auto hi_ranges = equal_ranges(xs, offset, mid_idx, b);
     assert(mid == std::get<0>(low_ranges.back()));
     assert(std::get<0>(low_ranges.back()) == std::get<0>(hi_ranges.front()));
     assert(std::get<2>(low_ranges.back()) == std::get<1>(hi_ranges.front()) + 1);
 
     // Merge the last of low_ranges and first of hi_ranges
-    std::vector<std::tuple<T, int, int>> merged;
+    std::vector<std::tuple<int, int, int>> merged;
     merged.reserve(low_ranges.size() + hi_ranges.size() - 1);
     merged.insert(merged.end(), low_ranges.begin(), low_ranges.end() - 1);
     merged.emplace_back(
