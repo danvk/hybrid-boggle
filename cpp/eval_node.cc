@@ -12,8 +12,6 @@
 
 using namespace std;
 
-// Children are now ordered by letter index implicitly via child_letters_ bitmask
-
 inline bool SortByCell(const ChoiceNode* a, const ChoiceNode* b) {
   return a->cell_ < b->cell_;
 }
@@ -624,45 +622,6 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     }
   }
   return out;
-}
-
-static const uint32_t FRESH_MASK = 1 << 23;
-
-// See orderly_tree_builder.h for an explanation of the encoding.
-void SumNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
-  if (bound_) {
-    // A word was found on this node; decode the points.
-    int count;
-    if (bound_ & FRESH_MASK) {
-      // just one word stored inline
-      count = 1;
-    } else {
-      auto slot = bound_;
-      auto& wordlist = wordlists[slot];
-      count = wordlist.size();
-    }
-    auto word_score = points_;
-    points_ = bound_ = word_score * count;
-  } else {
-    bound_ = points_;
-  }
-
-  for (int i = 0; i < num_children_; i++) {
-    auto& child = children_[i];
-    child->DecodePointsAndBound(wordlists);
-    bound_ += child->bound_;
-  }
-}
-
-void ChoiceNode::DecodePointsAndBound(vector<vector<uint32_t>>& wordlists) {
-  uint32_t bound = 0;
-  int n_children = NumChildren();
-  for (int i = 0; i < n_children; i++) {
-    auto& child = children_[i];
-    child->DecodePointsAndBound(wordlists);
-    bound = max(bound, child->bound_);
-  }
-  bound_ = bound;
 }
 
 void SumNode::AddWordWithPointsForTesting(

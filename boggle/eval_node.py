@@ -94,19 +94,6 @@ class SumNode:
 
         return letter_child.add_word(choices, used_ordered, split_order, arena)
 
-    def decode_points_and_bound(self, wordlists=None):
-        """Decode bound and points as set by OrderlyTreeBuilder."""
-        if isinstance(self.bound, set):
-            count = len(self.bound)
-            word_score = self.points
-            self.points = count * word_score
-
-        bound = self.points
-        for child in self.children:
-            child.decode_points_and_bound(wordlists)
-            bound += child.bound
-        self.bound = bound
-
     def orderly_force_cell(
         self, cell: int, num_lets: int, arena: PyArena
     ) -> list[Self]:
@@ -380,14 +367,6 @@ class ChoiceNode:
             if self.children
             else 0
         )
-
-    def decode_points_and_bound(self, wordlists=None):
-        # See corresponding method on SumNode.
-        bound = 0
-        for child in self.children:
-            child.decode_points_and_bound(wordlists)
-            bound = max(bound, child.bound)
-        self.bound = bound
 
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
         idx = split_order.index(self.cell)

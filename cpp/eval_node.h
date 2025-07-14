@@ -67,11 +67,6 @@ class SumNode {
   vector<ChoiceNode*> GetChildren();
   SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
 
-  // Decode the points_ and bound_ fields as set by OrderlyTreeBuilder,
-  // setting them to the correct values for this entire tree.
-  // See comment near EncodeWordInSumNode for details on the encoding.
-  void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);
-
   // Wrapper with pybind11-friendly parameter types.
   void AddWordWithPointsForTesting(
       vector<int> choices,
@@ -114,9 +109,6 @@ class ChoiceNode {
 
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;
-
-  // See corresponding method on SumNode
-  void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);
 
  private:
 };
