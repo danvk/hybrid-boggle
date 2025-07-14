@@ -339,7 +339,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   }
 
   vector<tuple<int, int, int>> ranges;
-  if (range_size > 32) {
+  if (range_size > 10'000) {
     // Use extract_equal_ranges for large ranges
     const int idx = 2 * depth;
     ranges = equal_ranges(words, idx, start, end);
@@ -388,7 +388,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   size_t range_size = end - start;
 
   vector<tuple<int, int, int>> ranges;
-  if (range_size > 32) {
+  if (range_size > 10'000) {
     const auto idx = 2 * depth + 1;
     ranges = equal_ranges(words, idx, start, end);
   } else {
