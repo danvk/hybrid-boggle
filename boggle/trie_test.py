@@ -9,13 +9,16 @@ def asc(char: str):
 
 
 def test_trie():
-    t = Trie()
-    t.add_word("agriculture")
-    t.add_word("culture")
-    t.add_word("boggle")
-    t.add_word("tea")
-    t.add_word("sea")
-    t.add_word("teapot")
+    t = Trie.create_from_wordlist(
+        [
+            "agriculture",
+            "culture",
+            "boggle",
+            "tea",
+            "sea",
+            "teapot",
+        ]
+    )
     assert not t.is_word()
 
     assert t.size() == 6

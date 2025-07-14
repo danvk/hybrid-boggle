@@ -57,14 +57,14 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             self.do_all_descents(cell, 0, self.trie_, choices, arena)
 
         self.words_.sort()
-        # print(f"{len(self.words_)=}")
-        # print_word_list(self.trie_, self.words_)
+        print(f"{len(self.words_)=}")
+        print_word_list(self.trie_, self.words_)
         if not self.raw_multiboggle:
             unique_words = unique_word_list(self.words_)
         else:
             unique_words = self.words_
-        # print(f"{len(unique_words)=}")
-        # print_word_list(self.trie_, unique_words)
+        print(f"{len(unique_words)=}")
+        print_word_list(self.trie_, unique_words)
         self.words_ = []
         return range_to_sum_node(unique_words, 0, arena)
 

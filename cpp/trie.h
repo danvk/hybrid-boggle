@@ -36,6 +36,7 @@ class Trie {
   Trie* AddWord(const char* wd);
   static unique_ptr<Trie> CreateFromFile(const char* filename);
   static unique_ptr<Trie> CreateFromFileStr(const string& filename);
+  static unique_ptr<Trie> CreateFromWordlist(const vector<string>& words);
 
   // Some slower methods that operate on the entire Trie (not just a node).
   size_t Size();

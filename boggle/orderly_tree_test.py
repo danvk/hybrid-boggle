@@ -30,12 +30,14 @@ from boggle.trie import PyTrie, make_py_trie
     [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
 )
 def test_build_orderly_tree(TrieT, TreeBuilderT):
-    t = TrieT()
-    t.add_word("sea")
-    t.add_word("seat")
-    t.add_word("seats")
-    t.add_word("tea")
-    t.add_word("teas")
+    words = [
+        "sea",
+        "seat",
+        "seats",
+        "tea",
+        "teas",
+    ]
+    t = TrieT.create_from_wordlist(words)
 
     bb = TreeBuilderT(t, (3, 3))
     arena = bb.create_arena()

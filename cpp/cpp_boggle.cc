@@ -78,7 +78,8 @@ PYBIND11_MODULE(cpp_boggle, m) {
           "reverse_lookup",
           py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup)
       )
-      .def_static("create_from_file", &Trie::CreateFromFile);
+      .def_static("create_from_file", &Trie::CreateFromFile)
+      .def_static("create_from_wordlist", &Trie::CreateFromWordlist);
 
   declare_boggler<2, 2>(m, "Boggler22");
   declare_boggler<2, 3>(m, "Boggler23");

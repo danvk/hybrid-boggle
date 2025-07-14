@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Iterable, Self
 
 LETTER_A = ord("a")
 
@@ -71,6 +71,16 @@ class PyTrie:
     @staticmethod
     def reverse_lookup(root: Self, node: Self):
         return reverse_lookup(root, node)
+
+    @staticmethod
+    def create_from_wordlist(words: Iterable[str]) -> Self:
+        """words should already be "bogglified"."""
+        trie = PyTrie()
+        next_id = 0
+        for word in words:
+            trie.add_word(word).word_id = next_id
+            next_id += 1
+        return trie
 
 
 def reverse_lookup(root: PyTrie, node: PyTrie):

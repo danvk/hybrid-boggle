@@ -150,3 +150,12 @@ unique_ptr<Trie> Trie::CreateFromFileStr(const string& filename) {
   word[dst] = word[src];
   return true;
 }
+
+/* static */ unique_ptr<Trie> Trie::CreateFromWordlist(const vector<string>& words) {
+  int count = 0;
+  unique_ptr<Trie> t(new Trie);
+  for (const auto& word : words) {
+    t->AddWord(word.c_str())->SetWordId(count++);
+  }
+  return t;
+}
