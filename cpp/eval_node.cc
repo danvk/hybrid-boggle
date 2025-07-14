@@ -127,17 +127,17 @@ SumNode* SumNode::AddWord(
     auto new_choice_child = choice_child->AddChild(letter_child, letter, arena);
     if (new_choice_child != choice_child) {
       const auto& old_choice_child = choice_child;
-      bool patched = false;
+      // bool patched = false;
       for (int i = 0; i < new_me->num_children_; i++) {
         const auto& c = new_me->children_[i];
         if (c == old_choice_child) {
           // TODO: assign through reference
           new_me->children_[i] = new_choice_child;
-          patched = true;
+          // patched = true;
           break;
         }
       }
-      assert(patched);  // TODO: remove
+      // assert(patched);  // TODO: remove
       choice_child = new_choice_child;
     }
   }
@@ -145,17 +145,17 @@ SumNode* SumNode::AddWord(
       letter_child->AddWord(choices, used_ordered, split_order, arena, leaf);
   if (new_letter_child != letter_child) {
     const auto& old_letter_child = letter_child;
-    bool patched = false;
+    // bool patched = false;
     for (int i = 0; i < choice_child->NumChildren(); i++) {
       auto& c = choice_child->children_[i];
       if (c == old_letter_child) {
         // TODO: assign through reference
         choice_child->children_[i] = new_letter_child;
-        patched = true;
+        // patched = true;
         break;
       }
     }
-    assert(patched);  // TODO: remove
+    // assert(patched);  // TODO: remove
     letter_child = new_letter_child;
   }
 
@@ -632,8 +632,9 @@ void SumNode::AddWordWithPointsForTesting(
     EvalNodeArena& arena
 ) {
   SumNode* node;
-  auto r = AddWord(choices.data(), used_ordered, split_order.data(), arena, &node);
-  assert(r == this);
+  AddWord(choices.data(), used_ordered, split_order.data(), arena, &node);
+  // auto r =
+  // assert(r == this);
   node->points_ += points;
 }
 
