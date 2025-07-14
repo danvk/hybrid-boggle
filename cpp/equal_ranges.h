@@ -22,7 +22,7 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
   if (b - a == 2) {
     return {{first, a, a + 1}, {last, a + 1, b}};
   }
-  if (b - a < 128) {
+  if (b - a < 10'000) {
     vector<tuple<int, int, int>> ranges;
     ranges.reserve(last - first + 1);
     int last_val = -1;
