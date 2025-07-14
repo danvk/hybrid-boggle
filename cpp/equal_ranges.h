@@ -9,13 +9,13 @@
 // xs must be sorted, [a, b) is the range to process
 // Returns vector of (value, start, end) where start/end are indices into xs
 template <typename T>
-std::vector<std::tuple<T, int, int>> equal_ranges(
-    const std::vector<T>& xs, int a, int b
+std::vector<std::tuple<int, int, int>> equal_ranges(
+    const std::vector<T>& xs, int offset, int a, int b
 ) {
-  std::vector<std::tuple<T, int, int>> result;
+  std::vector<std::tuple<int, int, int>> result;
   if (a >= b) return result;
-  T first = xs[a];
-  T last = xs[b - 1];
+  int first = xs[a].path[offset];
+  int last = xs[b - 1].path[offset];
   if (first == last) {
     result.emplace_back(first, a, b);
     return result;
