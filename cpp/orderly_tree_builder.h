@@ -338,24 +338,9 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     return canonical_nodes_[points - 1];
   }
 
-  vector<tuple<int, int, int>> ranges;
-  if (range_size > 10'000) {
-    // Use extract_equal_ranges for large ranges
-    const int idx = 2 * depth;
-    ranges = equal_ranges(words, idx, start, end);
-  } else {
-    int last_cell = -1;
-    for (int i = start; i < end; i++) {
-      auto& word = words[i];
-      int cell = word.path[2 * depth];
-      if (cell != last_cell) {
-        ranges.push_back({cell, i, i + 1});
-        last_cell = cell;
-      } else {
-        std::get<2>(*ranges.rbegin()) = i + 1;
-      }
-    }
-  }
+  // Use extract_equal_ranges for large ranges
+  const int idx = 2 * depth;
+  auto ranges = equal_ranges(words, idx, start, end);
 
   auto node = arena.NewSumNodeWithCapacity(ranges.size());
   node->bound_ = node->points_ = points;
@@ -385,24 +370,10 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   // cout << string(depth, ' ') << "RangeToChoiceNode(" << (end - it + 1)
   //      << " words, cell=" << cell << ", depth=" << depth << ")" << endl;
 
-  size_t range_size = end - start;
+  // size_t range_size = end - start;
 
-  vector<tuple<int, int, int>> ranges;
-  if (range_size > 10'000) {
-    const auto idx = 2 * depth + 1;
-    ranges = equal_ranges(words, idx, start, end);
-  } else {
-    int last_letter = -1;
-    for (int i = start; i < end; i++) {
-      int letter = words[i].path[2 * depth + 1];
-      if (letter != last_letter) {
-        ranges.push_back({letter, i, i + 1});
-        last_letter = letter;
-      } else {
-        std::get<2>(*ranges.rbegin()) = i + 1;
-      }
-    }
-  }
+  const auto idx = 2 * depth + 1;
+  auto ranges = equal_ranges(words, idx, start, end);
 
   uint32_t letter_mask = 0;
   for (const auto& [letter, start_iter, end_iter] : ranges) {
