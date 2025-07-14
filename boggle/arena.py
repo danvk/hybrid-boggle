@@ -31,6 +31,9 @@ class PyArena:
         self.count += 1
         return n
 
+    def new_root_node_with_capacity(self, n: int):
+        return self.new_sum_node_with_capacity(n)
+
     def add_node(self, node):
         self.count += 1
 
