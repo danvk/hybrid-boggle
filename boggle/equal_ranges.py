@@ -1,6 +1,5 @@
 # Find equal ranges in xs[a:b]
 def equal_ranges(xs, a, b):
-    print(f"equal_ranges(..., {a}, {b})")
     if a >= b:
         return []
     first = xs[a]
