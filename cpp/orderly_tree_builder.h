@@ -257,13 +257,17 @@ void OrderlyTreeBuilder<M, N>::AddWord(
     int order_index = std::countr_zero(used_ordered);
     int cell = split_order[order_index];
     int letter = choices[order_index];
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
     word.path[idx++] = 1 + cell;
     word.path[idx++] = 1 + letter;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
     used_ordered &= used_ordered - 1;
   }
-  // if (idx < 2 * M * N) {
-  //   word.path[idx++] = '\0';
-  // }
   word.points = kWordScores[length];
   word.word_id = word_id;
   words_.push_back(word);
