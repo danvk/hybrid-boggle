@@ -636,3 +636,21 @@ void SumNode::AddWordWithPointsForTesting(
   assert(r == this);
   node->points_ += points;
 }
+
+void SumNode::SetBoundsForTesting() {
+  bound_ = points_;
+  for (int i = 0; i < num_children_; i++) {
+    auto& c = children_[i];
+    c->SetBoundsForTesting();
+    bound_ += c->bound_;
+  }
+}
+
+void ChoiceNode::SetBoundsForTesting() {
+  bound_ = 0;
+  auto children = GetChildren();
+  for (auto& c : children) {
+    c->SetBoundsForTesting();
+    bound_ = max(bound_, c->bound_);
+  }
+}

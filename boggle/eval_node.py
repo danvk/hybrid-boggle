@@ -301,6 +301,11 @@ class SumNode:
         word_node = self.add_word(choices, used_ordered, split_order, arena)
         word_node.points += points
 
+    def set_bounds_for_testing(self):
+        for c in self.children:
+            c.set_bounds_for_testing()
+        self.bound = self.points + sum(c.bound for c in self.children)
+
 
 class ChoiceNode:
     cell: int
@@ -350,6 +355,11 @@ class ChoiceNode:
             letter = countr_zero(remaining_bits)
             child = self.get_child_for_letter(letter)
             yield (letter, child)
+
+    def set_bounds_for_testing(self):
+        for c in self.children:
+            c.set_bounds_for_testing()
+        self.bound = max(c.bound for c in self.children)
 
     def score_with_forces(self, forces: list[int]) -> int:
         """Evaluate a tree with some choices forced. Use -1 to not force a choice."""

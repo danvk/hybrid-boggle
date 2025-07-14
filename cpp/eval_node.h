@@ -75,6 +75,7 @@ class SumNode {
       int points,
       EvalNodeArena& arena
   );
+  void SetBoundsForTesting();
 
  private:
 };
@@ -109,6 +110,7 @@ class ChoiceNode {
 
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;
+  void SetBoundsForTesting();
 
  private:
 };

@@ -116,7 +116,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("node_count", &SumNode::NodeCount)
       .def("word_count", &SumNode::WordCount)
       .def("add_word_with_points_for_testing", &SumNode::AddWordWithPointsForTesting)
-      .def("decode_points_and_bound", &SumNode::DecodePointsAndBound)
+      .def("set_bounds_for_testing", &SumNode::SetBoundsForTesting)
       .def(
           "orderly_force_cell",
           &SumNode::OrderlyForceCell,
