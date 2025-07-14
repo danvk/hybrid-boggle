@@ -12,19 +12,15 @@ template <typename T>
 std::vector<std::tuple<int, int, int>> equal_ranges(
     const std::vector<T>& xs, int offset, int a, int b
 ) {
-  std::vector<std::tuple<int, int, int>> result;
-  if (a >= b) return result;
+  if (a >= b) return {};
   int first = xs[a].path[offset];
   int last = xs[b - 1].path[offset];
 
   if (first == last) {
-    result.emplace_back(first, a, b);
-    return result;
+    return {{first, a, b}};
   }
   if (b - a == 2) {
-    result.emplace_back(first, a, a + 1);
-    result.emplace_back(last, a + 1, b);
-    return result;
+    return {{first, a, a + 1}, {last, a + 1, b}};
   }
 
   int mid_idx = a + ((b - a) / 2);
@@ -36,8 +32,7 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
     assert(std::get<0>(first_range) == mid);
     assert(std::get<1>(first_range) == mid_idx);
     std::get<1>(first_range) = a;
-    result = std::move(ranges);
-    return result;
+    return ranges;
   } else if (mid == last) {
     // Find equal ranges for the back half and add to the last range
     auto ranges = equal_ranges(xs, offset, a, mid_idx + 1);
@@ -45,8 +40,7 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
     assert(std::get<0>(last_range) == mid);
     assert(std::get<2>(last_range) == mid_idx + 1);
     std::get<2>(last_range) = b;
-    result = std::move(ranges);
-    return result;
+    return ranges;
   } else {
     // Search both halves and smoosh them together
     auto low_ranges = equal_ranges(xs, offset, a, mid_idx + 1);
@@ -56,14 +50,11 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
     assert(std::get<2>(low_ranges.back()) == std::get<1>(hi_ranges.front()) + 1);
 
     // Merge the last of low_ranges and first of hi_ranges
-    std::vector<std::tuple<int, int, int>> merged;
-    merged.reserve(low_ranges.size() + hi_ranges.size() - 1);
-    merged.insert(merged.end(), low_ranges.begin(), low_ranges.end() - 1);
-    merged.emplace_back(
-        mid, std::get<1>(low_ranges.back()), std::get<2>(hi_ranges.front())
-    );
-    merged.insert(merged.end(), hi_ranges.begin() + 1, hi_ranges.end());
-    return merged;
+    low_ranges.reserve(low_ranges.size() + hi_ranges.size() - 1);
+    auto& last_range = low_ranges.back();
+    std::get<2>(last_range) = std::get<2>(hi_ranges.front());
+    low_ranges.insert(low_ranges.end(), hi_ranges.begin() + 1, hi_ranges.end());
+    return low_ranges;
   }
 }
 
