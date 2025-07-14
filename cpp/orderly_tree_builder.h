@@ -132,7 +132,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "build tree: " << duration << " ms" << endl;
 
   words_.clear();
-  words_.shrink_to_fit();
+  words_.shrink_to_fit();  // release memory ASAP
 
   // arena.PrintStats();
 

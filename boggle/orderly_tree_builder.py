@@ -8,7 +8,6 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 """
 
 import argparse
-import json
 import time
 from dataclasses import dataclass
 from typing import Sequence
@@ -21,7 +20,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import ChoiceNode, SumNode, countr_zero, eval_node_to_string
+from boggle.eval_node import SumNode, countr_zero
 from boggle.make_dot import to_dot
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
@@ -45,53 +44,39 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
-        self.letter_counts = [0] * 26
-        self.dupe_mask = 0
         self.raw_multiboggle = False
         self.words_ = []
 
     def build_tree(self, arena: PyArena = None):
-        root = SumNode()
-        root.points = 0
-        root.bound = 0
-        self.root = root
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
-        self.letter_counts = [0] * 26
-        # This tracks whether any of the 26 letters has been used more than once.
-        # If so, we need to check for duplicate paths to the same word. This check
-        # has minimal effect on performance, but it does save memory.
-        self.dupe_mask = 0
         choices = [0] * len(self.bd_)
-        if arena:
-            arena.add_node(root)
 
         for cell in range(len(self.bd_)):
             self.do_all_descents(cell, 0, self.trie_, choices, arena)
-        assert self.letter_counts == [0] * 26
+
         self.words_.sort()
-        print(f"{len(self.words_)=}")
-        print_word_list(self.trie_, self.words_)
-        unique_words = uniq(self.words_)
-        print(f"{len(unique_words)=}")
-        print_word_list(self.trie_, unique_words)
-        return range_to_sum_node(unique_words, 0)
+        # print(f"{len(self.words_)=}")
+        # print_word_list(self.trie_, self.words_)
+        if not self.raw_multiboggle:
+            unique_words = unique_word_list(self.words_)
+        else:
+            unique_words = self.words_
+        # print(f"{len(unique_words)=}")
+        # print_word_list(self.trie_, unique_words)
+        self.words_ = []
+        return range_to_sum_node(unique_words, 0, arena)
 
     def do_all_descents(
         self, cell: int, length: int, t: PyTrie, choices: list[int], arena
     ):
         choices.append((cell, 0))
-        old_mask = self.dupe_mask
         for j, char in enumerate(self.bd_[cell]):
             cc = ord(char) - LETTER_A
             if t.starts_word(cc):
                 cell_order = self.cell_to_order[cell]
                 choices[cell_order] = j
-                old_count = self.letter_counts[cc]
-                self.letter_counts[cc] += 1
-                if old_count == 1:
-                    self.dupe_mask |= 1 << cc
                 self.do_dfs(
                     cell,
                     length + (2 if cc == LETTER_Q else 1),
@@ -99,8 +84,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                     choices,
                     arena,
                 )
-                self.letter_counts[cc] -= 1
-                self.dupe_mask = old_mask
         choices.pop()
 
     def do_dfs(
@@ -119,7 +102,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.do_all_descents(idx, length, t, choices, arena)
 
         if t.is_word():
-            # word_score = SCORES[length]
             path = decode(self.used_ordered_, choices, SPLIT_ORDER[self.dims])
             self.words_.append(
                 WordPath(path=path, word_id=t.word_id, points=SCORES[length])
@@ -132,7 +114,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         return create_eval_node_arena_py()
 
 
-def decode(used_ordered: int, choices, split_order):
+def decode(used_ordered: int, choices: Sequence[int], split_order: Sequence[int]):
     out = []
     while used_ordered:
         order_index = countr_zero(used_ordered)
@@ -145,7 +127,7 @@ def decode(used_ordered: int, choices, split_order):
     return out
 
 
-def uniq(xs: Sequence[WordPath]):
+def unique_word_list(xs: Sequence[WordPath]):
     out: list[WordPath] = []
     last_path = None
     last_word_id = None
@@ -169,7 +151,7 @@ def tree_stats(t: SumNode) -> str:
     return f"{t.bound=}, {t.node_count()} nodes"
 
 
-def range_to_sum_node(words: Sequence[WordPath], depth: int) -> SumNode:
+def range_to_sum_node(words: Sequence[WordPath], depth: int, arena: PyArena) -> SumNode:
     # If there are points on _this_ node, they'll be on a unique first node.
     n = words[0]
     points = 0
@@ -193,17 +175,19 @@ def range_to_sum_node(words: Sequence[WordPath], depth: int) -> SumNode:
             child_range_ends[-1] = i
 
     children = [
-        range_to_choice_node(cell, words[start : end + 1], depth)
+        range_to_choice_node(cell, words[start : end + 1], depth, arena)
         for cell, start, end in zip(child_cells, child_range_starts, child_range_ends)
     ]
-    node = SumNode()
+    node = arena.new_sum_node_with_capacity(len(children))
     node.points = points
     node.children = children
     node.bound = node.points + sum(child.bound for child in node.children)
     return node
 
 
-def range_to_choice_node(cell: int, words: Sequence[WordPath], depth: int) -> SumNode:
+def range_to_choice_node(
+    cell: int, words: Sequence[WordPath], depth: int, arena: PyArena
+) -> SumNode:
     # Find intervals for each distinct letter
     child_letters = []
     child_range_starts = []
@@ -220,7 +204,7 @@ def range_to_choice_node(cell: int, words: Sequence[WordPath], depth: int) -> Su
             child_range_ends[-1] = i
 
     children = [
-        range_to_sum_node(words[start : end + 1], depth + 1)
+        range_to_sum_node(words[start : end + 1], depth + 1, arena)
         for start, end in zip(child_range_starts, child_range_ends)
     ]
 
@@ -228,7 +212,7 @@ def range_to_choice_node(cell: int, words: Sequence[WordPath], depth: int) -> Su
     for letter in child_letters:
         letter_mask |= 1 << letter
 
-    node = ChoiceNode()
+    node = arena.new_choice_node_with_capacity(len(children))
     node.cell = cell
     node.child_letters = letter_mask
     node.children = children

@@ -14,7 +14,7 @@ class PyArena:
     def bytes_allocated(self):
         return self.count * 32
 
-    def new_node_with_capacity(self, n: int):
+    def new_sum_node_with_capacity(self, n: int):
         from boggle.eval_node import SumNode
 
         n = SumNode()
@@ -23,8 +23,13 @@ class PyArena:
         self.count += 1
         return n
 
-    def new_root_node_with_capacity(self, n: int):
-        return self.new_node_with_capacity(n)
+    def new_choice_node_with_capacity(self, n: int):
+        from boggle.eval_node import ChoiceNode
+
+        n = ChoiceNode()
+        n.bound = 0
+        self.count += 1
+        return n
 
     def add_node(self, node):
         self.count += 1
