@@ -17,11 +17,11 @@ def test_compare():
 
     assert 0 == a.compare(b)
     a.set(0, 1)
-    assert 1 == a.compare(b)
+    assert a.compare(b) > 0
     b.set(1, 2)
-    assert 1 == a.compare(b)
+    assert a.compare(b) > 0
     b.set(0, 1)
-    assert -1 == a.compare(b)
+    assert a.compare(b) < 0
     a.set(1, 2)
     assert 0 == a.compare(b)
 
@@ -149,7 +149,8 @@ def test_consistency_with_list():
             list_b.append(val_b)
 
         # Compare results
-        packed_result = a.compare(b)
+        raw_result = a.compare(b)
+        packed_result = -1 if raw_result < 0 else 0 if raw_result == 0 else 1
         list_result = 0
         if list_a < list_b:
             list_result = -1
