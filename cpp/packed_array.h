@@ -20,18 +20,18 @@ struct Packed5Array {
   void set(size_t index, uint8_t value) {
     assert(index < N);
     assert(value < 32);  // Must fit in 5 bits, stored in 6
-    
+
     size_t group = index / ValuesPerGroup;
     size_t pos = index % ValuesPerGroup;
     size_t byte_offset = group * BytesPerGroup;
-    
+
     // Pack 4 values into 3 bytes: [AAAAAA][BBBBBB] [CCCCCC][DDDDDD] [padding][padding]
     // Actually: [AAAAAABB][BBBBCCCC][CCDDDDDD] for better alignment
     switch (pos) {
       case 0:  // bits 7-2 of byte 0
         data[byte_offset] = (data[byte_offset] & 0x03) | (value << 2);
         break;
-      case 1:  // bits 1-0 of byte 0, bits 7-4 of byte 1  
+      case 1:  // bits 1-0 of byte 0, bits 7-4 of byte 1
         data[byte_offset] = (data[byte_offset] & 0xFC) | (value >> 4);
         data[byte_offset + 1] = (data[byte_offset + 1] & 0x0F) | ((value & 0x0F) << 4);
         break;
@@ -47,18 +47,20 @@ struct Packed5Array {
 
   uint8_t get(size_t index) const {
     assert(index < N);
-    
+
     size_t group = index / ValuesPerGroup;
     size_t pos = index % ValuesPerGroup;
     size_t byte_offset = group * BytesPerGroup;
-    
+
     switch (pos) {
       case 0:  // bits 7-2 of byte 0
         return (data[byte_offset] >> 2) & 0x3F;
       case 1:  // bits 1-0 of byte 0, bits 7-4 of byte 1
-        return ((data[byte_offset] & 0x03) << 4) | ((data[byte_offset + 1] >> 4) & 0x0F);
-      case 2:  // bits 3-0 of byte 1, bits 7-6 of byte 2  
-        return ((data[byte_offset + 1] & 0x0F) << 2) | ((data[byte_offset + 2] >> 6) & 0x03);
+        return ((data[byte_offset] & 0x03) << 4) |
+               ((data[byte_offset + 1] >> 4) & 0x0F);
+      case 2:  // bits 3-0 of byte 1, bits 7-6 of byte 2
+        return ((data[byte_offset + 1] & 0x0F) << 2) |
+               ((data[byte_offset + 2] >> 6) & 0x03);
       case 3:  // bits 5-0 of byte 2
         return data[byte_offset + 2] & 0x3F;
       default:
