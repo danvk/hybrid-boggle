@@ -24,10 +24,10 @@ poetry run python -m boggle.hillclimb 20 --size 44 --pool_size 250
 poetry run python -m boggle.break_all 'bdfgjvwxz aeiou lnrsy chkmpt' 500 --size 33
 
 # Calculate upper bounds using 2009 ibucket solver
-poetry run python -m boggle.ibucket_solver "lnrsy aeiou chkmpt..."
+poetry run python -m boggle.ibucket_solver 'bc ae nr ai hn ai nr bz ry'
 
 # Calculate upper bounds using 2025 orderly trees
-poetry run python -m boggle.orderly_tree_builder "lnrsy aeiou chkmpt..."
+poetry run python -m boggle.orderly_tree_builder 'bc ae nr ai hn ai nr bz ry'
 
 # Canonicalize boards (normalize rotations/reflections)
 poetry run python -m boggle.canonicalize
