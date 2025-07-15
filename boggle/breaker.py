@@ -24,7 +24,7 @@ from typing import Optional
 from boggle.arena import PyArena
 from boggle.boggler import PyBoggler
 from boggle.eval_node import SumNode
-from boggle.orderly_tree_builder import OrderlyTreeBuilder, TreeBuilderStats
+from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 
 
