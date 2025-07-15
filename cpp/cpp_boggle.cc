@@ -40,6 +40,7 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
       .def("parse_board", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
       .def("num_reps", &TB::NumReps)
+      .def("get_stats", &TB::GetStats)
       .def("create_arena", &TB::CreateArena);
 }
 
@@ -108,6 +109,13 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
       .def_readwrite("sum_union", &ScoreDetails::sum_union)
       .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
+
+  py::class_<TreeBuilderStats>(m, "TreeBuilderStats")
+      .def_readwrite("collect_s", &TreeBuilderStats::collect_s)
+      .def_readwrite("sort_s", &TreeBuilderStats::sort_s)
+      .def_readwrite("build_s", &TreeBuilderStats::build_s)
+      .def_readwrite("n_paths", &TreeBuilderStats::n_paths)
+      .def_readwrite("n_uniq", &TreeBuilderStats::n_uniq);
 
   py::class_<SumNode>(m, "SumNode")
       .def_property_readonly("bound", &SumNode::Bound)

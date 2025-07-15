@@ -30,7 +30,16 @@ from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
 class WordPath:
     path: list[tuple[int, int]]
     word_id: int
-    points: int  # TODO: could remove
+    points: int
+
+
+@dataclass
+class TreeBuilderStats:
+    collect_s: float
+    sort_s: float
+    build_s: float
+    n_paths: int
+    n_uniq: int
 
 
 class OrderlyTreeBuilder(BoardClassBoggler):
@@ -38,6 +47,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
     root: SumNode
     num_letters_: list[int]
     words_: list[WordPath]
+    stats_: TreeBuilderStats
 
     def __init__(self, trie: PyTrie, dims: tuple[int, int] = (3, 3)):
         super().__init__(trie, dims)
@@ -46,27 +56,39 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.lookup = make_lookup_table(trie)
         self.raw_multiboggle = False
         self.words_ = []
+        self.stats_ = TreeBuilderStats()
 
     def build_tree(self, arena: PyArena = None):
+        stats = TreeBuilderStats()
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
         choices = [0] * len(self.bd_)
 
+        start = time.time()
         for cell in range(len(self.bd_)):
             self.do_all_descents(cell, 0, self.trie_, choices, arena)
+        end1 = time.time()
+        stats.collect_secs = end1 - start
+        stats.num_word_paths = len(self.words_)
 
         self.words_.sort()
-        print(f"{len(self.words_)=}")
-        print_word_list(self.trie_, self.words_)
+        end2 = time.time()
+        stats.sort_secs = end2 - end1
+        # print_word_list(self.trie_, self.words_)
         if not self.raw_multiboggle:
             unique_words = unique_word_list(self.words_)
         else:
             unique_words = self.words_
-        print(f"{len(unique_words)=}")
-        print_word_list(self.trie_, unique_words)
+        end3 = time.time()
+        stats.num_uniq_paths = len(unique_words)
+        stats.uniq_secs = end3 - end2
+        # print_word_list(self.trie_, unique_words)
         self.words_ = []
-        return range_to_sum_node(unique_words, 0, arena)
+        root = range_to_sum_node(unique_words, 0, arena)
+        stats.build_secs = time.time() - end3
+        self.stats_ = stats
+        return root
 
     def do_all_descents(
         self, cell: int, length: int, t: PyTrie, choices: list[int], arena
@@ -112,6 +134,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
 
     def create_arena(self):
         return create_eval_node_arena_py()
+
+    def get_stats(self):
+        return self.stats_
 
 
 def decode(used_ordered: int, choices: Sequence[int], split_order: Sequence[int]):

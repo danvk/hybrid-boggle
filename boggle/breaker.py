@@ -24,7 +24,7 @@ from typing import Optional
 from boggle.arena import PyArena
 from boggle.boggler import PyBoggler
 from boggle.eval_node import SumNode
-from boggle.orderly_tree_builder import OrderlyTreeBuilder
+from boggle.orderly_tree_builder import OrderlyTreeBuilder, TreeBuilderStats
 from boggle.split_order import SPLIT_ORDER
 
 
@@ -74,6 +74,7 @@ class HybridBreakDetails(BreakDetails):
     """Total nodes ever allocated (not necessarily all at once)"""
     tree_bytes: int
     """Number of bytes used by the initial orderly tree"""
+    tree_stats: TreeBuilderStats
     total_bytes: int
     """Max bytes ever used while breaking"""
     n_bound: int
@@ -95,6 +96,7 @@ class HybridBreakDetails(BreakDetails):
         d["depth"] = counter_to_array(self.depth)
         d["bound_secs"] = float_dict_to_array(self.bound_secs)
         d["test_secs"] = round(self.test_secs, 5)
+        d["tree_stats"] = {k: round(v, 3) for k, v in d["tree_stats"].items()}
         return d
 
 
@@ -140,6 +142,7 @@ class HybridTreeBreaker:
             secs_by_level=defaultdict(float),
             bounds={},
             boards_to_test=0,
+            tree_stats=None,
             init_nodes=0,
             depth=Counter(),
             total_nodes=0,
@@ -156,6 +159,14 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.build_tree(arena)
+        ts = self.etb.get_stats()
+        self.details_.tree_stats = TreeBuilderStats(
+            collect_s=ts.collect_s,
+            sort_s=ts.sort_s,
+            build_s=ts.build_s,
+            n_paths=ts.n_paths,
+            n_uniq=ts.n_uniq,
+        )
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")

@@ -11,6 +11,15 @@
 
 using namespace std;
 
+struct TreeBuilderStats {
+  float collect_s;
+  float sort_s;
+  // float uniq_s;
+  float build_s;
+  uint32_t n_paths;
+  uint32_t n_uniq;
+};
+
 template <int M, int N>
 class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  public:
@@ -39,6 +48,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
     uint8_t points : 8;
   };
 
+  TreeBuilderStats GetStats() const { return stats_; }
+
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
@@ -46,6 +57,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int choices_[M * N];         // cell order -> letter index
   int num_paths_;
   vector<WordPath> words_;
+  TreeBuilderStats stats_;
 
   // For interning zero-child SumNodes
   SumNode* canonical_nodes_[128];  // canonical nodes for 1-128 points
@@ -77,6 +89,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
 template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
+  TreeBuilderStats stats;
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   // cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
@@ -104,30 +117,31 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   }
   auto end1 = chrono::high_resolution_clock::now();
   auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
-  cout << "Build word list: " << duration << " ms" << endl;
+  stats.collect_s = duration / 1000.0;
 
   sort(words_.begin(), words_.end(), WordComparator);
   auto end2 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end2 - end1).count();
-  cout << "sort list: " << duration << " ms" << endl;
-  cout << "words_.size() = " << words_.size() << endl;
+  stats.sort_s = duration / 1000.0;
+  stats.n_paths = words_.size();
   // PrintWordList();
 
   UniqueWordList(words_);
   auto end3 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end3 - end2).count();
-  cout << "unique list: " << duration << " ms" << endl;
-  cout << "unique words_.size() = " << words_.size() << endl;
+  // stats.uniq_secs = duration / 1000.0;
+  stats.n_uniq = words_.size();
   // PrintWordList();
 
   auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
 
   auto end4 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
-  cout << "build tree: " << duration << " ms" << endl;
+  stats.build_s = duration / 1000.0;
 
   words_.clear();
   words_.shrink_to_fit();  // release memory ASAP
+  stats_ = stats;
 
   // arena.PrintStats();
 
