@@ -56,10 +56,10 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.lookup = make_lookup_table(trie)
         self.raw_multiboggle = False
         self.words_ = []
-        self.stats_ = TreeBuilderStats()
+        self.stats_ = None
 
     def build_tree(self, arena: PyArena = None):
-        stats = TreeBuilderStats()
+        stats = TreeBuilderStats(collect_s=0, sort_s=0, build_s=0, n_paths=0, n_uniq=0)
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
@@ -69,24 +69,23 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         for cell in range(len(self.bd_)):
             self.do_all_descents(cell, 0, self.trie_, choices, arena)
         end1 = time.time()
-        stats.collect_secs = end1 - start
-        stats.num_word_paths = len(self.words_)
+        stats.collect_s = end1 - start
+        stats.n_paths = len(self.words_)
 
         self.words_.sort()
         end2 = time.time()
-        stats.sort_secs = end2 - end1
+        stats.sort_s = end2 - end1
         # print_word_list(self.trie_, self.words_)
         if not self.raw_multiboggle:
             unique_words = unique_word_list(self.words_)
         else:
             unique_words = self.words_
         end3 = time.time()
-        stats.num_uniq_paths = len(unique_words)
-        stats.uniq_secs = end3 - end2
+        stats.n_uniq = len(unique_words)
         # print_word_list(self.trie_, unique_words)
         self.words_ = []
         root = range_to_sum_node(unique_words, 0, arena)
-        stats.build_secs = time.time() - end3
+        stats.build_s = time.time() - end3
         self.stats_ = stats
         return root
 
