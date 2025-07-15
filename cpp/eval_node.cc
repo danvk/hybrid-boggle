@@ -27,52 +27,6 @@ void ChoiceNode::CopyFrom(ChoiceNode& other) {
   child_letters_ = other.child_letters_;
 }
 
-SumNode* SumNode::AddChild(ChoiceNode* child, EvalNodeArena& arena) {
-  if (num_children_ + 1 <= capacity_) {
-    children_[num_children_++] = child;
-    return this;
-  }
-  SumNode* clone = arena.NewNodeWithCapacity<SumNode>(capacity_ + 2);
-  clone->CopyFrom(*this);
-  clone->num_children_ = num_children_ + 1;
-  memcpy(&clone->children_[0], &children_[0], num_children_ * sizeof(children_[0]));
-  clone->children_[num_children_] = child;
-  return clone;
-}
-
-ChoiceNode* ChoiceNode::AddChild(SumNode* child, int letter, EvalNodeArena& arena) {
-  assert(letter >= 0 && letter < 26);  // Ensure letter fits in 26-bit field
-  uint32_t mask = (1 << letter) - 1;
-  int insert_index = std::popcount(child_letters_ & mask);
-  int old_num_children = NumChildren();
-
-  if (old_num_children + 1 <= capacity_) {
-    memmove(
-        &children_[insert_index + 1],
-        &children_[insert_index],
-        (old_num_children - insert_index) * sizeof(children_[0])
-    );
-    children_[insert_index] = child;
-    child_letters_ |= (1 << letter);
-    return this;
-  }
-
-  assert(capacity_ + 2 < 64);  // Ensure capacity fits in 6-bit field
-  auto new_node = arena.NewNodeWithCapacity<ChoiceNode>(capacity_ + 2);
-  new_node->CopyFrom(*this);
-  new_node->child_letters_ |= (1 << letter);
-
-  memcpy(&new_node->children_[0], &children_[0], insert_index * sizeof(children_[0]));
-  new_node->children_[insert_index] = child;
-  memcpy(
-      &new_node->children_[insert_index + 1],
-      &children_[insert_index],
-      (old_num_children - insert_index) * sizeof(children_[0])
-  );
-
-  return new_node;
-}
-
 SumNode* ChoiceNode::GetChildForLetter(int letter) const {
   assert(letter >= 0 && letter < 26);  // Ensure letter fits in 26-bit field
   if (!(child_letters_ & (1 << letter))) {
@@ -81,85 +35,6 @@ SumNode* ChoiceNode::GetChildForLetter(int letter) const {
   uint32_t mask = (1 << letter) - 1;
   int index = std::popcount(child_letters_ & mask);
   return children_[index];
-}
-
-SumNode* SumNode::AddWord(
-    int choices[],
-    unsigned int used_ordered,
-    const int split_order[],
-    EvalNodeArena& arena,
-    SumNode** leaf
-) {
-  if (used_ordered == 0) {
-    *leaf = this;
-    return this;
-  }
-
-  // some choices values are uninitialized here, but we only access the ones that are
-  // initialized based on the bitmap
-  int order_index = std::countr_zero(used_ordered);
-  int cell = split_order[order_index];
-  int letter = choices[order_index];
-
-  // remove the cell from used_ordered
-  used_ordered &= used_ordered - 1;
-
-  ChoiceNode* choice_child = NULL;
-  for (int i = 0; i < num_children_; i++) {
-    const auto& c = children_[i];
-    if (c->cell_ == cell) {
-      choice_child = c;
-      break;
-    }
-  }
-  SumNode* new_me = this;
-  if (!choice_child) {
-    choice_child = arena.NewChoiceNodeWithCapacity(1);
-    choice_child->cell_ = cell;
-    new_me = AddChild(choice_child, arena);
-    sort(&new_me->children_[0], &new_me->children_[new_me->num_children_], SortByCell);
-  }
-
-  SumNode* letter_child = choice_child->GetChildForLetter(letter);
-  if (!letter_child) {
-    unsigned int num_choices = std::popcount(used_ordered);
-    letter_child = arena.NewSumNodeWithCapacity(num_choices == 1 ? 0 : 1);
-    auto new_choice_child = choice_child->AddChild(letter_child, letter, arena);
-    if (new_choice_child != choice_child) {
-      const auto& old_choice_child = choice_child;
-      // bool patched = false;
-      for (int i = 0; i < new_me->num_children_; i++) {
-        const auto& c = new_me->children_[i];
-        if (c == old_choice_child) {
-          // TODO: assign through reference
-          new_me->children_[i] = new_choice_child;
-          // patched = true;
-          break;
-        }
-      }
-      // assert(patched);  // TODO: remove
-      choice_child = new_choice_child;
-    }
-  }
-  auto new_letter_child =
-      letter_child->AddWord(choices, used_ordered, split_order, arena, leaf);
-  if (new_letter_child != letter_child) {
-    const auto& old_letter_child = letter_child;
-    // bool patched = false;
-    for (int i = 0; i < choice_child->NumChildren(); i++) {
-      auto& c = choice_child->children_[i];
-      if (c == old_letter_child) {
-        // TODO: assign through reference
-        choice_child->children_[i] = new_letter_child;
-        // patched = true;
-        break;
-      }
-    }
-    // assert(patched);  // TODO: remove
-    letter_child = new_letter_child;
-  }
-
-  return new_me;
 }
 
 vector<ChoiceNode*> SumNode::GetChildren() {
@@ -622,20 +497,6 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     }
   }
   return out;
-}
-
-void SumNode::AddWordWithPointsForTesting(
-    vector<int> choices,
-    unsigned int used_ordered,
-    vector<int> split_order,
-    int points,
-    EvalNodeArena& arena
-) {
-  SumNode* node;
-  AddWord(choices.data(), used_ordered, split_order.data(), arena, &node);
-  // auto r =
-  // assert(r == this);
-  node->points_ += points;
 }
 
 void SumNode::SetBoundsForTesting() {

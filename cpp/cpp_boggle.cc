@@ -11,7 +11,6 @@ using std::vector;
 #include "eval_node.h"
 #include "ibuckets.h"
 #include "orderly_tree_builder.h"
-#include "packed_array.h"
 #include "symmetry.h"
 #include "trie.h"
 
@@ -115,7 +114,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readonly("points", &SumNode::points_)
       .def("node_count", &SumNode::NodeCount)
       .def("word_count", &SumNode::WordCount)
-      .def("add_word_with_points_for_testing", &SumNode::AddWordWithPointsForTesting)
       .def("set_bounds_for_testing", &SumNode::SetBoundsForTesting)
       .def(
           "orderly_force_cell",
@@ -159,10 +157,4 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<Symmetry>(m, "Symmetry")
       .def(py::init<int, int>())
       .def("canonicalize", &Symmetry::Canonicalize);
-
-  py::class_<Packed5Array<32>>(m, "Packed5Array")
-      .def(py::init())
-      .def("get", &Packed5Array<32>::get)
-      .def("set", &Packed5Array<32>::set)
-      .def("compare", &Packed5Array<32>::compare);
 }

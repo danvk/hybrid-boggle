@@ -43,57 +43,6 @@ class SumNode:
         self.points = 0
         self.bound = 0
 
-    def add_word(
-        self,
-        choices: Sequence[int],
-        used_ordered: int,
-        split_order: Sequence[int],
-        arena: PyArena,
-    ):
-        """Add a word to this tree. choices is a list of (cell, letter index) tuples.
-
-        Returns the SumNode corresponding to these choices (either new or existing).
-        """
-        if used_ordered == 0:
-            return self
-
-        # some choices values may uninitialized here, but we only access the ones that are
-        # initialized based on the bitmap
-        order_index = countr_zero(used_ordered)
-        cell = split_order[order_index]
-        letter = choices[order_index]
-
-        # remove the cell from used_ordered
-        used_ordered &= used_ordered - 1
-
-        choice_child = None
-        for c in self.children:
-            if c.cell == cell:
-                choice_child = c
-                break
-        if not choice_child:
-            choice_child = ChoiceNode()
-            choice_child.cell = cell
-            self.children.append(choice_child)
-            if arena:
-                arena.add_node(choice_child)
-            self.children.sort(key=lambda c: c.cell)
-
-        letter_child = choice_child.get_child_for_letter(letter)
-        if not letter_child:
-            letter_child = SumNode()
-            letter_child.bound = 0
-            # Update the bitmask and insert child at correct position
-            choice_child.child_letters |= 1 << letter
-            # Find insertion index using popcount
-            mask = (1 << letter) - 1
-            insert_index = (choice_child.child_letters & mask).bit_count()
-            choice_child.children.insert(insert_index, letter_child)
-            if arena:
-                arena.add_node(letter_child)
-
-        return letter_child.add_word(choices, used_ordered, split_order, arena)
-
     def orderly_force_cell(
         self, cell: int, num_lets: int, arena: PyArena
     ) -> list[Self]:

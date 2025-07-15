@@ -28,18 +28,6 @@ class SumNode {
   uint8_t capacity_;
   ChoiceNode* children_[];
 
-  // Add a new path to the tree, or return an existing one.
-  // This does not touch points_ or bound_ on any nodes.
-  // Returns `this` or a new version of this node if a reallocation happened.
-  // *leaf will be set to the new or existing leaf node.
-  SumNode* AddWord(
-      int choices[],
-      unsigned int used_ordered,
-      const int split_order[],
-      EvalNodeArena& arena,
-      SumNode** leaf  // output parameter
-  );
-
   void PrintJSON() const;
 
   // Shallow copy -- excludes children
@@ -65,16 +53,6 @@ class SumNode {
       const;
 
   vector<ChoiceNode*> GetChildren();
-  SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
-
-  // Wrapper with pybind11-friendly parameter types.
-  void AddWordWithPointsForTesting(
-      vector<int> choices,
-      unsigned int used_ordered,
-      vector<int> split_order,
-      int points,
-      EvalNodeArena& arena
-  );
   void SetBoundsForTesting();
 
  private:
@@ -106,7 +84,6 @@ class ChoiceNode {
   int NodeCount() const;
   int WordCount() const;
   vector<SumNode*> GetChildren();
-  ChoiceNode* AddChild(SumNode* child, int letter, EvalNodeArena& arena);
 
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;

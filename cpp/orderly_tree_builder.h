@@ -72,10 +72,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
       EvalNodeArena& arena
   );
 
-  int CountPaths();
-  void CountAllDescents(int cell, Trie* t);
-  void CountDFS(int cell, Trie* t);
-
   void PrintWordList();
 };
 
@@ -402,54 +398,6 @@ void OrderlyTreeBuilder<5, 5>::DoDFS(
 #undef REC3
 #undef REC5
 #undef REC8
-
-template <int M, int N>
-int OrderlyTreeBuilder<M, N>::CountPaths() {
-  num_paths_ = 0;
-  for (int cell = 0; cell < M * N; cell++) {
-    CountAllDescents(cell, dict_);
-  }
-  return num_paths_;
-}
-
-template <int M, int N>
-void OrderlyTreeBuilder<M, N>::CountAllDescents(int cell, Trie* t) {
-  char* c = &bd_[cell][0];
-  int j = 0;
-  while (*c) {
-    auto cc = *c - 'a';
-    if (t->StartsWord(cc)) {
-      int cell_order = cell_to_order_[cell];
-      choices_[cell_order] = j;
-      used_ ^= (1 << cell);
-      used_ordered_ ^= (1 << cell_order);
-
-      CountDFS(cell, t->Descend(cc));
-
-      used_ordered_ ^= (1 << cell_order);
-      used_ ^= (1 << cell);
-    }
-    c++;
-    j++;
-  }
-}
-
-// TODO: try cogging this
-template <int M, int N>
-void OrderlyTreeBuilder<M, N>::CountDFS(int i, Trie* t) {
-  auto& neighbors = BucketBoggler<M, N>::NEIGHBORS[i];
-  auto n_neighbors = neighbors[0];
-  for (int j = 1; j <= n_neighbors; j++) {
-    auto idx = neighbors[j];
-    if ((used_ & (1 << idx)) == 0) {
-      CountAllDescents(idx, t);
-    }
-  }
-
-  if (t->IsWord()) {
-    num_paths_++;
-  }
-}
 
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::AddWord(

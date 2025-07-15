@@ -1,41 +1,7 @@
-import pytest
-from cpp_boggle import create_eval_node_arena
-from inline_snapshot import external, outsource, snapshot
-
 from boggle.arena import create_eval_node_arena_py
-from boggle.eval_node import ChoiceNode, SumNode, eval_node_to_string
+from boggle.eval_node import ChoiceNode, SumNode
 
 # There are more thorough tests in orderly_tree_test.py
-
-
-@pytest.mark.parametrize(
-    "create_arena", (create_eval_node_arena_py, create_eval_node_arena)
-)
-def test_add_word(create_arena):
-    arena = create_arena()
-    root = arena.new_root_node_with_capacity(4)
-    cells = ["bcd", "aei", "nrd"]
-
-    regular_order = [0, 1, 2]
-    other_order = [0, 2, 1]
-
-    # all three choices are used
-    used_ordered = 0b111
-
-    add_word = root.add_word_with_points_for_testing
-    add_word([0, 0, 0], used_ordered, regular_order, 1, arena)  # ban
-    add_word([1, 0, 0], used_ordered, regular_order, 1, arena)  # can
-    add_word([0, 0, 1], used_ordered, regular_order, 1, arena)  # bar
-    add_word([0, 1, 2], used_ordered, regular_order, 1, arena)  # bed
-    add_word([0, 2, 2], used_ordered, regular_order, 1, arena)  # bid
-    add_word([2, 2, 2], used_ordered, regular_order, 1, arena)  # did
-    add_word([2, 1, 1], used_ordered, other_order, 1, arena)  # dre
-    root.set_bounds_for_testing()
-
-    # This asserts that the C++ and Python trees stay in sync
-    assert outsource(eval_node_to_string(root, cells)) == snapshot(
-        external("8cd3c17dadcd*.txt")
-    )
 
 
 def choice_node(cell, children):
