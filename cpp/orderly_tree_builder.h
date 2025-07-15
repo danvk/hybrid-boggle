@@ -455,8 +455,8 @@ template <int M, int N>
 void OrderlyTreeBuilder<M, N>::AddWord(
     int* choices, unsigned int used_ordered, uint32_t word_id, int length
 ) {
-  // TODO: construct this in-place in the vector
-  WordPath word;
+  words_.emplace_back(WordPath());
+  WordPath& word = *words_.rbegin();
   const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
 
   int idx = 0;
@@ -478,7 +478,6 @@ void OrderlyTreeBuilder<M, N>::AddWord(
   }
   word.points = kWordScores[length];
   word.word_id = word_id;
-  words_.push_back(word);
 }
 
 template <int M, int N>
