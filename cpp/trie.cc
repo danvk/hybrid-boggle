@@ -91,6 +91,20 @@ Trie* Trie::FindWord(const char* wd) {
   return Descend(c)->FindWord(wd + 1);
 }
 
+Trie* Trie::FindWordId(int word_id) {
+  if (IsWord() && word_id_ == word_id) {
+    return this;
+  }
+  for (const auto& c : children_) {
+    if (!c) continue;
+    auto t = c->FindWordId(word_id);
+    if (t) {
+      return t;
+    }
+  }
+  return nullptr;
+}
+
 unique_ptr<Trie> Trie::CreateFromFile(const char* filename) {
   char line[80];
   FILE* f = fopen(filename, "r");
@@ -135,4 +149,13 @@ unique_ptr<Trie> Trie::CreateFromFileStr(const string& filename) {
   }
   word[dst] = word[src];
   return true;
+}
+
+/* static */ unique_ptr<Trie> Trie::CreateFromWordlist(const vector<string>& words) {
+  int count = 0;
+  unique_ptr<Trie> t(new Trie);
+  for (const auto& word : words) {
+    t->AddWord(word.c_str())->SetWordId(count++);
+  }
+  return t;
 }

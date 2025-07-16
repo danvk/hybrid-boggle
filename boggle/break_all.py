@@ -146,6 +146,7 @@ def break_worker(task: str | int):
             del summary["secs_by_level"]
             del summary["test_secs"]
             del summary["bound_secs"]
+            del summary["tree_secs"]
         out.write(json.dumps(summary))
         out.write("\n")
         if args.log_per_board_stats:

@@ -23,25 +23,10 @@ class SumNode {
   ~SumNode() {}
 
   uint32_t bound_ : 24;
-  int8_t letter_;
   uint16_t points_;
   uint8_t num_children_;
   uint8_t capacity_;
   ChoiceNode* children_[];
-
-  static const int8_t ROOT_NODE = -2;
-
-  // Add a new path to the tree, or return an existing one.
-  // This does not touch points_ or bound_ on any nodes.
-  // Returns `this` or a new version of this node if a reallocation happened.
-  // *leaf will be set to the new or existing leaf node.
-  SumNode* AddWord(
-      int choices[],
-      unsigned int used_ordered,
-      const int split_order[],
-      EvalNodeArena& arena,
-      SumNode** leaf  // output parameter
-  );
 
   void PrintJSON() const;
 
@@ -54,6 +39,7 @@ class SumNode {
   void SetChildrenFromVector(const vector<ChoiceNode*>& children);
 
   int NodeCount() const;
+  int WordCount() const;
   uint32_t Bound() const { return bound_; }
 
   vector<pair<int, string>> OrderlyBound(
@@ -67,35 +53,26 @@ class SumNode {
       const;
 
   vector<ChoiceNode*> GetChildren();
-  SumNode* AddChild(ChoiceNode* child, EvalNodeArena& arena);
-
-  // Decode the points_ and bound_ fields as set by OrderlyTreeBuilder,
-  // setting them to the correct values for this entire tree.
-  // See comment near EncodeWordInSumNode for details on the encoding.
-  void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);
-
-  // Wrapper with pybind11-friendly parameter types.
-  void AddWordWithPointsForTesting(
-      vector<int> choices,
-      unsigned int used_ordered,
-      vector<int> split_order,
-      int points,
-      EvalNodeArena& arena
-  );
+  void SetBoundsForTesting();
 
  private:
 };
 
 class ChoiceNode {
  public:
-  ChoiceNode() : num_children_(0) {}
+  ChoiceNode() : bound_(0), cell_(0), child_letters_(0), capacity_(0) {}
   ~ChoiceNode() {}
 
-  int8_t cell_;
-  uint8_t num_children_;
-  uint8_t capacity_;
-  uint32_t bound_;
+  uint32_t bound_ : 24;
+  uint32_t cell_ : 8;  // Changed to uint32_t bit field to fit in same word
+  uint32_t child_letters_ : 26;
+  uint32_t capacity_ : 6;
   SumNode* children_[];
+
+  int NumChildren() const { return std::popcount(child_letters_); }
+  uint32_t Bound() const { return bound_; }
+  uint32_t ChildLetters() const { return child_letters_; }
+  uint32_t Cell() const { return cell_; }
 
   void PrintJSON() const;
 
@@ -105,11 +82,12 @@ class ChoiceNode {
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
   int NodeCount() const;
+  int WordCount() const;
   vector<SumNode*> GetChildren();
-  ChoiceNode* AddChild(SumNode* child, EvalNodeArena& arena);
 
-  // See corresponding method on SumNode
-  void DecodePointsAndBound(vector<vector<uint32_t>>& wordlists);
+  // Find child SumNode for given letter using popcount on child_letters_ bitmask
+  SumNode* GetChildForLetter(int letter) const;
+  void SetBoundsForTesting();
 
  private:
 };

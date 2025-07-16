@@ -48,6 +48,7 @@ def test_breaker(is_python):
     details.elapsed_s = 0.0
     details.test_secs = 0.0
     details.bound_secs = []
+    details.tree_secs = []
 
     # poetry run python -m boggle.exhaustive_search --size 22 15 'aeiou lnrsy chkmpt aeiou' --python
     # 16 alte
@@ -70,6 +71,9 @@ def test_breaker(is_python):
             "init_nodes": 1186,
             "total_nodes": 1864,
             "tree_bytes": 37952,
+            "n_paths": 1492,
+            "n_paths_uniq": 800,
+            "tree_secs": [],
             "total_bytes": 59648,
             "n_bound": 3,
             "n_force": 1,

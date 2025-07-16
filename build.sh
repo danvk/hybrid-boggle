@@ -25,3 +25,6 @@ c++ -Wall -shared -std=c++20 -fPIC -march=native \
 
 # For instrumented profiling (instruction counts):
 # -fprofile-instr-generate -fcoverage-mapping
+
+# To strip out assertions
+#    -DNDEBUG

@@ -74,6 +74,9 @@ class HybridBreakDetails(BreakDetails):
     """Total nodes ever allocated (not necessarily all at once)"""
     tree_bytes: int
     """Number of bytes used by the initial orderly tree"""
+    n_paths: int
+    n_paths_uniq: int
+    tree_secs: list[float]
     total_bytes: int
     """Max bytes ever used while breaking"""
     n_bound: int
@@ -95,6 +98,7 @@ class HybridBreakDetails(BreakDetails):
         d["depth"] = counter_to_array(self.depth)
         d["bound_secs"] = float_dict_to_array(self.bound_secs)
         d["test_secs"] = round(self.test_secs, 5)
+        d["tree_secs"] = [round(v, 3) for v in d["tree_secs"]]
         return d
 
 
@@ -140,6 +144,7 @@ class HybridTreeBreaker:
             secs_by_level=defaultdict(float),
             bounds={},
             boards_to_test=0,
+            tree_secs=[],
             init_nodes=0,
             depth=Counter(),
             total_nodes=0,
@@ -147,6 +152,8 @@ class HybridTreeBreaker:
             total_bytes=0,
             n_bound=0,
             n_force=0,
+            n_paths=0,
+            n_paths_uniq=0,
             max_multi=0,
             bound_secs=defaultdict(float),
             test_secs=0.0,
@@ -156,6 +163,10 @@ class HybridTreeBreaker:
         start_time_s = time.time()
         arena = self.etb.create_arena()
         tree = self.etb.build_tree(arena)
+        ts = self.etb.get_stats()
+        self.details_.tree_secs = [ts.collect_s, ts.sort_s, ts.build_s]
+        self.details_.n_paths = ts.n_paths
+        self.details_.n_paths_uniq = ts.n_uniq
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")
