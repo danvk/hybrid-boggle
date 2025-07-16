@@ -22,6 +22,9 @@ std::vector<std::tuple<int, int, int>> equal_ranges(
   if (b - a == 2) {
     return {{first, a, a + 1}, {last, a + 1, b}};
   }
+
+  // The binary search variant only seems to be a win for extremely large lists.
+  // Maybe because the cache behavior of the linear scan is much more predictable?
   if (b - a < 10'000) {
     vector<tuple<int, int, int>> ranges;
     ranges.reserve(last - first + 1);

@@ -504,7 +504,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   }
 
   size_t range_size = end - start;
-  if (range_size == 0 && points < 128) {
+  if (range_size == 0 && points <= 128) {
     return canonical_nodes_[points - 1];
   }
 
@@ -539,8 +539,6 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   int end = range.second;
   // cout << string(depth, ' ') << "RangeToChoiceNode(" << (end - it + 1)
   //      << " words, cell=" << cell << ", depth=" << depth << ")" << endl;
-
-  // size_t range_size = end - start;
 
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
