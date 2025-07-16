@@ -201,8 +201,8 @@ class SumNode:
         for a, b in zip(self.children, self.children[1:]):
             assert a.cell < b.cell
         for child in self.children:
-            if child:
-                child.assert_orderly(split_order, max_index)
+            assert child is not None
+            child.assert_orderly(split_order, max_index)
 
     def assert_invariants(self, solver):
         """Ensure the tree is well-formed. Some desirable properties:
@@ -215,15 +215,15 @@ class SumNode:
         bound = self.points
         seen_choices = set[int]()
         for child in self.children:
-            assert child
+            assert child is not None
             bound += child.bound
             assert child.cell not in seen_choices
             seen_choices.add(child.cell)
         assert bound == self.bound
 
         for child in self.children:
-            if child:
-                child.assert_invariants(solver)
+            assert child is not None
+            child.assert_invariants(solver)
 
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
@@ -337,27 +337,18 @@ class ChoiceNode:
                 child.assert_orderly(split_order, max_index)
 
     def assert_invariants(self, solver):
-        # choice nodes _may_ have non-null children, but children are ordered by bitmask
-        nnc = [c for c in self.children if c]
         # Verify bitmask consistency
         expected_count = self.child_letters.bit_count()
-        assert len(nnc) == expected_count
-        # Verify children are in order according to the bitmask
-        child_index = 0
-        for letter in range(32):
-            if self.child_letters & (1 << letter):
-                # This letter should have a corresponding child
-                assert child_index < len(self.children)
-                child_index += 1
+        assert len(self.children) == expected_count
         bound = 0
         for child in self.children:
-            if child:
-                bound = max(bound, child.bound)
+            assert child is not None
+            bound = max(bound, child.bound)
         assert bound == self.bound
 
         for child in self.children:
-            if child:
-                child.assert_invariants(solver)
+            assert child is not None
+            child.assert_invariants(solver)
 
     def to_string(self, cells: list[str]):
         # Call this on SumNode instead.

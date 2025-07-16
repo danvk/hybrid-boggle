@@ -13,7 +13,6 @@ c++ -Wall -shared -std=c++20 -fPIC -march=native \
     -Wno-sign-compare \
     -Wshadow \
     -Werror \
-    -DNDEBUG \
     -O3 \
     $(poetry run python -m pybind11 --includes | perl -pe 's/-I/-isystem /g') \
     cpp_boggle.cc trie.cc arena.cc eval_node.cc symmetry.cc \
@@ -26,3 +25,6 @@ c++ -Wall -shared -std=c++20 -fPIC -march=native \
 
 # For instrumented profiling (instruction counts):
 # -fprofile-instr-generate -fcoverage-mapping
+
+# To strip out assertions
+#    -DNDEBUG

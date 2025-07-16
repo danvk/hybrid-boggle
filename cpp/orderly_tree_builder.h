@@ -14,7 +14,7 @@ using namespace std;
 struct TreeBuilderStats {
   float collect_s;
   float sort_s;
-  // float uniq_s;
+  // float uniq_s; -- too fast, not worth tracking
   float build_s;
   uint32_t n_paths;
   uint32_t n_uniq;
@@ -96,12 +96,13 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // cout << "sizeof(WordPath.data)=" << sizeof(words_[0].path.data()) << endl;
   // cout << "alignment_of<WordPath>=" << alignment_of<WordPath>() << endl;
 
+  // This allows perfect sizing of words_, but is almost as slow as building the list.
   // int count = CountPaths();
   // auto end0 = chrono::high_resolution_clock::now();
   // auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
   // cout << "Count paths: " << duration << " ms" << endl;
 
-  // Step 1: Create canonical zero-child SumNodes in main arena
+  // TODO: make the arena own these and re-use them when merging
   for (int points = 1; points <= 128; points++) {
     auto node = arena.NewSumNodeWithCapacity(0);
     node->points_ = points;
@@ -109,6 +110,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     canonical_nodes_[points - 1] = node;
   }
 
+  // 20M is large enough to fit the word list for almost all boards.
+  // This is ~700MB for a 4x4 board, and only held temporarily.
   words_.clear();
   words_.reserve(20'000'000);
 
@@ -431,6 +434,7 @@ void OrderlyTreeBuilder<M, N>::AddWord(
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
+    // The +1s here preserve null as end-of-word.
     word.path[idx++] = 1 + cell;
     word.path[idx++] = 1 + letter;
 #if defined(__GNUC__) && !defined(__clang__)
@@ -495,8 +499,6 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 ) {
   int start = range.first;
   int end = range.second;
-  // cout << string(depth, ' ') << "RangeToSumNode(" << (end - it + 1)
-  //      << " words, depth=" << depth << ")" << endl;
   int points = 0;
   if (PathLength(words[start].path) == depth) {
     points = words[start].points;
@@ -537,29 +539,22 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
 ) {
   int start = range.first;
   int end = range.second;
-  // cout << string(depth, ' ') << "RangeToChoiceNode(" << (end - it + 1)
-  //      << " words, cell=" << cell << ", depth=" << depth << ")" << endl;
 
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
 
-  uint32_t letter_mask = 0;
-  for (const auto& [letter, start_iter, end_iter] : ranges) {
-    letter_mask |= (1 << (letter - 1));
-  }
-
   auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
   node->cell_ = cell;
-  node->child_letters_ = letter_mask;
   node->bound_ = 0;
-
+  uint32_t letter_mask = 0;
   for (int i = 0; i < ranges.size(); i++) {
-    const auto& [letter_value, range_start, range_end] = ranges[i];
-
+    const auto& [letter, range_start, range_end] = ranges[i];
+    letter_mask |= (1 << (letter - 1));
     auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena);
     node->children_[i] = child;
     node->bound_ = max(node->bound_, child->bound_);
   }
+  node->child_letters_ = letter_mask;
   return node;
 }
 
@@ -578,8 +573,6 @@ void OrderlyTreeBuilder<M, N>::PrintWordList() {
     cout << "] (" << (int)w.points << ") ";
     auto t = dict_->FindWordId(w.word_id);
     cout << "(" << Trie::ReverseLookup(dict_, t) << ")" << endl;
-    // cout << "(" << w.word_id << ")";
-    // cout << endl;
   }
 }
 
