@@ -19,10 +19,11 @@ class EvalNodeArena;
 
 class SumNode {
  public:
-  SumNode() : bound_(0), points_(0), num_children_(0) {}
+  SumNode() : bound_(0), is_merged_(0), points_(0), num_children_(0) {}
   ~SumNode() {}
 
   uint32_t bound_ : 24;
+  uint32_t is_merged_ : 8;
   uint16_t points_;
   uint8_t num_children_;
   uint8_t capacity_;
@@ -47,12 +48,12 @@ class SumNode {
     return {sums, choices};
   }
 
-  vector<pair<int, string>> OrderlyBound(
+  pair<vector<pair<int, string>>, tuple<int, int, int>> OrderlyBound(
       int cutoff,
       const vector<string>& cells,
       const vector<int>& split_order,
       const vector<pair<int, int>>& preset_cells
-  ) const;
+  );
 
   vector<const SumNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
       const;
@@ -64,16 +65,17 @@ class SumNode {
       unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
   ) const;
 
- private:
+  void FillBoundStats(int& n_init, int& n_merged, int& n_visited) const;
 };
 
 class ChoiceNode {
  public:
-  ChoiceNode() : bound_(0), cell_(0), child_letters_(0), capacity_(0) {}
+  ChoiceNode() : bound_(0), cell_(0), is_merged_(0), child_letters_(0), capacity_(0) {}
   ~ChoiceNode() {}
 
   uint32_t bound_ : 24;
-  uint32_t cell_ : 8;
+  uint32_t cell_ : 6;
+  uint32_t is_merged_ : 2;
   uint32_t child_letters_ : 26;
   uint32_t capacity_ : 6;
   SumNode* children_[];
@@ -101,6 +103,8 @@ class ChoiceNode {
   void ChildStatsHelp(
       unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
   ) const;
+
+  void FillBoundStats(int& n_init, int& n_merged, int& n_visited) const;
 
  private:
 };
