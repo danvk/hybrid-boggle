@@ -293,6 +293,7 @@ def main():
     # print_word_list(trie, otb.words_)
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
+    print("child stats", orderly_tree.child_stats())
 
     if isinstance(orderly_tree, SumNode):
         with open("tree.dot", "w") as out:

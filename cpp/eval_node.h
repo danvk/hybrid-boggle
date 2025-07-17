@@ -41,6 +41,11 @@ class SumNode {
   int NodeCount() const;
   int WordCount() const;
   uint32_t Bound() const { return bound_; }
+  pair<unordered_map<int, int>, unordered_map<int, int>> ChildStats() const {
+    unordered_map<int, int> sums, choices;
+    ChildStatsHelp(sums, choices);
+    return {sums, choices};
+  }
 
   vector<pair<int, string>> OrderlyBound(
       int cutoff,
@@ -55,6 +60,10 @@ class SumNode {
   vector<ChoiceNode*> GetChildren();
   void SetBoundsForTesting();
 
+  void ChildStatsHelp(
+      unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
+  ) const;
+
  private:
 };
 
@@ -64,7 +73,7 @@ class ChoiceNode {
   ~ChoiceNode() {}
 
   uint32_t bound_ : 24;
-  uint32_t cell_ : 8;  // Changed to uint32_t bit field to fit in same word
+  uint32_t cell_ : 8;
   uint32_t child_letters_ : 26;
   uint32_t capacity_ : 6;
   SumNode* children_[];
@@ -88,6 +97,10 @@ class ChoiceNode {
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;
   void SetBoundsForTesting();
+
+  void ChildStatsHelp(
+      unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
+  ) const;
 
  private:
 };

@@ -516,3 +516,22 @@ void ChoiceNode::SetBoundsForTesting() {
     bound_ = max(bound_, c->bound_);
   }
 }
+
+void SumNode::ChildStatsHelp(
+    unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
+) const {
+  sum_counts[num_children_] += 1;
+  for (int i = 0; i < num_children_; i++) {
+    children_[i]->ChildStatsHelp(sum_counts, choice_counts);
+  }
+}
+
+void ChoiceNode::ChildStatsHelp(
+    unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
+) const {
+  int num_children = NumChildren();
+  choice_counts[num_children] += 1;
+  for (int i = 0; i < num_children; i++) {
+    children_[i]->ChildStatsHelp(sum_counts, choice_counts);
+  }
+}
