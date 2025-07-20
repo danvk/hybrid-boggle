@@ -43,26 +43,30 @@ Found unbreakable board for 2520743: perslitesand
   "elim_level": [],
   "bounds": [
     5496,
-    4694,
-    3951,
-    3125
+    5496,
+    5441,
+    5169,
+    4365,
+    3475
   ],
   "depth": [
     0,
     0,
-    1,
-    21,
-    15
+    0,
+    15,
+    37,
+    171,
+    95
   ],
   "boards_to_test": 2084,
   "init_nodes": 1960065,
-  "total_nodes": 3222350,
+  "total_nodes": 2593771,
   "tree_bytes": 62722080,
   "n_paths": 787201,
   "n_paths_uniq": 665026,
-  "total_bytes": 103115200,
-  "n_bound": 37,
-  "n_force": 8,
+  "total_bytes": 83000672,
+  "n_bound": 318,
+  "n_force": 78,
   "max_multi": 2071,
   "best_board": [
     1651,
