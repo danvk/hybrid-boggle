@@ -182,7 +182,10 @@ class HybridTreeBreaker:
         self.details_.total_nodes = arena.num_nodes()
         self.details_.total_bytes = arena.bytes_allocated()
         with open("/tmp/bound-stats.json", "w") as out:
-            json.dump(self.bound_stats, out)
+            json.dump(
+                {",".join(str(v) for v in k): v for k, v in self.bound_stats.items()},
+                out,
+            )
         return self.details_
 
     def attack_tree(
