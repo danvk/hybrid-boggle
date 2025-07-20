@@ -221,7 +221,7 @@ class HybridTreeBreaker:
         start_s = time.time()
         self.details_.n_force += 1
         arena_level = arena.save_level()
-        trees = tree.orderly_force_cell(cell, num_lets, arena, max_depth=1)
+        trees = tree.orderly_force_cell(cell, num_lets, arena, max_depth=2)
         self.details_.secs_by_level[level] += time.time() - start_s
         # self.details_.bounds[level] = tree.bound
 
