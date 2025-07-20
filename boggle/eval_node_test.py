@@ -76,7 +76,7 @@ def test_orderly_force22(is_python):
     force_1[0].compact_in_place(arena, max_depth=1)
     with open("force+compact.dot", "w") as out:
         out.write(to_dot(force_1[0], cells, node_label_fn=dupe_label))
-    assert not force_1[0].has_dupes()
+    assert not force_1[0].has_dupes
 
     assert eval_node_to_string(force_1[0], cells) == eval_node_to_string(
         force_2[0], cells
