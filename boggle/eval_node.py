@@ -97,6 +97,31 @@ class SumNode:
                         out[i] = point_node
         return out
 
+    def compact_in_place(self, arena: PyArena, max_depth=100):
+        """If has_dupes=True, merge the dupes together in-place. Mutates self."""
+        if not self.has_dupes:
+            return
+
+        last_cell = self.children[0].cell
+        last_write_idx = 0
+        for i in range(1, len(self.children)):
+            cell = self.children[i]
+            if cell == last_cell:
+                self.children[last_write_idx] = merge_orderly_tree(
+                    self.children[last_write_idx], cell, arena, max_depth - 1
+                )
+            else:
+                last_write_idx += 1
+                if i != last_write_idx:
+                    self.children[last_write_idx] = cell
+                last_cell = cell.cell
+
+        self.children = self.children[:last_write_idx]
+
+        # TODO: inline this into the loop
+        self.bound = sum(child.bound for child in self.children)
+        self.has_dupes = False
+
     def orderly_bound(
         self,
         cutoff: int,

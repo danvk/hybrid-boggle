@@ -1,7 +1,7 @@
 import pytest
 
 from boggle.arena import create_eval_node_arena_py
-from boggle.eval_node import ChoiceNode, SumNode
+from boggle.eval_node import ChoiceNode, SumNode, eval_node_to_string
 from boggle.make_dot import to_dot
 from boggle.test_utils import get_trie_otb
 
@@ -67,6 +67,20 @@ def test_orderly_force22(is_python):
     with open("tree.dot", "w") as out:
         dot = to_dot(t, cells)
         out.write(dot)
+
+    force_deep = t.orderly_force_cell(0, num_letters[0], arena)
+    force_1 = t.orderly_force_cell(0, num_letters[0], arena, max_depth=1)
+    force_2 = t.orderly_force_cell(0, num_letters[0], arena, max_depth=2)
+
+    assert force_1[0].has_dupes
+    force_1[0].compact_in_place(arena, max_depth=1)
+    with open("force+compact.dot", "w") as out:
+        out.write(to_dot(force_1[0], cells, node_label_fn=dupe_label))
+    assert not force_1[0].has_dupes()
+
+    assert eval_node_to_string(force_1[0], cells) == eval_node_to_string(
+        force_2[0], cells
+    )
 
     for depth in (None, 1, 2, 3):
         depth_str = "deep" if depth is None else f"depth{depth}"
