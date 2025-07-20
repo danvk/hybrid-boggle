@@ -102,30 +102,20 @@ class SumNode:
         if not self.has_dupes:
             return
 
-        # last_cell = self.children[0].cell
-        # last_write_idx = 0
-        # for i in range(1, len(self.children)):
-        #     cell = self.children[i]
-        #     if cell == last_cell:
-        #         self.children[last_write_idx] = merge_orderly_tree(
-        #             self.children[last_write_idx], cell, arena, max_depth - 1
-        #         )
-        #     else:
-        #         last_write_idx += 1
-        #         if i != last_write_idx:
-        #             self.children[last_write_idx] = cell
-        #         last_cell = cell.cell
-        # self.children = self.children[:last_write_idx]
-        children = [self.children[0]]
+        last_cell = self.children[0].cell
+        last_write_idx = 0
         for i in range(1, len(self.children)):
-            child = self.children[i]
-            if child.cell != children[-1].cell:
-                children.append(child)
-            else:
-                children[-1] = merge_orderly_choice_children(
-                    children[-1], child, arena, max_depth - 1
+            cell = self.children[i]
+            if cell.cell == last_cell:
+                self.children[last_write_idx] = merge_orderly_choice_children(
+                    self.children[last_write_idx], cell, arena, max_depth - 1
                 )
-        self.children = children
+            else:
+                last_write_idx += 1
+                if i != last_write_idx:
+                    self.children[last_write_idx] = cell
+                last_cell = cell.cell
+        self.children = self.children[: 1 + last_write_idx]
 
         # TODO: inline this into the loop
         self.bound = sum(child.bound for child in self.children)
