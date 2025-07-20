@@ -68,20 +68,10 @@ def test_orderly_force22(is_python):
         dot = to_dot(t, cells)
         out.write(dot)
 
-    force = t.orderly_force_cell(0, num_letters[0], arena)
-    for i, ft in enumerate(force):
-        with open(f"force{i}-deep.dot", "w") as out:
-            dot = to_dot(ft, cells)
-            out.write(dot)
-
-    limit = t.orderly_force_cell(0, num_letters[0], arena, 1)
-    for i, ft in enumerate(limit):
-        with open(f"force{i}-depth1.dot", "w") as out:
-            dot = to_dot(ft, cells, node_label_fn=dupe_label)
-            out.write(dot)
-
-    limit = t.orderly_force_cell(0, num_letters[0], arena, 2)
-    for i, ft in enumerate(limit):
-        with open(f"force{i}-depth2.dot", "w") as out:
-            dot = to_dot(ft, cells, node_label_fn=dupe_label)
-            out.write(dot)
+    for depth in (None, 1, 2, 3):
+        depth_str = "deep" if depth is None else f"depth{depth}"
+        force = t.orderly_force_cell(0, num_letters[0], arena, max_depth=(depth or 100))
+        for i, ft in enumerate(force):
+            with open(f"force{i}-{depth_str}.dot", "w") as out:
+                dot = to_dot(ft, cells, node_label_fn=dupe_label)
+                out.write(dot)
