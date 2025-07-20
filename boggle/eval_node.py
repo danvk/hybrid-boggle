@@ -27,6 +27,8 @@ from typing import Self, Sequence
 
 from boggle.arena import PyArena
 
+COMPACT_MAX_DEPTH = 2
+
 
 class SumNode:
     points: int
@@ -56,7 +58,7 @@ class SumNode:
         if not self.children:
             return [self]
         if self.has_dupes:
-            self.compact_in_place(arena, 1)
+            self.compact_in_place(arena, COMPACT_MAX_DEPTH)
 
         top_choice = None
         top_choice_idx = None
@@ -82,7 +84,7 @@ class SumNode:
                 child = top_choice.get_child_for_letter(letter)
                 if child:
                     if child.has_dupes:
-                        child.compact_in_place(arena, 1)
+                        child.compact_in_place(arena, COMPACT_MAX_DEPTH)
                     out[letter] = merge_orderly_tree_children(
                         child, non_cell_children, non_cell_points, arena, max_depth - 1
                     )
@@ -496,9 +498,9 @@ def merge_orderly_tree(
 ) -> SumNode:
     """Merge two orderly(N) trees."""
     if a.has_dupes:
-        a.compact_in_place(arena, 1)
+        a.compact_in_place(arena, COMPACT_MAX_DEPTH)
     if b.has_dupes:
-        b.compact_in_place(arena, 1)
+        b.compact_in_place(arena, COMPACT_MAX_DEPTH)
     return merge_orderly_tree_children(a, b.children, b.points, arena, max_depth)
 
 
