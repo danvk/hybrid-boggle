@@ -55,6 +55,9 @@ class SumNode:
         # See https://www.danvk.org/2025/04/10/following-insight.html#lift--orderly-force--merge
         if not self.children:
             return [self]
+        if self.has_dupes:
+            self.compact_in_place(arena, 1)
+
         top_choice = None
         top_choice_idx = None
         for i, child in enumerate(self.children):
@@ -78,6 +81,8 @@ class SumNode:
             if letter < num_lets:
                 child = top_choice.get_child_for_letter(letter)
                 if child:
+                    if child.has_dupes:
+                        child.compact_in_place(arena, 1)
                     out[letter] = merge_orderly_tree_children(
                         child, non_cell_children, non_cell_points, arena, max_depth - 1
                     )
@@ -487,6 +492,10 @@ def merge_orderly_tree(
     a: SumNode, b: SumNode, arena: PyArena, max_depth=100
 ) -> SumNode:
     """Merge two orderly(N) trees."""
+    if a.has_dupes:
+        a.compact_in_place(arena, 1)
+    if b.has_dupes:
+        b.compact_in_place(arena, 1)
     return merge_orderly_tree_children(a, b.children, b.points, arena, max_depth)
 
 

@@ -82,10 +82,20 @@ def test_orderly_force22(is_python):
     for a, b in zip(force_1, force_2):
         assert eval_node_to_string(a, cells) == eval_node_to_string(b, cells)
 
-    for depth in (None, 1, 2, 3):
-        depth_str = "deep" if depth is None else f"depth{depth}"
-        force = t.orderly_force_cell(0, num_letters[0], arena, max_depth=(depth or 100))
-        for i, ft in enumerate(force):
-            with open(f"force{i}-{depth_str}.dot", "w") as out:
-                dot = to_dot(ft, cells, node_label_fn=dupe_label)
-                out.write(dot)
+    # for depth in (None, 1, 2, 3):
+    #     depth_str = "deep" if depth is None else f"depth{depth}"
+    #     force = t.orderly_force_cell(0, num_letters[0], arena, max_depth=(depth or 100))
+    #     for i, ft in enumerate(force):
+    #         with open(f"force{i}-{depth_str}.dot", "w") as out:
+    #             dot = to_dot(ft, cells, node_label_fn=dupe_label)
+    #             out.write(dot)
+
+    t001 = force_deep[0].orderly_force_cell(1, num_letters[1], arena)
+    with open("force-0010.dot", "w") as out:
+        out.write(to_dot(t001[0], cells, node_label_fn=dupe_label))
+
+    with open("force-00.d1.dot", "w") as out:
+        out.write(to_dot(force_1[0], cells, node_label_fn=dupe_label))
+    t001 = force_1[0].orderly_force_cell(1, num_letters[1], arena)
+    with open("force-0010.d1.dot", "w") as out:
+        out.write(to_dot(t001[0], cells, node_label_fn=dupe_label))
