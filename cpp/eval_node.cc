@@ -203,7 +203,8 @@ inline uint16_t advance(
   return node->points_;
 }
 
-pair<vector<pair<int, string>>, tuple<int, int, int>> SumNode::OrderlyBound(
+// pair<vector<pair<int, string>>, tuple<int, int, int>>
+vector<pair<int, string>> SumNode::OrderlyBound(
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
@@ -280,10 +281,11 @@ pair<vector<pair<int, string>>, tuple<int, int, int>> SumNode::OrderlyBound(
   auto base_points = advance(this, sums, stacks, stack_sizes);
   rec(base_points, 0, sums);
 
-  int n_init = 0, n_merged = 0, n_visited = 0;
-  FillBoundStats(n_init, n_merged, n_visited);
+  // int n_init = 0, n_merged = 0, n_visited = 0;
+  // FillBoundStats(n_init, n_merged, n_visited);
 
-  return {failures, {n_init, n_merged, n_visited}};
+  return failures;
+  // return {failures, {n_init, n_merged, n_visited}};
 }
 
 void SumNode::FillBoundStats(int& n_init, int& n_merged, int& n_visited) const {

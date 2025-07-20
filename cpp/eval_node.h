@@ -48,7 +48,8 @@ class SumNode {
     return {sums, choices};
   }
 
-  pair<vector<pair<int, string>>, tuple<int, int, int>> OrderlyBound(
+  // pair<vector<pair<int, string>>, tuple<int, int, int>>
+  vector<pair<int, string>> OrderlyBound(
       int cutoff,
       const vector<string>& cells,
       const vector<int>& split_order,

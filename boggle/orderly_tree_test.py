@@ -6,6 +6,7 @@ from cpp_boggle import Trie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.boggler import PyBoggler
+from boggle.breaker_test import get_trie_otb
 from boggle.dimensional_bogglers import (
     cpp_boggler,
     cpp_bucket_boggler,
@@ -56,29 +57,12 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     )
 
 
-OTB_PARAMS = [
-    (make_py_trie, OrderlyTreeBuilder),
-    (Trie.create_from_file, cpp_orderly_tree_builder),
-]
-
-
-def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
-    if is_python:
-        trie = make_py_trie(dict_file)
-        otb = OrderlyTreeBuilder(trie, dims=dims)
-    else:
-        trie = Trie.create_from_file(dict_file)
-        otb = cpp_orderly_tree_builder(trie, dims=dims)
-    return trie, otb
-
-
-@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
-def test_lift_invariants_33(make_trie, get_tree_builder):
-    trie = make_trie("testdata/boggle-words-9.txt")
+@pytest.mark.parametrize("is_python", [True, False])
+def test_lift_invariants_33(is_python):
+    trie, otb = get_trie_otb("testdata/boggle-words-9.txt", (3, 3), is_python)
     board = ". . . . lnrsy e aeiou aeiou ."
     # board = ". . . . nr e ai au ."
     cells = board.split(" ")
-    otb = get_tree_builder(trie, dims=(3, 3))
     otb.parse_board(board)
     arena = otb.create_arena()
     t = otb.build_tree(arena)
@@ -107,13 +91,12 @@ def test_orderly_bound22(is_python):
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
-def test_orderly_bound22_best(make_trie, get_tree_builder):
-    trie = make_trie("testdata/boggle-words-4.txt")
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_bound22_best(is_python):
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "st ea ea tr"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = get_tree_builder(trie, dims=(2, 2))
     otb.parse_board(board)
     arena = otb.create_arena()
     t = otb.build_tree(arena)
@@ -207,12 +190,11 @@ def test_orderly_force22(is_python):
     assert outsource(txt) == snapshot(external("7dd80d82a00c*.txt"))
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
-def test_orderly_bound33(make_trie, get_tree_builder):
-    trie = make_trie("testdata/boggle-words-9.txt")
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_bound33(is_python):
+    trie, otb = get_trie_otb("testdata/boggle-words-9.txt", (3, 3), is_python)
     board = "lnrsy chkmpt lnrsy aeiou lnrsy aeiou bdfgjvwxz lnrsy chkmpt"
     cells = board.split(" ")
-    otb = get_tree_builder(trie, dims=(3, 3))
     otb.parse_board(board)
     arena = otb.create_arena()
     t = otb.build_tree(arena)

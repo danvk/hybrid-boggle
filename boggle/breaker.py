@@ -181,11 +181,11 @@ class HybridTreeBreaker:
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
         self.details_.total_bytes = arena.bytes_allocated()
-        with open("/tmp/bound-stats.json", "w") as out:
-            json.dump(
-                {",".join(str(v) for v in k): v for k, v in self.bound_stats.items()},
-                out,
-            )
+        # with open("/tmp/bound-stats.json", "w") as out:
+        #     json.dump(
+        #         {",".join(str(v) for v in k): v for k, v in self.bound_stats.items()},
+        #         out,
+        #     )
         return self.details_
 
     def attack_tree(
@@ -253,10 +253,10 @@ class HybridTreeBreaker:
         # TODO: make this just return the boards
         self.details_.n_bound += 1
         self.details_.depth[level] += 1
-        score_boards, stats = tree.orderly_bound(
+        score_boards = tree.orderly_bound(
             self.best_score, self.cells, remaining_cells, choices
         )
-        self.bound_stats[stats] += 1
+        # self.bound_stats[stats] += 1
         boards_to_test = [board for _score, board in score_boards]
         bound_elapsed_s = time.time() - start_s
         self.details_.bound_secs[level] += bound_elapsed_s
