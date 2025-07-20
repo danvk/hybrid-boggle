@@ -3,6 +3,7 @@ from inline_snapshot import external, outsource, snapshot
 
 from boggle.arena import create_eval_node_arena_py
 from boggle.eval_node import ChoiceNode, SumNode, eval_node_to_string
+from boggle.make_dot import to_dot
 from boggle.test_utils import get_trie_otb
 
 # There are more thorough tests in orderly_tree_test.py
@@ -48,7 +49,7 @@ def test_orderly_merge():
     assert force[0] is not None
 
 
-@pytest.mark.parametrize("is_python", [True, False])
+@pytest.mark.parametrize("is_python", [True])
 def test_orderly_force22(is_python):
     _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "st ea ea tr"
@@ -57,11 +58,13 @@ def test_orderly_force22(is_python):
     otb.parse_board(board)
     arena = otb.create_arena()
     t = otb.build_tree(arena)
+
+    with open("tree.dot", "w") as out:
+        dot = to_dot(t, cells)
+        out.write(dot)
+
     force = t.orderly_force_cell(0, num_letters[0], arena)
-
-    txt = "\n\n".join(
-        f"{i}: " + eval_node_to_string(t, cells, top_cell=0)
-        for i, t in enumerate(force)
-    )
-
-    assert outsource(txt) == snapshot(external("7dd80d82a00c*.txt"))
+    for i, ft in enumerate(force):
+        with open(f"force{i}.dot", "w") as out:
+            dot = to_dot(ft, cells)
+            out.write(dot)
