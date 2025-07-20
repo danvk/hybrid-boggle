@@ -87,7 +87,7 @@ def test_orderly_bound22(is_python):
         t.assert_invariants(otb)
     assert t.bound == 8
 
-    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
+    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [], arena)
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
@@ -104,7 +104,7 @@ def test_orderly_bound22_best(is_python):
         t.assert_invariants(otb)
     assert t.bound == snapshot(21)
 
-    failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [])
+    failures = t.orderly_bound(15, cells, SPLIT_ORDER[(2, 2)], [], arena)
     assert failures == snapshot(
         [
             (18, "seat"),
@@ -203,7 +203,7 @@ def test_orderly_bound33(is_python):
         t.assert_orderly(SPLIT_ORDER[(3, 3)])
     assert t.bound > 500
 
-    failures = t.orderly_bound(450, cells, SPLIT_ORDER[(3, 3)], [])
+    failures = t.orderly_bound(450, cells, SPLIT_ORDER[(3, 3)], [], arena)
     # https://www.danvk.org/boggle/?board=stsaseblt&multiboggle=1&dims=33
     assert failures == snapshot([(470, "stsaseblt")])
 

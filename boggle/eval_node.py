@@ -132,6 +132,7 @@ class SumNode:
         cells: list[str],
         split_order: Sequence[int],
         preset_cells: Sequence[tuple[int, int]],
+        arena: PyArena,
     ):
         """Find individual high-scoring boards in this tree without creating new nodes.
 
@@ -149,6 +150,8 @@ class SumNode:
         num_visits = Counter[Self]()
 
         def advance(node: Self, sums: list[int]):
+            if self.has_dupes:
+                self.compact_in_place(arena, 1)
             num_visits[node] += 1
             for child in node.children:
                 stacks[child.cell].append(child)
