@@ -36,15 +36,20 @@ class SumNode:
     """Upper bound on the number of points available in this subtree."""
 
     children: list["ChoiceNode"]
-    """The children to sum, sorted by child.cell."""
+    """The children to sum, sorted by child.cell. May have dupes (pairs) if has_dupes=True."""
+
+    has_dupes: bool
+    """Does children contain multiple choices for the same cell?"""
 
     def __init__(self):
         self.children = []
         self.points = 0
         self.bound = 0
+        self.has_dupes = False
 
+    # TODO: could more of this be in the merge call?
     def orderly_force_cell(
-        self, cell: int, num_lets: int, arena: PyArena
+        self, cell: int, num_lets: int, arena: PyArena, max_depth=100
     ) -> list[Self]:
         """Return trees for each possible choice for cell."""
         # See https://www.danvk.org/2025/04/10/following-insight.html#lift--orderly-force--merge
@@ -74,7 +79,7 @@ class SumNode:
                 child = top_choice.get_child_for_letter(letter)
                 if child:
                     out[letter] = merge_orderly_tree_children(
-                        child, non_cell_children, non_cell_points, arena
+                        child, non_cell_children, non_cell_points, arena, max_depth - 1
                     )
             remaining_bits &= remaining_bits - 1  # Clear the lowest set bit
 
@@ -454,16 +459,16 @@ def split_orderly_tree(tree: SumNode, arena: PyArena):
     return top_choice, n
 
 
-def merge_orderly_tree(a: SumNode, b: SumNode, arena: PyArena) -> SumNode:
+def merge_orderly_tree(
+    a: SumNode, b: SumNode, arena: PyArena, max_depth=100
+) -> SumNode:
     """Merge two orderly(N) trees."""
-    return merge_orderly_tree_children(a, b.children, b.points, arena)
+    return merge_orderly_tree_children(a, b.children, b.points, arena, max_depth)
 
 
 def merge_orderly_tree_children(
-    a: SumNode, bc: Sequence[ChoiceNode], b_points: int, arena: PyArena
+    a: SumNode, bc: Sequence[ChoiceNode], b_points: int, arena: PyArena, max_depth=100
 ) -> SumNode:
-    # TODO: it may be safe to merge bc in-place into a and avoid an allocation.
-    #       might need to be careful with the out.append(b) case, though.
     in_a = a
 
     i_a = 0
@@ -472,6 +477,7 @@ def merge_orderly_tree_children(
     a_n = len(ac)
     b_n = len(bc)
     out = []
+    has_dupes = False
     while i_a < a_n and i_b < b_n:
         a = ac[i_a]
         if not a:
@@ -488,7 +494,12 @@ def merge_orderly_tree_children(
             out.append(b)
             i_b += 1
         else:
-            out.append(merge_orderly_choice_children(a, b, arena))
+            if max_depth > 0:
+                out.append(merge_orderly_choice_children(a, b, arena, max_depth))
+            else:
+                out.append(a)
+                out.append(b)
+                has_dupes = True
             i_a += 1
             i_b += 1
 
@@ -507,13 +518,14 @@ def merge_orderly_tree_children(
     n = SumNode()
     n.children = out
     n.points = in_a.points + b_points
+    n.has_dupes = has_dupes
     n.bound = n.points + sum(child.bound for child in n.children)
     arena.add_node(n)
     return n
 
 
 def merge_orderly_choice_children(
-    a: ChoiceNode, b: ChoiceNode, arena: PyArena
+    a: ChoiceNode, b: ChoiceNode, arena: PyArena, max_depth=100
 ) -> ChoiceNode:
     """Merge two orderly choice nodes for the same cell."""
     assert a.cell == b.cell
@@ -536,7 +548,7 @@ def merge_orderly_choice_children(
 
         result_child = None
         if a_child and b_child:
-            result_child = merge_orderly_tree(a_child, b_child, arena)
+            result_child = merge_orderly_tree(a_child, b_child, arena, max_depth - 1)
         elif a_child:
             result_child = a_child
         elif b_child:

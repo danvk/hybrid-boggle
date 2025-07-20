@@ -1,8 +1,7 @@
 import pytest
-from inline_snapshot import external, outsource, snapshot
 
 from boggle.arena import create_eval_node_arena_py
-from boggle.eval_node import ChoiceNode, SumNode, eval_node_to_string
+from boggle.eval_node import ChoiceNode, SumNode
 from boggle.make_dot import to_dot
 from boggle.test_utils import get_trie_otb
 
@@ -49,6 +48,12 @@ def test_orderly_merge():
     assert force[0] is not None
 
 
+def dupe_label(n: ChoiceNode | SumNode):
+    if isinstance(n, ChoiceNode):
+        return str(n.bound)
+    return str(n.bound) + ("" if not n.has_dupes else "*")
+
+
 @pytest.mark.parametrize("is_python", [True])
 def test_orderly_force22(is_python):
     _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
@@ -65,6 +70,18 @@ def test_orderly_force22(is_python):
 
     force = t.orderly_force_cell(0, num_letters[0], arena)
     for i, ft in enumerate(force):
-        with open(f"force{i}.dot", "w") as out:
+        with open(f"force{i}-deep.dot", "w") as out:
             dot = to_dot(ft, cells)
+            out.write(dot)
+
+    limit = t.orderly_force_cell(0, num_letters[0], arena, 1)
+    for i, ft in enumerate(limit):
+        with open(f"force{i}-depth1.dot", "w") as out:
+            dot = to_dot(ft, cells, node_label_fn=dupe_label)
+            out.write(dot)
+
+    limit = t.orderly_force_cell(0, num_letters[0], arena, 2)
+    for i, ft in enumerate(limit):
+        with open(f"force{i}-depth2.dot", "w") as out:
+            dot = to_dot(ft, cells, node_label_fn=dupe_label)
             out.write(dot)

@@ -11,13 +11,13 @@ from boggle.split_order import SPLIT_ORDER
 from boggle.trie import make_py_trie
 
 
-def to_dot(node: SumNode, cells: list[str], max_depth=100, node_data=None) -> str:
+def to_dot(node: SumNode, cells: list[str], max_depth=100, node_label_fn=None) -> str:
     _root_id, dot = to_dot_help(
         node,
         cells,
         "",
         max_depth,
-        node_data,
+        node_label_fn,
     )
     return f"""graph {{
 rankdir=LR;
@@ -33,15 +33,15 @@ def to_dot_help(
     cells: list[str],
     prefix,
     remaining_depth,
-    node_data,
+    node_label_fn,
     last_cell=None,
 ) -> tuple[str, str]:
     """Returns ID of this node plus DOT for its subtree."""
     is_dupe = False  # self in cache  # hasattr(self, "flag")
     me = prefix
 
-    if node_data:
-        label = str(node_data.get(node, "-"))
+    if node_label_fn:
+        label = node_label_fn(node)
     else:
         label = f"{node.bound}"
     attrs = ""
@@ -72,7 +72,7 @@ def to_dot_help(
             cells,
             f"{me}{i}",
             remaining_depth - 1,
-            node_data,
+            node_label_fn,
             last_cell=last_cell,
         )
         for i, child in enumerate(node.children)
