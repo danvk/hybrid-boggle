@@ -1,22 +1,17 @@
-import functools
-
 import pytest
-from cpp_boggle import Trie
 from inline_snapshot import snapshot
 
 from boggle.boggler import SCORES, PyBoggler
 from boggle.dimensional_bogglers import cpp_boggler
-from boggle.trie import make_py_trie
+from boggle.test_utils import get_trie
 
 
-@functools.cache
 def get_py_trie():
-    return make_py_trie("wordlists/enable2k.txt")
+    return get_trie("wordlists/enable2k.txt", is_python=True)
 
 
-@functools.cache
 def get_cpp_trie():
-    return Trie.create_from_file("wordlists/enable2k.txt")
+    return get_trie("wordlists/enable2k.txt", is_python=False)
 
 
 PARAMS = [
