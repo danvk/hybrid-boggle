@@ -8,6 +8,7 @@ poetry run python -m boggle.break_all \
     --switchover_score 3500 \
     --log_per_board_stats \
     --omit_times \
+    --python \
     > testdata/3x4-2520743-1400.txt
 
 git diff --exit-code testdata
