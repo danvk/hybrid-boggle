@@ -103,7 +103,7 @@ class HybridBreakDetails(BreakDetails):
 
 
 # XXX there are two "max_depth" params that mean two different things
-MAX_DEPTH = 2
+MAX_DEPTH = 4
 
 
 class HybridTreeBreaker:
@@ -226,7 +226,7 @@ class HybridTreeBreaker:
         self.details_.n_force += 1
         if level <= MAX_DEPTH:
             arena_level = arena.save_level()
-        trees = tree.orderly_force_cell(cell, num_lets, arena, max_depth=2)
+        trees = tree.orderly_force_cell(cell, num_lets, arena, max_depth=MAX_DEPTH)
         self.details_.secs_by_level[level] += time.time() - start_s
         # self.details_.bounds[level] = tree.bound
 
