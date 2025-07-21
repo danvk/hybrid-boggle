@@ -189,12 +189,11 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
 
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
-    SumNode* node,
+    const SumNode* node,
     vector<int>& sums,
-    ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
+    const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
     int stack_sizes[MAX_CELLS]
 ) {
-  if (node->is_merged_) node->is_merged_ = 2;
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
     stacks[child->cell_][stack_sizes[child->cell_]++] = child;
@@ -203,14 +202,13 @@ inline uint16_t advance(
   return node->points_;
 }
 
-// pair<vector<pair<int, string>>, tuple<int, int, int>>
 vector<pair<int, string>> SumNode::OrderlyBound(
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
     const vector<pair<int, int>>& preset_cells
-) {
-  ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH];
+) const {
+  const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH];
   int stack_sizes[MAX_CELLS];
   for (int i = 0; i < MAX_CELLS; i++) {
     stack_sizes[i] = 0;
@@ -265,7 +263,6 @@ vector<pair<int, string>> SumNode::OrderlyBound(
           int points = base_points;
           for (int i = 0; i < stack_sizes[next_to_split]; i++) {
             auto choice_node = next_stack[i];
-            if (choice_node->is_merged_) choice_node->is_merged_ = 2;
             auto child = choice_node->GetChildForLetter(letter);
             if (child) {
               // visit_at_level[1 + num_splits] += 1;
@@ -280,43 +277,7 @@ vector<pair<int, string>> SumNode::OrderlyBound(
   vector<int> sums(cells.size(), 0);
   auto base_points = advance(this, sums, stacks, stack_sizes);
   rec(base_points, 0, sums);
-
-  // int n_init = 0, n_merged = 0, n_visited = 0;
-  // FillBoundStats(n_init, n_merged, n_visited);
-
   return failures;
-  // return {failures, {n_init, n_merged, n_visited}};
-}
-
-void SumNode::FillBoundStats(int& n_init, int& n_merged, int& n_visited) const {
-  if (is_merged_ == 0) {
-    n_init += 1;
-  } else if (is_merged_ == 1) {
-    n_merged += 1;
-  } else if (is_merged_ == 2) {
-    n_visited += 1;
-  } else {
-    throw runtime_error("Bad value for is_merged_");
-  }
-  for (int i = 0; i < num_children_; i++) {
-    children_[i]->FillBoundStats(n_init, n_merged, n_visited);
-  }
-}
-
-void ChoiceNode::FillBoundStats(int& n_init, int& n_merged, int& n_visited) const {
-  if (is_merged_ == 0) {
-    n_init += 1;
-  } else if (is_merged_ == 1) {
-    n_merged += 1;
-  } else if (is_merged_ == 2) {
-    n_visited += 1;
-  } else {
-    throw runtime_error("Bad value for is_merged_");
-  }
-  int num_children = NumChildren();
-  for (int i = 0; i < num_children; i++) {
-    children_[i]->FillBoundStats(n_init, n_merged, n_visited);
-  }
 }
 
 SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena);
@@ -341,7 +302,6 @@ ChoiceNode* merge_orderly_choice_children(
 
   auto n = arena.NewChoiceNodeWithCapacity(num_children);
   n->cell_ = a->cell_;
-  n->is_merged_ = 1;
   n->bound_ = 0;
   n->child_letters_ = merged_letters;
 
@@ -404,7 +364,6 @@ SumNode* merge_orderly_tree_children(
 
   auto n = arena.NewSumNodeWithCapacity(num_children);
   n->points_ = a->points_ + b_points;
-  n->is_merged_ = 1;
   n->bound_ = n->points_;
 
   it_a = &a->children_[0];
@@ -555,24 +514,5 @@ void ChoiceNode::SetBoundsForTesting() {
   for (auto& c : children) {
     c->SetBoundsForTesting();
     bound_ = max(bound_, c->bound_);
-  }
-}
-
-void SumNode::ChildStatsHelp(
-    unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
-) const {
-  sum_counts[num_children_] += 1;
-  for (int i = 0; i < num_children_; i++) {
-    children_[i]->ChildStatsHelp(sum_counts, choice_counts);
-  }
-}
-
-void ChoiceNode::ChildStatsHelp(
-    unordered_map<int, int>& sum_counts, unordered_map<int, int>& choice_counts
-) const {
-  int num_children = NumChildren();
-  choice_counts[num_children] += 1;
-  for (int i = 0; i < num_children; i++) {
-    children_[i]->ChildStatsHelp(sum_counts, choice_counts);
   }
 }
