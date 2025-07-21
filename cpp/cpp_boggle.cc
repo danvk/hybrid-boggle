@@ -123,6 +123,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("node_count", &SumNode::NodeCount)
       .def("word_count", &SumNode::WordCount)
       .def("set_bounds_for_testing", &SumNode::SetBoundsForTesting)
+      .def_property_readonly("has_dupes", &SumNode::HasDupes)
       .def(
           "orderly_force_cell",
           &SumNode::OrderlyForceCell,
@@ -134,7 +135,12 @@ PYBIND11_MODULE(cpp_boggle, m) {
       )
       .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
       .def("score_with_forces", &SumNode::ScoreWithForces)
-      .def("compact_in_place", &SumNode::CompactInPlace)
+      .def(
+          "compact_in_place",
+          &SumNode::CompactInPlace,
+          py::arg("arena"),
+          py::arg("max_depth")
+      )
       .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")

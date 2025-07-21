@@ -59,6 +59,7 @@ class SumNode {
 
   vector<ChoiceNode*> GetChildren();
   void SetBoundsForTesting();
+  bool HasDupes() const { return has_dupes_ != 0; }
 
  private:
 };

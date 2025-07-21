@@ -3,7 +3,6 @@ from inline_snapshot import external, outsource, snapshot
 
 from boggle.arena import create_eval_node_arena_py
 from boggle.eval_node import ChoiceNode, SumNode, eval_node_to_string
-from boggle.make_dot import to_dot
 from boggle.test_utils import get_trie_otb
 
 # There are more thorough tests in orderly_tree_test.py
@@ -55,7 +54,7 @@ def dupe_label(n: ChoiceNode | SumNode):
     return str(n.bound) + ("" if not n.has_dupes else "*")
 
 
-@pytest.mark.parametrize("is_python", [True])
+@pytest.mark.parametrize("is_python", [True, False])
 def test_orderly_force22(is_python):
     _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "st ea ea tr"
@@ -88,14 +87,14 @@ def test_orderly_force22(is_python):
     assert force_1[0].has_dupes
     force_1[0].compact_in_place(arena, max_depth=1)
     assert outsource(eval_node_to_string(force_1[0], cells)) == snapshot(
-        external("c549d5088ad0*.txt")
+        external("2b5c733c6041*.txt")
     )
     # with open("force+compact.dot", "w") as out:
     #     out.write(to_dot(force_1[0], cells, node_label_fn=dupe_label))
     assert not force_1[0].has_dupes
     force_1[1].compact_in_place(arena, max_depth=1)
     assert outsource(eval_node_to_string(force_1[1], cells)) == snapshot(
-        external("4eecf39fe7b3*.txt")
+        external("8471dc0840de*.txt")
     )
 
     for a, b in zip(force_1, force_2):
