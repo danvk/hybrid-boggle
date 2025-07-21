@@ -23,7 +23,7 @@ from boggle.eval_node import (
 from boggle.ibuckets import PyBucketBoggler
 from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
-from boggle.trie import PyTrie, make_py_trie
+from boggle.trie import PyTrie
 
 
 @pytest.mark.parametrize(
@@ -156,13 +156,13 @@ def test_orderly_merge():
     for child in choice0.children:
         child.assert_orderly(split_order)
 
-    m0 = merge_orderly_tree(choice0.children[0], tree1, arena)
+    m0 = merge_orderly_tree(choice0.children[0], tree1, arena, max_depth=100)
     assert m0.bound == snapshot(21)
 
-    m1 = merge_orderly_tree(choice0.children[1], tree1, arena)
+    m1 = merge_orderly_tree(choice0.children[1], tree1, arena, max_depth=100)
     assert m1.bound == snapshot(18)
 
-    force = t.orderly_force_cell(0, num_letters[0], arena)
+    force = t.orderly_force_cell(0, num_letters[0], arena, max_depth=100)
     assert len(force) == 2
     for c in force:
         c.assert_orderly(split_order)
@@ -180,7 +180,7 @@ def test_orderly_force22(is_python):
     otb.parse_board(board)
     arena = otb.create_arena()
     t = otb.build_tree(arena)
-    force = t.orderly_force_cell(0, num_letters[0], arena)
+    force = t.orderly_force_cell(0, num_letters[0], arena, max_depth=100)
 
     txt = "\n\n".join(
         f"{i}: " + eval_node_to_string(t, cells, top_cell=0)
@@ -239,7 +239,7 @@ def test_force_invariants22(is_python):
             prev_cells = [cell for cell, _letter in prev_choices]
             assert i not in prev_cells
             if tree:
-                force = tree.orderly_force_cell(i, num_letters[i], arena)
+                force = tree.orderly_force_cell(i, num_letters[i], arena, max_depth=100)
             else:
                 force = [None] * num_letters[i]
             assert len(force) == num_letters[i]
@@ -356,7 +356,9 @@ def test_force_invariants44():
     cells = [*base_cells]
     unforced_cells = {*range(16)}
     for cell, letter in forces:
-        forces = t.orderly_force_cell(cell, base_num_letters[cell], arena)
+        forces = t.orderly_force_cell(
+            cell, base_num_letters[cell], arena, max_depth=100
+        )
         t = forces[letter]
         cells[cell] = cells[cell][letter]
         unforced_cells.remove(cell)
@@ -443,7 +445,9 @@ def test_missing_top_choice():
     cells = [*base_cells]
     unforced_cells = {*range(16)}
     for cell, letter in forces:
-        forces = t.orderly_force_cell(cell, base_num_letters[cell], arena)
+        forces = t.orderly_force_cell(
+            cell, base_num_letters[cell], arena, max_depth=100
+        )
         t = forces[letter]
         cells[cell] = cells[cell][letter]
         unforced_cells.remove(cell)

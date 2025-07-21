@@ -289,22 +289,22 @@ vector<pair<int, string>> SumNode::OrderlyBound(
 }
 
 SumNode* merge_orderly_tree(
-    const SumNode* a, const SumNode* b, EvalNodeArena& arena, int max_depth
+    SumNode* a, SumNode* b, EvalNodeArena& arena, int max_depth
 );
 SumNode* merge_orderly_tree_children(
-    const SumNode* a,
-    ChoiceNode* const* bc,
+    SumNode* a,
+    ChoiceNode** bc,
     int num_bc,
     int b_points,
     EvalNodeArena& arena,
     int max_depth
 );
 ChoiceNode* merge_orderly_choice_children(
-    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena, int max_depth
+    ChoiceNode* a, ChoiceNode* b, EvalNodeArena& arena, int max_depth
 );
 
 ChoiceNode* merge_orderly_choice_children(
-    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena, int max_depth
+    ChoiceNode* a, ChoiceNode* b, EvalNodeArena& arena, int max_depth
 ) {
   assert(a->cell_ == b->cell_);
 
@@ -345,8 +345,8 @@ ChoiceNode* merge_orderly_choice_children(
 }
 
 SumNode* merge_orderly_tree_children(
-    const SumNode* a,
-    ChoiceNode* const* bc,
+    SumNode* a,
+    ChoiceNode** bc,
     int num_bc,
     int b_points,
     EvalNodeArena& arena,

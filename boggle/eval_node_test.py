@@ -44,7 +44,7 @@ def test_orderly_merge():
     root.set_bounds_for_testing()
     # print(root.to_dot(cells))
     arena = create_eval_node_arena_py()
-    force = root.orderly_force_cell(0, num_letters[0], arena)
+    force = root.orderly_force_cell(0, num_letters[0], arena, max_depth=100)
     assert len(force) == 3
     assert force[0] is not None
 
@@ -69,7 +69,7 @@ def test_orderly_force22(is_python):
         dot = to_dot(t, cells)
         out.write(dot)
 
-    force_deep = t.orderly_force_cell(0, num_letters[0], arena)
+    force_deep = t.orderly_force_cell(0, num_letters[0], arena, max_depth=100)
     force_1 = t.orderly_force_cell(0, num_letters[0], arena, max_depth=1)
     force_2 = t.orderly_force_cell(0, num_letters[0], arena, max_depth=2)
     assert outsource(eval_node_to_string(force_1[0], cells)) == snapshot(
@@ -109,7 +109,7 @@ def test_orderly_force22(is_python):
     #             dot = to_dot(ft, cells, node_label_fn=dupe_label)
     #             out.write(dot)
 
-    t001 = force_deep[0].orderly_force_cell(1, num_letters[1], arena)
+    t001 = force_deep[0].orderly_force_cell(1, num_letters[1], arena, max_depth=100)
     with open("force-0010.dot", "w") as out:
         out.write(to_dot(t001[0], cells, node_label_fn=dupe_label))
     assert outsource(eval_node_to_string(t001[0], cells)) == snapshot(
@@ -118,7 +118,7 @@ def test_orderly_force22(is_python):
 
     with open("force-00.d1.dot", "w") as out:
         out.write(to_dot(force_1[0], cells, node_label_fn=dupe_label))
-    t001 = force_1[0].orderly_force_cell(1, num_letters[1], arena)
+    t001 = force_1[0].orderly_force_cell(1, num_letters[1], arena, max_depth=100)
     with open("force-0010.d1.dot", "w") as out:
         out.write(to_dot(t001[0], cells, node_label_fn=dupe_label))
     assert outsource(eval_node_to_string(t001[0], cells)) == snapshot(
