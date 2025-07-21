@@ -19,10 +19,11 @@ class EvalNodeArena;
 
 class SumNode {
  public:
-  SumNode() : bound_(0), points_(0), num_children_(0) {}
+  SumNode() : bound_(0), has_dupes_(0), points_(0), num_children_(0) {}
   ~SumNode() {}
 
   uint32_t bound_ : 24;
+  uint8_t has_dupes_ : 8;
   uint16_t points_;
   uint8_t num_children_;
   uint8_t capacity_;
@@ -46,11 +47,15 @@ class SumNode {
       int cutoff,
       const vector<string>& cells,
       const vector<int>& split_order,
-      const vector<pair<int, int>>& preset_cells
-  ) const;
+      const vector<pair<int, int>>& preset_cells,
+      EvalNodeArena& arena
+  );
 
-  vector<const SumNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
-      const;
+  vector<const SumNode*> OrderlyForceCell(
+      int cell, int num_lets, EvalNodeArena& arena, int max_depth
+  );
+
+  void CompactInPlace(EvalNodeArena& arena, int max_depth);
 
   vector<ChoiceNode*> GetChildren();
   void SetBoundsForTesting();

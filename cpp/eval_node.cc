@@ -12,6 +12,9 @@
 
 using namespace std;
 
+const int COMPACT_MAX_DEPTH = 2;
+const int ORDERLY_BOUND_COMPACT_DEPTH = 1;
+
 inline bool SortByCell(const ChoiceNode* a, const ChoiceNode* b) {
   return a->cell_ < b->cell_;
 }
@@ -189,11 +192,15 @@ unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
 
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
-    const SumNode* node,
+    SumNode* node,
     vector<int>& sums,
-    const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
-    int stack_sizes[MAX_CELLS]
+    ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
+    int stack_sizes[MAX_CELLS],
+    EvalNodeArena& arena
 ) {
+  if (node->has_dupes_) {
+    node->CompactInPlace(arena, ORDERLY_BOUND_COMPACT_DEPTH);
+  }
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
     stacks[child->cell_][stack_sizes[child->cell_]++] = child;
@@ -206,9 +213,10 @@ vector<pair<int, string>> SumNode::OrderlyBound(
     int cutoff,
     const vector<string>& cells,
     const vector<int>& split_order,
-    const vector<pair<int, int>>& preset_cells
-) const {
-  const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH];
+    const vector<pair<int, int>>& preset_cells,
+    EvalNodeArena& arena
+) {
+  ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH];
   int stack_sizes[MAX_CELLS];
   for (int i = 0; i < MAX_CELLS; i++) {
     stack_sizes[i] = 0;
@@ -266,7 +274,7 @@ vector<pair<int, string>> SumNode::OrderlyBound(
             auto child = choice_node->GetChildForLetter(letter);
             if (child) {
               // visit_at_level[1 + num_splits] += 1;
-              points += advance(child, stack_sums, stacks, stack_sizes);
+              points += advance(child, stack_sums, stacks, stack_sizes, arena);
             }
           }
           rec(points, num_splits + 1, stack_sums);
@@ -275,25 +283,28 @@ vector<pair<int, string>> SumNode::OrderlyBound(
       };
 
   vector<int> sums(cells.size(), 0);
-  auto base_points = advance(this, sums, stacks, stack_sizes);
+  auto base_points = advance(this, sums, stacks, stack_sizes, arena);
   rec(base_points, 0, sums);
   return failures;
 }
 
-SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena);
+SumNode* merge_orderly_tree(
+    const SumNode* a, const SumNode* b, EvalNodeArena& arena, int max_depth
+);
 SumNode* merge_orderly_tree_children(
     const SumNode* a,
     ChoiceNode* const* bc,
     int num_bc,
     int b_points,
-    EvalNodeArena& arena
+    EvalNodeArena& arena,
+    int max_depth
 );
 ChoiceNode* merge_orderly_choice_children(
-    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
+    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena, int max_depth
 );
 
 ChoiceNode* merge_orderly_choice_children(
-    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
+    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena, int max_depth
 ) {
   assert(a->cell_ == b->cell_);
 
@@ -314,7 +325,7 @@ ChoiceNode* merge_orderly_choice_children(
 
     SumNode* result_child = nullptr;
     if (a_child && b_child) {
-      result_child = merge_orderly_tree(a_child, b_child, arena);
+      result_child = merge_orderly_tree(a_child, b_child, arena, max_depth - 1);
     } else if (a_child) {
       result_child = const_cast<SumNode*>(a_child);
     } else if (b_child) {
@@ -338,7 +349,8 @@ SumNode* merge_orderly_tree_children(
     ChoiceNode* const* bc,
     int num_bc,
     int b_points,
-    EvalNodeArena& arena
+    EvalNodeArena& arena,
+    int max_depth
 ) {
   int num_children = 0;
   auto it_a = &a->children_[0];
@@ -355,7 +367,7 @@ SumNode* merge_orderly_tree_children(
       num_children += 1;
       ++it_b;
     } else {
-      num_children += 1;
+      num_children += max_depth > 0 ? 1 : 2;
       ++it_a;
       ++it_b;
     }
@@ -386,9 +398,16 @@ SumNode* merge_orderly_tree_children(
       }
       ++it_b;
     } else {
-      auto merged = merge_orderly_choice_children(a_child, b_child, arena);
-      n->children_[out_i++] = merged;
-      n->bound_ += merged->bound_;
+      if (max_depth > 0) {
+        auto merged = merge_orderly_choice_children(a_child, b_child, arena, max_depth);
+        n->children_[out_i++] = merged;
+        n->bound_ += merged->bound_;
+      } else {
+        n->has_dupes_ = 1;
+        n->children_[out_i++] = a_child;
+        n->children_[out_i++] = b_child;
+        n->bound_ += (a_child->bound_ + b_child->bound_);
+      }
       ++it_a;
       ++it_b;
     }
@@ -416,10 +435,46 @@ SumNode* merge_orderly_tree_children(
   return n;
 }
 
-SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena) {
+SumNode* merge_orderly_tree(
+    SumNode* a, SumNode* b, EvalNodeArena& arena, int max_depth
+) {
+  if (a->has_dupes_) {
+    a->CompactInPlace(arena, COMPACT_MAX_DEPTH);
+  }
+  if (b->has_dupes_) {
+    b->CompactInPlace(arena, COMPACT_MAX_DEPTH);
+  }
   return merge_orderly_tree_children(
-      a, &b->children_[0], b->num_children_, b->points_, arena
+      a, &b->children_[0], b->num_children_, b->points_, arena, max_depth
   );
+}
+
+void SumNode::CompactInPlace(EvalNodeArena& arena, int max_depth) {
+  if (!has_dupes_) {
+    return;  // TODO: could drop this, all callers check
+  }
+
+  auto last_cell = children_[0]->cell_;
+  int last_write_idx = 0;
+  bound_ = points_;
+  for (int i = 1; i < num_children_; i++) {
+    auto& cell = children_[i];
+    if (cell->cell_ == last_cell) {
+      auto merged = merge_orderly_choice_children(
+          children_[last_write_idx], cell, arena, max_depth - 1
+      );
+      children_[last_write_idx] = merged;
+      bound_ += merged->bound_;
+    } else {
+      last_write_idx++;
+      if (i != last_write_idx) {
+        children_[last_write_idx] = cell;
+      }
+      bound_ += cell->bound_;
+      last_cell = cell->cell_;
+    }
+  }
+  has_dupes_ = 0;
 }
 
 void SumNode::SetChildrenFromVector(const vector<ChoiceNode*>& children) {
@@ -428,11 +483,15 @@ void SumNode::SetChildrenFromVector(const vector<ChoiceNode*>& children) {
 }
 
 vector<const SumNode*> SumNode::OrderlyForceCell(
-    int cell, int num_lets, EvalNodeArena& arena
-) const {
+    int cell, int num_lets, EvalNodeArena& arena, int max_depth
+) {
   if (!num_children_) {
     throw runtime_error("tried to force empty cell");
     return {this};
+  }
+
+  if (has_dupes_) {
+    CompactInPlace(arena, COMPACT_MAX_DEPTH);
   }
 
   vector<ChoiceNode*> non_cell_children;
@@ -465,12 +524,16 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     if (letter < num_lets) {
       auto child = top_choice->GetChildForLetter(letter);
       if (child) {
+        if (child->has_dupes_) {
+          child->CompactInPlace(arena, COMPACT_MAX_DEPTH);
+        }
         out[letter] = merge_orderly_tree_children(
             child,
             &non_cell_children[0],
             non_cell_children.size(),
             non_cell_points,
-            arena
+            arena,
+            max_depth - 1
         );
       }
     }

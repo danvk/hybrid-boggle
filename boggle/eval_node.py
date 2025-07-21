@@ -51,7 +51,7 @@ class SumNode:
 
     # TODO: could more of this be in the merge call?
     def orderly_force_cell(
-        self, cell: int, num_lets: int, arena: PyArena, max_depth=100
+        self, cell: int, num_lets: int, arena: PyArena, max_depth: int
     ) -> list[Self]:
         """Return trees for each possible choice for cell."""
         # See https://www.danvk.org/2025/04/10/following-insight.html#lift--orderly-force--merge
@@ -104,7 +104,7 @@ class SumNode:
                         out[i] = point_node
         return out
 
-    def compact_in_place(self, arena: PyArena, max_depth=100):
+    def compact_in_place(self, arena: PyArena, max_depth: int):
         """If has_dupes=True, merge the dupes together in-place. Mutates self."""
         if not self.has_dupes:
             return
@@ -125,7 +125,7 @@ class SumNode:
         self.children = self.children[: 1 + last_write_idx]
 
         # TODO: inline this into the loop
-        self.bound = sum(child.bound for child in self.children)
+        self.bound = self.points + sum(child.bound for child in self.children)
         self.has_dupes = False
 
     def orderly_bound(
@@ -494,7 +494,7 @@ def split_orderly_tree(tree: SumNode, arena: PyArena):
 
 
 def merge_orderly_tree(
-    a: SumNode, b: SumNode, arena: PyArena, max_depth=100
+    a: SumNode, b: SumNode, arena: PyArena, max_depth: int
 ) -> SumNode:
     """Merge two orderly(N) trees."""
     if a.has_dupes:
@@ -505,7 +505,7 @@ def merge_orderly_tree(
 
 
 def merge_orderly_tree_children(
-    a: SumNode, bc: Sequence[ChoiceNode], b_points: int, arena: PyArena, max_depth=100
+    a: SumNode, bc: Sequence[ChoiceNode], b_points: int, arena: PyArena, max_depth: int
 ) -> SumNode:
     in_a = a
 
@@ -564,7 +564,7 @@ def merge_orderly_tree_children(
 
 # TODO: rename to merge_choice_nodes
 def merge_orderly_choice_children(
-    a: ChoiceNode, b: ChoiceNode, arena: PyArena, max_depth=100
+    a: ChoiceNode, b: ChoiceNode, arena: PyArena, max_depth: int
 ) -> ChoiceNode:
     """Merge two orderly choice nodes for the same cell."""
     assert a.cell == b.cell

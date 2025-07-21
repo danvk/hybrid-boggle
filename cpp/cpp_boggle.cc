@@ -129,10 +129,12 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::return_value_policy::reference,
           py::arg("cell"),
           py::arg("num_lets"),
-          py::arg("arena")
+          py::arg("arena"),
+          py::arg("max_depth")
       )
       .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
       .def("score_with_forces", &SumNode::ScoreWithForces)
+      .def("compact_in_place", &SumNode::CompactInPlace)
       .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
