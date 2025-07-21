@@ -87,14 +87,14 @@ def test_orderly_force22(is_python):
     assert force_1[0].has_dupes
     force_1[0].compact_in_place(arena, max_depth=1)
     assert outsource(eval_node_to_string(force_1[0], cells)) == snapshot(
-        external("2b5c733c6041*.txt")
+        external("c549d5088ad0*.txt")
     )
     # with open("force+compact.dot", "w") as out:
     #     out.write(to_dot(force_1[0], cells, node_label_fn=dupe_label))
     assert not force_1[0].has_dupes
     force_1[1].compact_in_place(arena, max_depth=1)
     assert outsource(eval_node_to_string(force_1[1], cells)) == snapshot(
-        external("8471dc0840de*.txt")
+        external("4eecf39fe7b3*.txt")
     )
 
     for a, b in zip(force_1, force_2):

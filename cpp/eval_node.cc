@@ -474,6 +474,7 @@ void SumNode::CompactInPlace(EvalNodeArena& arena, int max_depth) {
       last_cell = cell->cell_;
     }
   }
+  num_children_ = last_write_idx + 1;
   has_dupes_ = 0;
 }
 
