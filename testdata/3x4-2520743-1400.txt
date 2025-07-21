@@ -26,7 +26,7 @@ Found unbreakable board for 2520743: perslitesand
 {
   "id": 2520743,
   "num_reps": 632812500,
-  "elapsed_s": 30.48471,
+  "elapsed_s": 30.39565,
   "failures": [
     "cerslatesind",
     "merslatesind",
@@ -43,12 +43,12 @@ Found unbreakable board for 2520743: perslitesand
   ],
   "elim_level": [],
   "secs_by_level": [
-    17.48672,
-    0.00036,
-    0.02863,
-    0.25503,
-    2.69688,
-    0.09974
+    17.41727,
+    0.00039,
+    0.02871,
+    0.26003,
+    2.69622,
+    0.09942
   ],
   "bounds": [
     5496,
@@ -74,9 +74,9 @@ Found unbreakable board for 2520743: perslitesand
   "n_paths": 787201,
   "n_paths_uniq": 665026,
   "tree_secs": [
-    5.112,
-    2.619,
-    9.479
+    5.064,
+    2.613,
+    9.46
   ],
   "total_bytes": 75863680,
   "n_bound": 186,
@@ -86,18 +86,18 @@ Found unbreakable board for 2520743: perslitesand
     0,
     0,
     0,
-    1.86416,
-    3.3873,
-    2.63345,
-    0.7724
+    1.86474,
+    3.39474,
+    2.62212,
+    0.76915
   ],
-  "test_secs": 1.2287,
+  "test_secs": 1.21164,
   "best_board": [
     1651,
     "perslatesind"
   ]
 }
-Broke 1 classes in 31.41s.
+Broke 1 classes in 31.29s.
 Found 12 breaking failure(s):
 cerslatesind
 merslatesind
