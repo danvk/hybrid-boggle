@@ -103,7 +103,7 @@ class HybridBreakDetails(BreakDetails):
 
 
 # XXX there are two "max_depth" params that mean two different things
-MAX_DEPTH = 7
+MAX_DEPTH = 6
 
 
 class HybridTreeBreaker:
