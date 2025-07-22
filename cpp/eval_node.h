@@ -48,14 +48,18 @@ class SumNode {
       const vector<string>& cells,
       const vector<int>& split_order,
       const vector<pair<int, int>>& preset_cells,
-      EvalNodeArena& arena
+      EvalNodeArena& compact_arena
   );
 
   vector<const SumNode*> OrderlyForceCell(
-      int cell, int num_lets, EvalNodeArena& arena, int max_depth
+      int cell,
+      int num_lets,
+      EvalNodeArena& arena,
+      int max_depth,
+      EvalNodeArena& compact_arena
   );
 
-  void CompactInPlace(EvalNodeArena& arena, int max_depth);
+  void CompactInPlace(EvalNodeArena& compact_arena, int max_depth);
 
   vector<ChoiceNode*> GetChildren();
   void SetBoundsForTesting();

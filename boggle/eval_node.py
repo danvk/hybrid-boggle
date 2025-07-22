@@ -51,14 +51,19 @@ class SumNode:
 
     # TODO: could more of this be in the merge call?
     def orderly_force_cell(
-        self, cell: int, num_lets: int, arena: PyArena, max_depth: int
+        self,
+        cell: int,
+        num_lets: int,
+        arena: PyArena,
+        max_depth: int,
+        compact_arena: PyArena,
     ) -> list[Self]:
         """Return trees for each possible choice for cell."""
         # See https://www.danvk.org/2025/04/10/following-insight.html#lift--orderly-force--merge
         if not self.children:
             return [self]
         if self.has_dupes:
-            self.compact_in_place(arena, COMPACT_MAX_DEPTH)
+            self.compact_in_place(compact_arena, COMPACT_MAX_DEPTH)
 
         top_choice = None
         top_choice_idx = None
@@ -84,7 +89,7 @@ class SumNode:
                 child = top_choice.get_child_for_letter(letter)
                 if child:
                     if child.has_dupes:
-                        child.compact_in_place(arena, COMPACT_MAX_DEPTH)
+                        child.compact_in_place(compact_arena, COMPACT_MAX_DEPTH)
                     out[letter] = merge_orderly_tree_children(
                         child, non_cell_children, non_cell_points, arena, max_depth - 1
                     )
@@ -134,7 +139,7 @@ class SumNode:
         cells: list[str],
         split_order: Sequence[int],
         preset_cells: Sequence[tuple[int, int]],
-        arena: PyArena,
+        compact_arena: PyArena,
     ):
         """Find individual high-scoring boards in this tree without creating new nodes.
 
@@ -153,7 +158,7 @@ class SumNode:
 
         def advance(node: Self, sums: list[int]):
             if self.has_dupes:
-                self.compact_in_place(arena, 1)
+                self.compact_in_place(compact_arena, 1)
             num_visits[node] += 1
             for child in node.children:
                 stacks[child.cell].append(child)

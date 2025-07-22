@@ -131,7 +131,8 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("cell"),
           py::arg("num_lets"),
           py::arg("arena"),
-          py::arg("max_depth")
+          py::arg("max_depth"),
+          py::arg("compact_arena")
       )
       .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
       .def("score_with_forces", &SumNode::ScoreWithForces)

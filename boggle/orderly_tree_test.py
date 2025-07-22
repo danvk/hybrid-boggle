@@ -162,7 +162,9 @@ def test_orderly_merge():
     m1 = merge_orderly_tree(choice0.children[1], tree1, arena, max_depth=100)
     assert m1.bound == snapshot(18)
 
-    force = t.orderly_force_cell(0, num_letters[0], arena, max_depth=100)
+    force = t.orderly_force_cell(
+        0, num_letters[0], arena, max_depth=100, compact_arena=arena
+    )
     assert len(force) == 2
     for c in force:
         c.assert_orderly(split_order)
@@ -180,7 +182,9 @@ def test_orderly_force22(is_python):
     otb.parse_board(board)
     arena = otb.create_arena()
     t = otb.build_tree(arena)
-    force = t.orderly_force_cell(0, num_letters[0], arena, max_depth=100)
+    force = t.orderly_force_cell(
+        0, num_letters[0], arena, max_depth=100, compact_arena=arena
+    )
 
     txt = "\n\n".join(
         f"{i}: " + eval_node_to_string(t, cells, top_cell=0)
@@ -239,7 +243,9 @@ def test_force_invariants22(is_python):
             prev_cells = [cell for cell, _letter in prev_choices]
             assert i not in prev_cells
             if tree:
-                force = tree.orderly_force_cell(i, num_letters[i], arena, max_depth=100)
+                force = tree.orderly_force_cell(
+                    i, num_letters[i], arena, max_depth=100, compact_arena=arena
+                )
             else:
                 force = [None] * num_letters[i]
             assert len(force) == num_letters[i]
@@ -357,7 +363,7 @@ def test_force_invariants44():
     unforced_cells = {*range(16)}
     for cell, letter in forces:
         forces = t.orderly_force_cell(
-            cell, base_num_letters[cell], arena, max_depth=100
+            cell, base_num_letters[cell], arena, max_depth=100, compact_arena=arena
         )
         t = forces[letter]
         cells[cell] = cells[cell][letter]
@@ -446,7 +452,7 @@ def test_missing_top_choice():
     unforced_cells = {*range(16)}
     for cell, letter in forces:
         forces = t.orderly_force_cell(
-            cell, base_num_letters[cell], arena, max_depth=100
+            cell, base_num_letters[cell], arena, max_depth=100, compact_arena=arena
         )
         t = forces[letter]
         cells[cell] = cells[cell][letter]

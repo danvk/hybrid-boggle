@@ -103,7 +103,7 @@ class HybridBreakDetails(BreakDetails):
 
 
 # XXX there are two "max_depth" params that mean two different things
-MAX_DEPTH = 4
+MAX_DEPTH = 6
 
 
 class HybridTreeBreaker:
@@ -167,6 +167,7 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.num_reps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
+        self.compact_arena = self.etb.create_arena()
         tree = self.etb.build_tree(arena)
         ts = self.etb.get_stats()
         self.details_.tree_secs = [ts.collect_s, ts.sort_s, ts.build_s]
@@ -190,6 +191,12 @@ class HybridTreeBreaker:
         #         {",".join(str(v) for v in k): v for k, v in self.bound_stats.items()},
         #         out,
         #     )
+        print(
+            "compact_arena nodes: ",
+            self.compact_arena.num_nodes(),
+            " bytes: ",
+            self.compact_arena.bytes_allocated(),
+        )
         return self.details_
 
     def attack_tree(
@@ -224,9 +231,10 @@ class HybridTreeBreaker:
 
         start_s = time.time()
         self.details_.n_force += 1
-        if level <= MAX_DEPTH:
-            arena_level = arena.save_level()
-        trees = tree.orderly_force_cell(cell, num_lets, arena, max_depth=MAX_DEPTH)
+        arena_level = arena.save_level()
+        trees = tree.orderly_force_cell(
+            cell, num_lets, arena, max_depth=MAX_DEPTH, compact_arena=self.compact_arena
+        )
         self.details_.secs_by_level[level] += time.time() - start_s
         # self.details_.bounds[level] = tree.bound
 
@@ -244,8 +252,7 @@ class HybridTreeBreaker:
             choices[-1] = (cell, letter)
             self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
-        if level <= MAX_DEPTH:
-            arena.reset_level(arena_level)
+        arena.reset_level(arena_level)
 
     def switch_to_score(
         self,
@@ -260,7 +267,7 @@ class HybridTreeBreaker:
         self.details_.n_bound += 1
         self.details_.depth[level] += 1
         score_boards = tree.orderly_bound(
-            self.best_score, self.cells, remaining_cells, choices, arena
+            self.best_score, self.cells, remaining_cells, choices, self.compact_arena
         )
         # self.bound_stats[stats] += 1
         boards_to_test = [board for _score, board in score_boards]
