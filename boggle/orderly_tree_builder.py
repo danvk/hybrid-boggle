@@ -293,7 +293,14 @@ def main():
     # print_word_list(trie, otb.words_)
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
-    print("child stats", orderly_tree.child_stats())
+
+    cell = SPLIT_ORDER[dims][0]
+    print(cells[cell])
+    for max_depth in range(1, 16):
+        trees = orderly_tree.orderly_force_cell(
+            cell, len(cells[cell]), o_arena, max_depth
+        )
+        print(f"{max_depth}\t" + "\t".join(str(t.bound) for t in trees))
 
     if isinstance(orderly_tree, SumNode):
         with open("tree.dot", "w") as out:
