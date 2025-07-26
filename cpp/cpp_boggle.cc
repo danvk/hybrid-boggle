@@ -160,11 +160,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("save_level", &EvalNodeArena::SaveLevel)
       .def("reset_level", &EvalNodeArena::ResetLevel)
       .def("num_nodes", &EvalNodeArena::NumNodes)
-      .def(
-          "get_canonical_node",
-          &EvalNodeArena::GetCanonicalNode,
-          py::return_value_policy::reference
-      )
       .def("bytes_allocated", &EvalNodeArena::BytesAllocated);
 
   py::class_<Symmetry>(m, "Symmetry")
