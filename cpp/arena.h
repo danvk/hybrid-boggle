@@ -19,9 +19,11 @@ class SumNode;
 // Allocate this much memory at once.
 const uint64_t EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
 
+constexpr int NUM_INTERNED = 128;
+
 class EvalNodeArena {
  public:
-  EvalNodeArena() : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {}
+  EvalNodeArena();
   ~EvalNodeArena();
 
   uint64_t NumNodes() { return num_nodes_; }
@@ -36,6 +38,11 @@ class EvalNodeArena {
   SumNode* NewSumNodeWithCapacity(uint8_t capacity);
   ChoiceNode* NewChoiceNodeWithCapacity(uint8_t capacity);
 
+  SumNode* GetCanonicalNode(int points) {
+    assert(points >= 1 && points <= NUM_INTERNED);
+    return canonical_nodes_[points - 1];
+  }
+
   // For testing
   SumNode* NewRootNodeWithCapacity(uint8_t capacity);
   void PrintStats();
@@ -47,6 +54,7 @@ class EvalNodeArena {
   int cur_buffer_;
   int tip_;
   vector<pair<int, int>> watermarks_;
+  vector<SumNode*> canonical_nodes_;
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();

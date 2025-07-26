@@ -360,10 +360,14 @@ SumNode* merge_orderly_tree_children(
       ++it_b;
     }
   }
+  auto new_points = a->points_ + b_points;
   num_children += (a_end - it_a) + (b_end - it_b);
+  if (num_children == 0 && new_points >= 1 && new_points <= NUM_INTERNED) {
+    return arena.GetCanonicalNode(new_points);
+  }
 
   auto n = arena.NewSumNodeWithCapacity(num_children);
-  n->points_ = a->points_ + b_points;
+  n->points_ = new_points;
   n->bound_ = n->points_;
 
   it_a = &a->children_[0];

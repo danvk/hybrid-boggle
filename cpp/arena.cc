@@ -2,6 +2,16 @@
 
 #include "eval_node.h"
 
+EvalNodeArena::EvalNodeArena()
+    : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {
+  canonical_nodes_.resize(NUM_INTERNED);
+  for (int i = 0; i < NUM_INTERNED; i++) {
+    canonical_nodes_[i] = NewSumNodeWithCapacity(0);
+    canonical_nodes_[i]->points_ = i + 1;
+    canonical_nodes_[i]->bound_ = i + 1;
+  }
+}
+
 EvalNodeArena::~EvalNodeArena() {
   for (auto buffer : buffers_) {
     delete[] buffer;
