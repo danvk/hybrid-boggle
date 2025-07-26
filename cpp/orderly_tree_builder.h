@@ -59,9 +59,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   vector<WordPath> words_;
   TreeBuilderStats stats_;
 
-  // For interning zero-child SumNodes
-  SumNode* canonical_nodes_[128];  // canonical nodes for 1-128 points
-
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
@@ -101,14 +98,6 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // auto end0 = chrono::high_resolution_clock::now();
   // auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
   // cout << "Count paths: " << duration << " ms" << endl;
-
-  // TODO: make the arena own these and re-use them when merging
-  for (int points = 1; points <= 128; points++) {
-    auto node = arena.NewSumNodeWithCapacity(0);
-    node->points_ = points;
-    node->bound_ = points;  // For zero-child nodes, bound equals points
-    canonical_nodes_[points - 1] = node;
-  }
 
   // 20M is large enough to fit the word list for almost all boards.
   // This is ~700MB for a 4x4 board, and only held temporarily.
@@ -506,8 +495,8 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   }
 
   size_t range_size = end - start;
-  if (range_size == 0 && points <= 128) {
-    return canonical_nodes_[points - 1];
+  if (range_size == 0 && points <= NUM_INTERNED) {
+    return arena.GetCanonicalNode(points);
   }
 
   // Use extract_equal_ranges for large ranges
