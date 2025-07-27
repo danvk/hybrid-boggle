@@ -66,6 +66,9 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
 
+  unordered_multimap<uint32_t, SumNode*> sum_cache_;
+  unordered_multimap<uint32_t, ChoiceNode*> choice_cache_;
+
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(
       const vector<WordPath>& words,
@@ -502,12 +505,17 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   // Use extract_equal_ranges for large ranges
   const int idx = 2 * depth;
   auto ranges = equal_ranges(words, idx, start, end);
+  int num_children = ranges.size();
 
-  auto node = arena.NewSumNodeWithCapacity(ranges.size());
+  // TODO: could be 8 for all but the root node
+  char buf[sizeof(SumNode) + 16 * sizeof(SumNode*)];
+  auto node = new (buf) SumNode;
+
+  // auto node = arena.NewSumNodeWithCapacity(ranges.size());
   node->bound_ = node->points_ = points;
-  node->num_children_ = ranges.size();
+  node->num_children_ = num_children;
 
-  for (int i = 0; i < ranges.size(); i++) {
+  for (int i = 0; i < num_children; i++) {
     const auto& [cell, range_start, range_end] = ranges[i];
 
     auto child =
@@ -515,7 +523,18 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     node->children_[i] = child;
     node->bound_ += child->bound_;
   }
-  return node;
+
+  uint32_t hash = node->Hash();
+  auto cache_range = sum_cache_.equal_range(hash);
+  for (auto it = cache_range.first; it != cache_range.second; ++it) {
+    if (it->second->IsEqual(*node)) {
+      return it->second;
+    }
+  }
+  auto new_node = arena.NewSumNodeWithCapacity(node->num_children_);
+  new_node->CopyFrom(node);
+  sum_cache_.emplace(hash, new_node);
+  return new_node;
 }
 
 template <int M, int N>
@@ -531,8 +550,12 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
 
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
+  int num_children = ranges.size();
 
-  auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
+  char buf[sizeof(ChoiceNode) + 26 * sizeof(ChoiceNode*)];
+  auto node = new (buf) ChoiceNode;
+
+  // auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
   node->cell_ = cell;
   node->bound_ = 0;
   uint32_t letter_mask = 0;
@@ -544,7 +567,18 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     node->bound_ = max(node->bound_, child->bound_);
   }
   node->child_letters_ = letter_mask;
-  return node;
+
+  uint32_t hash = node->Hash();
+  auto cache_range = choice_cache_.equal_range(hash);
+  for (auto it = cache_range.first; it != cache_range.second; ++it) {
+    if (it->second->IsEqual(*node)) {
+      return it->second;
+    }
+  }
+  auto new_node = arena.NewChoiceNodeWithCapacity(num_children);
+  new_node->CopyFrom(node);
+  choice_cache_.emplace(hash, new_node);
+  return new_node;
 }
 
 template <int M, int N>

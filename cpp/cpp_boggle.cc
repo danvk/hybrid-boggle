@@ -135,6 +135,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("score_with_forces", &SumNode::ScoreWithForces)
       .def("is_equal", &SumNode::IsEqual)
       .def("hash", &SumNode::Hash)
+      .def("copy_from", &SumNode::CopyFrom)
       .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
@@ -149,6 +150,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       )
       .def("is_equal", &ChoiceNode::IsEqual)
       .def("hash", &ChoiceNode::Hash)
+      .def("copy_from", &ChoiceNode::CopyFrom)
       .def(
           "get_children", &ChoiceNode::GetChildren, py::return_value_policy::reference
       );

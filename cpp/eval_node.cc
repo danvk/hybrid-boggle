@@ -16,15 +16,20 @@ inline bool SortByCell(const ChoiceNode* a, const ChoiceNode* b) {
   return a->cell_ < b->cell_;
 }
 
-void SumNode::CopyFrom(SumNode& other) {
-  points_ = other.points_;
-  bound_ = other.bound_;
+void SumNode::CopyFrom(const SumNode* other) {
+  int num_bytes =
+      sizeof(SumNode) + other->num_children_ * sizeof(SumNode::children_[0]);
+  const void* src = other;
+  void* dst = this;
+  memcpy(dst, src, num_bytes);
 }
 
-void ChoiceNode::CopyFrom(ChoiceNode& other) {
-  cell_ = other.cell_;
-  bound_ = other.bound_;
-  child_letters_ = other.child_letters_;
+void ChoiceNode::CopyFrom(const ChoiceNode* other) {
+  int num_bytes =
+      sizeof(ChoiceNode) + other->NumChildren() * sizeof(ChoiceNode::children_[0]);
+  const void* src = other;
+  void* dst = this;
+  memcpy(dst, src, num_bytes);
 }
 
 SumNode* ChoiceNode::GetChildForLetter(int letter) const {

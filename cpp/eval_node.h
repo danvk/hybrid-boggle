@@ -30,8 +30,7 @@ class SumNode {
 
   void PrintJSON() const;
 
-  // Shallow copy -- excludes children
-  void CopyFrom(SumNode& other);
+  void CopyFrom(const SumNode* other);
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
@@ -80,8 +79,7 @@ class ChoiceNode {
 
   void PrintJSON() const;
 
-  // Shallow copy -- excludes children
-  void CopyFrom(ChoiceNode& other);
+  void CopyFrom(const ChoiceNode* other);
 
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
