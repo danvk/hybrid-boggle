@@ -107,13 +107,12 @@ def test_orderly_bound22(is_python):
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
-@pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
-def test_orderly_bound22_best(make_trie, get_tree_builder):
-    trie = make_trie("testdata/boggle-words-4.txt")
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_bound22_best(is_python):
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
     board = "st ea ea tr"
     cells = board.split(" ")
     # num_letters = [len(cell) for cell in cells]
-    otb = get_tree_builder(trie, dims=(2, 2))
     otb.parse_board(board)
     arena = otb.create_arena()
     t = otb.build_tree(arena)
@@ -136,6 +135,26 @@ def test_orderly_bound22_best(make_trie, get_tree_builder):
     )
 
     # TODO: confirm these via ibuckets
+
+
+def test_equal_hash():
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python=False)
+    board = "st ea ea tr"
+    # num_letters = [len(cell) for cell in cells]
+    otb.parse_board(board)
+    arena = otb.create_arena()
+    t = otb.build_tree(arena)
+
+    # These will vary from run to run since they're pointer hashes.
+    assert t.hash() == snapshot(3093267779)
+    assert t.is_equal(t)
+    choices = t.get_children()
+    assert len(choices) == 2
+    assert choices[0].hash() == snapshot(261416306)
+    assert choices[1].hash() == snapshot(1056468844)
+    assert choices[0].is_equal(choices[0])
+    assert choices[1].is_equal(choices[1])
+    assert not choices[0].is_equal(choices[1])
 
 
 # TODO: test C++ equivalence
