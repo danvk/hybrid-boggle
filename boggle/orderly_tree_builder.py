@@ -40,6 +40,8 @@ class TreeBuilderStats:
     build_s: float
     n_paths: int
     n_uniq: int
+    n_sum: int
+    n_choice: int
 
 
 class OrderlyTreeBuilder(BoardClassBoggler):
@@ -59,7 +61,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.stats_ = None
 
     def build_tree(self, arena: PyArena = None):
-        stats = TreeBuilderStats(collect_s=0, sort_s=0, build_s=0, n_paths=0, n_uniq=0)
+        stats = TreeBuilderStats(
+            collect_s=0, sort_s=0, build_s=0, n_paths=0, n_uniq=0, n_sum=0, n_choice=0
+        )
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]

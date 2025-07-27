@@ -18,6 +18,8 @@ struct TreeBuilderStats {
   float build_s;
   uint32_t n_paths;
   uint32_t n_uniq;
+  uint32_t n_sum;
+  uint32_t n_choice;
 };
 
 template <int M, int N>
@@ -141,6 +143,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto end4 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
   stats.build_s = duration / 1000.0;
+  stats.n_sum = sum_cache_.size();
+  stats.n_choice = choice_cache_.size();
 
   // release memory ASAP
   words_.clear();
