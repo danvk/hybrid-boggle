@@ -69,6 +69,11 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   unordered_multimap<uint32_t, SumNode*> sum_cache_;
   unordered_multimap<uint32_t, ChoiceNode*> choice_cache_;
 
+  int sum_hit_;
+  int sum_miss_;
+  int choice_hit_;
+  int choice_miss_;
+
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(
       const vector<WordPath>& words,
@@ -106,6 +111,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // This is ~700MB for a 4x4 board, and only held temporarily.
   words_.clear();
   words_.reserve(20'000'000);
+  choice_hit_ = choice_miss_ = sum_hit_ = sum_miss_ = 0;
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -154,6 +160,12 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
+
+  cout << "sum_cache.size() = " << sum_cache_.size() << " hit=" << sum_hit_
+       << " miss=" << sum_miss_ << endl;
+  cout << "choice_cache.size() = " << choice_cache_.size() << " hit=" << choice_hit_
+       << " miss=" << choice_miss_ << endl;
+
   return root;
 }
 
@@ -528,9 +540,11 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   auto cache_range = sum_cache_.equal_range(hash);
   for (auto it = cache_range.first; it != cache_range.second; ++it) {
     if (it->second->IsEqual(*node)) {
+      sum_hit_++;
       return it->second;
     }
   }
+  sum_miss_++;
   auto new_node = arena.NewSumNodeWithCapacity(node->num_children_);
   new_node->CopyFrom(node);
   sum_cache_.emplace(hash, new_node);
@@ -572,9 +586,11 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   auto cache_range = choice_cache_.equal_range(hash);
   for (auto it = cache_range.first; it != cache_range.second; ++it) {
     if (it->second->IsEqual(*node)) {
+      choice_hit_++;
       return it->second;
     }
   }
+  choice_miss_++;
   auto new_node = arena.NewChoiceNodeWithCapacity(num_children);
   new_node->CopyFrom(node);
   choice_cache_.emplace(hash, new_node);
