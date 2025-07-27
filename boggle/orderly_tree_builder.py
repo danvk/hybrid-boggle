@@ -293,6 +293,9 @@ def main():
     # print_word_list(trie, otb.words_)
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
+    ts = otb.get_stats()
+    print(f"build times: {[ts.collect_s, ts.sort_s, ts.build_s]}")
+    print(f"{ts.n_paths=} {ts.n_uniq=}")
 
     if isinstance(orderly_tree, SumNode):
         with open("tree.dot", "w") as out:
