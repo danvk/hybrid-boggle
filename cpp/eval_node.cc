@@ -520,3 +520,64 @@ void ChoiceNode::SetBoundsForTesting() {
     bound_ = max(bound_, c->bound_);
   }
 }
+
+// Borrowed from Boost.ContainerHash via https://stackoverflow.com/a/78509978/388951
+void hash_combine(uint32_t& seed, const uint32_t& v) {
+  uint32_t x = seed + 0x9e3779b9 + std::hash<uint32_t>()(v);
+  const uint32_t m1 = 0x21f0aaad;
+  const uint32_t m2 = 0x735a2d97;
+  x ^= x >> 16;
+  x *= m1;
+  x ^= x >> 15;
+  x *= m2;
+  x ^= x >> 15;
+  seed = x;
+}
+
+inline uint32_t pointer_hash(void* p) { return std::hash<uintptr_t>()((uintptr_t)p); }
+
+uint32_t SumNode::Hash() const {
+  uint32_t hash = points_;
+  hash_combine(hash, num_children_);
+  for (int i = 0; i < num_children_; i++) {
+    hash_combine(hash, pointer_hash(children_[i]));
+  }
+  return hash;
+}
+
+bool SumNode::IsEqual(const SumNode& other) const {
+  if (bound_ != other.bound_ || points_ != other.points_ ||
+      num_children_ != other.num_children_) {
+    return false;
+  }
+  for (int i = 0; i < num_children_; i++) {
+    if (children_[i] != other.children_[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+uint32_t ChoiceNode::Hash() const {
+  uint32_t hash = cell_;
+  hash_combine(hash, child_letters_);
+  int num_children = NumChildren();
+  for (int i = 0; i < num_children; i++) {
+    hash_combine(hash, pointer_hash(children_[i]));
+  }
+  return hash;
+}
+
+bool ChoiceNode::IsEqual(const ChoiceNode& other) const {
+  if (bound_ != other.bound_ || cell_ != other.cell_ ||
+      child_letters_ != other.child_letters_) {
+    return false;
+  }
+  int num_children = NumChildren();
+  for (int i = 0; i < num_children; i++) {
+    if (children_[i] != other.children_[i]) {
+      return false;
+    }
+  }
+  return true;
+}

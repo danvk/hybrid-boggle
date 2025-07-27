@@ -55,6 +55,10 @@ class SumNode {
   vector<ChoiceNode*> GetChildren();
   void SetBoundsForTesting();
 
+  // Shallow hash and equality test based on child pointers
+  uint32_t Hash() const;
+  bool IsEqual(const SumNode& other) const;
+
  private:
 };
 
@@ -88,6 +92,10 @@ class ChoiceNode {
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;
   void SetBoundsForTesting();
+
+  // Shallow hash and equality test based on child pointers
+  uint32_t Hash() const;
+  bool IsEqual(const ChoiceNode& other) const;
 
  private:
 };
