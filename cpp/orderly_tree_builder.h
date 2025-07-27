@@ -140,8 +140,11 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
   stats.build_s = duration / 1000.0;
 
+  // release memory ASAP
   words_.clear();
-  words_.shrink_to_fit();  // release memory ASAP
+  words_.shrink_to_fit();
+  sum_cache_.clear();
+  choice_cache_.clear();
   stats_ = stats;
 
   // arena.PrintStats();
