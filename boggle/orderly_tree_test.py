@@ -145,16 +145,30 @@ def test_equal_hash():
     arena = otb.create_arena()
     t = otb.build_tree(arena)
 
-    # These will vary from run to run since they're pointer hashes.
-    assert t.hash() == snapshot(3093267779)
+    # Actual values will vary from run to run since they're pointer hashes.
+    assert t.hash() == t.hash()
     assert t.is_equal(t)
     choices = t.get_children()
     assert len(choices) == 2
-    assert choices[0].hash() == snapshot(261416306)
-    assert choices[1].hash() == snapshot(1056468844)
+    # assert choices[0].hash() == snapshot(261416306)
+    # assert choices[1].hash() == snapshot(1056468844)
     assert choices[0].is_equal(choices[0])
     assert choices[1].is_equal(choices[1])
     assert not choices[0].is_equal(choices[1])
+    assert choices[0].hash() == choices[0].hash()
+    assert choices[1].hash() == choices[1].hash()
+    assert choices[0].hash() != choices[1].hash()
+    sums = choices[0].get_children()
+    assert len(sums) == 2
+    assert not sums[0].is_equal(t)
+    assert not sums[1].is_equal(t)
+    assert not sums[1].is_equal(sums[0])
+    assert sums[0].is_equal(sums[0])
+    assert sums[0].hash() != t.hash()
+    assert sums[1].hash() != t.hash()
+    assert sums[1].hash() != sums[0].hash()
+    assert sums[0].hash() == sums[0].hash()
+    assert sums[1].hash() == sums[1].hash()
 
 
 # TODO: test C++ equivalence
