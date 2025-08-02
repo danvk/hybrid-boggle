@@ -68,8 +68,21 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
 
-  unordered_set<SumNode*> sum_cache_;
-  unordered_set<ChoiceNode*> choice_cache_;
+  struct SumNodePtrHash {
+    size_t operator()(const SumNode* node) const { return node->Hash(); }
+  };
+  struct SumNodePtrEqual {
+    bool operator()(const SumNode* a, const SumNode* b) const { return a->IsEqual(*b); }
+  };
+  struct ChoiceNodePtrHash {
+    size_t operator()(const ChoiceNode* node) const { return node->Hash(); }
+  };
+  struct ChoiceNodePtrEqual {
+    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const { return a->IsEqual(*b); }
+  };
+
+  unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual> sum_cache_;
+  unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual> choice_cache_;
 
   int sum_hit_;
   int sum_miss_;
