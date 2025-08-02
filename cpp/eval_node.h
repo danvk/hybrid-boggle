@@ -57,6 +57,7 @@ class SumNode {
   // Shallow hash and equality test based on child pointers
   uint32_t Hash() const;
   bool IsEqual(const SumNode& other) const;
+  bool operator==(const SumNode& other) const { return IsEqual(other); }
 
  private:
 };
@@ -95,7 +96,21 @@ class ChoiceNode {
   uint32_t Hash() const;
   bool IsEqual(const ChoiceNode& other) const;
 
+  bool operator==(const ChoiceNode& other) const { return IsEqual(other); }
+
  private:
 };
+
+namespace std {
+template <>
+struct hash<SumNode> {
+  size_t operator()(const SumNode& x) const { return x.Hash(); }
+};
+template <>
+struct hash<ChoiceNode> {
+  size_t operator()(const ChoiceNode& x) const { return x.Hash(); }
+};
+
+}  // namespace std
 
 #endif  // EVAL_NODE_H

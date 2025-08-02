@@ -68,8 +68,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
 
-  unordered_multimap<uint32_t, SumNode*> sum_cache_;
-  unordered_multimap<uint32_t, ChoiceNode*> choice_cache_;
+  unordered_set<SumNode*> sum_cache_;
+  unordered_set<ChoiceNode*> choice_cache_;
 
   int sum_hit_;
   int sum_miss_;
@@ -545,18 +545,15 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     node->bound_ += child->bound_;
   }
 
-  uint32_t hash = node->Hash();
-  auto cache_range = sum_cache_.equal_range(hash);
-  for (auto it = cache_range.first; it != cache_range.second; ++it) {
-    if (it->second->IsEqual(*node)) {
-      sum_hit_++;
-      return it->second;
-    }
+  auto it = sum_cache_.find(node);
+  if (it != sum_cache_.end()) {
+    sum_hit_++;
+    return *it;
   }
   sum_miss_++;
   auto new_node = arena.NewSumNodeWithCapacity(node->num_children_);
   new_node->CopyFrom(node);
-  sum_cache_.emplace(hash, new_node);
+  sum_cache_.emplace(new_node);
   return new_node;
 }
 
@@ -591,18 +588,15 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   }
   node->child_letters_ = letter_mask;
 
-  uint32_t hash = node->Hash();
-  auto cache_range = choice_cache_.equal_range(hash);
-  for (auto it = cache_range.first; it != cache_range.second; ++it) {
-    if (it->second->IsEqual(*node)) {
-      choice_hit_++;
-      return it->second;
-    }
+  auto it = choice_cache_.find(node);
+  if (it != choice_cache_.end()) {
+    choice_hit_++;
+    return *it;
   }
   choice_miss_++;
   auto new_node = arena.NewChoiceNodeWithCapacity(num_children);
   new_node->CopyFrom(node);
-  choice_cache_.emplace(hash, new_node);
+  choice_cache_.emplace(new_node);
   return new_node;
 }
 
