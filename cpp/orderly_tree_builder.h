@@ -170,10 +170,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
 
-  // cout << "sum_cache.size() = " << sum_cache_.size() << " hit=" << sum_hit_
-  //      << " miss=" << sum_miss_ << endl;
-  // cout << "choice_cache.size() = " << choice_cache_.size() << " hit=" << choice_hit_
-  //      << " miss=" << choice_miss_ << endl;
+  cout << "sum_cache.size() = " << sum_cache_.size() << " hit=" << sum_hit_
+       << " miss=" << sum_miss_ << endl;
+  cout << "choice_cache.size() = " << choice_cache_.size() << " hit=" << choice_hit_
+       << " miss=" << choice_miss_ << endl;
 
   return root;
 }
