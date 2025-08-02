@@ -114,6 +114,8 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readwrite("collect_s", &TreeBuilderStats::collect_s)
       .def_readwrite("sort_s", &TreeBuilderStats::sort_s)
       .def_readwrite("build_s", &TreeBuilderStats::build_s)
+      .def_readwrite("n_sum", &TreeBuilderStats::n_sum)
+      .def_readwrite("n_choice", &TreeBuilderStats::n_choice)
       .def_readwrite("n_paths", &TreeBuilderStats::n_paths)
       .def_readwrite("n_uniq", &TreeBuilderStats::n_uniq);
 
@@ -133,6 +135,9 @@ PYBIND11_MODULE(cpp_boggle, m) {
       )
       .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
       .def("score_with_forces", &SumNode::ScoreWithForces)
+      .def("is_equal", &SumNode::IsEqual)
+      .def("hash", &SumNode::Hash)
+      .def("copy_from", &SumNode::CopyFrom)
       .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
@@ -145,6 +150,9 @@ PYBIND11_MODULE(cpp_boggle, m) {
           &ChoiceNode::GetChildForLetter,
           py::return_value_policy::reference
       )
+      .def("is_equal", &ChoiceNode::IsEqual)
+      .def("hash", &ChoiceNode::Hash)
+      .def("copy_from", &ChoiceNode::CopyFrom)
       .def(
           "get_children", &ChoiceNode::GetChildren, py::return_value_policy::reference
       );

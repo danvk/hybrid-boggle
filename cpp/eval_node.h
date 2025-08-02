@@ -30,8 +30,7 @@ class SumNode {
 
   void PrintJSON() const;
 
-  // Shallow copy -- excludes children
-  void CopyFrom(SumNode& other);
+  void CopyFrom(const SumNode* other);
 
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
@@ -55,6 +54,10 @@ class SumNode {
   vector<ChoiceNode*> GetChildren();
   void SetBoundsForTesting();
 
+  // Shallow hash and equality test based on child pointers
+  uint32_t Hash() const;
+  bool IsEqual(const SumNode& other) const;
+
  private:
 };
 
@@ -76,8 +79,7 @@ class ChoiceNode {
 
   void PrintJSON() const;
 
-  // Shallow copy -- excludes children
-  void CopyFrom(ChoiceNode& other);
+  void CopyFrom(const ChoiceNode* other);
 
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
@@ -88,6 +90,10 @@ class ChoiceNode {
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;
   void SetBoundsForTesting();
+
+  // Shallow hash and equality test based on child pointers
+  uint32_t Hash() const;
+  bool IsEqual(const ChoiceNode& other) const;
 
  private:
 };

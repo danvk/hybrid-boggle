@@ -40,6 +40,8 @@ class TreeBuilderStats:
     build_s: float
     n_paths: int
     n_uniq: int
+    n_sum: int
+    n_choice: int
 
 
 class OrderlyTreeBuilder(BoardClassBoggler):
@@ -59,7 +61,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.stats_ = None
 
     def build_tree(self, arena: PyArena = None):
-        stats = TreeBuilderStats(collect_s=0, sort_s=0, build_s=0, n_paths=0, n_uniq=0)
+        stats = TreeBuilderStats(
+            collect_s=0, sort_s=0, build_s=0, n_paths=0, n_uniq=0, n_sum=0, n_choice=0
+        )
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
@@ -293,6 +297,9 @@ def main():
     # print_word_list(trie, otb.words_)
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
+    ts = otb.get_stats()
+    print(f"build times: {[ts.collect_s, ts.sort_s, ts.build_s]}")
+    print(f"{ts.n_paths=} {ts.n_uniq=}")
 
     if isinstance(orderly_tree, SumNode):
         with open("tree.dot", "w") as out:
