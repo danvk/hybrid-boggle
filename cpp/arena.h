@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -44,18 +45,16 @@ class EvalNodeArena {
   }
 
   struct SumNodePtrHash {
-    size_t operator()(const SumNode* node) const { return node->Hash(); }
+    size_t operator()(const SumNode* node) const;
   };
   struct SumNodePtrEqual {
-    bool operator()(const SumNode* a, const SumNode* b) const { return a->IsEqual(*b); }
+    bool operator()(const SumNode* a, const SumNode* b) const;
   };
   struct ChoiceNodePtrHash {
-    size_t operator()(const ChoiceNode* node) const { return node->Hash(); }
+    size_t operator()(const ChoiceNode* node) const;
   };
   struct ChoiceNodePtrEqual {
-    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
-      return a->IsEqual(*b);
-    }
+    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const;
   };
   unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual> sum_cache_;
   unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual> choice_cache_;
@@ -64,6 +63,16 @@ class EvalNodeArena {
   ChoiceNode* CanonicalizeChoiceNode(ChoiceNode* n);
 
   void SizeCaches(size_t cache_size);
+
+  // Statistics accessors
+  void ResetStats() { sum_hit_ = sum_miss_ = choice_hit_ = choice_miss_ = 0; }
+  void ClearCaches() { sum_cache_.clear(); choice_cache_.clear(); }
+  void PrintCacheStats() {
+    cout << "sum_cache.size() = " << sum_cache_.size() << " hit=" << sum_hit_
+         << " miss=" << sum_miss_ << endl;
+    cout << "choice_cache.size() = " << choice_cache_.size() << " hit=" << choice_hit_
+         << " miss=" << choice_miss_ << endl;
+  }
 
   // For testing
   SumNode* NewRootNodeWithCapacity(uint8_t capacity);

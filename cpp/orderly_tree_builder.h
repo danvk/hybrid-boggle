@@ -106,7 +106,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // This is ~700MB for a 4x4 board, and only held temporarily.
   words_.clear();
   words_.reserve(20'000'000);
-  choice_hit_ = choice_miss_ = sum_hit_ = sum_miss_ = 0;
+  arena.ResetStats();
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -137,14 +137,13 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto end4 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
   stats.build_s = duration / 1000.0;
-  stats.n_sum = sum_cache_.size();
-  stats.n_choice = choice_cache_.size();
+  stats.n_sum = arena.sum_cache_.size();
+  stats.n_choice = arena.choice_cache_.size();
 
   // release memory ASAP
   words_.clear();
   words_.shrink_to_fit();
-  sum_cache_.clear();
-  choice_cache_.clear();
+  arena.ClearCaches();
   stats_ = stats;
 
   // arena.PrintStats();
@@ -164,10 +163,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
 
-  cout << "sum_cache.size() = " << sum_cache_.size() << " hit=" << sum_hit_
-       << " miss=" << sum_miss_ << endl;
-  cout << "choice_cache.size() = " << choice_cache_.size() << " hit=" << choice_hit_
-       << " miss=" << choice_miss_ << endl;
+  arena.PrintCacheStats();
 
   return root;
 }
@@ -555,7 +551,6 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
 
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
-  int num_children = ranges.size();
 
   char buf[sizeof(ChoiceNode) + 26 * sizeof(ChoiceNode*)];
   auto node = new (buf) ChoiceNode;

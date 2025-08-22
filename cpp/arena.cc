@@ -2,6 +2,23 @@
 
 #include "eval_node.h"
 
+// Hash and equality functors implementations
+size_t EvalNodeArena::SumNodePtrHash::operator()(const SumNode* node) const {
+  return node->Hash();
+}
+
+bool EvalNodeArena::SumNodePtrEqual::operator()(const SumNode* a, const SumNode* b) const {
+  return a->IsEqual(*b);
+}
+
+size_t EvalNodeArena::ChoiceNodePtrHash::operator()(const ChoiceNode* node) const {
+  return node->Hash();
+}
+
+bool EvalNodeArena::ChoiceNodePtrEqual::operator()(const ChoiceNode* a, const ChoiceNode* b) const {
+  return a->IsEqual(*b);
+}
+
 EvalNodeArena::EvalNodeArena()
     : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {
   canonical_nodes_.resize(NUM_INTERNED);
