@@ -108,16 +108,17 @@ class EvalNodeArena {
   vector<pair<int, int>> saved_levels_;  // Store buffer/tip pairs for each level
   // Multi-level caching - one cache pair per level
   using SumNodeCache = unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual>;
-  using ChoiceNodeCache = unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual>;
+  using ChoiceNodeCache =
+      unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual>;
   vector<pair<SumNodeCache, ChoiceNodeCache>> level_caches_;
   // Legacy accessors for compatibility - these reference the first level cache
   unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual>& sum_cache_;
   unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual>& choice_cache_;
   vector<SumNode*> canonical_nodes_;
-  int sum_hit_;
-  int sum_miss_;
-  int choice_hit_;
-  int choice_miss_;
+  uint64_t sum_hit_;
+  uint64_t sum_miss_;
+  uint64_t choice_hit_;
+  uint64_t choice_miss_;
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();

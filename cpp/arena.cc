@@ -23,9 +23,13 @@ bool EvalNodeArena::ChoiceNodePtrEqual::operator()(
 }
 
 EvalNodeArena::EvalNodeArena()
-    : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE),
-      saved_levels_(), level_caches_(1),  // Start with one level
-      sum_cache_(level_caches_[0].first), choice_cache_(level_caches_[0].second) {
+    : num_nodes_(0),
+      cur_buffer_(-1),
+      tip_(EVAL_NODE_ARENA_BUFFER_SIZE),
+      saved_levels_(),
+      level_caches_(1),  // Start with one level
+      sum_cache_(level_caches_[0].first),
+      choice_cache_(level_caches_[0].second) {
   canonical_nodes_.resize(NUM_INTERNED);
   for (int i = 0; i < NUM_INTERNED; i++) {
     canonical_nodes_[i] = NewSumNodeWithCapacity(0);
@@ -74,13 +78,13 @@ SumNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
   return root;
 }
 
-int EvalNodeArena::SaveLevel() { 
+int EvalNodeArena::SaveLevel() {
   int level = saved_levels_.size();
   saved_levels_.push_back({cur_buffer_, tip_});
-  
+
   // Create a new cache level for this save point
   level_caches_.emplace_back();
-  
+
   return level;
 }
 
@@ -93,7 +97,7 @@ void EvalNodeArena::ResetLevel(int level) {
   }
   cur_buffer_ = new_cur_buffer;
   tip_ = new_tip;
-  
+
   // Remove all levels above this one
   saved_levels_.resize(level);
   level_caches_.resize(level + 1);  // Keep level + 1 cache levels
@@ -101,14 +105,15 @@ void EvalNodeArena::ResetLevel(int level) {
 
 SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node, bool no_insert) {
   // Search all cache levels for an existing equivalent node
-  for (auto& cache_pair : level_caches_) {
+  for (auto cit = level_caches_.rbegin(); cit != level_caches_.rend(); ++cit) {
+    auto& cache_pair = *cit;
     auto it = cache_pair.first.find(node);
     if (it != cache_pair.first.end()) {
       sum_hit_++;
       return *it;
     }
   }
-  
+
   // Not found in any cache level
   sum_miss_++;
   auto new_node = NewSumNodeWithCapacity(node->num_children_);
@@ -122,14 +127,15 @@ SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node, bool no_insert) {
 
 ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node, bool no_insert) {
   // Search all cache levels for an existing equivalent node
-  for (auto& cache_pair : level_caches_) {
+  for (auto cit = level_caches_.rbegin(); cit != level_caches_.rend(); ++cit) {
+    auto& cache_pair = *cit;
     auto it = cache_pair.second.find(node);
     if (it != cache_pair.second.end()) {
       choice_hit_++;
       return *it;
     }
   }
-  
+
   // Not found in any cache level
   choice_miss_++;
   auto new_node = NewChoiceNodeWithCapacity(node->NumChildren());
