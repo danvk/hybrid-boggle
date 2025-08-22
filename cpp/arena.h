@@ -59,8 +59,8 @@ class EvalNodeArena {
 
   // Note: sum_cache_ and choice_cache_ are now private member references
 
-  SumNode* CanonicalizeSumNode(SumNode* n, bool no_insert = false);
-  ChoiceNode* CanonicalizeChoiceNode(ChoiceNode* n, bool no_insert = false);
+  SumNode* CanonicalizeSumNode(SumNode* n);
+  ChoiceNode* CanonicalizeChoiceNode(ChoiceNode* n);
 
   void SizeCaches(size_t cache_size);
 

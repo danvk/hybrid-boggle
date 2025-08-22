@@ -338,7 +338,7 @@ ChoiceNode* merge_orderly_choice_children(
   }
   assert(out_i == num_children);
 
-  return arena.CanonicalizeChoiceNode(n, true);
+  return arena.CanonicalizeChoiceNode(n);
 }
 
 SumNode* merge_orderly_tree_children(
@@ -426,7 +426,7 @@ SumNode* merge_orderly_tree_children(
   assert(out_i == num_children);
   n->num_children_ = num_children;
 
-  return arena.CanonicalizeSumNode(n, true);
+  return arena.CanonicalizeSumNode(n);
 }
 
 SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena) {

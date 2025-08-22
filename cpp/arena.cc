@@ -103,7 +103,7 @@ void EvalNodeArena::ResetLevel(int level) {
   level_caches_.resize(level + 1);  // Keep level + 1 cache levels
 }
 
-SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node, bool no_insert) {
+SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node) {
   // Search all cache levels for an existing equivalent node
   for (auto cit = level_caches_.rbegin(); cit != level_caches_.rend(); ++cit) {
     auto& cache_pair = *cit;
@@ -118,14 +118,14 @@ SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node, bool no_insert) {
   sum_miss_++;
   auto new_node = NewSumNodeWithCapacity(node->num_children_);
   new_node->CopyFrom(node);
-  if (!no_insert && !level_caches_.empty()) {
+  if (!level_caches_.empty()) {
     // Insert into the current (last) cache level
     level_caches_.back().first.emplace(new_node);
   }
   return new_node;
 }
 
-ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node, bool no_insert) {
+ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node) {
   // Search all cache levels for an existing equivalent node
   for (auto cit = level_caches_.rbegin(); cit != level_caches_.rend(); ++cit) {
     auto& cache_pair = *cit;
@@ -140,7 +140,7 @@ ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node, bool no_inse
   choice_miss_++;
   auto new_node = NewChoiceNodeWithCapacity(node->NumChildren());
   new_node->CopyFrom(node);
-  if (!no_insert && !level_caches_.empty()) {
+  if (!level_caches_.empty()) {
     // Insert into the current (last) cache level
     level_caches_.back().second.emplace(new_node);
   }
