@@ -137,8 +137,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto end4 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
   stats.build_s = duration / 1000.0;
-  stats.n_sum = arena.sum_cache_.size();
-  stats.n_choice = arena.choice_cache_.size();
+  stats.n_sum = arena.GetSumCacheSize();
+  stats.n_choice = arena.GetChoiceCacheSize();
 
   // release memory ASAP
   words_.clear();

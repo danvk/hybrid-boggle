@@ -23,7 +23,9 @@ bool EvalNodeArena::ChoiceNodePtrEqual::operator()(
 }
 
 EvalNodeArena::EvalNodeArena()
-    : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE) {
+    : num_nodes_(0), cur_buffer_(-1), tip_(EVAL_NODE_ARENA_BUFFER_SIZE),
+      saved_levels_(), level_caches_(1),  // Start with one level
+      sum_cache_(level_caches_[0].first), choice_cache_(level_caches_[0].second) {
   canonical_nodes_.resize(NUM_INTERNED);
   for (int i = 0; i < NUM_INTERNED; i++) {
     canonical_nodes_[i] = NewSumNodeWithCapacity(0);
@@ -72,49 +74,77 @@ SumNode* EvalNodeArena::NewRootNodeWithCapacity(uint8_t capacity) {
   return root;
 }
 
-pair<int, int> EvalNodeArena::SaveLevel() { return {cur_buffer_, tip_}; }
+int EvalNodeArena::SaveLevel() { 
+  int level = saved_levels_.size();
+  saved_levels_.push_back({cur_buffer_, tip_});
+  
+  // Create a new cache level for this save point
+  level_caches_.emplace_back();
+  
+  return level;
+}
 
-void EvalNodeArena::ResetLevel(pair<int, int> level) {
-  auto [new_cur_buffer, new_tip] = level;
+void EvalNodeArena::ResetLevel(int level) {
+  assert(level >= 0 && level < saved_levels_.size());
+  auto [new_cur_buffer, new_tip] = saved_levels_[level];
   assert(new_cur_buffer <= cur_buffer_);
   if (new_cur_buffer == cur_buffer_) {
     assert(new_tip <= tip_);
   }
   cur_buffer_ = new_cur_buffer;
   tip_ = new_tip;
+  
+  // Remove all levels above this one
+  saved_levels_.resize(level);
+  level_caches_.resize(level + 1);  // Keep level + 1 cache levels
 }
 
 SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node, bool no_insert) {
-  auto it = sum_cache_.find(node);
-  if (it != sum_cache_.end()) {
-    sum_hit_++;
-    return *it;
+  // Search all cache levels for an existing equivalent node
+  for (auto& cache_pair : level_caches_) {
+    auto it = cache_pair.first.find(node);
+    if (it != cache_pair.first.end()) {
+      sum_hit_++;
+      return *it;
+    }
   }
+  
+  // Not found in any cache level
   sum_miss_++;
   auto new_node = NewSumNodeWithCapacity(node->num_children_);
   new_node->CopyFrom(node);
-  if (!no_insert) {
-    sum_cache_.emplace(new_node);
+  if (!no_insert && !level_caches_.empty()) {
+    // Insert into the current (last) cache level
+    level_caches_.back().first.emplace(new_node);
   }
   return new_node;
 }
 
 ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node, bool no_insert) {
-  auto it = choice_cache_.find(node);
-  if (it != choice_cache_.end()) {
-    choice_hit_++;
-    return *it;
+  // Search all cache levels for an existing equivalent node
+  for (auto& cache_pair : level_caches_) {
+    auto it = cache_pair.second.find(node);
+    if (it != cache_pair.second.end()) {
+      choice_hit_++;
+      return *it;
+    }
   }
+  
+  // Not found in any cache level
   choice_miss_++;
   auto new_node = NewChoiceNodeWithCapacity(node->NumChildren());
   new_node->CopyFrom(node);
-  if (!no_insert) {
-    choice_cache_.emplace(new_node);
+  if (!no_insert && !level_caches_.empty()) {
+    // Insert into the current (last) cache level
+    level_caches_.back().second.emplace(new_node);
   }
   return new_node;
 }
 
 void EvalNodeArena::SizeCaches(size_t cache_size) {
-  sum_cache_.reserve(cache_size);
-  choice_cache_.reserve(cache_size);
+  // Reserve space in all cache levels
+  for (auto& cache_pair : level_caches_) {
+    cache_pair.first.reserve(cache_size);
+    cache_pair.second.reserve(cache_size);
+  }
 }

@@ -30,8 +30,8 @@ class EvalNodeArena {
   uint64_t NumNodes() { return num_nodes_; }
   uint64_t BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
 
-  pair<int, int> SaveLevel();
-  void ResetLevel(pair<int, int> level);
+  int SaveLevel();
+  void ResetLevel(int level);
 
   template <typename T>
   T* NewNodeWithCapacity(uint8_t capacity);
@@ -56,24 +56,42 @@ class EvalNodeArena {
   struct ChoiceNodePtrEqual {
     bool operator()(const ChoiceNode* a, const ChoiceNode* b) const;
   };
-  unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual> sum_cache_;
-  unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual> choice_cache_;
+
+  // Note: sum_cache_ and choice_cache_ are now private member references
 
   SumNode* CanonicalizeSumNode(SumNode* n, bool no_insert = false);
   ChoiceNode* CanonicalizeChoiceNode(ChoiceNode* n, bool no_insert = false);
 
   void SizeCaches(size_t cache_size);
 
+  // Cache accessors for compatibility
+  size_t GetSumCacheSize() const {
+    size_t total = 0;
+    for (const auto& cache_pair : level_caches_) {
+      total += cache_pair.first.size();
+    }
+    return total;
+  }
+  size_t GetChoiceCacheSize() const {
+    size_t total = 0;
+    for (const auto& cache_pair : level_caches_) {
+      total += cache_pair.second.size();
+    }
+    return total;
+  }
+
   // Statistics accessors
   void ResetStats() { sum_hit_ = sum_miss_ = choice_hit_ = choice_miss_ = 0; }
   void ClearCaches() {
-    sum_cache_.clear();
-    choice_cache_.clear();
+    for (auto& cache_pair : level_caches_) {
+      cache_pair.first.clear();
+      cache_pair.second.clear();
+    }
   }
   void PrintCacheStats() {
-    cout << "sum_cache.size() = " << sum_cache_.size() << " hit=" << sum_hit_
+    cout << "sum_cache.size() = " << GetSumCacheSize() << " hit=" << sum_hit_
          << " miss=" << sum_miss_ << endl;
-    cout << "choice_cache.size() = " << choice_cache_.size() << " hit=" << choice_hit_
+    cout << "choice_cache.size() = " << GetChoiceCacheSize() << " hit=" << choice_hit_
          << " miss=" << choice_miss_ << endl;
   }
 
@@ -87,7 +105,14 @@ class EvalNodeArena {
   uint64_t num_nodes_;
   int cur_buffer_;
   int tip_;
-  vector<pair<int, int>> watermarks_;
+  vector<pair<int, int>> saved_levels_;  // Store buffer/tip pairs for each level
+  // Multi-level caching - one cache pair per level
+  using SumNodeCache = unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual>;
+  using ChoiceNodeCache = unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual>;
+  vector<pair<SumNodeCache, ChoiceNodeCache>> level_caches_;
+  // Legacy accessors for compatibility - these reference the first level cache
+  unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual>& sum_cache_;
+  unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual>& choice_cache_;
   vector<SumNode*> canonical_nodes_;
   int sum_hit_;
   int sum_miss_;
