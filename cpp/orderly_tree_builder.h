@@ -79,7 +79,9 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
     size_t operator()(const ChoiceNode* node) const { return node->Hash(); }
   };
   struct ChoiceNodePtrEqual {
-    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const { return a->IsEqual(*b); }
+    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
+      return a->IsEqual(*b);
+    }
   };
 
   unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual> sum_cache_;
@@ -150,8 +152,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   stats.n_uniq = words_.size();
   // PrintWordList();
 
+  // cout << "reserving " << words_.size() / 5 << " slots" << endl;
   sum_cache_.reserve(words_.size() / 5);
   choice_cache_.reserve(words_.size() / 5);
+  // cout << "reserved" << words_.size() / 5 << " slots" << endl;
   auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
 
   auto end4 = chrono::high_resolution_clock::now();

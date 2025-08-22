@@ -62,7 +62,7 @@
 #    define ROBIN_HOOD_LOG(x)
 #endif
 
-// #define ROBIN_HOOD_TRACE_ENABLED
+#define ROBIN_HOOD_TRACE_ENABLED
 #ifdef ROBIN_HOOD_TRACE_ENABLED
 #    include <iostream>
 #    define ROBIN_HOOD_TRACE(...) \
