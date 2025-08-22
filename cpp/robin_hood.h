@@ -1,3 +1,4 @@
+// clang-format off
 //                 ______  _____                 ______                _________
 //  ______________ ___  /_ ___(_)_______         ___  /_ ______ ______ ______  /
 //  __  ___/_  __ \__  __ \__  / __  __ \        __  __ \_  __ \_  __ \_  __  /
@@ -207,7 +208,7 @@ static Counts& counts() {
 // workaround missing "is_trivially_copyable" in g++ < 5.0
 // See https://stackoverflow.com/a/31798726/48181
 #if defined(__GNUC__) && __GNUC__ < 5
-#    define ROBIN_HOOD_IS_TRIVIALLY_COPYABLE(...) __has_trivial_copy(__VA_ARGS__)
+#    define ROBIN_HOOD_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
 #else
 #    define ROBIN_HOOD_IS_TRIVIALLY_COPYABLE(...) std::is_trivially_copyable<__VA_ARGS__>::value
 #endif
@@ -2542,3 +2543,5 @@ using unordered_set = detail::Table<sizeof(Key) <= sizeof(size_t) * 6 &&
 } // namespace robin_hood
 
 #endif
+
+// clang-format on
