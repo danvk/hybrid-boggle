@@ -69,29 +69,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
 
-  struct SumNodePtrHash {
-    size_t operator()(const SumNode* node) const { return node->Hash(); }
-  };
-  struct SumNodePtrEqual {
-    bool operator()(const SumNode* a, const SumNode* b) const { return a->IsEqual(*b); }
-  };
-  struct ChoiceNodePtrHash {
-    size_t operator()(const ChoiceNode* node) const { return node->Hash(); }
-  };
-  struct ChoiceNodePtrEqual {
-    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
-      return a->IsEqual(*b);
-    }
-  };
-
-  unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual> sum_cache_;
-  unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual> choice_cache_;
-
-  int sum_hit_;
-  int sum_miss_;
-  int choice_hit_;
-  int choice_miss_;
-
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(
       const vector<WordPath>& words,
@@ -153,8 +130,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // PrintWordList();
 
   // cout << "reserving " << words_.size() / 5 << " slots" << endl;
-  sum_cache_.reserve(words_.size() / 5);
-  choice_cache_.reserve(words_.size() / 5);
+  arena.SizeCaches(words_.size() / 5);
   // cout << "reserved" << words_.size() / 5 << " slots" << endl;
   auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
 
@@ -563,16 +539,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     node->bound_ += child->bound_;
   }
 
-  auto it = sum_cache_.find(node);
-  if (it != sum_cache_.end()) {
-    sum_hit_++;
-    return *it;
-  }
-  sum_miss_++;
-  auto new_node = arena.NewSumNodeWithCapacity(node->num_children_);
-  new_node->CopyFrom(node);
-  sum_cache_.emplace(new_node);
-  return new_node;
+  return arena.CanonicalizeSumNode(node);
 }
 
 template <int M, int N>
@@ -605,17 +572,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     node->bound_ = max(node->bound_, child->bound_);
   }
   node->child_letters_ = letter_mask;
-
-  auto it = choice_cache_.find(node);
-  if (it != choice_cache_.end()) {
-    choice_hit_++;
-    return *it;
-  }
-  choice_miss_++;
-  auto new_node = arena.NewChoiceNodeWithCapacity(num_children);
-  new_node->CopyFrom(node);
-  choice_cache_.emplace(new_node);
-  return new_node;
+  return arena.CanonicalizeChoiceNode(node);
 }
 
 template <int M, int N>

@@ -43,6 +43,28 @@ class EvalNodeArena {
     return canonical_nodes_[points - 1];
   }
 
+  struct SumNodePtrHash {
+    size_t operator()(const SumNode* node) const { return node->Hash(); }
+  };
+  struct SumNodePtrEqual {
+    bool operator()(const SumNode* a, const SumNode* b) const { return a->IsEqual(*b); }
+  };
+  struct ChoiceNodePtrHash {
+    size_t operator()(const ChoiceNode* node) const { return node->Hash(); }
+  };
+  struct ChoiceNodePtrEqual {
+    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
+      return a->IsEqual(*b);
+    }
+  };
+  unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual> sum_cache_;
+  unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual> choice_cache_;
+
+  SumNode* CanonicalizeSumNode(SumNode* n);
+  ChoiceNode* CanonicalizeChoiceNode(ChoiceNode* n);
+
+  void SizeCaches(size_t cache_size);
+
   // For testing
   SumNode* NewRootNodeWithCapacity(uint8_t capacity);
   void PrintStats();
@@ -55,6 +77,10 @@ class EvalNodeArena {
   int tip_;
   vector<pair<int, int>> watermarks_;
   vector<SumNode*> canonical_nodes_;
+  int sum_hit_;
+  int sum_miss_;
+  int choice_hit_;
+  int choice_miss_;
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();
