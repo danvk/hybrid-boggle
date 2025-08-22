@@ -306,7 +306,9 @@ ChoiceNode* merge_orderly_choice_children(
   uint32_t merged_letters = a->child_letters_ | b->child_letters_;
   int num_children = std::popcount(merged_letters);
 
-  auto n = arena.NewChoiceNodeWithCapacity(num_children);
+  char buf[sizeof(ChoiceNode) + num_children * sizeof(SumNode*)];
+  auto n = new (buf) ChoiceNode;
+
   n->cell_ = a->cell_;
   n->bound_ = 0;
   n->child_letters_ = merged_letters;
@@ -336,7 +338,7 @@ ChoiceNode* merge_orderly_choice_children(
   }
   assert(out_i == num_children);
 
-  return n;
+  return arena.CanonicalizeChoiceNode(n);
 }
 
 SumNode* merge_orderly_tree_children(
@@ -372,7 +374,8 @@ SumNode* merge_orderly_tree_children(
     return arena.GetCanonicalNode(new_points);
   }
 
-  auto n = arena.NewSumNodeWithCapacity(num_children);
+  char buf[sizeof(SumNode) + num_children * sizeof(ChoiceNode*)];
+  auto n = new (buf) SumNode;
   n->points_ = new_points;
   n->bound_ = n->points_;
 
@@ -423,7 +426,7 @@ SumNode* merge_orderly_tree_children(
   assert(out_i == num_children);
   n->num_children_ = num_children;
 
-  return n;
+  return arena.CanonicalizeSumNode(n);
 }
 
 SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena) {
@@ -529,8 +532,6 @@ void ChoiceNode::SetBoundsForTesting() {
 
 static_assert(sizeof(size_t) == 8, "size_t must be 64 bits");
 
-// Borrowed from Boost.ContainerHash via https://stackoverflow.com/a/78509978/388951
-
 inline void hash_pointers(const uintptr_t* data64, size_t num, size_t& h) noexcept {
   static constexpr uint64_t m = UINT64_C(0xc6a4a7935bd1e995);
   static constexpr unsigned int r = 47;
@@ -548,8 +549,6 @@ inline void hash_pointers(const uintptr_t* data64, size_t num, size_t& h) noexce
     h *= m;
   }
 }
-
-inline uint32_t pointer_hash(void* p) { return std::hash<uintptr_t>()((uintptr_t)p); }
 
 size_t SumNode::Hash() const {
   size_t hash = robin_hood::hash_int(points_);
