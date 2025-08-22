@@ -186,6 +186,7 @@ class HybridTreeBreaker:
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
         self.details_.total_bytes = arena.bytes_allocated()
+        arena.print_cache_stats()
         return self.details_
 
     def attack_tree(

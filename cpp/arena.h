@@ -59,14 +59,17 @@ class EvalNodeArena {
   unordered_set<SumNode*, SumNodePtrHash, SumNodePtrEqual> sum_cache_;
   unordered_set<ChoiceNode*, ChoiceNodePtrHash, ChoiceNodePtrEqual> choice_cache_;
 
-  SumNode* CanonicalizeSumNode(SumNode* n);
-  ChoiceNode* CanonicalizeChoiceNode(ChoiceNode* n);
+  SumNode* CanonicalizeSumNode(SumNode* n, bool no_insert = false);
+  ChoiceNode* CanonicalizeChoiceNode(ChoiceNode* n, bool no_insert = false);
 
   void SizeCaches(size_t cache_size);
 
   // Statistics accessors
   void ResetStats() { sum_hit_ = sum_miss_ = choice_hit_ = choice_miss_ = 0; }
-  void ClearCaches() { sum_cache_.clear(); choice_cache_.clear(); }
+  void ClearCaches() {
+    sum_cache_.clear();
+    choice_cache_.clear();
+  }
   void PrintCacheStats() {
     cout << "sum_cache.size() = " << sum_cache_.size() << " hit=" << sum_hit_
          << " miss=" << sum_miss_ << endl;

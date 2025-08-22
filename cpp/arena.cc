@@ -7,7 +7,8 @@ size_t EvalNodeArena::SumNodePtrHash::operator()(const SumNode* node) const {
   return node->Hash();
 }
 
-bool EvalNodeArena::SumNodePtrEqual::operator()(const SumNode* a, const SumNode* b) const {
+bool EvalNodeArena::SumNodePtrEqual::operator()(const SumNode* a, const SumNode* b)
+    const {
   return a->IsEqual(*b);
 }
 
@@ -15,7 +16,9 @@ size_t EvalNodeArena::ChoiceNodePtrHash::operator()(const ChoiceNode* node) cons
   return node->Hash();
 }
 
-bool EvalNodeArena::ChoiceNodePtrEqual::operator()(const ChoiceNode* a, const ChoiceNode* b) const {
+bool EvalNodeArena::ChoiceNodePtrEqual::operator()(
+    const ChoiceNode* a, const ChoiceNode* b
+) const {
   return a->IsEqual(*b);
 }
 
@@ -81,7 +84,7 @@ void EvalNodeArena::ResetLevel(pair<int, int> level) {
   tip_ = new_tip;
 }
 
-SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node) {
+SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node, bool no_insert) {
   auto it = sum_cache_.find(node);
   if (it != sum_cache_.end()) {
     sum_hit_++;
@@ -90,11 +93,13 @@ SumNode* EvalNodeArena::CanonicalizeSumNode(SumNode* node) {
   sum_miss_++;
   auto new_node = NewSumNodeWithCapacity(node->num_children_);
   new_node->CopyFrom(node);
-  sum_cache_.emplace(new_node);
+  if (!no_insert) {
+    sum_cache_.emplace(new_node);
+  }
   return new_node;
 }
 
-ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node) {
+ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node, bool no_insert) {
   auto it = choice_cache_.find(node);
   if (it != choice_cache_.end()) {
     choice_hit_++;
@@ -103,7 +108,9 @@ ChoiceNode* EvalNodeArena::CanonicalizeChoiceNode(ChoiceNode* node) {
   choice_miss_++;
   auto new_node = NewChoiceNodeWithCapacity(node->NumChildren());
   new_node->CopyFrom(node);
-  choice_cache_.emplace(new_node);
+  if (!no_insert) {
+    choice_cache_.emplace(new_node);
+  }
   return new_node;
 }
 
