@@ -526,6 +526,8 @@ void ChoiceNode::SetBoundsForTesting() {
   }
 }
 
+static_assert(sizeof(size_t) == 8, "size_t must be 64 bits");
+
 // Borrowed from Boost.ContainerHash via https://stackoverflow.com/a/78509978/388951
 void hash_combine(uint32_t& seed, const uint32_t& v) {
   uint32_t x = seed + 0x9e3779b9 + std::hash<uint32_t>()(v);
