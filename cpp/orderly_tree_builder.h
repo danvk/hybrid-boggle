@@ -8,6 +8,7 @@
 #include "equal_ranges.h"
 #include "eval_node.h"
 #include "ibuckets.h"
+#include "robin_hood.h"
 
 using namespace std;
 
