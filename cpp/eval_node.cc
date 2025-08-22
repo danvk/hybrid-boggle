@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "constants.h"
+#include "robin_hood.h"
 
 using namespace std;
 
@@ -529,26 +530,30 @@ void ChoiceNode::SetBoundsForTesting() {
 static_assert(sizeof(size_t) == 8, "size_t must be 64 bits");
 
 // Borrowed from Boost.ContainerHash via https://stackoverflow.com/a/78509978/388951
-void hash_combine(uint32_t& seed, const uint32_t& v) {
-  uint32_t x = seed + 0x9e3779b9 + std::hash<uint32_t>()(v);
-  const uint32_t m1 = 0x21f0aaad;
-  const uint32_t m2 = 0x735a2d97;
-  x ^= x >> 16;
-  x *= m1;
-  x ^= x >> 15;
-  x *= m2;
-  x ^= x >> 15;
-  seed = x;
+
+inline void hash_pointers(const uintptr_t* data64, size_t num, size_t& h) noexcept {
+  static constexpr uint64_t m = UINT64_C(0xc6a4a7935bd1e995);
+  static constexpr unsigned int r = 47;
+
+  h = h ^ (num * m);
+
+  for (size_t i = 0; i < num; ++i) {
+    auto k = data64[i];
+
+    k *= m;
+    k ^= k >> r;
+    k *= m;
+
+    h ^= k;
+    h *= m;
+  }
 }
 
 inline uint32_t pointer_hash(void* p) { return std::hash<uintptr_t>()((uintptr_t)p); }
 
-uint32_t SumNode::Hash() const {
-  uint32_t hash = points_;
-  hash_combine(hash, num_children_);
-  for (int i = 0; i < num_children_; i++) {
-    hash_combine(hash, pointer_hash(children_[i]));
-  }
+size_t SumNode::Hash() const {
+  size_t hash = robin_hood::hash_int(points_);
+  hash_pointers((uintptr_t*)&children_[0], num_children_, hash);
   return hash;
 }
 
@@ -565,13 +570,10 @@ bool SumNode::IsEqual(const SumNode& other) const {
   return true;
 }
 
-uint32_t ChoiceNode::Hash() const {
-  uint32_t hash = cell_;
-  hash_combine(hash, child_letters_);
+size_t ChoiceNode::Hash() const {
+  size_t hash = robin_hood::hash_int(cell_);
   int num_children = NumChildren();
-  for (int i = 0; i < num_children; i++) {
-    hash_combine(hash, pointer_hash(children_[i]));
-  }
+  hash_pointers((uintptr_t*)&children_[0], num_children, hash);
   return hash;
 }
 
