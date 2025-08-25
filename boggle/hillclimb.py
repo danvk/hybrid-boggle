@@ -115,12 +115,18 @@ def hillclimb(task: int):
     start_s = time.time()
     best_score = max(get_score(bd) for bd in pool)
 
+    next_size = 7 * args.pool_size
+    stall_count = 0
+    max_stall = 20
+
     num_iter = 0
     while True:
         num_iter += 1
         ns = {
             sym.canonicalize(n) for seed in pool for n in neighbors(seed, valid_letters)
         }
+        ns = [*ns]
+        ns = random.sample(ns, min(next_size, len(ns))) + pool
         scores = [(get_score(n), n) for n in ns]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
@@ -131,6 +137,14 @@ def hillclimb(task: int):
         if new_pool == pool:
             break
         pool = new_pool
+        new_best = scores[0][0]
+        if new_best > best_score:
+            best_score = new_best
+            stall_count = 0
+        else:
+            stall_count += 1
+            if stall_count > max_stall:
+                break
 
     best_score, best_bd = max(scores)
     elapsed_s = time.time() - start_s
@@ -205,6 +219,7 @@ def main():
         out.write(line)
         out.write("\n")
 
+    num_to_print = 10
     best = Counter[tuple[int, str]]()
     for run, (score, board, n, score_boards) in enumerate(it):
         print_and_write(f"{run}/{args.num_boards} {score} {board} ({n} iterations)")
@@ -212,10 +227,10 @@ def main():
 
         if args.num_boards > 1:
             print_and_write("---")
-            print_and_write(f"Top {args.pool_size} boards:")
+            print_and_write(f"Top {num_to_print} boards:")
             tops = [*best.keys()]
             tops.sort(reverse=True)
-            tops = tops[: args.pool_size]
+            tops = tops[:num_to_print]
             for score_board in tops:
                 score, board = score_board
                 freq = best[score_board]
