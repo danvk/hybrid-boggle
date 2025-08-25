@@ -112,6 +112,7 @@ def hillclimb(task: int):
         #     score = 1000
         return score
 
+    start_s = time.time()
     best_score = max(get_score(bd) for bd in pool)
 
     num_iter = 0
@@ -123,7 +124,8 @@ def hillclimb(task: int):
         scores = [(get_score(n), n) for n in ns]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
-        line = f"#{me} {num_iter=}: {max(scores)=} {min(scores)=}"
+        elapsed_s = time.time() - start_s
+        line = f"#{me} {elapsed_s:.3f}s {num_iter=}: {len(pool)} -> {len(ns)} {max(scores)=} {min(scores)=}"
         print_and_write(line)
         new_pool = [bd for _, bd in scores]
         if new_pool == pool:
@@ -131,6 +133,8 @@ def hillclimb(task: int):
         pool = new_pool
 
     best_score, best_bd = max(scores)
+    elapsed_s = time.time() - start_s
+    print_and_write(f"#{me} Elapsed time: {elapsed_s} s")
     return best_score, best_bd, num_iter, scores
 
 
