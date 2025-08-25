@@ -196,7 +196,9 @@ inline uint16_t advance(
 ) {
   for (int i = 0; i < node->num_children_; i++) {
     auto child = node->children_[i];
-    stacks[child->cell_][stack_sizes[child->cell_]++] = child;
+    auto n = stack_sizes[child->cell_]++;
+    assert(n < MAX_STACK_DEPTH);
+    stacks[child->cell_][n] = child;
     sums[child->cell_] += child->bound_;
   }
   return node->points_;
