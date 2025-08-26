@@ -78,6 +78,10 @@ def hillclimb(task: int):
     me = get_process_id()
     seed = hillclimb.random_seed + task
 
+    # clear remains from a previous run
+    with open(f"hillclimb-{me}.txt", "a"):
+        pass
+
     def print_and_write(line: str):
         print(line)
         with open(f"hillclimb-{me}.txt", "a") as out:
