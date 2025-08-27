@@ -40,6 +40,7 @@ Here are the blog posts I've written about this project in 2025:
 - [A Thrilling Insight and the Power of Algorithms][post3]: Explains Orderly Trees, the idea that really broke this problem open.
 - [Following up on an insight][post4]: Explains incremental improvements that brought 4x4 Boggle in range.
 - [After 20 Years, the Globally Optimal Boggle Board][35]: Announcement of the big 4x4 Boggle result.
+- [Boggle Roundup: My Fifteen Minutes of Fame][post5]: News reporting on the breakthrough and what's happened in the months since then.
 
 For earlier posts, check out this [2014 compendium].
 
@@ -151,6 +152,20 @@ $ poetry run python -m boggle.orderly_tree_builder "lnrsy aeiou chkmpt chkmpt ae
 Note that this bound is considerably lower, but computing it requires more time and memory.
 
 The command line tools all take some standard flags like `--dictionary` and `--python`. Run with `--help` to see them.
+
+## Performance Optimization
+
+Finding the globally optimal Boggle board with Sum/Choice trees is extremely CPU- and memory-intensive. If you'd like to try and speed it up, follow the [setup instructions](#development-and-usage) and then run:
+
+```
+/usr/bin/time -l poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 3500 --size 44 --board_id 705707 --switchover_score 6000 --log_per_board_stats
+```
+
+(This is for macOS, on Unix systems use `time -v`.)
+
+On my M2 Macbook, this takes about 740s to run and uses ~3GB of memory (Max RSS). It reports one "breaking failure," namely the [best board][3625 points]. The bottlenecks are all the calls to `OrderlyBound`, `merge_orderly_choice_children` and `merge_orderly_tree_children` in `eval_node.cc`.
+
+For some optimization ideas and information on why they haven't panned out, check out the [issue tracker](https://github.com/danvk/hybrid-boggle/issues?q=is%3Aissue%20state%3Aopen%20label%3Aperformance).
 
 ## Docker image
 
@@ -279,3 +294,4 @@ This analysis only works with ENABLE2K and YAWL. It's impossible for the other w
 [archive]: https://archive.ph/siaAO
 [Hacker News]: https://news.ycombinator.com/item?id=44082892
 [paper]: https://github.com/danvk/boggle-paper/blob/main/paper.pdf
+[post5]: https://www.danvk.org/2025/08/25/boggle-roundup.html
