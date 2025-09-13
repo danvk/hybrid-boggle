@@ -68,6 +68,51 @@ def neighbors(board: str, valid_letters: Sequence[int]):
     return out
 
 
+def generate_variation(board: str, valid_letters: Sequence[int]):
+    """Generate one variant on this board. May include multiple mutations."""
+
+    n = len(board)
+    while True:
+        if random.random() < 0.5:
+            # single letter change
+            while True:
+                i = random.randint(0, n - 1)
+                current = board[i]
+                new = chr(random.choice(valid_letters))
+                if current != new:
+                    prefix = board[:i]
+                    suffix = board[i + 1 :]
+                    # print(f"Change {i} from {current} -> {new}")
+                    # print(f"- {board}")
+                    board = prefix + new + suffix
+                    # print(f"+ {board}")
+                    break
+        else:
+            # swap
+            while True:
+                i = random.randint(0, n - 1)
+                j = random.randint(0, n - 1)
+                if board[i] == board[j]:
+                    continue
+                break
+
+            if i > j:
+                i, j = j, i
+            prefix = board[:i]
+            ci = board[i]
+            cj = board[j]
+            # print(f"swap {i}<->{j}")
+            # print(f"- {board}")
+            board = prefix + cj + board[i + 1 : j] + ci + board[j + 1 :]
+            # print(f"+ {board}")
+
+        # 10% probability of two mutations, 1% of three, etc.
+        if random.random() > 0.1:
+            break
+
+    return board
+
+
 def get_process_id():
     ids = multiprocessing.current_process()._identity
     if len(ids) == 0:
@@ -134,11 +179,12 @@ def hillclimb(task: int):
     num_iter = 0
     while True:
         num_iter += 1
-        ns = {
-            sym.canonicalize(n) for seed in pool for n in neighbors(seed, valid_letters)
-        }
-        ns = [*ns]
-        ns = random.sample(ns, min(next_size, len(ns))) + pool
+        ns = set()
+        while len(ns) < next_size:
+            ns.add(
+                sym.canonicalize(generate_variation(random.choice(pool), valid_letters))
+            )
+        ns = [*ns] + pool
         scores = [*{(get_score(n), n) for n in ns}]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
@@ -241,6 +287,11 @@ def main():
     )
     parser.add_argument(
         "--quiet", action="store_true", help="Suppress progress logging."
+    )
+    parser.add_argument(
+        "--gcs_path",
+        type=str,
+        help="Google Cloud Storage path to upload the results, e.g., 'gs://bucket/path'.",
     )
     add_standard_args(parser, random_seed=True, python=True)
 
