@@ -76,6 +76,8 @@ def get_process_id():
 
 
 def hillclimb(task: int):
+    args = hillclimb.args
+
     me = get_process_id()
     seed = hillclimb.random_seed + task
     output_file = f"hillclimb-{me}.txt"
@@ -87,14 +89,14 @@ def hillclimb(task: int):
     lines = []
 
     def print_and_write(line: str):
-        print(line)
+        if not args.quiet:
+            print(line)
         lines.append(line)
         with open(output_file, "a") as out:
             out.write(line + "\n")
 
     random.seed(seed)
     print_and_write(f"#{me} starting hillclimb with random seed = {seed}")
-    args = hillclimb.args
     w, h = hillclimb.dims
     boggler = hillclimb.boggler
     num_lets = w * h
@@ -223,6 +225,9 @@ def main():
         "--exclude_letters",
         type=str,
         help="List of characters to exclude from the search, e.g. 'qzj'",
+    )
+    parser.add_argument(
+        "--quiet", action="store_true", help="Suppress progress logging."
     )
     add_standard_args(parser, random_seed=True, python=True)
 
