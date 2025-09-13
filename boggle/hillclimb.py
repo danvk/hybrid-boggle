@@ -24,6 +24,7 @@ from cpp_boggle import Symmetry
 
 from boggle.anneal import A_TO_Z, initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
+from boggle.gcs import upload_to_gcs
 
 
 def get_valid_letters(args):
@@ -171,9 +172,15 @@ def hillclimb(task: int):
         "top20": scores[:20],
         "progress": lines,
     }
-    output_json_file = f"hillclimb-{me}.json"
-    with open(output_json_file, "w") as out:
+    with open(hillclimb.output_json_file, "a") as out:
         json.dump(json_out, out)
+        out.write("\n")
+
+    if args.gcs_path:
+        upload_to_gcs(
+            hillclimb.output_json_file,
+            f"{args.gcs_path}/{args.timestamp}.tasks-{me}.ndjson",
+        )
 
     return best_score, best_bd, num_iter, scores
 
@@ -190,6 +197,12 @@ def hillclimb_init(args):
 
     w, h = args.size // 10, args.size % 10
     hillclimb.dims = (w, h)
+
+    # Ensure a clean output file for appending
+    me = get_process_id()
+    hillclimb.output_json_file = f"hillclimb-{me}.ndjson"
+    with open(hillclimb.output_json_file, "w"):
+        pass
 
 
 def main():
@@ -240,6 +253,9 @@ def main():
     else:
         hillclimb_init(args)
         it = (hillclimb(task) for task in tasks)
+
+    # Generate a timestamp for the current run
+    args.timestamp = time.strftime("%Y%m%d-%H%M%S")
 
     out = open("hillclimb.root.txt", "w")
 
