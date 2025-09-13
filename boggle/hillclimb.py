@@ -157,14 +157,20 @@ def hillclimb(task: int):
         for _ in range(args.pool_size)
     ]
 
-    @functools.cache
+    cache: dict[str, int] = {}
+
     def get_score(bd: str):
+        prev = cache.get(bd)
+        if prev is not None:
+            return prev
+
         # This is a convenient place to make adjustments to the score, e.g.
         # to require a "q" on the board or to exclude high-scoring boards to test
         # whether hill climbing can find other boards in their absence.
         # if "q" not in bd:
         #     return 0
         score = boggler.score(bd)
+        cache[bd] = score
         # if score > 3512:
         #     score = 1000
         return score
@@ -181,9 +187,12 @@ def hillclimb(task: int):
         num_iter += 1
         ns = set()
         while len(ns) < next_size:
-            ns.add(
-                sym.canonicalize(generate_variation(random.choice(pool), valid_letters))
+            variant = sym.canonicalize(
+                generate_variation(random.choice(pool), valid_letters)
             )
+            if variant in cache:
+                continue  # we want novel boards
+            ns.add(variant)
         ns = [*ns] + pool
         scores = [*{(get_score(n), n) for n in ns}]
         scores.sort(reverse=True)
@@ -296,6 +305,8 @@ def main():
     add_standard_args(parser, random_seed=True, python=True)
 
     args = parser.parse_args()
+    args.timestamp = time.strftime("%Y%m%d-%H%M%S")
+
     pool = None
     tasks = range(args.num_boards)
     if args.num_threads > 1:
@@ -304,9 +315,6 @@ def main():
     else:
         hillclimb_init(args)
         it = (hillclimb(task) for task in tasks)
-
-    # Generate a timestamp for the current run
-    args.timestamp = time.strftime("%Y%m%d-%H%M%S")
 
     out = open("hillclimb.root.txt", "w")
 
