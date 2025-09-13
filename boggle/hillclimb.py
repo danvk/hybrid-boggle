@@ -29,7 +29,7 @@ from boggle.args import add_standard_args, get_trie_and_boggler_from_args
 def get_valid_letters(args):
     exclude = {ord(c) for c in (args.exclude_letters or "")}
     valid_letters = [c for c in A_TO_Z if c not in exclude]
-    if len(valid_letters) < 26:
+    if len(valid_letters) < 26 and not args.quiet:
         print(f"Will use {len(valid_letters)} letters.")
     return valid_letters
 
@@ -138,7 +138,7 @@ def hillclimb(task: int):
         }
         ns = [*ns]
         ns = random.sample(ns, min(next_size, len(ns))) + pool
-        scores = [(get_score(n), n) for n in ns]
+        scores = [*{(get_score(n), n) for n in ns}]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
         elapsed_s = time.time() - start_s
@@ -249,13 +249,16 @@ def main():
         out.write("\n")
 
     num_to_print = 10
+    num_complete = 0
     best = Counter[tuple[int, str]]()
-    for run, (score, board, n, score_boards) in enumerate(it):
-        print_and_write(f"{run}/{args.num_boards} {score} {board} ({n} iterations)")
+    for _, (score, board, n, score_boards) in enumerate(it):
+        num_complete += 1
+        print_and_write(
+            f"{num_complete}/{args.num_boards} {score} {board} ({n} iterations)"
+        )
         best.update(score_boards)
 
         if args.num_boards > 1:
-            print_and_write("---")
             print_and_write(f"Top {num_to_print} boards:")
             tops = [*best.keys()]
             tops.sort(reverse=True)
@@ -263,7 +266,8 @@ def main():
             for score_board in tops:
                 score, board = score_board
                 freq = best[score_board]
-                print_and_write(f"{score}\t{board}\t{freq}/{1+run}")
+                print_and_write(f"{score}\t{board}\t{freq}/{num_complete}")
+            print_and_write("")
 
 
 if __name__ == "__main__":
