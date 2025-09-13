@@ -13,6 +13,7 @@ https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
 
 import argparse
 import functools
+import json
 import multiprocessing
 import random
 import time
@@ -77,14 +78,18 @@ def get_process_id():
 def hillclimb(task: int):
     me = get_process_id()
     seed = hillclimb.random_seed + task
+    output_file = f"hillclimb-{me}.txt"
 
     # clear remains from a previous run
-    with open(f"hillclimb-{me}.txt", "a"):
+    with open(output_file, "a"):
         pass
+
+    lines = []
 
     def print_and_write(line: str):
         print(line)
-        with open(f"hillclimb-{me}.txt", "a") as out:
+        lines.append(line)
+        with open(output_file, "a") as out:
             out.write(line + "\n")
 
     random.seed(seed)
@@ -153,6 +158,21 @@ def hillclimb(task: int):
     best_score, best_bd = max(scores)
     elapsed_s = time.time() - start_s
     print_and_write(f"#{me} Elapsed time: {elapsed_s} s")
+
+    json_out = {
+        "task": task,
+        "pid": me,
+        "seed": seed,
+        "best": [best_score, best_bd],
+        "num_iter": num_iter,
+        "elapsed_s": elapsed_s,
+        "top20": scores[:20],
+        "progress": lines,
+    }
+    output_json_file = f"hillclimb-{me}.json"
+    with open(output_json_file, "w") as out:
+        json.dump(json_out, out)
+
     return best_score, best_bd, num_iter, scores
 
 
