@@ -100,6 +100,14 @@ bool Boggler<M, N>::ParseBoard(const char* bd) {
 template <int M, int N>
 unsigned int Boggler<M, N>::InternalScore() {
   runs_ = dict_->Mark() + 1;
+  if (runs_ > 65535) {
+    auto start = chrono::high_resolution_clock::now();
+    dict_->ResetMarks();
+    auto end0 = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
+    cout << "reset! " << duration << " ms" << endl;
+    runs_ = 1;
+  }
   dict_->Mark(runs_);
   used_ = 0;
   score_ = 0;
