@@ -136,8 +136,8 @@ class Trie {
   // TODO: add back
   //  private:
   uint32_t child_indices_;
+  uint32_t mark_;
   Trie* children_;
-  uintptr_t mark_;
 };
 
 /** Wrapper around Trie to manage the underlying buffer. */
