@@ -33,18 +33,23 @@ class IndexedTrie {
   uint32_t WordId() const { return word_id_; }
   IndexedTrie* FindWordId(int word_id);
 
-  int NumChildren() {
+  int NumChildren() const {
     int count = 0;
     for (int i = 0; i < kNumLetters; i++) {
       if (children_[i]) count++;
     }
     return count;
   }
-  int BytesNeeded();
+  int BytesNeeded() const;
 
   // Trie construction
   // Returns a pointer to the new Trie node at the end of the word.
   IndexedTrie* AddWord(const char* wd);
+
+  // Trie construction
+  static unique_ptr<IndexedTrie> CreateFromFile(const char* filename);
+  static unique_ptr<IndexedTrie> CreateFromFileStr(const string& filename);
+  static unique_ptr<IndexedTrie> CreateFromWordlist(const vector<string>& words);
 
  private:
   bool is_word_;
@@ -92,8 +97,7 @@ class Trie {
   void ResetMarks();
   Trie* FindWord(const char* wd);
 
-  void CopyFromIndexedTrie(IndexedTrie& t, char** tip);
-  static unique_ptr<Trie> CopyFromIndexedTrieBFS(IndexedTrie& root, char** tip);
+  static Trie* CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip);
 
   static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
   static string ReverseLookup(const Trie* base, const Trie* child);
@@ -119,6 +123,25 @@ class Trie {
   uint32_t child_indices_;
   uint32_t children_;
   uintptr_t mark_;
+};
+
+/** Wrapper around Trie to manage the underlying buffer. */
+class TrieHolder {
+ public:
+  TrieHolder(Trie* t, char* buf) : t_(t), buf_(buf) {}
+  ~TrieHolder() { free(buf_); }
+
+  Trie* GetTrie() { return t_; }
+
+  // Trie construction
+  static TrieHolder* CompactTrie(const IndexedTrie& t);
+  static unique_ptr<TrieHolder> CreateFromFile(const char* filename);
+  static unique_ptr<TrieHolder> CreateFromFileStr(const string& filename);
+  static unique_ptr<TrieHolder> CreateFromWordlist(const vector<string>& words);
+
+ private:
+  Trie* t_;
+  char* buf_;
 };
 
 #endif
