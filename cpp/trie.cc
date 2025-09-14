@@ -100,7 +100,7 @@ Trie* Trie::CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip) {
     auto compact_node = new (*tip) Trie;
     *tip += size;
     if (parent && child_index == 0) {  // Record the first child offset when it's added
-      parent->children_ = (char*)compact_node - (char*)parent;
+      parent->children_ = compact_node;
     }
     if (!parent) {
       compact_root = compact_node;
