@@ -42,9 +42,26 @@ class IndexedTrie {
   }
   int BytesNeeded() const;
 
+  void Mark(uintptr_t m) {
+    assert(m < (1L << 32));
+    mark_ = m;
+  }
+  uintptr_t Mark() { return mark_; }
+
   // Trie construction
   // Returns a pointer to the new Trie node at the end of the word.
   IndexedTrie* AddWord(const char* wd);
+
+  static bool ReverseLookup(
+      const IndexedTrie* base, const IndexedTrie* child, string* out
+  );
+  static string ReverseLookup(const IndexedTrie* base, const IndexedTrie* child);
+
+  // Some slower methods that operate on the entire Trie (not just a node).
+  size_t Size();
+  size_t NumNodes();
+  void SetAllMarks(unsigned mark);
+  IndexedTrie* FindWord(const char* wd);
 
   // Trie construction
   static unique_ptr<IndexedTrie> CreateFromFile(const char* filename);
@@ -54,6 +71,7 @@ class IndexedTrie {
  private:
   bool is_word_;
   uint32_t word_id_;
+  uint32_t mark_;
   IndexedTrie* children_[26];
 };
 
@@ -79,9 +97,6 @@ class Trie {
   bool IsWord() const { return child_indices_ & (1 << 31); }
   void SetIsWord() { child_indices_ |= (1 << 31); }
 
-  void SetWordId(uint32_t word_id) {}
-  uint32_t WordId() const { return 0; }
-
   void Mark(uintptr_t m) { mark_ = m; }
   uintptr_t Mark() { return mark_; }
 
@@ -97,10 +112,10 @@ class Trie {
   void ResetMarks();
   Trie* FindWord(const char* wd);
 
-  static Trie* CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip);
-
   static bool ReverseLookup(const Trie* base, const Trie* child, string* out);
   static string ReverseLookup(const Trie* base, const Trie* child);
+
+  static Trie* CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip);
 
   // Replaces "qu" with "q" in-place; returns true if the word is a valid boggle word
   // (IsBoggleWord).

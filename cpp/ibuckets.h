@@ -24,7 +24,7 @@ struct ScoreDetails {
 template <int M, int N>
 class BucketBoggler : public BoardClassBoggler<M, N> {
  public:
-  BucketBoggler(Trie* t) : BoardClassBoggler<M, N>(t), runs_(0) {}
+  BucketBoggler(IndexedTrie* t) : BoardClassBoggler<M, N>(t), runs_(0) {}
   virtual ~BucketBoggler() {}
 
   // Returns a score >= the score of the best possible board to form with the

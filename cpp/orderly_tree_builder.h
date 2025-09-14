@@ -23,7 +23,7 @@ struct TreeBuilderStats {
 template <int M, int N>
 class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
  public:
-  OrderlyTreeBuilder(Trie* t) : BoardClassBoggler<M, N>(t) {
+  OrderlyTreeBuilder(IndexedTrie* t) : BoardClassBoggler<M, N>(t) {
     for (int i = 0; i < M * N; i++) {
       cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
@@ -59,8 +59,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   vector<WordPath> words_;
   TreeBuilderStats stats_;
 
-  void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
-  void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
+  void DoAllDescents(int cell, int n, int length, IndexedTrie* t, EvalNodeArena& arena);
+  void DoDFS(int cell, int n, int length, IndexedTrie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
 
   static bool WordComparator(const WordPath& a, const WordPath& b);
@@ -156,7 +156,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
 
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::DoAllDescents(
-    int cell, int n, int length, Trie* t, EvalNodeArena& arena
+    int cell, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   char* c = &bd_[cell][0];
   int j = 0;
@@ -209,7 +209,7 @@ for (w, h), neighbors in NEIGHBORS.items():
 // {w}x{h}
 template<>
 void OrderlyTreeBuilder<{w}, {h}>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {{
   if (t->IsWord()) {{
     AddWord(choices_, used_ordered_, t->WordId(), length);
@@ -226,7 +226,7 @@ void OrderlyTreeBuilder<{w}, {h}>::DoDFS(
 // 2x2
 template<>
 void OrderlyTreeBuilder<2, 2>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   if (t->IsWord()) {
     AddWord(choices_, used_ordered_, t->WordId(), length);
@@ -242,7 +242,7 @@ void OrderlyTreeBuilder<2, 2>::DoDFS(
 // 2x3
 template<>
 void OrderlyTreeBuilder<2, 3>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   if (t->IsWord()) {
     AddWord(choices_, used_ordered_, t->WordId(), length);
@@ -260,7 +260,7 @@ void OrderlyTreeBuilder<2, 3>::DoDFS(
 // 3x3
 template<>
 void OrderlyTreeBuilder<3, 3>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   if (t->IsWord()) {
     AddWord(choices_, used_ordered_, t->WordId(), length);
@@ -281,7 +281,7 @@ void OrderlyTreeBuilder<3, 3>::DoDFS(
 // 3x4
 template<>
 void OrderlyTreeBuilder<3, 4>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   if (t->IsWord()) {
     AddWord(choices_, used_ordered_, t->WordId(), length);
@@ -305,7 +305,7 @@ void OrderlyTreeBuilder<3, 4>::DoDFS(
 // 4x4
 template<>
 void OrderlyTreeBuilder<4, 4>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   if (t->IsWord()) {
     AddWord(choices_, used_ordered_, t->WordId(), length);
@@ -333,7 +333,7 @@ void OrderlyTreeBuilder<4, 4>::DoDFS(
 // 4x5
 template<>
 void OrderlyTreeBuilder<4, 5>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   if (t->IsWord()) {
     AddWord(choices_, used_ordered_, t->WordId(), length);
@@ -365,7 +365,7 @@ void OrderlyTreeBuilder<4, 5>::DoDFS(
 // 5x5
 template<>
 void OrderlyTreeBuilder<5, 5>::DoDFS(
-    int i, int n, int length, Trie* t, EvalNodeArena& arena
+    int i, int n, int length, IndexedTrie* t, EvalNodeArena& arena
 ) {
   if (t->IsWord()) {
     AddWord(choices_, used_ordered_, t->WordId(), length);

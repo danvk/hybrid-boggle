@@ -36,6 +36,20 @@ size_t Trie::NumNodes() {
 }
 
 // static
+bool IndexedTrie::ReverseLookup(
+    const IndexedTrie* base, const IndexedTrie* child, string* out
+) {
+  if (base == child) return true;
+  for (int i = 0; i < kNumLetters; i++) {
+    if (base->StartsWord(i) && ReverseLookup(base->Descend(i), child, out)) {
+      *out = string(1, 'a' + i) + *out;
+      return true;
+    }
+  }
+  return false;
+}
+
+// static
 bool Trie::ReverseLookup(const Trie* base, const Trie* child, string* out) {
   if (base == child) return true;
   for (int i = 0; i < kNumLetters; i++) {
@@ -86,13 +100,20 @@ Trie* Trie::CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip) {
         // q.push(make_tuple(nullptr, compact_node, num_children++));
       }
     }
-    compact_node->SetWordId(node->WordId());
+    // compact_node->SetWordId(node->WordId());
     if (node->IsWord()) {
       compact_node->SetIsWord();
     }
   }
 
   return compact_root;
+}
+
+// static
+string IndexedTrie::ReverseLookup(const IndexedTrie* base, const IndexedTrie* child) {
+  string out;
+  ReverseLookup(base, child, &out);
+  return out;
 }
 
 // static

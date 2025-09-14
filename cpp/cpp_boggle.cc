@@ -66,20 +66,36 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("is_word", &Trie::IsWord)
       .def("mark", py::overload_cast<>(&Trie::Mark))
       .def("set_mark", py::overload_cast<uintptr_t>(&Trie::Mark))
-      // Possible that these should be ::reference_internal instead. See
-      // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
-      // .def("add_word", &Trie::AddWord, py::return_value_policy::reference)
       .def("find_word", &Trie::FindWord, py::return_value_policy::reference)
       .def("size", &Trie::Size)
       .def("num_nodes", &Trie::NumNodes)
       .def("reset_marks", &Trie::ResetMarks)
-      .def("set_all_marks", &Trie::SetAllMarks)
+      .def("set_all_marks", &Trie::SetAllMarks);
+
+  py::class_<IndexedTrie>(m, "IndexedTrie")
+      .def(py::init())
+      .def("starts_word", &IndexedTrie::StartsWord)
+      .def("descend", &IndexedTrie::Descend, py::return_value_policy::reference)
+      .def("is_word", &IndexedTrie::IsWord)
+      .def("find_word", &IndexedTrie::FindWord, py::return_value_policy::reference)
+      .def("size", &IndexedTrie::Size)
+      .def("num_nodes", &IndexedTrie::NumNodes)
+      .def("mark", py::overload_cast<>(&IndexedTrie::Mark))
+      .def("set_mark", py::overload_cast<uintptr_t>(&IndexedTrie::Mark))
       .def_static(
           "reverse_lookup",
-          py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup)
+          py::overload_cast<const IndexedTrie *, const IndexedTrie *>(
+              &IndexedTrie::ReverseLookup
+          )
       )
-      .def_static("create_from_file", &Trie::CreateFromFile)
-      .def_static("create_from_wordlist", &Trie::CreateFromWordlist);
+      .def_static("create_from_file", &IndexedTrie::CreateFromFile)
+      .def_static("create_from_wordlist", &IndexedTrie::CreateFromWordlist);
+
+  py::class_<TrieHolder>(m, "TrieHolder")
+      .def(py::init())
+      .def("get_trie", &TrieHolder::GetTrie, py::return_value_policy::reference)
+      .def_static("create_from_file", &TrieHolder::CreateFromFile)
+      .def_static("create_from_wordlist", &TrieHolder::CreateFromWordlist);
 
   declare_boggler<2, 2>(m, "Boggler22");
   declare_boggler<2, 3>(m, "Boggler23");
