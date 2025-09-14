@@ -35,6 +35,22 @@ size_t Trie::NumNodes() {
   return count;
 }
 
+size_t IndexedTrie::Size() {
+  size_t size = 0;
+  if (IsWord()) size++;
+  for (int i = 0; i < kNumLetters; i++) {
+    if (StartsWord(i)) size += Descend(i)->Size();
+  }
+  return size;
+}
+
+size_t IndexedTrie::NumNodes() {
+  int count = 1;
+  for (int i = 0; i < kNumLetters; i++)
+    if (StartsWord(i)) count += Descend(i)->NumNodes();
+  return count;
+}
+
 // static
 bool IndexedTrie::ReverseLookup(
     const IndexedTrie* base, const IndexedTrie* child, string* out
@@ -138,6 +154,16 @@ void IndexedTrie::SetAllMarks(unsigned mark) {
 }
 
 Trie* Trie::FindWord(const char* wd) {
+  if (!wd) return NULL;
+  if (!*wd) {
+    return IsWord() ? this : NULL;
+  }
+  int c = idx(*wd);
+  if (!StartsWord(c)) return NULL;
+  return Descend(c)->FindWord(wd + 1);
+}
+
+IndexedTrie* IndexedTrie::FindWord(const char* wd) {
   if (!wd) return NULL;
   if (!*wd) {
     return IsWord() ? this : NULL;

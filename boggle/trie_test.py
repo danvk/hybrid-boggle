@@ -1,4 +1,4 @@
-from cpp_boggle import Trie
+from cpp_boggle import IndexedTrie
 
 from boggle.trie import bogglify_word
 
@@ -9,7 +9,7 @@ def asc(char: str):
 
 
 def test_trie():
-    t = Trie.create_from_wordlist(
+    t = IndexedTrie.create_from_wordlist(
         [
             "agriculture",
             "culture",
@@ -45,7 +45,7 @@ def test_trie():
 
     child = t.find_word("agriculture")
     assert child is not None
-    assert Trie.reverse_lookup(t, child) == "agriculture"
+    assert IndexedTrie.reverse_lookup(t, child) == "agriculture"
 
 
 def test_bogglify_word():
@@ -57,7 +57,7 @@ def test_bogglify_word():
 
 
 def test_load_file():
-    t = Trie.create_from_file("testdata/boggle-words-4.txt")
+    t = IndexedTrie.create_from_file("testdata/boggle-words-4.txt")
     assert not t.is_word()
     print(f"{t.size()=}")
     print(f"{t.num_nodes()=}")
