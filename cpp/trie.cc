@@ -100,7 +100,7 @@ Trie* Trie::CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip) {
     auto compact_node = new (*tip) Trie;
     *tip += size;
     if (parent && child_index == 0) {  // Record the first child offset when it's added
-      parent->children_ = compact_node;
+      parent->children_ = compact_node - parent;
     }
     if (!parent) {
       compact_root = compact_node;
@@ -283,6 +283,7 @@ int IndexedTrie::BytesNeeded() const {
   cout << "malloced " << (uintptr_t)buf << endl;
   auto base = buf;
   bytes_allocated = 0;
+  bzero(buf, bytes_allocated);
 
   auto compact_trie = Trie::CopyFromIndexedTrieBFS(t, &buf);
   cout << "allocated " << bytes_allocated << " bytes; sizeof(Trie) = " << sizeof(Trie)

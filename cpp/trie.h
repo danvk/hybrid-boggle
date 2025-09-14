@@ -89,7 +89,8 @@ class Trie {
     auto index = std::popcount(child_indices_ & ((1 << i) - 1));
     // return children_[index];
     // return children_[i];
-    return children_ + index;
+    Trie* base = (Trie*)this + children_;
+    return base + index;
     // auto child = (char*)this + offset;
     // return (Trie*)child;
   }
@@ -137,7 +138,7 @@ class Trie {
   //  private:
   uint32_t child_indices_;
   uint32_t mark_;
-  Trie* children_;
+  uint32_t children_;
 };
 
 /** Wrapper around Trie to manage the underlying buffer. */
