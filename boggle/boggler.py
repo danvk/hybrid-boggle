@@ -83,16 +83,15 @@ class PyBoggler:
 
         self._used[i] = False
 
-    def find_words(self, lets: str, multiboggle) -> list[list[int]]:
+    def find_words(self, t: PyTrie, lets: str, multiboggle) -> list[list[int]]:
         """multiboggle is either False, "raw" or "dedupe"."""
         self._seq = []
         self._found_words = set()
         self.set_board(lets)
-        self._runs = self._trie.mark() + 1
-        self._trie.set_mark(self._runs)
+        self._runs = t.mark() + 1
+        t.set_mark(self._runs)
         self._score = 0
         self._used = [False] * 16
-        t = self._trie
         out = []
         for i in range(0, self._n):
             c = self._cells[i]

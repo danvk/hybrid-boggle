@@ -10,8 +10,13 @@ from boggle.trie import make_py_trie
 
 
 @functools.cache
-def get_py_trie():
+def get_py_trie_holder():
     return make_py_trie("wordlists/enable2k.txt")
+
+
+def get_py_trie():
+    th = get_py_trie_holder()
+    return th.get_trie()
 
 
 @functools.cache
@@ -25,12 +30,12 @@ def get_indexed_cpp_trie():
 
 
 PARAMS = [
-    (get_py_trie, PyBoggler),
+    (get_py_trie_holder, PyBoggler),
     (get_cpp_trie, cpp_boggler),
 ]
 
 INDEXED_PARAMS = [
-    (get_py_trie, get_py_trie, PyBoggler),
+    (get_py_trie, get_py_trie_holder, PyBoggler),
     (get_indexed_cpp_trie, get_cpp_trie, cpp_boggler),
 ]
 
@@ -178,7 +183,7 @@ def test_multiboggle_score(get_trie, get_trie_holder, Boggler):
     assert PyBoggler.multiboggle_score(b, t, "ee.bf.ee.") == 6
     # assert b.score("ee.bf.ee.") == 3
 
-    b = Boggler(t, (4, 4))
+    b = Boggler(th.get_trie(), (4, 4))
     assert PyBoggler.multiboggle_score(b, t, "eeesrvrreeesrsrs") == 13253
     assert b.score("eeesrvrreeesrsrs") == 189
 
