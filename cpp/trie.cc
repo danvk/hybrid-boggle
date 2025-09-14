@@ -87,6 +87,7 @@ Trie* Trie::CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip) {
   queue<tuple<const IndexedTrie*, Trie*, int>> q;
   q.push({&root, nullptr, -1});
   Trie* compact_root = nullptr;
+  uint32_t max_offset = 0;
   while (!q.empty()) {
     // iterate layer by layer
     auto [node, parent, child_index] = q.front();
@@ -100,7 +101,10 @@ Trie* Trie::CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip) {
     auto compact_node = new (*tip) Trie;
     *tip += size;
     if (parent && child_index == 0) {  // Record the first child offset when it's added
-      parent->children_ = compact_node - parent;
+      auto delta = compact_node - parent;
+      assert(delta < 65536);
+      parent->children_ = delta;
+      max_offset = max(max_offset, (uint32_t)delta);
     }
     if (!parent) {
       compact_root = compact_node;
@@ -122,6 +126,7 @@ Trie* Trie::CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip) {
     }
   }
 
+  cout << "max jump to children: " << max_offset << endl;
   return compact_root;
 }
 
