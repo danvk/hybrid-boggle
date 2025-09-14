@@ -26,7 +26,8 @@ class PyBoggler:
         self.words = None
         self._neighbors = NEIGHBORS[dims]
         self.lookup_table = None
-        assert not self._trie.is_word()
+        if self._trie:
+            assert not self._trie.is_word()
 
     def set_board(self, bd: str):
         assert len(bd) == self._n
@@ -130,8 +131,8 @@ class PyBoggler:
         self._seq.pop()
         self._used[i] = False
 
-    def multiboggle_score(self, lets: str) -> int:
+    def multiboggle_score(self, t: PyTrie, lets: str) -> int:
         return sum(
             SCORES[sum(2 if lets[cell] == "q" else 1 for cell in path)]
-            for path in self.find_words(lets, True)
+            for path in self.find_words(t, lets, True)
         )
