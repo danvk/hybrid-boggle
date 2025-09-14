@@ -1,4 +1,4 @@
-from cpp_boggle import IndexedTrie
+from cpp_boggle import IndexedTrie, TrieHolder
 
 from boggle.trie import bogglify_word
 
@@ -58,6 +58,18 @@ def test_bogglify_word():
 
 def test_load_file():
     t = IndexedTrie.create_from_file("testdata/boggle-words-4.txt")
+    assert not t.is_word()
+    print(f"{t.size()=}")
+    print(f"{t.num_nodes()=}")
+
+    assert t.find_word("wood") is not None
+    assert t.find_word("woxd") is None
+
+
+def test_compact_trie():
+    th = TrieHolder.create_from_file("testdata/boggle-words-4.txt")
+    t = th.get_trie()
+
     assert not t.is_word()
     print(f"{t.size()=}")
     print(f"{t.num_nodes()=}")

@@ -143,7 +143,9 @@ class Trie {
 /** Wrapper around Trie to manage the underlying buffer. */
 class TrieHolder {
  public:
-  ~TrieHolder() { free(buf_); }
+  ~TrieHolder() {  // free(buf_);
+    cout << (uintptr_t)buf_ << endl;
+  }
 
   Trie* GetTrie() { return t_; }
 
