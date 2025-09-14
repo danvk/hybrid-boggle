@@ -144,10 +144,13 @@ string Trie::ReverseLookup(const Trie* base, const Trie* child) {
   return out;
 }
 
-void Trie::SetAllMarks(unsigned mark) {
+void Trie::SetAllMarks(uint16_t mark) {
   if (IsWord()) Mark(mark);
-  for (int i = 0; i < kNumLetters; i++) {
-    if (StartsWord(i)) Descend(i)->SetAllMarks(mark);
+  int num_children = std::popcount(child_indices_ & ((1u << 31) - 1));
+
+  Trie* child_base = this + children_;
+  for (int i = 0; i < num_children; i++) {
+    (child_base + i)->SetAllMarks(mark);
   }
 }
 

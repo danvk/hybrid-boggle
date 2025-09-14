@@ -109,7 +109,7 @@ class Trie {
   // Some slower methods that operate on the entire Trie (not just a node).
   size_t Size();
   size_t NumNodes();
-  void SetAllMarks(unsigned mark);
+  void SetAllMarks(uint16_t mark);
   void ResetMarks();
   Trie* FindWord(const char* wd);
 
