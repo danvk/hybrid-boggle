@@ -280,6 +280,7 @@ int IndexedTrie::BytesNeeded() const {
   auto bytes_needed = t.BytesNeeded();
   cout << "bytes_needed=" << bytes_needed << endl;
   auto buf = (char*)malloc(bytes_needed);
+  cout << "malloced " << (uintptr_t)buf << endl;
   auto base = buf;
   bytes_allocated = 0;
 
@@ -291,7 +292,7 @@ int IndexedTrie::BytesNeeded() const {
   cout << (uintptr_t)(base + bytes_needed) << endl;
   assert(buf == base + bytes_needed);
 
-  return new TrieHolder(compact_trie, buf);
+  return new TrieHolder(compact_trie, base);
 }
 
 /* static */ unique_ptr<TrieHolder> TrieHolder::CreateFromFile(const char* filename) {

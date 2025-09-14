@@ -143,8 +143,9 @@ class Trie {
 /** Wrapper around Trie to manage the underlying buffer. */
 class TrieHolder {
  public:
-  ~TrieHolder() {  // free(buf_);
-    cout << (uintptr_t)buf_ << endl;
+  ~TrieHolder() {
+    cout << "freeing:" << (uintptr_t)buf_ << endl;
+    free(buf_);
   }
 
   Trie* GetTrie() { return t_; }
@@ -156,7 +157,10 @@ class TrieHolder {
   static unique_ptr<TrieHolder> CreateFromWordlist(const vector<string>& words);
 
  private:
-  TrieHolder(Trie* t, char* buf) : t_(t), buf_(buf) {}
+  TrieHolder(Trie* t, char* buf) : t_(t), buf_(buf) {
+    cout << "buf_: " << (uintptr_t)buf_ << endl;
+  }
+
   Trie* t_;
   char* buf_;
 };

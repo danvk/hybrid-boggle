@@ -71,8 +71,8 @@ def test_compact_trie():
     t = th.get_trie()
 
     assert not t.is_word()
-    print(f"{t.size()=}")
-    print(f"{t.num_nodes()=}")
+    # print(f"{t.size()=}")
+    # print(f"{t.num_nodes()=}")
 
     assert t.find_word("wood") is not None
     assert t.find_word("woxd") is None
