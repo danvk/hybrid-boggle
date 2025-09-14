@@ -83,6 +83,14 @@ class PyTrie:
         return trie
 
 
+class PyTrieHolder:
+    def __init__(self, t: PyTrie):
+        self.t_ = t
+
+    def get_trie(self):
+        return self.t_
+
+
 def reverse_lookup(root: PyTrie, node: PyTrie):
     if root is node:
         return ""
@@ -137,4 +145,4 @@ def make_py_trie(dict_input: str):
         if word is not None:
             t.add_word(word).word_id = next_id
             next_id += 1
-    return t
+    return PyTrieHolder(t)
