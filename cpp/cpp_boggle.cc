@@ -19,7 +19,7 @@ template <int M, int N>
 void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
   using BB = BucketBoggler<M, N>;
   py::class_<BB>(m, pyclass_name.c_str())
-      .def(py::init<Trie *>())
+      .def(py::init<IndexedTrie *>())
       .def("parse_board", &BB::ParseBoard)
       .def("upper_bound", &BB::UpperBound)
       .def("as_string", &BB::as_string)
@@ -30,7 +30,7 @@ void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
 template <typename TB>
 void declare_tree_builder(py::module &m, const string &pyclass_name) {
   py::class_<TB>(m, pyclass_name.c_str())
-      .def(py::init<Trie *>())
+      .def(py::init<IndexedTrie *>())
       .def(
           "build_tree",
           &TB::BuildTree,
@@ -92,7 +92,6 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_static("create_from_wordlist", &IndexedTrie::CreateFromWordlist);
 
   py::class_<TrieHolder>(m, "TrieHolder")
-      .def(py::init())
       .def("get_trie", &TrieHolder::GetTrie, py::return_value_policy::reference)
       .def_static("create_from_file", &TrieHolder::CreateFromFile)
       .def_static("create_from_wordlist", &TrieHolder::CreateFromWordlist);

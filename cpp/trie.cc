@@ -130,6 +130,13 @@ void Trie::SetAllMarks(unsigned mark) {
   }
 }
 
+void IndexedTrie::SetAllMarks(unsigned mark) {
+  if (IsWord()) Mark(mark);
+  for (int i = 0; i < kNumLetters; i++) {
+    if (StartsWord(i)) Descend(i)->SetAllMarks(mark);
+  }
+}
+
 Trie* Trie::FindWord(const char* wd) {
   if (!wd) return NULL;
   if (!*wd) {

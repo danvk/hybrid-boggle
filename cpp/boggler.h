@@ -28,12 +28,13 @@ class Boggler {
   unsigned int Cell(int x, int y) const;
 
   // This is used by the web Boggle UI
-  vector<vector<int>> FindWords(const string& lets, bool multiboggle);
+  // You can construct a Boggler with a null Trie* if this is all you need.
+  vector<vector<int>> FindWords(IndexedTrie* t, const string& lets, bool multiboggle);
 
  private:
   void DoDFS(unsigned int i, unsigned int len, Trie* t);
   void FindWordsDFS(
-      unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
+      unsigned int i, IndexedTrie* t, bool multiboggle, vector<vector<int>>& out
   );
   unsigned int InternalScore();
   bool ParseBoard(const char* bd);
@@ -333,7 +334,9 @@ void Boggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
 #undef SUFFIX
 
 template <int M, int N>
-vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggle) {
+/* static */ vector<vector<int>> Boggler<M, N>::FindWords(
+    IndexedTrie* dict, const string& lets, bool multiboggle
+) {
   found_words_.clear();
   seq_.clear();
   seq_.reserve(M * N);
@@ -343,14 +346,14 @@ vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggl
     return out;
   }
 
-  runs_ = dict_->Mark() + 1;
-  dict_->Mark(runs_);
+  runs_ = dict->Mark() + 1;
+  dict->Mark(runs_);
   used_ = 0;
   score_ = 0;
   for (int i = 0; i < M * N; i++) {
     int c = bd_[i];
-    if (c != -1 && dict_->StartsWord(c)) {
-      FindWordsDFS(i, dict_->Descend(c), multiboggle, out);
+    if (c != -1 && dict->StartsWord(c)) {
+      FindWordsDFS(i, dict->Descend(c), multiboggle, out);
     }
   }
   return out;
@@ -358,8 +361,8 @@ vector<vector<int>> Boggler<M, N>::FindWords(const string& lets, bool multiboggl
 
 // This could be specialized, but it's not as performance-sensitive as DoDFS()
 template <int M, int N>
-void Boggler<M, N>::FindWordsDFS(
-    unsigned int i, Trie* t, bool multiboggle, vector<vector<int>>& out
+/* static */ void Boggler<M, N>::FindWordsDFS(
+    unsigned int i, IndexedTrie* t, bool multiboggle, vector<vector<int>>& out
 ) {
   used_ ^= (1 << i);
   seq_.push_back(i);
@@ -380,12 +383,11 @@ void Boggler<M, N>::FindWordsDFS(
 
   auto& neighbors = BoardClassBoggler<M, N>::NEIGHBORS[i];
   auto n_neighbors = neighbors[0];
-  auto child_indices = t->child_indices_;
   for (int j = 1; j <= n_neighbors; j++) {
     auto idx = neighbors[j];
     if ((used_ & (1 << idx)) == 0) {
       int cc = bd_[idx];
-      if (cc != -1 && (1 << i) & child_indices) {
+      if (cc != -1 && t->StartsWord(cc)) {
         FindWordsDFS(idx, t->Descend(cc), multiboggle, out);
       }
     }

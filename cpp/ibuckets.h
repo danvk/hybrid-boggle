@@ -45,9 +45,9 @@ class BucketBoggler : public BoardClassBoggler<M, N> {
  private:
   uintptr_t runs_;
   ScoreDetails details_;
-  unsigned int DoAllDescents(unsigned int idx, unsigned int len, Trie* t);
-  unsigned int DoDFS(unsigned int i, unsigned int len, Trie* t);
-  unsigned int CountWord(unsigned int i, unsigned int len, Trie* t);
+  unsigned int DoAllDescents(unsigned int idx, unsigned int len, IndexedTrie* t);
+  unsigned int DoDFS(unsigned int i, unsigned int len, IndexedTrie* t);
+  unsigned int CountWord(unsigned int i, unsigned int len, IndexedTrie* t);
 };
 
 template <int M, int N>
@@ -76,7 +76,7 @@ unsigned int BucketBoggler<M, N>::UpperBound(unsigned int bailout_score) {
 
 template <int M, int N>
 inline unsigned int BucketBoggler<M, N>::DoAllDescents(
-    unsigned int idx, unsigned int len, Trie* t
+    unsigned int idx, unsigned int len, IndexedTrie* t
 ) {
   int max_score = 0;
   for (int j = 0; bd_[idx][j]; j++) {
@@ -90,13 +90,17 @@ inline unsigned int BucketBoggler<M, N>::DoAllDescents(
 }
 
 template <int M, int N>
-unsigned int BucketBoggler<M, N>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<M, N>::DoDFS(
+    unsigned int i, unsigned int len, IndexedTrie* t
+) {
   fprintf(stderr, "Not implemented for %dx%d\n", M, N);
   exit(1);
 }
 
 template <int M, int N>
-unsigned int BucketBoggler<M, N>::CountWord(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<M, N>::CountWord(
+    unsigned int i, unsigned int len, IndexedTrie* t
+) {
   unsigned int score = 0;
   if (t->IsWord()) {
     unsigned int word_score = kWordScores[len];
@@ -107,7 +111,7 @@ unsigned int BucketBoggler<M, N>::CountWord(unsigned int i, unsigned int len, Tr
           word_score,
           i / 3,
           i % 3,
-          Trie::ReverseLookup(dict_, t).c_str()
+          IndexedTrie::ReverseLookup(dict_, t).c_str()
       );
 
     if (t->Mark() != runs_) {
@@ -148,7 +152,7 @@ for (w, h), neighbors in NEIGHBORS.items():
     print(f"""
 // {w}x{h}
 template<>
-unsigned int BucketBoggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, Trie* t) {{
+unsigned int BucketBoggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {{
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {{""")
@@ -165,7 +169,7 @@ unsigned int BucketBoggler<{w}, {h}>::DoDFS(unsigned int i, unsigned int len, Tr
 
 // 2x2
 template<>
-unsigned int BucketBoggler<2, 2>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<2, 2>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {
@@ -181,7 +185,7 @@ unsigned int BucketBoggler<2, 2>::DoDFS(unsigned int i, unsigned int len, Trie* 
 
 // 2x3
 template<>
-unsigned int BucketBoggler<2, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<2, 3>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {
@@ -199,7 +203,7 @@ unsigned int BucketBoggler<2, 3>::DoDFS(unsigned int i, unsigned int len, Trie* 
 
 // 3x3
 template<>
-unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {
@@ -220,7 +224,7 @@ unsigned int BucketBoggler<3, 3>::DoDFS(unsigned int i, unsigned int len, Trie* 
 
 // 3x4
 template<>
-unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {
@@ -244,7 +248,7 @@ unsigned int BucketBoggler<3, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
 
 // 4x4
 template<>
-unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {
@@ -272,7 +276,7 @@ unsigned int BucketBoggler<4, 4>::DoDFS(unsigned int i, unsigned int len, Trie* 
 
 // 4x5
 template<>
-unsigned int BucketBoggler<4, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<4, 5>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {
@@ -304,7 +308,7 @@ unsigned int BucketBoggler<4, 5>::DoDFS(unsigned int i, unsigned int len, Trie* 
 
 // 5x5
 template<>
-unsigned int BucketBoggler<5, 5>::DoDFS(unsigned int i, unsigned int len, Trie* t) {
+unsigned int BucketBoggler<5, 5>::DoDFS(unsigned int i, unsigned int len, IndexedTrie* t) {
   unsigned int score = 0;
   used_ ^= (1 << i);
   switch(i) {
