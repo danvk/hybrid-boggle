@@ -1,7 +1,7 @@
 import functools
 
 import pytest
-from cpp_boggle import Trie
+from cpp_boggle import IndexedTrie, TrieHolder
 from inline_snapshot import snapshot
 
 from boggle.boggler import SCORES, PyBoggler
@@ -16,7 +16,12 @@ def get_py_trie():
 
 @functools.cache
 def get_cpp_trie():
-    return Trie.create_from_file("wordlists/enable2k.txt")
+    return TrieHolder.create_from_file("wordlists/enable2k.txt")
+
+
+@functools.cache
+def get_indexed_cpp_trie():
+    return IndexedTrie.create_from_file("wordlists/enable2k.txt")
 
 
 PARAMS = [
@@ -24,6 +29,10 @@ PARAMS = [
     (get_cpp_trie, cpp_boggler),
 ]
 
+INDEXED_PARAMS = [
+    (get_py_trie, get_py_trie, PyBoggler),
+    (get_indexed_cpp_trie, get_cpp_trie, cpp_boggler),
+]
 
 # These should all match performance-boggle's solve binary
 
@@ -31,7 +40,7 @@ PARAMS = [
 @pytest.mark.parametrize("get_trie, Boggler", PARAMS)
 def test33(get_trie, Boggler):
     t = get_trie()
-    b = Boggler(t, (3, 3))
+    b = Boggler(t.get_trie(), (3, 3))
     assert b.score("abcdefghi") == 20
     assert b.score("streaedlp") == 545
 
@@ -40,7 +49,7 @@ def test33(get_trie, Boggler):
 @pytest.mark.parametrize("get_trie, Boggler", PARAMS)
 def test34(get_trie, Boggler):
     t = get_trie()
-    b = Boggler(t, (3, 4))
+    b = Boggler(t.get_trie(), (3, 4))
 
     # A E I
     # B F J
@@ -59,7 +68,7 @@ def test34(get_trie, Boggler):
 @pytest.mark.parametrize("get_trie, Boggler", PARAMS)
 def test44(get_trie, Boggler):
     t = get_trie()
-    b = Boggler(t, (4, 4))
+    b = Boggler(t.get_trie(), (4, 4))
     assert b.score("abcdefghijklmnop") == 18
     assert b.score("perslatgsineters") == 3625
 
@@ -67,16 +76,16 @@ def test44(get_trie, Boggler):
 @pytest.mark.parametrize("get_trie, Boggler", PARAMS)
 def test55(get_trie, Boggler):
     t = get_trie()
-    b = Boggler(t, (5, 5))
+    b = Boggler(t.get_trie(), (5, 5))
     assert b.score("sepesdsracietilmanesligdr") == 10406
     assert b.score("ititinstietbulseutiarsaba") == 810
 
 
-@pytest.mark.parametrize("get_trie, Boggler", PARAMS)
-def test_find_words(get_trie, Boggler):
+@pytest.mark.parametrize("get_trie, _, Boggler", INDEXED_PARAMS)
+def test_find_words(get_trie, _, Boggler):
     t = get_trie()
-    b = Boggler(t, (4, 4))
-    assert (b.find_words("abcdefghijklmnop", False)) == snapshot(
+    b = Boggler(None, (4, 4))
+    assert (b.find_words(t, "abcdefghijklmnop", False)) == snapshot(
         [
             [5, 8, 4],
             [5, 8, 13],
@@ -98,9 +107,9 @@ def test_find_words(get_trie, Boggler):
     )
 
     three_board = "abc.def.gei....."
-    three_uniq = [path for path in b.find_words(three_board, False) if len(path) > 3]
+    three_uniq = [path for path in b.find_words(t, three_board, False) if len(path) > 3]
     words_uniq = ["".join(three_board[i] for i in path) for path in three_uniq]
-    three_multi = [path for path in b.find_words(three_board, True) if len(path) > 3]
+    three_multi = [path for path in b.find_words(t, three_board, True) if len(path) > 3]
     words_multi = ["".join(three_board[i] for i in path) for path in three_multi]
     assert three_uniq == snapshot(
         [
@@ -150,31 +159,35 @@ def test_find_words(get_trie, Boggler):
 
     assert set(words_multi) == set(words_uniq)
 
-    b3 = Boggler(t, (3, 3))
+    b3 = Boggler(None, (3, 3))
     three_board = "abcdefgei"
-    paths_multi = [path for path in b3.find_words(three_board, True) if len(path) > 3]
+    paths_multi = [
+        path for path in b3.find_words(t, three_board, True) if len(path) > 3
+    ]
     words_multi3 = ["".join(three_board[i] for i in path) for path in paths_multi]
     assert sorted(words_multi) == sorted(words_multi3)
 
 
-@pytest.mark.parametrize("get_trie, Boggler", PARAMS)
-def test_multiboggle_score(get_trie, Boggler):
-    t = get_trie()
+@pytest.mark.parametrize("get_trie, get_trie_holder, Boggler", INDEXED_PARAMS)
+def test_multiboggle_score(get_trie, get_trie_holder, Boggler):
+    th = get_trie_holder()
     # {bee, fee, beef} * 2
-    b = Boggler(t, (3, 3))
-    assert PyBoggler.multiboggle_score(b, "ee.bf.ee.") == 6
+    b = Boggler(th.get_trie(), (3, 3))
+
+    t = get_trie()
+    assert PyBoggler.multiboggle_score(b, t, "ee.bf.ee.") == 6
     # assert b.score("ee.bf.ee.") == 3
 
     b = Boggler(t, (4, 4))
-    assert PyBoggler.multiboggle_score(b, "eeesrvrreeesrsrs") == 13253
+    assert PyBoggler.multiboggle_score(b, t, "eeesrvrreeesrsrs") == 13253
     assert b.score("eeesrvrreeesrsrs") == 189
 
     q_bd = "besbrrneeeehbteq"
-    assert PyBoggler.multiboggle_score(b, q_bd) == 965
+    assert PyBoggler.multiboggle_score(b, t, q_bd) == 965
 
     q_bd_score = b.score(q_bd)
     assert q_bd_score == 201
-    words = b.find_words(q_bd, False)
+    words = b.find_words(t, q_bd, False)
     assert (
         sum(
             SCORES[sum(2 if q_bd[cell] == "q" else 1 for cell in path)]

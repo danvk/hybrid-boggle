@@ -12,7 +12,6 @@ https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
 """
 
 import argparse
-import functools
 import json
 import multiprocessing
 import random
