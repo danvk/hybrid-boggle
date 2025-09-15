@@ -2,7 +2,7 @@ import itertools
 import math
 
 import pytest
-from cpp_boggle import Trie
+from cpp_boggle import IndexedTrie
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.boggler import PyBoggler
@@ -27,7 +27,7 @@ from boggle.trie import PyTrie, make_py_trie
 
 @pytest.mark.parametrize(
     "TrieT, TreeBuilderT",
-    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
+    [(PyTrie, OrderlyTreeBuilder), (IndexedTrie, cpp_orderly_tree_builder)],
 )
 def test_build_orderly_tree(TrieT, TreeBuilderT):
     words = [
@@ -58,7 +58,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
 
 OTB_PARAMS = [
     (make_py_trie, OrderlyTreeBuilder),
-    (Trie.create_from_file, cpp_orderly_tree_builder),
+    (IndexedTrie.create_from_file, cpp_orderly_tree_builder),
 ]
 
 
@@ -67,7 +67,7 @@ def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
         trie = make_py_trie(dict_file)
         otb = OrderlyTreeBuilder(trie, dims=dims)
     else:
-        trie = Trie.create_from_file(dict_file)
+        trie = IndexedTrie.create_from_file(dict_file)
         otb = cpp_orderly_tree_builder(trie, dims=dims)
     return trie, otb
 
