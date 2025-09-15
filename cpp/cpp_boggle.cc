@@ -94,6 +94,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
 
   py::class_<TrieHolder>(m, "TrieHolder")
       .def("get_trie", &TrieHolder::GetTrie, py::return_value_policy::reference)
+      .def_static("compact_trie", &TrieHolder::CompactTrie)
       .def_static("create_from_file", &TrieHolder::CreateFromFile)
       .def_static("create_from_wordlist", &TrieHolder::CreateFromWordlist);
 

@@ -17,6 +17,7 @@ from tqdm import tqdm
 from boggle.args import (
     add_standard_args,
     get_trie_and_boggler_from_args,
+    get_trie_boggler_builder_from_args,
 )
 from boggle.board_id import from_board_id, is_canonical_board_id, parse_classes
 from boggle.boggler import PyBoggler
@@ -151,10 +152,7 @@ def get_breaker(args) -> BreakingBundle:
     dims = args.size // 10, args.size % 10
     best_score = args.best_score
 
-    t, boggler = get_trie_and_boggler_from_args(args)
-
-    builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
-    etb = builder(t, dims)
+    th, boggler, etb = get_trie_boggler_builder_from_args(args)
 
     if args.breaker == "hybrid":
         switchover_score = args.switchover_score or 1.7 * best_score
@@ -167,7 +165,6 @@ def get_breaker(args) -> BreakingBundle:
             log_breaker_progress=args.log_breaker_progress,
         )
     elif args.breaker == "ibuckets":
-        etb = (PyBucketBoggler if args.python else cpp_bucket_boggler)(t, dims)
         breaker = IBucketBreaker(
             etb,
             dims,
@@ -177,7 +174,7 @@ def get_breaker(args) -> BreakingBundle:
         )
     else:
         raise ValueError(args.breaker)
-    return BreakingBundle(trie=t, etb=etb, boggler=boggler, breaker=breaker)
+    return BreakingBundle(trie=th, etb=etb, boggler=boggler, breaker=breaker)
 
 
 def main():

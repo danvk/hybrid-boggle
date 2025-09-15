@@ -39,6 +39,9 @@ class EvalNodeArena {
   ChoiceNode* NewChoiceNodeWithCapacity(uint8_t capacity);
 
   SumNode* GetCanonicalNode(int points) {
+    if (points <= 0 || points > NUM_INTERNED) {
+      cout << "xxx" << points << endl;
+    }
     assert(points >= 1 && points <= NUM_INTERNED);
     return canonical_nodes_[points - 1];
   }

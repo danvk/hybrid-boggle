@@ -2,10 +2,16 @@
 
 import argparse
 
-from cpp_boggle import TrieHolder
+from cpp_boggle import IndexedTrie, TrieHolder
 
 from boggle.boggler import PyBoggler
-from boggle.dimensional_bogglers import Bogglers
+from boggle.dimensional_bogglers import (
+    Bogglers,
+    cpp_bucket_boggler,
+    cpp_orderly_tree_builder,
+)
+from boggle.ibuckets import PyBucketBoggler
+from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.trie import make_py_trie
 
 
@@ -60,3 +66,25 @@ def get_trie_and_boggler_from_args(args: argparse.Namespace):
     else:
         boggler = Bogglers[dims](th.get_trie())
     return th, boggler
+
+
+def get_trie_boggler_builder_from_args(args: argparse.Namespace):
+    dims = args.size // 10, args.size % 10
+    is_tree = args.breaker == "hybrid"
+
+    if args.python:
+        th = make_py_trie(args.dictionary)
+        t = it = th.get_trie()
+        boggler = PyBoggler(t, dims)
+        builder_class = OrderlyTreeBuilder if is_tree else PyBucketBoggler
+
+    else:
+        it = IndexedTrie.create_from_file(args.dictionary)
+        assert it
+        th = TrieHolder.compact_trie(it)
+        assert th
+        boggler = Bogglers[dims](th.get_trie())
+        builder_class = cpp_orderly_tree_builder if is_tree else cpp_bucket_boggler
+
+    builder = builder_class(it, dims)
+    return th, boggler, builder
