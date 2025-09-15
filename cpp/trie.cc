@@ -14,9 +14,7 @@ using namespace std;
 
 static inline int idx(char x) { return x - 'a'; }
 
-// Initially, this node is empty
-Trie::Trie() { child_indices_ = children_ = mark_ = 0; }
-
+Trie::Trie() {}
 Trie::~Trie() {}
 
 size_t Trie::Size() {
@@ -291,7 +289,7 @@ int IndexedTrie::BytesNeeded() const {
   cout << "malloced " << (uintptr_t)buf << endl;
   auto base = buf;
   bytes_allocated = 0;
-  bzero(buf, bytes_allocated);
+  bzero(buf, bytes_needed);
 
   auto compact_trie = Trie::CopyFromIndexedTrieBFS(t, &buf);
   cout << "allocated " << bytes_allocated << " bytes; sizeof(Trie) = " << sizeof(Trie)
