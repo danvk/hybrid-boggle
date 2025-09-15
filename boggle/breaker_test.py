@@ -1,5 +1,5 @@
 import pytest
-from cpp_boggle import Trie
+from cpp_boggle import IndexedTrie
 from inline_snapshot import snapshot
 
 from boggle.boggler import PyBoggler
@@ -11,10 +11,10 @@ from boggle.trie import make_py_trie
 
 def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
     if is_python:
-        trie = make_py_trie(dict_file)
+        trie = make_py_trie(dict_file).get_trie()
         otb = OrderlyTreeBuilder(trie, dims=dims)
     else:
-        trie = Trie.create_from_file(dict_file)
+        trie = IndexedTrie.create_from_file(dict_file)
         otb = cpp_orderly_tree_builder(trie, dims=dims)
     return trie, otb
 
