@@ -2,7 +2,7 @@ import itertools
 import math
 
 import pytest
-from cpp_boggle import IndexedTrie
+from cpp_boggle import IndexedTrie, TrieHolder
 from inline_snapshot import external, outsource, snapshot
 
 from boggle.boggler import PyBoggler
@@ -56,15 +56,20 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     )
 
 
+def get_py_trie(dict_file: str):
+    th = make_py_trie(dict_file)
+    return th.get_trie()
+
+
 OTB_PARAMS = [
-    (make_py_trie, OrderlyTreeBuilder),
+    (get_py_trie, OrderlyTreeBuilder),
     (IndexedTrie.create_from_file, cpp_orderly_tree_builder),
 ]
 
 
 def get_trie_otb(dict_file: str, dims: tuple[int, int], is_python: bool):
     if is_python:
-        trie = make_py_trie(dict_file)
+        trie = make_py_trie(dict_file).get_trie()
         otb = OrderlyTreeBuilder(trie, dims=dims)
     else:
         trie = IndexedTrie.create_from_file(dict_file)
@@ -286,7 +291,12 @@ def test_force_invariants22(is_python):
 
     # Since the board has no repeat letters, the ibuckets bound, multiboggle score,
     # and true score are all identical to the fully-forced bound.
-    boggler = (PyBoggler if is_python else cpp_boggler)(trie, dims)
+    ctrie = (
+        trie
+        if is_python
+        else TrieHolder.create_from_file("testdata/boggle-words-4.txt").get_trie()
+    )
+    boggler = (PyBoggler if is_python else cpp_boggler)(ctrie, dims)
     ibb = PyBucketBoggler(trie, dims)
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         i0, i1, i2, i3 = idx
@@ -303,7 +313,7 @@ def test_force_invariants22(is_python):
 
         t = choices_to_trees[4][(0, i0), (1, i1), (2, i2), (3, i3)]
         assert score == (t.bound if t else 0)
-        assert score == PyBoggler.multiboggle_score(boggler, bd.replace(" ", ""))
+        assert score == PyBoggler.multiboggle_score(boggler, trie, bd.replace(" ", ""))
         assert score == boggler.score(bd.replace(" ", ""))
         # print(t.to_string(etb))
 
@@ -331,10 +341,10 @@ def test_build_invariants44():
 
     # the scores converge on the multiboggle score once you force all the cells
     best_score = 0
-    boggler = cpp_boggler(trie, (4, 4))
+    boggler = cpp_boggler(None, (4, 4))
     for idx in itertools.product(*(range(len(cell)) for cell in cells)):
         bd = "".join(cells[i][letter] for i, letter in enumerate(idx))
-        score = PyBoggler.multiboggle_score(boggler, bd)
+        score = PyBoggler.multiboggle_score(boggler, trie, bd)
         assert score == scores[idx]
         best_score = max(score, best_score)
 
@@ -397,13 +407,13 @@ def test_force_invariants44():
 
     # These scores should all match the multiboggle score
     indices = [base_cells[i].index(c) for i, c in enumerate(cells)]
-    boggler = cpp_boggler(trie, dims)
+    boggler = cpp_boggler(None, dims)
     for seq, root_score in forced_scores.items():
         for cell in unforced_cells:
             indices[cell] = seq[cell]
             cells[cell] = base_cells[cell][seq[cell]]
         bd = "".join(cells)
-        multiboggle_score = PyBoggler.multiboggle_score(boggler, bd)
+        multiboggle_score = PyBoggler.multiboggle_score(boggler, trie, bd)
         forced_score = t.score_with_forces(indices)
         assert forced_score == root_score
         assert multiboggle_score == root_score
