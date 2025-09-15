@@ -15,7 +15,7 @@ using namespace std;
 static inline int idx(char x) { return x - 'a'; }
 
 // Initially, this node is empty
-Trie::Trie() { mark_ = 0; }
+Trie::Trie() { child_indices_ = children_ = mark_ = 0; }
 
 Trie::~Trie() {}
 
