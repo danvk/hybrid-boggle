@@ -254,6 +254,7 @@ unique_ptr<IndexedTrie> IndexedTrie::CreateFromFileStr(const string& filename) {
 IndexedTrie::IndexedTrie() {
   for (int i = 0; i < kNumLetters; i++) children_[i] = NULL;
   is_word_ = false;
+  mark_ = 0;
 }
 
 IndexedTrie* IndexedTrie::AddWord(const char* wd) {
