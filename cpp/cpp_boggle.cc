@@ -78,6 +78,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("descend", &IndexedTrie::Descend, py::return_value_policy::reference)
       .def("is_word", &IndexedTrie::IsWord)
       .def("find_word", &IndexedTrie::FindWord, py::return_value_policy::reference)
+      .def("add_word", &IndexedTrie::AddWord, py::return_value_policy::reference)
       .def("size", &IndexedTrie::Size)
       .def("num_nodes", &IndexedTrie::NumNodes)
       .def("mark", py::overload_cast<>(&IndexedTrie::Mark))
