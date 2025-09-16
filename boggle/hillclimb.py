@@ -125,11 +125,11 @@ def hillclimb(task: int):
 
     me = get_process_id()
     seed = hillclimb.random_seed + task
-    output_file = f"hillclimb-{me}.txt"
+    # output_file = f"hillclimb-{me}.txt"
 
     # clear remains from a previous run
-    with open(output_file, "a"):
-        pass
+    # with open(output_file, "a"):
+    #     pass
 
     lines = []
 
@@ -137,8 +137,8 @@ def hillclimb(task: int):
         if not args.quiet:
             print(line)
         lines.append(line)
-        with open(output_file, "a") as out:
-            out.write(line + "\n")
+        # with open(output_file, "a") as out:
+        #     out.write(line + "\n")
 
     random.seed(seed)
     print_and_write(f"#{me} starting hillclimb with random seed = {seed}")
@@ -156,14 +156,19 @@ def hillclimb(task: int):
         for _ in range(args.pool_size)
     ]
 
+    use_cache = False
     cache: dict[str, int] = {}
 
     num_eval = 0
+    num_hits = 0
 
     def get_score(bd: str):
-        prev = cache.get(bd)
-        if prev is not None:
-            return prev
+        if use_cache:
+            prev = cache.get(bd)
+            if prev is not None:
+                nonlocal num_hits
+                num_hits += 1
+                return prev
 
         # This is a convenient place to make adjustments to the score, e.g.
         # to require a "q" on the board or to exclude high-scoring boards to test
@@ -173,7 +178,8 @@ def hillclimb(task: int):
         nonlocal num_eval
         num_eval += 1
         score = boggler.score(bd)
-        cache[bd] = score
+        if use_cache:
+            cache[bd] = score
         # if score > 3512:
         #     score = 1000
         return score
@@ -217,6 +223,7 @@ def hillclimb(task: int):
             stall_count += 1
             if stall_count > max_stall:
                 break
+        use_cache = new_best > 8000
 
     best_score, best_bd = max(scores)
     elapsed_s = time.time() - start_s
@@ -233,6 +240,8 @@ def hillclimb(task: int):
         "progress": lines,
         "num_eval": num_eval,
         "num_discard": num_discard,
+        "num_hits": num_hits,
+        "cache_size": len(cache),
     }
     with open(hillclimb.output_json_file, "a") as out:
         json.dump(json_out, out)
