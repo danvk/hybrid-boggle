@@ -145,7 +145,7 @@ class Trie {
 class TrieHolder {
  public:
   ~TrieHolder() {
-    cout << "freeing:" << (uintptr_t)buf_ << endl;
+    // cout << "freeing:" << (uintptr_t)buf_ << endl;
     free(buf_);
   }
 
@@ -159,7 +159,7 @@ class TrieHolder {
 
  private:
   TrieHolder(Trie* t, char* buf) : t_(t), buf_(buf) {
-    cout << "buf_: " << (uintptr_t)buf_ << endl;
+    // cout << "buf_: " << (uintptr_t)buf_ << endl;
   }
 
   Trie* t_;

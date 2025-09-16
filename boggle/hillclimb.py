@@ -158,6 +158,8 @@ def hillclimb(task: int):
 
     cache: dict[str, int] = {}
 
+    num_eval = 0
+
     def get_score(bd: str):
         prev = cache.get(bd)
         if prev is not None:
@@ -168,6 +170,8 @@ def hillclimb(task: int):
         # whether hill climbing can find other boards in their absence.
         # if "q" not in bd:
         #     return 0
+        nonlocal num_eval
+        num_eval += 1
         score = boggler.score(bd)
         cache[bd] = score
         # if score > 3512:
@@ -180,6 +184,7 @@ def hillclimb(task: int):
     next_size = 7 * args.pool_size
     stall_count = 0
     max_stall = 20
+    num_discard = 0
 
     num_iter = 0
     while True:
@@ -190,6 +195,7 @@ def hillclimb(task: int):
                 generate_variation(random.choice(pool), valid_letters)
             )
             if variant in cache:
+                num_discard += 1
                 continue  # we want novel boards
             ns.add(variant)
         ns = [*ns] + pool
@@ -223,8 +229,10 @@ def hillclimb(task: int):
         "best": [best_score, best_bd],
         "num_iter": num_iter,
         "elapsed_s": elapsed_s,
-        "top20": scores[:20],
+        "pool": pool,
         "progress": lines,
+        "num_eval": num_eval,
+        "num_discard": num_discard,
     }
     with open(hillclimb.output_json_file, "a") as out:
         json.dump(json_out, out)

@@ -124,7 +124,7 @@ Trie* Trie::CopyFromIndexedTrieBFS(const IndexedTrie& root, char** tip) {
     }
   }
 
-  cout << "max jump to children: " << max_offset << endl;
+  // cout << "max jump to children: " << max_offset << endl;
   return compact_root;
 }
 
@@ -285,19 +285,20 @@ int IndexedTrie::BytesNeeded() const {
 
 /* static */ TrieHolder* TrieHolder::CompactTrie(const IndexedTrie& t) {
   auto bytes_needed = t.BytesNeeded();
-  cout << "bytes_needed=" << bytes_needed << endl;
+  // cout << "bytes_needed=" << bytes_needed << endl;
   auto buf = (char*)malloc(bytes_needed);
-  cout << "malloced " << (uintptr_t)buf << endl;
+  // cout << "malloced " << (uintptr_t)buf << endl;
   auto base = buf;
   bytes_allocated = 0;
   bzero(buf, bytes_needed);
 
   auto compact_trie = Trie::CopyFromIndexedTrieBFS(t, &buf);
-  cout << "allocated " << bytes_allocated << " bytes; sizeof(Trie) = " << sizeof(Trie)
-       << "; alignment_of(Trie) = " << alignment_of<Trie>() << endl;
+  // cout << "allocated " << bytes_allocated << " bytes; sizeof(Trie) = " <<
+  // sizeof(Trie)
+  //      << "; alignment_of(Trie) = " << alignment_of<Trie>() << endl;
 
-  cout << (uintptr_t)buf << endl;
-  cout << (uintptr_t)(base + bytes_needed) << endl;
+  // cout << (uintptr_t)buf << endl;
+  // cout << (uintptr_t)(base + bytes_needed) << endl;
   assert(buf == base + bytes_needed);
 
   return new TrieHolder(compact_trie, base);
