@@ -12,7 +12,7 @@ https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
 """
 
 import argparse
-import functools
+import json
 import multiprocessing
 import random
 import time
@@ -23,12 +23,13 @@ from cpp_boggle import Symmetry
 
 from boggle.anneal import A_TO_Z, initial_board
 from boggle.args import add_standard_args, get_trie_and_boggler_from_args
+from boggle.gcs import upload_to_gcs
 
 
 def get_valid_letters(args):
     exclude = {ord(c) for c in (args.exclude_letters or "")}
     valid_letters = [c for c in A_TO_Z if c not in exclude]
-    if len(valid_letters) < 26:
+    if len(valid_letters) < 26 and not args.quiet:
         print(f"Will use {len(valid_letters)} letters.")
     return valid_letters
 
@@ -66,6 +67,51 @@ def neighbors(board: str, valid_letters: Sequence[int]):
     return out
 
 
+def generate_variation(board: str, valid_letters: Sequence[int]):
+    """Generate one variant on this board. May include multiple mutations."""
+
+    n = len(board)
+    while True:
+        if random.random() < 0.5:
+            # single letter change
+            while True:
+                i = random.randint(0, n - 1)
+                current = board[i]
+                new = chr(random.choice(valid_letters))
+                if current != new:
+                    prefix = board[:i]
+                    suffix = board[i + 1 :]
+                    # print(f"Change {i} from {current} -> {new}")
+                    # print(f"- {board}")
+                    board = prefix + new + suffix
+                    # print(f"+ {board}")
+                    break
+        else:
+            # swap
+            while True:
+                i = random.randint(0, n - 1)
+                j = random.randint(0, n - 1)
+                if board[i] == board[j]:
+                    continue
+                break
+
+            if i > j:
+                i, j = j, i
+            prefix = board[:i]
+            ci = board[i]
+            cj = board[j]
+            # print(f"swap {i}<->{j}")
+            # print(f"- {board}")
+            board = prefix + cj + board[i + 1 : j] + ci + board[j + 1 :]
+            # print(f"+ {board}")
+
+        # 10% probability of two mutations, 1% of three, etc.
+        if random.random() > 0.1:
+            break
+
+    return board
+
+
 def get_process_id():
     ids = multiprocessing.current_process()._identity
     if len(ids) == 0:
@@ -75,17 +121,27 @@ def get_process_id():
 
 
 def hillclimb(task: int):
+    args = hillclimb.args
+
     me = get_process_id()
     seed = hillclimb.random_seed + task
+    # output_file = f"hillclimb-{me}.txt"
+
+    # clear remains from a previous run
+    # with open(output_file, "a"):
+    #     pass
+
+    lines = []
 
     def print_and_write(line: str):
-        print(line)
-        with open(f"hillclimb-{me}.txt", "a") as out:
-            out.write(line + "\n")
+        if not args.quiet:
+            print(line)
+        lines.append(line)
+        # with open(output_file, "a") as out:
+        #     out.write(line + "\n")
 
     random.seed(seed)
     print_and_write(f"#{me} starting hillclimb with random seed = {seed}")
-    args = hillclimb.args
     w, h = hillclimb.dims
     boggler = hillclimb.boggler
     num_lets = w * h
@@ -100,14 +156,30 @@ def hillclimb(task: int):
         for _ in range(args.pool_size)
     ]
 
-    @functools.cache
+    use_cache = False
+    cache: dict[str, int] = {}
+
+    num_eval = 0
+    num_hits = 0
+
     def get_score(bd: str):
+        if use_cache:
+            prev = cache.get(bd)
+            if prev is not None:
+                nonlocal num_hits
+                num_hits += 1
+                return prev
+
         # This is a convenient place to make adjustments to the score, e.g.
         # to require a "q" on the board or to exclude high-scoring boards to test
         # whether hill climbing can find other boards in their absence.
         # if "q" not in bd:
         #     return 0
+        nonlocal num_eval
+        num_eval += 1
         score = boggler.score(bd)
+        if use_cache:
+            cache[bd] = score
         # if score > 3512:
         #     score = 1000
         return score
@@ -115,13 +187,25 @@ def hillclimb(task: int):
     start_s = time.time()
     best_score = max(get_score(bd) for bd in pool)
 
+    next_size = 7 * args.pool_size
+    stall_count = 0
+    max_stall = 20
+    num_discard = 0
+
     num_iter = 0
     while True:
         num_iter += 1
-        ns = {
-            sym.canonicalize(n) for seed in pool for n in neighbors(seed, valid_letters)
-        }
-        scores = [(get_score(n), n) for n in ns]
+        ns = set()
+        while len(ns) < next_size:
+            variant = sym.canonicalize(
+                generate_variation(random.choice(pool), valid_letters)
+            )
+            if variant in cache:
+                num_discard += 1
+                continue  # we want novel boards
+            ns.add(variant)
+        ns = [*ns] + pool
+        scores = [*{(get_score(n), n) for n in ns}]
         scores.sort(reverse=True)
         scores = scores[: args.pool_size]
         elapsed_s = time.time() - start_s
@@ -131,10 +215,44 @@ def hillclimb(task: int):
         if new_pool == pool:
             break
         pool = new_pool
+        new_best = scores[0][0]
+        if new_best > best_score:
+            best_score = new_best
+            stall_count = 0
+        else:
+            stall_count += 1
+            if stall_count > max_stall:
+                break
+        use_cache = new_best > 8000
 
     best_score, best_bd = max(scores)
     elapsed_s = time.time() - start_s
     print_and_write(f"#{me} Elapsed time: {elapsed_s} s")
+
+    json_out = {
+        "task": task,
+        "pid": me,
+        "seed": seed,
+        "best": [best_score, best_bd],
+        "num_iter": num_iter,
+        "elapsed_s": elapsed_s,
+        "pool": pool,
+        "progress": lines,
+        "num_eval": num_eval,
+        "num_discard": num_discard,
+        "num_hits": num_hits,
+        "cache_size": len(cache),
+    }
+    with open(hillclimb.output_json_file, "a") as out:
+        json.dump(json_out, out)
+        out.write("\n")
+
+    if args.gcs_path:
+        upload_to_gcs(
+            hillclimb.output_json_file,
+            f"{args.gcs_path}/{args.timestamp}.tasks-{me}.ndjson",
+        )
+
     return best_score, best_bd, num_iter, scores
 
 
@@ -150,6 +268,12 @@ def hillclimb_init(args):
 
     w, h = args.size // 10, args.size % 10
     hillclimb.dims = (w, h)
+
+    # Ensure a clean output file for appending
+    me = get_process_id()
+    hillclimb.output_json_file = f"hillclimb-{me}.ndjson"
+    with open(hillclimb.output_json_file, "w"):
+        pass
 
 
 def main():
@@ -186,9 +310,19 @@ def main():
         type=str,
         help="List of characters to exclude from the search, e.g. 'qzj'",
     )
+    parser.add_argument(
+        "--quiet", action="store_true", help="Suppress progress logging."
+    )
+    parser.add_argument(
+        "--gcs_path",
+        type=str,
+        help="Google Cloud Storage path to upload the results, e.g., 'gs://bucket/path'.",
+    )
     add_standard_args(parser, random_seed=True, python=True)
 
     args = parser.parse_args()
+    args.timestamp = time.strftime("%Y%m%d-%H%M%S")
+
     pool = None
     tasks = range(args.num_boards)
     if args.num_threads > 1:
@@ -205,21 +339,26 @@ def main():
         out.write(line)
         out.write("\n")
 
+    num_to_print = 10
+    num_complete = 0
     best = Counter[tuple[int, str]]()
-    for run, (score, board, n, score_boards) in enumerate(it):
-        print_and_write(f"{run}/{args.num_boards} {score} {board} ({n} iterations)")
+    for _, (score, board, n, score_boards) in enumerate(it):
+        num_complete += 1
+        print_and_write(
+            f"{num_complete}/{args.num_boards} {score} {board} ({n} iterations)"
+        )
         best.update(score_boards)
 
         if args.num_boards > 1:
-            print_and_write("---")
-            print_and_write(f"Top {args.pool_size} boards:")
+            print_and_write(f"Top {num_to_print} boards:")
             tops = [*best.keys()]
             tops.sort(reverse=True)
-            tops = tops[: args.pool_size]
+            tops = tops[:num_to_print]
             for score_board in tops:
                 score, board = score_board
                 freq = best[score_board]
-                print_and_write(f"{score}\t{board}\t{freq}/{1+run}")
+                print_and_write(f"{score}\t{board}\t{freq}/{num_complete}")
+            print_and_write("")
 
 
 if __name__ == "__main__":

@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from boggle.arena import PyArena, create_eval_node_arena_py
-from boggle.args import add_standard_args, get_trie_from_args
 from boggle.board_class_boggler import BoardClassBoggler
 from boggle.boggler import LETTER_A, LETTER_Q, SCORES
 from boggle.dimensional_bogglers import (
@@ -21,7 +20,6 @@ from boggle.dimensional_bogglers import (
     cpp_orderly_tree_builder,
 )
 from boggle.eval_node import SumNode, countr_zero
-from boggle.make_dot import to_dot
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
 
@@ -252,6 +250,9 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
 
 
 def main():
+    from boggle.args import add_standard_args, get_trie_from_args
+    from boggle.make_dot import to_dot
+
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
     parser.add_argument("board", type=str, help="Board class to bound.")

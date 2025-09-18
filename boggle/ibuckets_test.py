@@ -1,5 +1,5 @@
 import pytest
-from cpp_boggle import BucketBoggler34, Trie
+from cpp_boggle import BucketBoggler34, IndexedTrie
 
 from boggle.boggler import PyBoggler
 from boggle.dimensional_bogglers import cpp_bucket_boggler
@@ -9,7 +9,7 @@ from boggle.trie import PyTrie
 BIGINT = 1_000_000
 
 
-PARAMS = [(PyBucketBoggler, PyTrie), (cpp_bucket_boggler, Trie)]
+PARAMS = [(PyBucketBoggler, PyTrie), (cpp_bucket_boggler, IndexedTrie)]
 
 
 @pytest.mark.parametrize("Boggler, TrieT", PARAMS)
@@ -155,7 +155,7 @@ def test_tar_tier_boggler():
 
 
 def test_bucket_boggle34():
-    t = Trie.create_from_file("wordlists/enable2k.txt")
+    t = IndexedTrie.create_from_file("wordlists/enable2k.txt")
     bb = BucketBoggler34(t)
     # s l p i a e n t r d e s
     assert bb.parse_board(
