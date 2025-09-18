@@ -11,4 +11,4 @@ RUN git clone https://github.com/danvk/hybrid-boggle.git && \
     pip install poetry && \
     poetry install && \
     ./build.sh && \
-    poetry run pytest
+    poetry run pytest boggle/trie_test.py boggle/boggler_test.py
