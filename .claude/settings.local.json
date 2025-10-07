@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./build.sh)",
+      "Bash(poetry run pytest:*)",
+      "Bash(rg:*)",
+      "Bash(g++:*)",
+      "Bash(./test_memory_size)",
+      "Bash(./test_memory_layout)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(./integration-test.sh:*)",
+      "Bash(poetry run:*)",
+      "Bash(time poetry run:*)",
+      "Bash(bash:*)",
+      "Bash(timeout 30 poetry run:*)",
+      "Bash(timeout:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}
