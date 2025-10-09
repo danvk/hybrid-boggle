@@ -73,6 +73,8 @@ def test_breaker(is_python):
             "tree_bytes": 37952,
             "n_paths": 1492,
             "n_paths_uniq": 800,
+            "n_choice": 0,
+            "n_sum": 0,
             "tree_secs": [],
             "total_bytes": 59648,
             "n_bound": 3,

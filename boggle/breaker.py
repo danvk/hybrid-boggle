@@ -76,6 +76,8 @@ class HybridBreakDetails(BreakDetails):
     """Number of bytes used by the initial orderly tree"""
     n_paths: int
     n_paths_uniq: int
+    n_choice: int
+    n_sum: int
     tree_secs: list[float]
     total_bytes: int
     """Max bytes ever used while breaking"""
@@ -154,6 +156,8 @@ class HybridTreeBreaker:
             n_force=0,
             n_paths=0,
             n_paths_uniq=0,
+            n_choice=0,
+            n_sum=0,
             max_multi=0,
             bound_secs=defaultdict(float),
             test_secs=0.0,
@@ -167,6 +171,8 @@ class HybridTreeBreaker:
         self.details_.tree_secs = [ts.collect_s, ts.sort_s, ts.build_s]
         self.details_.n_paths = ts.n_paths
         self.details_.n_paths_uniq = ts.n_uniq
+        self.details_.n_sum = ts.n_sum
+        self.details_.n_choice = ts.n_choice
         num_nodes = arena.num_nodes()
         if self.log_breaker_progress:
             print(f"root {tree.bound=}, {num_nodes} nodes")
