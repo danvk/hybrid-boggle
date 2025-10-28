@@ -285,7 +285,7 @@ int IndexedTrie::BytesNeeded() const {
 
 /* static */ TrieHolder* TrieHolder::CompactTrie(const IndexedTrie& t) {
   auto bytes_needed = t.BytesNeeded();
-  // cout << "bytes_needed=" << bytes_needed << endl;
+  cout << "bytes_needed=" << bytes_needed << endl;
   auto buf = (char*)malloc(bytes_needed);
   // cout << "malloced " << (uintptr_t)buf << endl;
   auto base = buf;
