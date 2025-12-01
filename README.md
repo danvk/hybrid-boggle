@@ -165,6 +165,14 @@ Finding the globally optimal Boggle board with Sum/Choice trees is extremely CPU
 
 On my M2 Macbook, this takes about 740s to run and uses ~3GB of memory (Max RSS). It reports one "breaking failure," namely the [best board][3625 points]. The bottlenecks are all the calls to `OrderlyBound`, `merge_orderly_choice_children` and `merge_orderly_tree_children` in `eval_node.cc`.
 
+Here's a slightly faster command:
+
+```
+poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 3500 --size 44 --board_id 156513 --switchover_score 6000 --log_per_board_stats
+```
+
+This takes ~90s to break and uses ~1.6GB of memory. Of this time, about 6s is spent building the tree, 35s is spent in `OrderlyForceCell`, 45s is spent in `OrderlyBound`, and 7.5s is spent scoring individual boards.
+
 For some optimization ideas and information on why they haven't panned out, check out the [issue tracker](https://github.com/danvk/hybrid-boggle/issues?q=is%3Aissue%20state%3Aopen%20label%3Aperformance).
 
 ## Docker image
