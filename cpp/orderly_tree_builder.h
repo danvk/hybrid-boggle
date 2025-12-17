@@ -495,7 +495,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   }
 
   size_t range_size = end - start;
-  if (range_size == 0 && points <= NUM_INTERNED) {
+  if (range_size == 0 && points > 0 && points <= NUM_INTERNED) {
     return arena.GetCanonicalNode(points);
   }
 
