@@ -7,8 +7,8 @@ scoring of these boards plus the current pool as the pool for the next round.
 Larger pool sizes will increase the odds of making it over to the next peak
 at the cost of more computation per iteration.
 
-This might be an implementation of this algorithm:
-https://en.wikipedia.org/wiki/Greedy_randomized_adaptive_search_procedure
+This is roughly equivalent to a mu + lambda Evolutionary Strategy:
+https://algorithmafternoon.com/strategies/mu_plus_lambda_evolution_strategy/
 """
 
 import argparse

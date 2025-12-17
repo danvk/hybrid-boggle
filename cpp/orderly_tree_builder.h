@@ -111,6 +111,12 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
   stats.collect_s = duration / 1000.0;
 
+  if (words_.empty()) {
+    // UniqueWordList and RangeToSumNode assume a non-empty word list.
+    auto root = arena.NewSumNodeWithCapacity(0);
+    return root;
+  }
+
   sort(words_.begin(), words_.end(), WordComparator);
   auto end2 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end2 - end1).count();

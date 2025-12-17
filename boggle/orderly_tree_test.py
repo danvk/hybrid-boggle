@@ -107,6 +107,23 @@ def test_orderly_bound22(is_python):
     assert failures == [(8, "adeg"), (7, "adeh")]
 
 
+@pytest.mark.parametrize("is_python", [True, False])
+def test_orderly_no_words(is_python):
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 2), is_python)
+    board = "cd cd cd cd"
+    cells = board.split(" ")
+    # num_letters = [len(cell) for cell in cells]
+    otb.parse_board(board)
+    arena = otb.create_arena()
+    t = otb.build_tree(arena)
+    if isinstance(t, SumNode):
+        t.assert_invariants(otb)
+    assert t.bound == 0
+
+    failures = t.orderly_bound(6, cells, SPLIT_ORDER[(2, 2)], [])
+    assert failures == []
+
+
 @pytest.mark.parametrize("make_trie, get_tree_builder", OTB_PARAMS)
 def test_orderly_bound22_best(make_trie, get_tree_builder):
     trie = make_trie("testdata/boggle-words-4.txt")

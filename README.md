@@ -1,6 +1,6 @@
 # Hybrid Boggle
 
-The code in this repo has been used to complete the first-ever exhaustive search for the highest-scoring 4x4 [Boggle] board. See press coverage in the [Financial Times] ([archive]) and discussion on [Hacker News].
+The code in this repo has been used to complete the first-ever exhaustive search for the highest-scoring 4x4 [Boggle] board. See press coverage in the [Financial Times] ([archive]), [Ars Technica] and discussion on [Hacker News].
 
 ## Results
 
@@ -19,7 +19,7 @@ To get a feel for Boggle, try the [online Boggle Solver][3625 points], which is 
 
 For the full details, check out the work-in-progress paper, which I intend to eventually publish:
 
-📝 [A Computational Proof of the Highest-Scoring Boggle Board][paper] (PDF, 2025)
+📝 [A Computational Proof of the Highest-Scoring Boggle Board][paper] (arxiv.org, PDF, 2025)
 
 The general approach is [branch and bound][bnb]:
 
@@ -31,7 +31,7 @@ The general approach is [branch and bound][bnb]:
   - If not, split `C` into smaller classes `C1`, `C2`, …, `Cn` and repeat.
   - If `C` contains a single board, then it is a candidate for the best board.
 
-Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations.
+Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations. The main innovation of this project is a tailor-made data structure and algorithms for doing just this. (See the paper for details.)
 
 Here are the blog posts I've written about this project in 2025:
 
@@ -41,13 +41,17 @@ Here are the blog posts I've written about this project in 2025:
 - [Following up on an insight][post4]: Explains incremental improvements that brought 4x4 Boggle in range.
 - [After 20 Years, the Globally Optimal Boggle Board][35]: Announcement of the big 4x4 Boggle result.
 - [Boggle Roundup: My Fifteen Minutes of Fame][post5]: News reporting on the breakthrough and what's happened in the months since then.
+- [Working on Hard Problems][post6]: Reflections on the experience of working on and solving a hard problem.
 
 For earlier posts, check out this [2014 compendium].
 
+[paper]: https://arxiv.org/abs/2507.02117
 [post1]: https://www.danvk.org/2025/02/10/boggle34.html
 [post2]: https://www.danvk.org/2025/02/13/boggle2025.html
 [post3]: https://www.danvk.org/2025/02/21/orderly-boggle.html
 [post4]: https://www.danvk.org/2025/04/10/following-insight.html
+[post5]: https://www.danvk.org/2025/08/25/boggle-roundup.html
+[post6]: https://www.danvk.org/2025/10/09/hard-problem.html
 [2014 compendium]: https://www.danvk.org/wp/category/boggle/
 
 ## Development and usage
@@ -65,32 +69,32 @@ poetry run pytest
 To find all the high-scoring 3x3 boards, run:
 
 ```
-$ poetry run python -m boggle.break_all 'bdfgjqvwxz aeiou lnrsy chkmpt' 500 --size 33
-Found 262144 total boards in 0.05s.
+$ poetry run python -m boggle.break_all 'aeiosuy bcdfghjklmnpqrtvwxz' 500 --size 33
 ...
-Unable to break board: septalres 503
-Unable to break board: niptalser 504
-Unable to break board: septarles 528
+Unable to break board: legsartes 527
+Unable to break board: lepsartes 536
+Unable to break board: pecsartes 500
 ...
-Broke 262144 classes in 725.34s.
-Found 56 breaking failure(s):
+Broke 512 classes in 48.69s.
+Found 57 breaking failure(s):
 ...
 ```
 
-This takes ~5 minutes on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
+This takes ~50 seconds on a single thread on my M2 MacBook. It prints out 57 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
 
 To find all the high-scoring 3x4 boards, run:
 
 ```
 $ time poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 1500 --size 34 --num_threads 3
-Broke 104976 classes in 8273.01s.
+...
+Broke 104976 classes in 5013.56s.
 Found 36 breaking failure(s):
 ...
-1065762816  maximum resident set size
-/usr/bin/time -l poetry run python -m boggle.break_all  1500 --size 34  3  24290.92s user 437.64s system 298% cpu 2:17:53.83 total
+884293632  maximum resident set size
+/usr/bin/time -l poetry run python -m boggle.break_all  1500 --size 34  3  14545.01s user 327.87s system 296% cpu 1:23:34.29 total
 ```
 
-This takes just north of two hours on three cores on my laptop.
+This takes ~80 minutes on three cores on my laptop.
 
 To find high-scoring 4x4 boards via hillclimbing, run:
 
@@ -164,6 +168,14 @@ Finding the globally optimal Boggle board with Sum/Choice trees is extremely CPU
 (This is for macOS, on Unix systems use `time -v`.)
 
 On my M2 Macbook, this takes about 740s to run and uses ~3GB of memory (Max RSS). It reports one "breaking failure," namely the [best board][3625 points]. The bottlenecks are all the calls to `OrderlyBound`, `merge_orderly_choice_children` and `merge_orderly_tree_children` in `eval_node.cc`.
+
+Here's a slightly faster command:
+
+```
+poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 3500 --size 44 --board_id 156513 --switchover_score 6000 --log_per_board_stats
+```
+
+This takes ~90s to break and uses ~1.6GB of memory. Of this time, about 6s is spent building the tree, 35s is spent in `OrderlyForceCell`, 45s is spent in `OrderlyBound`, and 7.5s is spent scoring individual boards.
 
 For some optimization ideas and information on why they haven't panned out, check out the [issue tracker](https://github.com/danvk/hybrid-boggle/issues?q=is%3Aissue%20state%3Aopen%20label%3Aperformance).
 
@@ -277,7 +289,7 @@ This analysis only works with ENABLE2K and YAWL. It's impossible for the other w
 [board classes]: https://www.danvk.org/2025/02/10/boggle34.html#board-classes
 [upper bound]: https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/index.html
 [np-hard]: https://stackoverflow.com/questions/79381817/calculate-an-upper-bound-on-a-tree-containing-sum-nodes-choice-nodes-and-requi
-[pybind11]: https://pybind11.readthedocs.io/en/stable/index.html
+[pybind11]: https://www.danvk.org/2025/09/11/pybind11.html
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
 [danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general
 [danvk/boggle:2025-03-13]: https://hub.docker.com/repository/docker/danvk/boggle/tags/2025-03-13/sha256-e6a23b324af22b077af2b7b79ec31e17e668a5e166156818aedea188e791c1e1
@@ -293,5 +305,4 @@ This analysis only works with ENABLE2K and YAWL. It's impossible for the other w
 [Financial Times]: https://www.ft.com/content/0ab64ced-1ed1-466d-acd3-78510d10c3a1
 [archive]: https://archive.ph/siaAO
 [Hacker News]: https://news.ycombinator.com/item?id=44082892
-[paper]: https://github.com/danvk/boggle-paper/blob/main/paper.pdf
-[post5]: https://www.danvk.org/2025/08/25/boggle-roundup.html
+[Ars Technica]: https://arstechnica.com/science/2025/11/research-roundup-6-cool-science-stories-we-almost-missed-3/

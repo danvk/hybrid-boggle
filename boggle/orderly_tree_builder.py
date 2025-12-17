@@ -71,6 +71,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         end1 = time.time()
         stats.collect_s = end1 - start
         stats.n_paths = len(self.words_)
+        if not self.words_:
+            return SumNode()
 
         self.words_.sort()
         end2 = time.time()
