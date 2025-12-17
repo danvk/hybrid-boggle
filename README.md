@@ -72,12 +72,12 @@ Unable to break board: septalres 503
 Unable to break board: niptalser 504
 Unable to break board: septarles 528
 ...
-Broke 262144 classes in 725.34s.
+Broke 262144 classes in 276.02s.
 Found 56 breaking failure(s):
 ...
 ```
 
-This takes ~5 minutes on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
+This takes 4-5 minutes on a single thread on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
 
 To find all the high-scoring 3x4 boards, run:
 
