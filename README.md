@@ -69,24 +69,24 @@ poetry run pytest
 To find all the high-scoring 3x3 boards, run:
 
 ```
-$ poetry run python -m boggle.break_all 'bdfgjqvwxz aeiou lnrsy chkmpt' 500 --size 33
-Found 262144 total boards in 0.05s.
+$ poetry run python -m boggle.break_all 'aeiosuy bcdfghjklmnpqrtvwxz' 500 --size 33
 ...
-Unable to break board: septalres 503
-Unable to break board: niptalser 504
-Unable to break board: septarles 528
+Unable to break board: legsartes 527
+Unable to break board: lepsartes 536
+Unable to break board: pecsartes 500
 ...
-Broke 262144 classes in 276.02s.
-Found 56 breaking failure(s):
+Broke 512 classes in 48.69s.
+Found 57 breaking failure(s):
 ...
 ```
 
-This takes 4-5 minutes on a single thread on my M2 MacBook. It prints out 56 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
+This takes ~50 seconds on a single thread on my M2 MacBook. It prints out 57 boards with >=500 points and records more detailed information about the breaking process in `tasks-01.ndjson`. If you want it to run even faster, set `--num_threads=4` or higher.
 
 To find all the high-scoring 3x4 boards, run:
 
 ```
 $ time poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 1500 --size 34 --num_threads 3
+...
 Broke 104976 classes in 5013.56s.
 Found 36 breaking failure(s):
 ...
@@ -94,7 +94,7 @@ Found 36 breaking failure(s):
 /usr/bin/time -l poetry run python -m boggle.break_all  1500 --size 34  3  14545.01s user 327.87s system 296% cpu 1:23:34.29 total
 ```
 
-This takes just north of two hours on three cores on my laptop.
+This takes ~80 minutes on three cores on my laptop.
 
 To find high-scoring 4x4 boards via hillclimbing, run:
 
