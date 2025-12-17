@@ -19,7 +19,7 @@ To get a feel for Boggle, try the [online Boggle Solver][3625 points], which is 
 
 For the full details, check out the work-in-progress paper, which I intend to eventually publish:
 
-📝 [A Computational Proof of the Highest-Scoring Boggle Board][paper] (PDF, 2025)
+📝 [A Computational Proof of the Highest-Scoring Boggle Board][paper] (arxiv.org, PDF, 2025)
 
 The general approach is [branch and bound][bnb]:
 
@@ -45,7 +45,7 @@ Here are the blog posts I've written about this project in 2025:
 
 For earlier posts, check out this [2014 compendium].
 
-[paper]: https://github.com/danvk/boggle-paper/blob/main/paper.pdf
+[paper]: https://arxiv.org/abs/2507.02117
 [post1]: https://www.danvk.org/2025/02/10/boggle34.html
 [post2]: https://www.danvk.org/2025/02/13/boggle2025.html
 [post3]: https://www.danvk.org/2025/02/21/orderly-boggle.html
@@ -87,11 +87,11 @@ To find all the high-scoring 3x4 boards, run:
 
 ```
 $ time poetry run python -m boggle.break_all 'aeijou bcdfgmpqvwxz hklnrsty, corner:aeiosuy bcdfghjklmnpqrtvwxz' 1500 --size 34 --num_threads 3
-Broke 104976 classes in 8273.01s.
+Broke 104976 classes in 5013.56s.
 Found 36 breaking failure(s):
 ...
-1065762816  maximum resident set size
-/usr/bin/time -l poetry run python -m boggle.break_all  1500 --size 34  3  24290.92s user 437.64s system 298% cpu 2:17:53.83 total
+884293632  maximum resident set size
+/usr/bin/time -l poetry run python -m boggle.break_all  1500 --size 34  3  14545.01s user 327.87s system 296% cpu 1:23:34.29 total
 ```
 
 This takes just north of two hours on three cores on my laptop.
