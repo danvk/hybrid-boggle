@@ -1,6 +1,6 @@
 # Hybrid Boggle
 
-The code in this repo has been used to complete the first-ever exhaustive search for the highest-scoring 4x4 [Boggle] board. See press coverage in the [Financial Times] ([archive]) and discussion on [Hacker News].
+The code in this repo has been used to complete the first-ever exhaustive search for the highest-scoring 4x4 [Boggle] board. See press coverage in the [Financial Times] ([archive]), [Ars Technica] and discussion on [Hacker News].
 
 ## Results
 
@@ -31,7 +31,7 @@ The general approach is [branch and bound][bnb]:
   - If not, split `C` into smaller classes `C1`, `C2`, …, `Cn` and repeat.
   - If `C` contains a single board, then it is a candidate for the best board.
 
-Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations.
+Calculating a precise upper bound on a class of boards is [believed to be NP-Hard][np-hard], so the most productive path to performing this search quickly is to optimize each of these operations. The main innovation of this project is a tailor-made data structure and algorithms for doing just this. (See the paper for details.)
 
 Here are the blog posts I've written about this project in 2025:
 
@@ -41,13 +41,17 @@ Here are the blog posts I've written about this project in 2025:
 - [Following up on an insight][post4]: Explains incremental improvements that brought 4x4 Boggle in range.
 - [After 20 Years, the Globally Optimal Boggle Board][35]: Announcement of the big 4x4 Boggle result.
 - [Boggle Roundup: My Fifteen Minutes of Fame][post5]: News reporting on the breakthrough and what's happened in the months since then.
+- [Working on Hard Problems][post6]: Reflections on the experience of working on and solving a hard problem.
 
 For earlier posts, check out this [2014 compendium].
 
+[paper]: https://github.com/danvk/boggle-paper/blob/main/paper.pdf
 [post1]: https://www.danvk.org/2025/02/10/boggle34.html
 [post2]: https://www.danvk.org/2025/02/13/boggle2025.html
 [post3]: https://www.danvk.org/2025/02/21/orderly-boggle.html
 [post4]: https://www.danvk.org/2025/04/10/following-insight.html
+[post5]: https://www.danvk.org/2025/08/25/boggle-roundup.html
+[post6]: https://www.danvk.org/2025/10/09/hard-problem.html
 [2014 compendium]: https://www.danvk.org/wp/category/boggle/
 
 ## Development and usage
@@ -285,7 +289,7 @@ This analysis only works with ENABLE2K and YAWL. It's impossible for the other w
 [board classes]: https://www.danvk.org/2025/02/10/boggle34.html#board-classes
 [upper bound]: https://www.danvk.org/wp/2009-08-11/a-few-more-boggle-examples/index.html
 [np-hard]: https://stackoverflow.com/questions/79381817/calculate-an-upper-bound-on-a-tree-containing-sum-nodes-choice-nodes-and-requi
-[pybind11]: https://pybind11.readthedocs.io/en/stable/index.html
+[pybind11]: https://www.danvk.org/2025/09/11/pybind11.html
 [Boggle]: https://en.wikipedia.org/wiki/Boggle
 [danvk/boggle]: https://hub.docker.com/repository/docker/danvk/boggle/general
 [danvk/boggle:2025-03-13]: https://hub.docker.com/repository/docker/danvk/boggle/tags/2025-03-13/sha256-e6a23b324af22b077af2b7b79ec31e17e668a5e166156818aedea188e791c1e1
@@ -301,5 +305,4 @@ This analysis only works with ENABLE2K and YAWL. It's impossible for the other w
 [Financial Times]: https://www.ft.com/content/0ab64ced-1ed1-466d-acd3-78510d10c3a1
 [archive]: https://archive.ph/siaAO
 [Hacker News]: https://news.ycombinator.com/item?id=44082892
-[paper]: https://github.com/danvk/boggle-paper/blob/main/paper.pdf
-[post5]: https://www.danvk.org/2025/08/25/boggle-roundup.html
+[Ars Technica]: https://arstechnica.com/science/2025/11/research-roundup-6-cool-science-stories-we-almost-missed-3/
