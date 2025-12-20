@@ -22,10 +22,12 @@ class SumNode {
   SumNode() : bound_(0), points_(0), num_children_(0) {}
   ~SumNode() {}
 
-  uint32_t bound_ : 24;
+  uint32_t bound_;
   uint16_t points_;
+  // TODO: could replace num_children_ + capacity_ + 8 bits of bound_
+  // with a bitmask of which cells have children.
+  // This would potentially speed up merge_orderly_tree_children.
   uint8_t num_children_;
-  uint8_t capacity_;
   ChoiceNode* children_[];
 
   void PrintJSON() const;
@@ -60,13 +62,12 @@ class SumNode {
 
 class ChoiceNode {
  public:
-  ChoiceNode() : bound_(0), cell_(0), child_letters_(0), capacity_(0) {}
+  ChoiceNode() : bound_(0), cell_(0), child_letters_(0) {}
   ~ChoiceNode() {}
 
   uint32_t bound_ : 24;
   uint32_t cell_ : 8;  // Changed to uint32_t bit field to fit in same word
-  uint32_t child_letters_ : 26;
-  uint32_t capacity_ : 6;
+  uint32_t child_letters_;
   SumNode* children_[];
 
   int NumChildren() const { return std::popcount(child_letters_); }
