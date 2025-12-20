@@ -119,7 +119,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
 
   py::class_<SumNode>(m, "SumNode")
       .def_property_readonly("bound", &SumNode::Bound)
-      .def_readonly("points", &SumNode::points_)
+      .def_property_readonly("points", &SumNode::Points)
       .def("node_count", &SumNode::NodeCount)
       .def("word_count", &SumNode::WordCount)
       .def("set_bounds_for_testing", &SumNode::SetBoundsForTesting)
@@ -131,13 +131,12 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
+      .def_property_readonly("children", &SumNode::GetChildrenMap, py::return_value_policy::reference)
       .def("score_with_forces", &SumNode::ScoreWithForces)
       .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_property_readonly("bound", &ChoiceNode::Bound)
-      .def_property_readonly("cell", &ChoiceNode::Cell)
       .def_property_readonly("child_letters", &ChoiceNode::ChildLetters)
       .def("node_count", &ChoiceNode::NodeCount)
       .def(

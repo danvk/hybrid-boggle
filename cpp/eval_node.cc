@@ -12,23 +12,18 @@
 
 using namespace std;
 
-inline bool SortByCell(const ChoiceNode* a, const ChoiceNode* b) {
-  return a->cell_ < b->cell_;
-}
-
 void SumNode::CopyFrom(SumNode& other) {
   points_ = other.points_;
   bound_ = other.bound_;
 }
 
 void ChoiceNode::CopyFrom(ChoiceNode& other) {
-  cell_ = other.cell_;
   bound_ = other.bound_;
   child_letters_ = other.child_letters_;
 }
 
 SumNode* ChoiceNode::GetChildForLetter(int letter) const {
-  assert(letter >= 0 && letter < 26);  // Ensure letter fits in 26-bit field
+  assert(letter >= 0 && letter < 32);
   if (!(child_letters_ & (1 << letter))) {
     return nullptr;
   }
@@ -39,8 +34,9 @@ SumNode* ChoiceNode::GetChildForLetter(int letter) const {
 
 vector<ChoiceNode*> SumNode::GetChildren() {
   vector<ChoiceNode*> out;
-  out.reserve(num_children_);
-  for (int i = 0; i < num_children_; i++) {
+  int num_children = NumChildren();
+  out.reserve(num_children);
+  for (int i = 0; i < num_children; i++) {
     out.push_back(children_[i]);
   }
   return out;
@@ -56,21 +52,36 @@ vector<SumNode*> ChoiceNode::GetChildren() {
   return out;
 }
 
+map<int, ChoiceNode*> SumNode::GetChildrenMap() {
+    map<int, ChoiceNode*> out;
+    uint32_t remaining_mask = child_cells_;
+    int i = 0;
+    while(remaining_mask) {
+        int cell = std::countr_zero(remaining_mask);
+        out[cell] = children_[i++];
+        remaining_mask &= remaining_mask - 1;
+    }
+    return out;
+}
+
 void PrintJSONChildren(const SumNode& n) {
-  if (n.num_children_) {
+  if (n.NumChildren() > 0) {
     cout << ", \"children\": [";
+    uint32_t remaining_mask = n.ChildCells();
+    int i = 0;
     bool has_commad = false;
-    for (int i = 0; i < n.num_children_; i++) {
-      const auto& c = n.children_[i];
-      if (!c) {
-        continue;
+    while(remaining_mask) {
+      int cell = std::countr_zero(remaining_mask);
+      const auto& c = n.children_[i++];
+      if (c) {
+        if (!has_commad) {
+          has_commad = true;
+        } else {
+          cout << ", ";
+        }
+        c->PrintJSON(cell);
       }
-      if (!has_commad) {
-        has_commad = true;
-      } else {
-        cout << ", ";
-      }
-      c->PrintJSON();
+      remaining_mask &= remaining_mask - 1;
     }
     cout << "]";
   }
@@ -81,43 +92,52 @@ void PrintJSONChildren(const ChoiceNode& n) {
   if (n_children) {
     cout << ", \"children\": [";
     bool has_commad = false;
-    for (int i = 0; i < n_children; i++) {
-      const auto& c = n.children_[i];
-      if (!c) {
-        continue;
-      }
-      if (!has_commad) {
-        has_commad = true;
-      } else {
-        cout << ", ";
-      }
-      c->PrintJSON();
+    uint32_t remaining_bits = n.ChildLetters();
+    int i = 0;
+    while(remaining_bits) {
+        int letter = std::countr_zero(remaining_bits);
+        const auto& c = n.children_[i++];
+        if (c) {
+            if (!has_commad) {
+                has_commad = true;
+            } else {
+                cout << ", ";
+            }
+            c->PrintJSON(-1, letter);
+        }
+        remaining_bits &= remaining_bits - 1;
     }
     cout << "]";
   }
 }
 
-void SumNode::PrintJSON() const {
+void SumNode::PrintJSON(int cell, int letter) const {
   cout << "{\"type\": \"SUM\"";
-  cout << ", \"bound\": " << bound_;
+  cout << ", \"bound\": " << Bound();
   if (points_) {
     cout << ", \"points\": " << (int)points_;
+  }
+  if (cell != -1) {
+    cout << ", \"cell\": " << cell;
+  }
+  if (letter != -1) {
+    cout << ", \"letter\": " << letter;
   }
   PrintJSONChildren(*this);
   cout << "}";
 }
 
-void ChoiceNode::PrintJSON() const {
-  cout << "{\"type\": \"CHOICE\", \"cell\": " << (int)cell_;
-  cout << ", \"bound\": " << bound_;
-  cout << ", \"child_letters\": " << child_letters_;
+void ChoiceNode::PrintJSON(int cell) const {
+  cout << "{\"type\": \"CHOICE\", \"cell\": " << cell;
+  cout << ", \"bound\": " << Bound();
+  cout << ", \"child_letters\": " << ChildLetters();
   PrintJSONChildren(*this);
   cout << "}";
 }
 
 int SumNode::NodeCount() const {
   int count = 1;
-  for (int i = 0; i < num_children_; i++) {
+  for (int i = 0; i < NumChildren(); i++) {
     const auto& c = children_[i];
     if (c) count += c->NodeCount();
   }
@@ -136,7 +156,7 @@ int ChoiceNode::NodeCount() const {
 
 int SumNode::WordCount() const {
   int count = (points_ > 0) ? 1 : 0;
-  for (int i = 0; i < num_children_; i++) {
+  for (int i = 0; i < NumChildren(); i++) {
     const auto& c = children_[i];
     if (c) count += c->WordCount();
   }
@@ -155,18 +175,22 @@ int ChoiceNode::WordCount() const {
 
 unsigned int SumNode::ScoreWithForces(const vector<int>& forces) const {
   unsigned int score = points_;
-  for (int i = 0; i < num_children_; i++) {
-    const auto& child = children_[i];
+  uint32_t remaining_mask = child_cells_;
+  int i = 0;
+  while(remaining_mask) {
+    int cell = std::countr_zero(remaining_mask);
+    const auto& child = children_[i++];
     if (child) {
-      score += child->ScoreWithForces(forces);
+      score += child->ScoreWithForces(cell, forces);
     }
+    remaining_mask &= remaining_mask - 1;
   }
   return score;
 }
 
-unsigned int ChoiceNode::ScoreWithForces(const vector<int>& forces) const {
+unsigned int ChoiceNode::ScoreWithForces(int cell, const vector<int>& forces) const {
   // If this cell is forced, apply the force.
-  auto force = forces[cell_];
+  auto force = forces[cell];
   if (force >= 0) {
     auto child = GetChildForLetter(force);
     if (child) {
@@ -194,12 +218,16 @@ inline uint16_t advance(
     const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
     int stack_sizes[MAX_CELLS]
 ) {
-  for (int i = 0; i < node->num_children_; i++) {
-    auto child = node->children_[i];
-    auto n = stack_sizes[child->cell_]++;
+  uint32_t remaining_mask = node->ChildCells();
+  int i = 0;
+  while(remaining_mask) {
+    int cell = std::countr_zero(remaining_mask);
+    auto child = node->children_[i++];
+    auto n = stack_sizes[cell]++;
     assert(n < MAX_STACK_DEPTH);
-    stacks[child->cell_][n] = child;
-    sums[child->cell_] += child->bound_;
+    stacks[cell][n] = child;
+    sums[cell] += child->Bound();
+    remaining_mask &= remaining_mask - 1;
   }
   return node->points_;
 }
@@ -285,25 +313,23 @@ vector<pair<int, string>> SumNode::OrderlyBound(
 SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena);
 SumNode* merge_orderly_tree_children(
     const SumNode* a,
+    uint32_t b_child_cells,
     ChoiceNode* const* bc,
     int num_bc,
     int b_points,
     EvalNodeArena& arena
 );
 ChoiceNode* merge_orderly_choice_children(
-    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
+    int cell, const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
 );
 
 ChoiceNode* merge_orderly_choice_children(
-    const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
+    int cell, const ChoiceNode* a, const ChoiceNode* b, EvalNodeArena& arena
 ) {
-  assert(a->cell_ == b->cell_);
-
-  uint32_t merged_letters = a->child_letters_ | b->child_letters_;
+  uint32_t merged_letters = a->ChildLetters() | b->ChildLetters();
   int num_children = std::popcount(merged_letters);
 
   auto n = arena.NewChoiceNodeWithCapacity(num_children);
-  n->cell_ = a->cell_;
   n->bound_ = 0;
   n->child_letters_ = merged_letters;
 
@@ -325,7 +351,7 @@ ChoiceNode* merge_orderly_choice_children(
 
     n->children_[out_i++] = result_child;
     if (result_child) {
-      n->bound_ = max(n->bound_, result_child->bound_);
+      n->bound_ = max(n->bound_, result_child->Bound());
     }
 
     remaining_bits &= remaining_bits - 1;
@@ -337,33 +363,16 @@ ChoiceNode* merge_orderly_choice_children(
 
 SumNode* merge_orderly_tree_children(
     const SumNode* a,
+    uint32_t b_child_cells,
     ChoiceNode* const* bc,
     int num_bc,
     int b_points,
     EvalNodeArena& arena
 ) {
-  int num_children = 0;
-  auto it_a = &a->children_[0];
-  auto it_b = bc;
-  const auto& a_end = it_a + a->num_children_;
-  const auto& b_end = it_b + num_bc;
-  while (it_a != a_end && it_b != b_end) {
-    const auto& a_child = *it_a;
-    const auto& b_child = *it_b;
-    if (a_child->cell_ < b_child->cell_) {
-      num_children += 1;
-      ++it_a;
-    } else if (b_child->cell_ < a_child->cell_) {
-      num_children += 1;
-      ++it_b;
-    } else {
-      num_children += 1;
-      ++it_a;
-      ++it_b;
-    }
-  }
+  uint32_t merged_child_cells = a->ChildCells() | b_child_cells;
+  int num_children = std::popcount(merged_child_cells);
+
   auto new_points = a->points_ + b_points;
-  num_children += (a_end - it_a) + (b_end - it_b);
   if (num_children == 0 && new_points >= 1 && new_points <= NUM_INTERNED) {
     return arena.GetCanonicalNode(new_points);
   }
@@ -371,93 +380,74 @@ SumNode* merge_orderly_tree_children(
   auto n = arena.NewSumNodeWithCapacity(num_children);
   n->points_ = new_points;
   n->bound_ = n->points_;
+  n->child_cells_ = merged_child_cells;
 
-  it_a = &a->children_[0];
-  it_b = bc;
   int out_i = 0;
-
-  while (it_a != a_end && it_b != b_end) {
-    const auto& a_child = *it_a;
-    const auto& b_child = *it_b;
-    if (a_child->cell_ < b_child->cell_) {
-      n->children_[out_i++] = a_child;
-      if (a_child) {
-        n->bound_ += a_child->bound_;
-      }
-      ++it_a;
-    } else if (b_child->cell_ < a_child->cell_) {
-      n->children_[out_i++] = b_child;
-      if (b_child) {
-        n->bound_ += b_child->bound_;
-      }
-      ++it_b;
-    } else {
-      auto merged = merge_orderly_choice_children(a_child, b_child, arena);
-      n->children_[out_i++] = merged;
-      n->bound_ += merged->bound_;
-      ++it_a;
-      ++it_b;
+  uint32_t remaining_bits = merged_child_cells;
+  int i_a = 0;
+  int i_b = 0;
+  while(remaining_bits) {
+    int cell = std::countr_zero(remaining_bits);
+    bool in_a = (a->ChildCells() & (1 << cell));
+    bool in_b = (b_child_cells & (1 << cell));
+    ChoiceNode* merged = nullptr;
+    if (in_a && in_b) {
+      merged = merge_orderly_choice_children(cell, a->children_[i_a++], bc[i_b++], arena);
+    } else if (in_a) {
+      merged = a->children_[i_a++];
+    } else if (in_b) {
+      merged = bc[i_b++];
     }
-  }
-
-  while (it_a != a_end) {
-    const auto& a_child = *it_a;
-    n->children_[out_i++] = a_child;
-    if (a_child) {
-      n->bound_ += a_child->bound_;
+    n->children_[out_i++] = merged;
+    if (merged) {
+      n->bound_ += merged->Bound();
     }
-    ++it_a;
-  }
-  while (it_b != b_end) {
-    const auto& b_child = *it_b;
-    n->children_[out_i++] = b_child;
-    if (b_child) {
-      n->bound_ += b_child->bound_;
-    }
-    ++it_b;
+    remaining_bits &= remaining_bits - 1;
   }
   assert(out_i == num_children);
-  n->num_children_ = num_children;
 
   return n;
 }
 
 SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& arena) {
   return merge_orderly_tree_children(
-      a, &b->children_[0], b->num_children_, b->points_, arena
+      a, b->ChildCells(), &b->children_[0], b->NumChildren(), b->points_, arena
   );
 }
 
-void SumNode::SetChildrenFromVector(const vector<ChoiceNode*>& children) {
-  num_children_ = children.size();
-  memcpy(&children_[0], &children[0], num_children_ * sizeof(ChoiceNode*));
+void SumNode::SetChildren(uint32_t child_cells, const vector<ChoiceNode*>& children) {
+  child_cells_ = child_cells;
+  int num_children = NumChildren();
+  assert(children.size() == num_children);
+  memcpy(&children_[0], &children[0], num_children * sizeof(ChoiceNode*));
 }
 
 vector<const SumNode*> SumNode::OrderlyForceCell(
     int cell, int num_lets, EvalNodeArena& arena
 ) const {
-  if (!num_children_) {
+  if (NumChildren() == 0) {
     throw runtime_error("tried to force empty cell");
-    return {this};
   }
 
+  uint32_t non_cell_child_cells = child_cells_ & (~(1u << cell));
   vector<ChoiceNode*> non_cell_children;
-  non_cell_children.reserve(num_children_ - 1);
+  non_cell_children.reserve(std::popcount(non_cell_child_cells));
+
   const ChoiceNode* top_choice = NULL;
-  for (int i = 0; i < num_children_; i++) {
-    auto& child = children_[i];
-    if (child->cell_ == cell) {
+  uint32_t remaining_mask = child_cells_;
+  int child_idx = 0;
+  while(remaining_mask) {
+    int child_cell = std::countr_zero(remaining_mask);
+    auto& child = children_[child_idx++];
+    if (child_cell == cell) {
       top_choice = child;
     } else {
       non_cell_children.push_back(child);
     }
+    remaining_mask &= remaining_mask - 1;
   }
 
   if (!top_choice) {
-    // This means that there are zero words going through the next cell, so it's
-    // completely irrelevant to the bound. It's exceptionally rare that this would
-    // happen on a high-scoring board class. Returning N copies of ourselves is not
-    // the most efficient way to deal with this, but it's expedient.
     vector<const SumNode*> out(num_lets, this);
     return out;
   }
@@ -465,7 +455,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   int non_cell_points = points_;
 
   vector<const SumNode*> out(num_lets, nullptr);
-  uint32_t remaining_bits = top_choice->child_letters_;
+  uint32_t remaining_bits = top_choice->ChildLetters();
   while (remaining_bits) {
     int letter = std::countr_zero(remaining_bits);
     if (letter < num_lets) {
@@ -473,6 +463,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
       if (child) {
         out[letter] = merge_orderly_tree_children(
             child,
+            non_cell_child_cells,
             &non_cell_children[0],
             non_cell_children.size(),
             non_cell_points,
@@ -487,17 +478,17 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     int other_bound = 0;
     for (auto c : non_cell_children) {
       if (c) {
-        other_bound += c->bound_;
+        other_bound += c->Bound();
       }
     }
     if (other_bound > 0 || non_cell_points > 0) {
-      for (int i = 0; i < num_lets; ++i) {
-        if (!out[i]) {
+      for (int k = 0; k < num_lets; ++k) {
+        if (!out[k]) {
           auto point_node = arena.NewSumNodeWithCapacity(non_cell_children.size());
           point_node->points_ = non_cell_points;
           point_node->bound_ = non_cell_points + other_bound;
-          point_node->SetChildrenFromVector(non_cell_children);
-          out[i] = point_node;
+          point_node->SetChildren(non_cell_child_cells, non_cell_children);
+          out[k] = point_node;
         }
       }
     }
@@ -507,10 +498,10 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
 
 void SumNode::SetBoundsForTesting() {
   bound_ = points_;
-  for (int i = 0; i < num_children_; i++) {
+  for (int i = 0; i < NumChildren(); i++) {
     auto& c = children_[i];
     c->SetBoundsForTesting();
-    bound_ += c->bound_;
+    bound_ += c->Bound();
   }
 }
 
@@ -519,6 +510,6 @@ void ChoiceNode::SetBoundsForTesting() {
   auto children = GetChildren();
   for (auto& c : children) {
     c->SetBoundsForTesting();
-    bound_ = max(bound_, c->bound_);
+    bound_ = max(bound_, c->Bound());
   }
 }
