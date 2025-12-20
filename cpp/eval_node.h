@@ -66,8 +66,8 @@ class ChoiceNode {
   ChoiceNode() : bound_(0), child_letters_(0) {}
   ~ChoiceNode() {}
 
-  uint32_t bound_ : 24;
-  uint32_t unused_ : 8;
+  uint32_t bound_;
+  // uint32_t unused_ : 8;
   uint32_t child_letters_;
   SumNode* children_[];
 
