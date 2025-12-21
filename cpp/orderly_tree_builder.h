@@ -58,6 +58,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int num_paths_;
   vector<WordPath> words_;
   TreeBuilderStats stats_;
+  unordered_map<size_t, vector<SumNode*>> sum_nodes_;
+  unordered_map<size_t, vector<ChoiceNode*>> choice_nodes_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -66,20 +68,35 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
 
+  template <class T>
+  static void hash_combine(std::size_t& seed, const T& v) {
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  }
+
+  static size_t ShallowHash(uint16_t points,
+                            uint32_t child_cells,
+                            const vector<ChoiceNode*>& children);
+  static bool ShallowEquals(const SumNode* node,
+                            uint16_t points,
+                            uint32_t child_cells,
+                            const vector<ChoiceNode*>& children);
+
+  static size_t ShallowHash(uint32_t child_letters, const vector<SumNode*>& children);
+  static bool ShallowEquals(const ChoiceNode* node,
+                            uint32_t child_letters,
+                            const vector<SumNode*>& children);
+
   // TODO: doesn't C++ have a range API now?
-  SumNode* RangeToSumNode(
-      const vector<WordPath>& words,
-      pair<int, int> range,
-      int depth,
-      EvalNodeArena& arena
-  );
-  ChoiceNode* RangeToChoiceNode(
-      int cell,
-      const vector<WordPath>& words,
-      pair<int, int> range,
-      int depth,
-      EvalNodeArena& arena
-  );
+  SumNode* RangeToSumNode(const vector<WordPath>& words,
+                          pair<int, int> range,
+                          int depth,
+                          EvalNodeArena& arena);
+  ChoiceNode* RangeToChoiceNode(int cell,
+                                const vector<WordPath>& words,
+                                pair<int, int> range,
+                                int depth,
+                                EvalNodeArena& arena);
 
   void PrintWordList();
 };
@@ -88,21 +105,11 @@ template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   TreeBuilderStats stats;
   auto start = chrono::high_resolution_clock::now();
-  // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
-  // cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
-  // cout << "sizeof(WordPath.data)=" << sizeof(words_[0].path.data()) << endl;
-  // cout << "alignment_of<WordPath>=" << alignment_of<WordPath>() << endl;
 
-  // This allows perfect sizing of words_, but is almost as slow as building the list.
-  // int count = CountPaths();
-  // auto end0 = chrono::high_resolution_clock::now();
-  // auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
-  // cout << "Count paths: " << duration << " ms" << endl;
-
-  // 20M is large enough to fit the word list for almost all boards.
-  // This is ~700MB for a 4x4 board, and only held temporarily.
   words_.clear();
   words_.reserve(20'000'000);
+  sum_nodes_.clear();
+  choice_nodes_.clear();
 
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
@@ -139,24 +146,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
 
   words_.clear();
   words_.shrink_to_fit();  // release memory ASAP
+  sum_nodes_.clear();
+  choice_nodes_.clear();
   stats_ = stats;
 
-  // arena.PrintStats();
-
-  // This can be used to investigate the layout of EvalNode.
-  /*
-  cout << "sizeof(SumNode) = " << sizeof(SumNode) << endl;
-  cout << "sizeof(ChoiceNode) = " << sizeof(ChoiceNode) << endl;
-  cout << "root: " << (uintptr_t)root << endl;
-  auto r = (uintptr_t)root;
-  cout << "root->letter_: " << (uintptr_t)(&root->letter_) - r << endl;
-  cout << "root->cell_: " << (uintptr_t)&root->cell_ - r << endl;
-  cout << "root->points_: " << (uintptr_t)&root->points_ - r << endl;
-  cout << "root->num_children_: " << (uintptr_t)&root->num_children_ - r << endl;
-  cout << "root->capacity_: " << (uintptr_t)&root->capacity_ - r << endl;
-  cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
-  cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
-  */
   return root;
 }
 
@@ -509,12 +502,10 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   const int idx = 2 * depth;
   auto ranges = equal_ranges(words, idx, start, end);
 
-  auto node = arena.NewSumNodeWithCapacity(ranges.size());
-  node->bound_ = node->points_ = points;
-
   uint32_t child_cells = 0;
   vector<ChoiceNode*> children;
   children.reserve(ranges.size());
+  uint32_t bound = points;
   for (int i = 0; i < ranges.size(); i++) {
     const auto& [cell, range_start, range_end] = ranges[i];
     child_cells |= (1 << (cell - 1));
@@ -522,9 +513,23 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     auto child =
         RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena);
     children.push_back(child);
-    node->bound_ += child->bound_;
+    bound += child->Bound();
   }
+
+  size_t h = ShallowHash(points, child_cells, children);
+  if (sum_nodes_.count(h)) {
+    for (auto* it : sum_nodes_.at(h)) {
+      if (ShallowEquals(it, points, child_cells, children)) {
+        return it;
+      }
+    }
+  }
+
+  auto node = arena.NewSumNodeWithCapacity(ranges.size());
+  node->points_ = points;
+  node->bound_ = bound;
   node->SetChildren(child_cells, children);
+  sum_nodes_[h].push_back(node);
   return node;
 }
 
@@ -542,18 +547,84 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
 
-  auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
-  node->bound_ = 0;
   uint32_t letter_mask = 0;
+  vector<SumNode*> children;
+  children.reserve(ranges.size());
+  uint32_t bound = 0;
+
   for (int i = 0; i < ranges.size(); i++) {
     const auto& [letter, range_start, range_end] = ranges[i];
     letter_mask |= (1 << (letter - 1));
     auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena);
-    node->children_[i] = child;
-    node->bound_ = max(node->bound_, (uint32_t)child->bound_);
+    children.push_back(child);
+    bound = max(bound, child->Bound());
   }
+
+  size_t h = ShallowHash(letter_mask, children);
+  if (choice_nodes_.count(h)) {
+    for (auto* it : choice_nodes_.at(h)) {
+      if (ShallowEquals(it, letter_mask, children)) {
+        return it;
+      }
+    }
+  }
+
+  auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
+  node->bound_ = bound;
   node->child_letters_ = letter_mask;
+  memcpy(&node->children_[0], children.data(), children.size() * sizeof(SumNode*));
+  choice_nodes_[h].push_back(node);
   return node;
+}
+
+template <int M, int N>
+size_t OrderlyTreeBuilder<M, N>::ShallowHash(uint16_t points,
+                                             uint32_t child_cells,
+                                             const vector<ChoiceNode*>& children) {
+  size_t h = 0;
+  hash_combine(h, points);
+  hash_combine(h, child_cells);
+  for (auto* child : children) {
+    hash_combine(h, (uintptr_t)child);
+  }
+  return h;
+}
+
+template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::ShallowEquals(const SumNode* node,
+                                             uint16_t points,
+                                             uint32_t child_cells,
+                                             const vector<ChoiceNode*>& children) {
+  if (node->Points() != points || node->ChildCells() != child_cells ||
+      node->NumChildren() != children.size()) {
+    return false;
+  }
+  return 0 == memcmp(node->children_,
+                     children.data(),
+                     children.size() * sizeof(ChoiceNode*));
+}
+
+template <int M, int N>
+size_t OrderlyTreeBuilder<M, N>::ShallowHash(uint32_t child_letters,
+                                             const vector<SumNode*>& children) {
+  size_t h = 0;
+  hash_combine(h, child_letters);
+  for (auto* child : children) {
+    hash_combine(h, (uintptr_t)child);
+  }
+  return h;
+}
+
+template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::ShallowEquals(const ChoiceNode* node,
+                                             uint32_t child_letters,
+                                             const vector<SumNode*>& children) {
+  if (node->ChildLetters() != child_letters ||
+      node->NumChildren() != children.size()) {
+    return false;
+  }
+  return 0 ==
+         memcmp(node->children_, children.data(), children.size() * sizeof(SumNode*));
 }
 
 template <int M, int N>
