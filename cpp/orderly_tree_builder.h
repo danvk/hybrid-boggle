@@ -68,25 +68,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
 
-  template <class T>
-  static void hash_combine(std::size_t& seed, const T& v) {
-    std::hash<T> hasher;
-    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-  }
-
-  static size_t ShallowHash(uint16_t points,
-                            uint32_t child_cells,
-                            const vector<ChoiceNode*>& children);
-  static bool ShallowEquals(const SumNode* node,
-                            uint16_t points,
-                            uint32_t child_cells,
-                            const vector<ChoiceNode*>& children);
-
-  static size_t ShallowHash(uint32_t child_letters, const vector<SumNode*>& children);
-  static bool ShallowEquals(const ChoiceNode* node,
-                            uint32_t child_letters,
-                            const vector<SumNode*>& children);
-
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(const vector<WordPath>& words,
                           pair<int, int> range,
@@ -516,10 +497,10 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     bound += child->Bound();
   }
 
-  size_t h = ShallowHash(points, child_cells, children);
+  size_t h = SumNode::ShallowHash(points, child_cells, children);
   if (sum_nodes_.count(h)) {
     for (auto* it : sum_nodes_.at(h)) {
-      if (ShallowEquals(it, points, child_cells, children)) {
+      if (SumNode::ShallowEquals(it, points, child_cells, children)) {
         return it;
       }
     }
@@ -560,10 +541,10 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     bound = max(bound, child->Bound());
   }
 
-  size_t h = ShallowHash(letter_mask, children);
+  size_t h = ChoiceNode::ShallowHash(letter_mask, children);
   if (choice_nodes_.count(h)) {
     for (auto* it : choice_nodes_.at(h)) {
-      if (ShallowEquals(it, letter_mask, children)) {
+      if (ChoiceNode::ShallowEquals(it, letter_mask, children)) {
         return it;
       }
     }
@@ -577,55 +558,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   return node;
 }
 
-template <int M, int N>
-size_t OrderlyTreeBuilder<M, N>::ShallowHash(uint16_t points,
-                                             uint32_t child_cells,
-                                             const vector<ChoiceNode*>& children) {
-  size_t h = 0;
-  hash_combine(h, points);
-  hash_combine(h, child_cells);
-  for (auto* child : children) {
-    hash_combine(h, (uintptr_t)child);
-  }
-  return h;
-}
 
-template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::ShallowEquals(const SumNode* node,
-                                             uint16_t points,
-                                             uint32_t child_cells,
-                                             const vector<ChoiceNode*>& children) {
-  if (node->Points() != points || node->ChildCells() != child_cells ||
-      node->NumChildren() != children.size()) {
-    return false;
-  }
-  return 0 == memcmp(node->children_,
-                     children.data(),
-                     children.size() * sizeof(ChoiceNode*));
-}
-
-template <int M, int N>
-size_t OrderlyTreeBuilder<M, N>::ShallowHash(uint32_t child_letters,
-                                             const vector<SumNode*>& children) {
-  size_t h = 0;
-  hash_combine(h, child_letters);
-  for (auto* child : children) {
-    hash_combine(h, (uintptr_t)child);
-  }
-  return h;
-}
-
-template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::ShallowEquals(const ChoiceNode* node,
-                                             uint32_t child_letters,
-                                             const vector<SumNode*>& children) {
-  if (node->ChildLetters() != child_letters ||
-      node->NumChildren() != children.size()) {
-    return false;
-  }
-  return 0 ==
-         memcmp(node->children_, children.data(), children.size() * sizeof(SumNode*));
-}
 
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::PrintWordList() {

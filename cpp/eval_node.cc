@@ -257,7 +257,7 @@ vector<pair<int, string>> SumNode::OrderlyBound(
     failures.push_back({bound, board});
   };
 
-  function<void(int, int, vector<int>&)> rec =
+  function<void(int, int, vector<int>&)> rec = 
       [&](int base_points, int num_splits, vector<int>& stack_sums) {
         int bound = base_points;
         for (int i = num_splits; i < split_order.size(); ++i) {
@@ -512,4 +512,50 @@ void ChoiceNode::SetBoundsForTesting() {
     c->SetBoundsForTesting();
     bound_ = max(bound_, c->Bound());
   }
+}
+
+size_t SumNode::ShallowHash(uint16_t points,
+                                             uint32_t child_cells,
+                                             const vector<ChoiceNode*>& children) {
+  size_t h = 0;
+  hash_combine(h, points);
+  hash_combine(h, child_cells);
+  for (auto* child : children) {
+    hash_combine(h, (uintptr_t)child);
+  }
+  return h;
+}
+
+bool SumNode::ShallowEquals(const SumNode* node,
+                                             uint16_t points,
+                                             uint32_t child_cells,
+                                             const vector<ChoiceNode*>& children) {
+  if (node->Points() != points || node->ChildCells() != child_cells ||
+      node->NumChildren() != children.size()) {
+    return false;
+  }
+  return 0 == memcmp(node->children_,
+                     children.data(),
+                     children.size() * sizeof(ChoiceNode*));
+}
+
+size_t ChoiceNode::ShallowHash(uint32_t child_letters,
+                                             const vector<SumNode*>& children) {
+  size_t h = 0;
+  hash_combine(h, child_letters);
+  for (auto* child : children) {
+    hash_combine(h, (uintptr_t)child);
+  }
+  return h;
+}
+
+bool ChoiceNode::ShallowEquals(const ChoiceNode* node,
+                                             uint32_t child_letters,
+                                             const vector<SumNode*>& children) {
+  if (node->ChildLetters() != child_letters ||
+      node->NumChildren() != children.size()) {
+    return false;
+  }
+  return 0 ==
+         memcmp(node->children_, children.data(), children.size() * sizeof(SumNode*));
 }

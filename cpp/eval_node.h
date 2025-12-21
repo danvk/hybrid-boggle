@@ -15,6 +15,12 @@
 
 using namespace std;
 
+template <class T>
+static void hash_combine(std::size_t& seed, const T& v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 class EvalNodeArena;
 
 class SumNode {
@@ -58,6 +64,13 @@ class SumNode {
   map<int, ChoiceNode*> GetChildrenMap();
   void SetBoundsForTesting();
 
+  static size_t ShallowHash(uint16_t points,
+                            uint32_t child_cells,
+                            const vector<ChoiceNode*>& children);
+  static bool ShallowEquals(const SumNode* node,
+                            uint16_t points,
+                            uint32_t child_cells,
+                            const vector<ChoiceNode*>& children);
  private:
 };
 
@@ -89,6 +102,10 @@ class ChoiceNode {
   SumNode* GetChildForLetter(int letter) const;
   void SetBoundsForTesting();
 
+  static size_t ShallowHash(uint32_t child_letters, const vector<SumNode*>& children);
+  static bool ShallowEquals(const ChoiceNode* node,
+                            uint32_t child_letters,
+                            const vector<SumNode*>& children);
  private:
 };
 
