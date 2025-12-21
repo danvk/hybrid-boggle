@@ -51,6 +51,20 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   TreeBuilderStats GetStats() const { return stats_; }
 
  private:
+  struct NodeHasher {
+    size_t operator()(const SumNode* a) const { return a->ShallowHash(); }
+    size_t operator()(const ChoiceNode* a) const { return a->ShallowHash(); }
+  };
+
+  struct NodeEquals {
+    bool operator()(const SumNode* a, const SumNode* b) const {
+      return a->ShallowEquals(b);
+    }
+    bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
+      return a->ShallowEquals(b);
+    }
+  };
+
   SumNode* root_;
   int cell_to_order_[M * N];
   unsigned int used_ordered_;  // used cells mapped to their split order
@@ -58,8 +72,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int num_paths_;
   vector<WordPath> words_;
   TreeBuilderStats stats_;
-  unordered_map<size_t, vector<SumNode*>> sum_nodes_;
-  unordered_map<size_t, vector<ChoiceNode*>> choice_nodes_;
+  unordered_set<SumNode*, NodeHasher, NodeEquals> sum_nodes_;
+  unordered_set<ChoiceNode*, NodeHasher, NodeEquals> choice_nodes_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -497,20 +511,17 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     bound += child->Bound();
   }
 
-  size_t h = SumNode::ShallowHash(points, child_cells, children);
-  if (sum_nodes_.count(h)) {
-    for (auto* it : sum_nodes_.at(h)) {
-      if (SumNode::ShallowEquals(it, points, child_cells, children)) {
-        return it;
-      }
-    }
-  }
-
   auto node = arena.NewSumNodeWithCapacity(ranges.size());
   node->points_ = points;
   node->bound_ = bound;
   node->SetChildren(child_cells, children);
-  sum_nodes_[h].push_back(node);
+
+  auto it = sum_nodes_.find(node);
+  if (it != sum_nodes_.end()) {
+    return *it;
+  }
+
+  sum_nodes_.insert(node);
   return node;
 }
 
@@ -541,20 +552,17 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     bound = max(bound, child->Bound());
   }
 
-  size_t h = ChoiceNode::ShallowHash(letter_mask, children);
-  if (choice_nodes_.count(h)) {
-    for (auto* it : choice_nodes_.at(h)) {
-      if (ChoiceNode::ShallowEquals(it, letter_mask, children)) {
-        return it;
-      }
-    }
-  }
-
   auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
   node->bound_ = bound;
   node->child_letters_ = letter_mask;
   memcpy(&node->children_[0], children.data(), children.size() * sizeof(SumNode*));
-  choice_nodes_[h].push_back(node);
+
+  auto it = choice_nodes_.find(node);
+  if (it != choice_nodes_.end()) {
+    return *it;
+  }
+
+  choice_nodes_.insert(node);
   return node;
 }
 

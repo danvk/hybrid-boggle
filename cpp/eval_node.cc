@@ -514,48 +514,40 @@ void ChoiceNode::SetBoundsForTesting() {
   }
 }
 
-size_t SumNode::ShallowHash(uint16_t points,
-                                             uint32_t child_cells,
-                                             const vector<ChoiceNode*>& children) {
+size_t SumNode::ShallowHash() const {
   size_t h = 0;
-  hash_combine(h, points);
-  hash_combine(h, child_cells);
-  for (auto* child : children) {
-    hash_combine(h, (uintptr_t)child);
+  hash_combine(h, points_);
+  hash_combine(h, child_cells_);
+  for (int i = 0; i < NumChildren(); ++i) {
+    hash_combine(h, (uintptr_t)children_[i]);
   }
   return h;
 }
 
-bool SumNode::ShallowEquals(const SumNode* node,
-                                             uint16_t points,
-                                             uint32_t child_cells,
-                                             const vector<ChoiceNode*>& children) {
-  if (node->Points() != points || node->ChildCells() != child_cells ||
-      node->NumChildren() != children.size()) {
+bool SumNode::ShallowEquals(const SumNode* other) const {
+  if (Points() != other->Points() || ChildCells() != other->ChildCells() ||
+      NumChildren() != other->NumChildren()) {
     return false;
   }
-  return 0 == memcmp(node->children_,
-                     children.data(),
-                     children.size() * sizeof(ChoiceNode*));
+  return 0 == memcmp(children_,
+                     other->children_,
+                     NumChildren() * sizeof(ChoiceNode*));
 }
 
-size_t ChoiceNode::ShallowHash(uint32_t child_letters,
-                                             const vector<SumNode*>& children) {
+size_t ChoiceNode::ShallowHash() const {
   size_t h = 0;
-  hash_combine(h, child_letters);
-  for (auto* child : children) {
-    hash_combine(h, (uintptr_t)child);
+  hash_combine(h, child_letters_);
+  for (int i = 0; i < NumChildren(); ++i) {
+    hash_combine(h, (uintptr_t)children_[i]);
   }
   return h;
 }
 
-bool ChoiceNode::ShallowEquals(const ChoiceNode* node,
-                                             uint32_t child_letters,
-                                             const vector<SumNode*>& children) {
-  if (node->ChildLetters() != child_letters ||
-      node->NumChildren() != children.size()) {
+bool ChoiceNode::ShallowEquals(const ChoiceNode* other) const {
+  if (ChildLetters() != other->ChildLetters() ||
+      NumChildren() != other->NumChildren()) {
     return false;
   }
   return 0 ==
-         memcmp(node->children_, children.data(), children.size() * sizeof(SumNode*));
+         memcmp(children_, other->children_, NumChildren() * sizeof(SumNode*));
 }

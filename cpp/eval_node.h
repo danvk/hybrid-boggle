@@ -64,13 +64,8 @@ class SumNode {
   map<int, ChoiceNode*> GetChildrenMap();
   void SetBoundsForTesting();
 
-  static size_t ShallowHash(uint16_t points,
-                            uint32_t child_cells,
-                            const vector<ChoiceNode*>& children);
-  static bool ShallowEquals(const SumNode* node,
-                            uint16_t points,
-                            uint32_t child_cells,
-                            const vector<ChoiceNode*>& children);
+  size_t ShallowHash() const;
+  bool ShallowEquals(const SumNode* other) const;
  private:
 };
 
@@ -102,10 +97,8 @@ class ChoiceNode {
   SumNode* GetChildForLetter(int letter) const;
   void SetBoundsForTesting();
 
-  static size_t ShallowHash(uint32_t child_letters, const vector<SumNode*>& children);
-  static bool ShallowEquals(const ChoiceNode* node,
-                            uint32_t child_letters,
-                            const vector<SumNode*>& children);
+  size_t ShallowHash() const;
+  bool ShallowEquals(const ChoiceNode* other) const;
  private:
 };
 
