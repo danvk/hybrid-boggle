@@ -12,14 +12,10 @@
 #include <vector>
 
 #include "arena.h"
+#include "absl/hash/hash.h"
+#include "absl/types/span.h"
 
 using namespace std;
-
-template <class T>
-static void hash_combine(std::size_t& seed, const T& v) {
-  std::hash<T> hasher;
-  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
 
 class EvalNodeArena;
 
@@ -64,8 +60,13 @@ class SumNode {
   map<int, ChoiceNode*> GetChildrenMap();
   void SetBoundsForTesting();
 
-  size_t ShallowHash() const;
   bool ShallowEquals(const SumNode* other) const;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const SumNode* node) {
+    return H::combine(std::move(h), node->points_, node->child_cells_,
+                      absl::MakeConstSpan(node->children_, node->NumChildren()));
+  }
  private:
 };
 
@@ -97,8 +98,13 @@ class ChoiceNode {
   SumNode* GetChildForLetter(int letter) const;
   void SetBoundsForTesting();
 
-  size_t ShallowHash() const;
   bool ShallowEquals(const ChoiceNode* other) const;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const ChoiceNode* node) {
+    return H::combine(std::move(h), node->child_letters_,
+                      absl::MakeConstSpan(node->children_, node->NumChildren()));
+  }
  private:
 };
 

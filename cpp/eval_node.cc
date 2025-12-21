@@ -264,7 +264,7 @@ vector<pair<int, string>> SumNode::OrderlyBound(
           bound += stack_sums[split_order[i]];
         }
         if (bound < cutoff) {
-          return;  // done!
+          return;  // done! 
         }
         if (num_splits == split_order.size()) {
           record_failure(bound);
@@ -514,16 +514,6 @@ void ChoiceNode::SetBoundsForTesting() {
   }
 }
 
-size_t SumNode::ShallowHash() const {
-  size_t h = 0;
-  hash_combine(h, points_);
-  hash_combine(h, child_cells_);
-  for (int i = 0; i < NumChildren(); ++i) {
-    hash_combine(h, (uintptr_t)children_[i]);
-  }
-  return h;
-}
-
 bool SumNode::ShallowEquals(const SumNode* other) const {
   if (Points() != other->Points() || ChildCells() != other->ChildCells() ||
       NumChildren() != other->NumChildren()) {
@@ -532,15 +522,6 @@ bool SumNode::ShallowEquals(const SumNode* other) const {
   return 0 == memcmp(children_,
                      other->children_,
                      NumChildren() * sizeof(ChoiceNode*));
-}
-
-size_t ChoiceNode::ShallowHash() const {
-  size_t h = 0;
-  hash_combine(h, child_letters_);
-  for (int i = 0; i < NumChildren(); ++i) {
-    hash_combine(h, (uintptr_t)children_[i]);
-  }
-  return h;
 }
 
 bool ChoiceNode::ShallowEquals(const ChoiceNode* other) const {

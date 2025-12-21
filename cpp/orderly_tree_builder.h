@@ -8,6 +8,8 @@
 #include "equal_ranges.h"
 #include "eval_node.h"
 #include "ibuckets.h"
+#include "absl/container/flat_hash_set.h"
+
 
 using namespace std;
 
@@ -52,8 +54,13 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
  private:
   struct NodeHasher {
-    size_t operator()(const SumNode* a) const { return a->ShallowHash(); }
-    size_t operator()(const ChoiceNode* a) const { return a->ShallowHash(); }
+    using is_transparent = void;
+    size_t operator()(const SumNode* a) const {
+      return absl::Hash<SumNode*>()(const_cast<SumNode*>(a));
+    }
+    size_t operator()(const ChoiceNode* a) const {
+      return absl::Hash<ChoiceNode*>()(const_cast<ChoiceNode*>(a));
+    }
   };
 
   struct NodeEquals {
@@ -72,8 +79,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int num_paths_;
   vector<WordPath> words_;
   TreeBuilderStats stats_;
-  unordered_set<SumNode*, NodeHasher, NodeEquals> sum_nodes_;
-  unordered_set<ChoiceNode*, NodeHasher, NodeEquals> choice_nodes_;
+  absl::flat_hash_set<SumNode*, NodeHasher, NodeEquals> sum_nodes_;
+  absl::flat_hash_set<ChoiceNode*, NodeHasher, NodeEquals> choice_nodes_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
