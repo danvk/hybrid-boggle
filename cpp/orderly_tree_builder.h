@@ -652,9 +652,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   for (int i = 0; i < num_children; i++) {
     new_node->children_[i] = node->children_[i];
   }
-
-  deduper.choice_cache.erase(node);
-  deduper.choice_cache.insert(it, new_node);
+  *(ChoiceNode**)(&*it) = new_node;
   return new_node;
 }
 
