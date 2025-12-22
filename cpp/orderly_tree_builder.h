@@ -641,8 +641,8 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     node->bound_ = max(node->bound_, (uint32_t)child->bound_);
   }
 
-  auto it = deduper.choice_cache.find(node);
-  if (it != deduper.choice_cache.end()) {
+  auto [it, was_inserted] = deduper.choice_cache.insert(node);
+  if (!was_inserted) {
     choice_hit_++;
     return *it;
   }
@@ -653,7 +653,8 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     new_node->children_[i] = node->children_[i];
   }
 
-  deduper.choice_cache.insert(new_node);
+  deduper.choice_cache.erase(node);
+  deduper.choice_cache.insert(it, new_node);
   return new_node;
 }
 
