@@ -53,15 +53,15 @@ vector<SumNode*> ChoiceNode::GetChildren() {
 }
 
 map<int, ChoiceNode*> SumNode::GetChildrenMap() {
-    map<int, ChoiceNode*> out;
-    uint32_t remaining_mask = child_cells_;
-    int i = 0;
-    while(remaining_mask) {
-        int cell = std::countr_zero(remaining_mask);
-        out[cell] = children_[i++];
-        remaining_mask &= remaining_mask - 1;
-    }
-    return out;
+  map<int, ChoiceNode*> out;
+  uint32_t remaining_mask = child_cells_;
+  int i = 0;
+  while (remaining_mask) {
+    int cell = std::countr_zero(remaining_mask);
+    out[cell] = children_[i++];
+    remaining_mask &= remaining_mask - 1;
+  }
+  return out;
 }
 
 void PrintJSONChildren(const SumNode& n) {
@@ -70,7 +70,7 @@ void PrintJSONChildren(const SumNode& n) {
     uint32_t remaining_mask = n.ChildCells();
     int i = 0;
     bool has_commad = false;
-    while(remaining_mask) {
+    while (remaining_mask) {
       int cell = std::countr_zero(remaining_mask);
       const auto& c = n.children_[i++];
       if (c) {
@@ -94,18 +94,18 @@ void PrintJSONChildren(const ChoiceNode& n) {
     bool has_commad = false;
     uint32_t remaining_bits = n.ChildLetters();
     int i = 0;
-    while(remaining_bits) {
-        int letter = std::countr_zero(remaining_bits);
-        const auto& c = n.children_[i++];
-        if (c) {
-            if (!has_commad) {
-                has_commad = true;
-            } else {
-                cout << ", ";
-            }
-            c->PrintJSON(-1, letter);
+    while (remaining_bits) {
+      int letter = std::countr_zero(remaining_bits);
+      const auto& c = n.children_[i++];
+      if (c) {
+        if (!has_commad) {
+          has_commad = true;
+        } else {
+          cout << ", ";
         }
-        remaining_bits &= remaining_bits - 1;
+        c->PrintJSON(-1, letter);
+      }
+      remaining_bits &= remaining_bits - 1;
     }
     cout << "]";
   }
@@ -177,7 +177,7 @@ unsigned int SumNode::ScoreWithForces(const vector<int>& forces) const {
   unsigned int score = points_;
   uint32_t remaining_mask = child_cells_;
   int i = 0;
-  while(remaining_mask) {
+  while (remaining_mask) {
     int cell = std::countr_zero(remaining_mask);
     const auto& child = children_[i++];
     if (child) {
@@ -220,7 +220,7 @@ inline uint16_t advance(
 ) {
   uint32_t remaining_mask = node->ChildCells();
   int i = 0;
-  while(remaining_mask) {
+  while (remaining_mask) {
     int cell = std::countr_zero(remaining_mask);
     auto child = node->children_[i++];
     auto n = stack_sizes[cell]++;
@@ -283,7 +283,6 @@ vector<pair<int, string>> SumNode::OrderlyBound(
         int num_letters = cells[next_to_split].size();
         for (int letter = 0; letter < num_letters; ++letter) {
           if (letter > 0) {
-            // TODO: it should be possible to avoid this copy with another stack.
             stack_sums = base_sums;
             for (int i = 0; i < MAX_CELLS; i++) {
               stack_sizes[i] = base_stack_sizes[i];
@@ -386,13 +385,14 @@ SumNode* merge_orderly_tree_children(
   uint32_t remaining_bits = merged_child_cells;
   int i_a = 0;
   int i_b = 0;
-  while(remaining_bits) {
+  while (remaining_bits) {
     int cell = std::countr_zero(remaining_bits);
     bool in_a = (a->ChildCells() & (1 << cell));
     bool in_b = (b_child_cells & (1 << cell));
     ChoiceNode* merged = nullptr;
     if (in_a && in_b) {
-      merged = merge_orderly_choice_children(cell, a->children_[i_a++], bc[i_b++], arena);
+      merged =
+          merge_orderly_choice_children(cell, a->children_[i_a++], bc[i_b++], arena);
     } else if (in_a) {
       merged = a->children_[i_a++];
     } else if (in_b) {
@@ -436,7 +436,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   const ChoiceNode* top_choice = NULL;
   uint32_t remaining_mask = child_cells_;
   int child_idx = 0;
-  while(remaining_mask) {
+  while (remaining_mask) {
     int child_cell = std::countr_zero(remaining_mask);
     auto& child = children_[child_idx++];
     if (child_cell == cell) {
