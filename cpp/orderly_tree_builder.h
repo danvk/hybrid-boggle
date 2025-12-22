@@ -40,27 +40,18 @@ struct NodeHasher {
 
 // Transparent Equality
 struct NodeEqual {
-  using is_transparent = void;
-
   // SumNode Comparisons
   bool operator()(const SumNode* a, const SumNode* b) const {
-    if (a->points_ != b->points_ || a->child_cells_ != b->child_cells_) return false;
+    if (*(uint64_t*)a != *(uint64_t*)b) return false;
     int num = a->NumChildren();
-    // Assuming canonical/deduplicated children, pointer equality check is sufficient
-    for (int i = 0; i < num; ++i) {
-      if (a->children_[i] != b->children_[i]) return false;
-    }
-    return true;
+    return 0 == memcmp(&a->children_, &b->children_, num * sizeof(ChoiceNode*));
   }
 
   // ChoiceNode Comparisons
   bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
-    if (a->child_letters_ != b->child_letters_) return false;
+    if (*(uint64_t*)a != *(uint64_t*)b) return false;
     int num = a->NumChildren();
-    for (int i = 0; i < num; ++i) {
-      if (a->children_[i] != b->children_[i]) return false;
-    }
-    return true;
+    return 0 == memcmp(&a->children_, &b->children_, num * sizeof(SumNode*));
   }
 };
 
