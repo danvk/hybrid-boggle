@@ -65,8 +65,8 @@ struct NodeEqual {
 };
 
 struct Deduper {
-  std::unordered_set<SumNode*, NodeHasher, NodeEqual> sum_cache;
-  std::unordered_set<ChoiceNode*, NodeHasher, NodeEqual> choice_cache;
+  ankerl::unordered_dense::set<SumNode*, NodeHasher, NodeEqual> sum_cache;
+  ankerl::unordered_dense::set<ChoiceNode*, NodeHasher, NodeEqual> choice_cache;
 };
 
 struct TreeBuilderStats {
