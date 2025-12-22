@@ -11,9 +11,9 @@
 #include <variant>
 #include <vector>
 
-#include "arena.h"
 #include "absl/hash/hash.h"
 #include "absl/types/span.h"
+#include "arena.h"
 
 using namespace std;
 
@@ -64,9 +64,14 @@ class SumNode {
 
   template <typename H>
   friend H AbslHashValue(H h, const SumNode* node) {
-    return H::combine(std::move(h), node->points_, node->child_cells_,
-                      absl::MakeConstSpan(node->children_, node->NumChildren()));
+    return H::combine(
+        std::move(h),
+        node->points_,
+        node->child_cells_,
+        absl::MakeConstSpan(node->children_, node->NumChildren())
+    );
   }
+
  private:
 };
 
@@ -102,9 +107,13 @@ class ChoiceNode {
 
   template <typename H>
   friend H AbslHashValue(H h, const ChoiceNode* node) {
-    return H::combine(std::move(h), node->child_letters_,
-                      absl::MakeConstSpan(node->children_, node->NumChildren()));
+    return H::combine(
+        std::move(h),
+        node->child_letters_,
+        absl::MakeConstSpan(node->children_, node->NumChildren())
+    );
   }
+
  private:
 };
 

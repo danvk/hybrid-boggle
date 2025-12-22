@@ -131,7 +131,9 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def_property_readonly("children", &SumNode::GetChildrenMap, py::return_value_policy::reference)
+      .def_property_readonly(
+          "children", &SumNode::GetChildrenMap, py::return_value_policy::reference
+      )
       .def("score_with_forces", &SumNode::ScoreWithForces)
       .def("orderly_bound", &SumNode::OrderlyBound);
 

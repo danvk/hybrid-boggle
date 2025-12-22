@@ -2,7 +2,8 @@
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/cpp",
         "${workspaceFolder}/cpp/build/_deps/abseil-cpp-src",
-        "${workspaceFolder}/cpp/build/_deps/pybind11-src/include"
+        "${workspaceFolder}/cpp/build/_deps/pybind11-src/include",
+        "/Users/danvk/.pyenv/versions/3.13.1/include/python3.13",
     ],
     // See https://stackoverflow.com/q/76457139/388951
     "ruff.codeAction.disableRuleComment": {

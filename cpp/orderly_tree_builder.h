@@ -4,12 +4,11 @@
 #include <array>
 #include <iomanip>
 
+#include "absl/container/flat_hash_set.h"
 #include "constants.h"
 #include "equal_ranges.h"
 #include "eval_node.h"
 #include "ibuckets.h"
-#include "absl/container/flat_hash_set.h"
-
 
 using namespace std;
 
@@ -90,15 +89,19 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static void UniqueWordList(vector<WordPath>& words);
 
   // TODO: doesn't C++ have a range API now?
-  SumNode* RangeToSumNode(const vector<WordPath>& words,
-                          pair<int, int> range,
-                          int depth,
-                          EvalNodeArena& arena);
-  ChoiceNode* RangeToChoiceNode(int cell,
-                                const vector<WordPath>& words,
-                                pair<int, int> range,
-                                int depth,
-                                EvalNodeArena& arena);
+  SumNode* RangeToSumNode(
+      const vector<WordPath>& words,
+      pair<int, int> range,
+      int depth,
+      EvalNodeArena& arena
+  );
+  ChoiceNode* RangeToChoiceNode(
+      int cell,
+      const vector<WordPath>& words,
+      pair<int, int> range,
+      int depth,
+      EvalNodeArena& arena
+  );
 
   void PrintWordList();
 };
@@ -572,8 +575,6 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   choice_nodes_.insert(node);
   return node;
 }
-
-
 
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::PrintWordList() {
