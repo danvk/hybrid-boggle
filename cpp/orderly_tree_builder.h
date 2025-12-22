@@ -596,8 +596,8 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   }
 
   // Check cache
-  auto it = deduper.sum_cache.find(node);
-  if (it != deduper.sum_cache.end()) {
+  auto [it, was_inserted] = deduper.sum_cache.insert(node);
+  if (!was_inserted) {
     sum_hit_++;
     return *it;
   }
@@ -609,7 +609,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     new_node->children_[i] = node->children_[i];
   }
 
-  deduper.sum_cache.insert(new_node);
+  *(SumNode**)(&*it) = new_node;
   return new_node;
 }
 
