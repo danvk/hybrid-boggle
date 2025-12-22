@@ -592,6 +592,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
         cell - 1, words, {range_start, range_end}, depth, arena, deduper
     );
     node->children_[i] = child;
+    node->bound_ += child->bound_;
   }
 
   // Check cache
