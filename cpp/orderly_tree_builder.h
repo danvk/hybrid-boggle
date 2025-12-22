@@ -7,7 +7,7 @@
 #include <span>
 #include <unordered_set>
 
-// #include "ankerl/unordered_dense.h"
+#include "ankerl/unordered_dense.h"
 #include "constants.h"
 #include "equal_ranges.h"
 #include "eval_node.h"
@@ -15,72 +15,26 @@
 
 using namespace std;
 
-// Helper for hashing
-template <class T>
-inline void hash_combine(std::size_t& seed, const T& v) {
-  // Use simple hash combine for std::unordered_set test
-  std::hash<T> hasher;
-  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-
-// Key Views for lookups avoiding allocation
-struct SumNodeKeyView {
-  uint16_t points;
-  uint32_t child_cells;
-  std::span<ChoiceNode* const> children;
-};
-
-struct ChoiceNodeKeyView {
-  uint32_t child_letters;
-  std::span<SumNode* const> children;
-};
-
 // Transparent Hasher
 struct NodeHasher {
-  using is_transparent = void;
+  using is_avalanching = void;
 
   // Hash for SumNode*
-  std::size_t operator()(const SumNode* n) const {
-    std::size_t seed = 0;
-    hash_combine(seed, n->points_);
-    hash_combine(seed, n->child_cells_);
-    int num = n->NumChildren();
-    for (int i = 0; i < num; ++i) {
-      hash_combine(seed, n->children_[i]);
-    }
-    return seed;
-  }
-
-  // Hash for SumNodeKeyView
-  std::size_t operator()(const SumNodeKeyView& k) const {
-    std::size_t seed = 0;
-    hash_combine(seed, k.points);
-    hash_combine(seed, k.child_cells);
-    for (auto* ptr : k.children) {
-      hash_combine(seed, ptr);
-    }
-    return seed;
+  uint64_t operator()(const SumNode* n) const noexcept {
+    // static_assert(std::has_unique_object_representations_v<SumNode>);
+    int num_children = n->NumChildren();
+    return ankerl::unordered_dense::detail::wyhash::hash(
+        n, sizeof(SumNode) + sizeof(ChoiceNode*) * num_children
+    );
   }
 
   // Hash for ChoiceNode*
-  std::size_t operator()(const ChoiceNode* n) const {
-    std::size_t seed = 0;
-    hash_combine(seed, n->child_letters_);
-    int num = n->NumChildren();
-    for (int i = 0; i < num; ++i) {
-      hash_combine(seed, n->children_[i]);
-    }
-    return seed;
-  }
-
-  // Hash for ChoiceNodeKeyView
-  std::size_t operator()(const ChoiceNodeKeyView& k) const {
-    std::size_t seed = 0;
-    hash_combine(seed, k.child_letters);
-    for (auto* ptr : k.children) {
-      hash_combine(seed, ptr);
-    }
-    return seed;
+  uint64_t operator()(const ChoiceNode* n) const noexcept {
+    // static_assert(std::has_unique_object_representations_v<ChoiceNode>);
+    int num_children = n->NumChildren();
+    return ankerl::unordered_dense::detail::wyhash::hash(
+        n, sizeof(ChoiceNode) + sizeof(SumNode*) * num_children
+    );
   }
 };
 
@@ -99,20 +53,6 @@ struct NodeEqual {
     return true;
   }
 
-  bool operator()(const SumNode* n, const SumNodeKeyView& k) const {
-    if (n->points_ != k.points || n->child_cells_ != k.child_cells) return false;
-    int num = n->NumChildren();
-    if (num != (int)k.children.size()) return false;
-    for (int i = 0; i < num; ++i) {
-      if (n->children_[i] != k.children[i]) return false;
-    }
-    return true;
-  }
-
-  bool operator()(const SumNodeKeyView& k, const SumNode* n) const {
-    return (*this)(n, k);
-  }
-
   // ChoiceNode Comparisons
   bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
     if (a->child_letters_ != b->child_letters_) return false;
@@ -121,20 +61,6 @@ struct NodeEqual {
       if (a->children_[i] != b->children_[i]) return false;
     }
     return true;
-  }
-
-  bool operator()(const ChoiceNode* n, const ChoiceNodeKeyView& k) const {
-    if (n->child_letters_ != k.child_letters) return false;
-    int num = n->NumChildren();
-    if (num != (int)k.children.size()) return false;
-    for (int i = 0; i < num; ++i) {
-      if (n->children_[i] != k.children[i]) return false;
-    }
-    return true;
-  }
-
-  bool operator()(const ChoiceNodeKeyView& k, const ChoiceNode* n) const {
-    return (*this)(n, k);
   }
 };
 
@@ -188,6 +114,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   unsigned int used_ordered_;  // used cells mapped to their split order
   int choices_[M * N];         // cell order -> letter index
   int num_paths_;
+  int choice_hit_;
+  int sum_hit_;
   vector<WordPath> words_;
   TreeBuilderStats stats_;
 
@@ -221,6 +149,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   TreeBuilderStats stats;
+  sum_hit_ = choice_hit_ = 0;
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   // cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
@@ -292,6 +221,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "root->bound_: " << (uintptr_t)&root->bound_ - r << endl;
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
+  cout << "sum_hits: " << sum_hit_ << " choice_hits: " << choice_hit_ << endl;
   return root;
 }
 
@@ -647,38 +577,39 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   // Use extract_equal_ranges for large ranges
   const int idx = 2 * depth;
   auto ranges = equal_ranges(words, idx, start, end);
+  int num_children = ranges.size();
 
-  vector<ChoiceNode*> children;
-  children.reserve(ranges.size());
-  uint32_t child_cells = 0;
-  
-  for (int i = 0; i < ranges.size(); i++) {
+  char buf[sizeof(SumNode) + 16 * sizeof(SumNode*)];
+  auto node = new (buf) SumNode;
+  node->child_cells_ = 0;
+  node->bound_ = node->points_ = points;
+
+  for (int i = 0; i < num_children; i++) {
     const auto& [cell, range_start, range_end] = ranges[i];
-    child_cells |= (1 << (cell - 1));
+    node->child_cells_ |= (1 << (cell - 1));
 
-    auto child =
-        RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena, deduper);
-    children.push_back(child);
+    auto child = RangeToChoiceNode(
+        cell - 1, words, {range_start, range_end}, depth, arena, deduper
+    );
+    node->children_[i] = child;
   }
 
   // Check cache
-  SumNodeKeyView key{static_cast<uint16_t>(points), child_cells, children};
-  auto it = deduper.sum_cache.find(key);
+  auto it = deduper.sum_cache.find(node);
   if (it != deduper.sum_cache.end()) {
+    sum_hit_++;
     return *it;
   }
 
-  auto node = arena.NewSumNodeWithCapacity(ranges.size());
-  node->bound_ = node->points_ = points;
-  
-  for (auto* child : children) {
-    node->bound_ += child->bound_;
+  auto new_node = arena.NewSumNodeWithCapacity(num_children);
+  new_node->CopyFrom(*node);
+  new_node->child_cells_ = node->child_cells_;
+  for (int i = 0; i < num_children; i++) {
+    new_node->children_[i] = node->children_[i];
   }
-  
-  node->SetChildren(child_cells, children);
-  
-  deduper.sum_cache.insert(node);
-  return node;
+
+  deduper.sum_cache.insert(new_node);
+  return new_node;
 }
 
 template <int M, int N>
@@ -695,36 +626,36 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
 
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
+  int num_children = ranges.size();
 
-  vector<SumNode*> children;
-  children.reserve(ranges.size());
-  uint32_t letter_mask = 0;
+  char buf[sizeof(ChoiceNode) + 26 * sizeof(ChoiceNode*)];
+  auto node = new (buf) ChoiceNode;
 
   for (int i = 0; i < ranges.size(); i++) {
     const auto& [letter, range_start, range_end] = ranges[i];
-    letter_mask |= (1 << (letter - 1));
-    auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena, deduper);
-    children.push_back(child);
+    node->child_letters_ |= (1 << (letter - 1));
+    auto child =
+        RangeToSumNode(words, {range_start, range_end}, depth + 1, arena, deduper);
+    node->children_[i] = child;
+    node->bound_ = max(node->bound_, (uint32_t)child->bound_);
   }
 
-  ChoiceNodeKeyView key{letter_mask, children};
-  auto it = deduper.choice_cache.find(key);
+  auto it = deduper.choice_cache.find(node);
   if (it != deduper.choice_cache.end()) {
+    choice_hit_++;
     return *it;
   }
 
-  auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
-  node->bound_ = 0;
-  node->child_letters_ = letter_mask;
-  
-  for (int i = 0; i < children.size(); i++) {
-    node->children_[i] = children[i];
-    node->bound_ = max(node->bound_, (uint32_t)children[i]->bound_);
+  auto new_node = arena.NewChoiceNodeWithCapacity(num_children);
+  new_node->CopyFrom(*node);
+  for (int i = 0; i < num_children; i++) {
+    new_node->children_[i] = node->children_[i];
   }
-  
-  deduper.choice_cache.insert(node);
-  return node;
+
+  deduper.choice_cache.insert(new_node);
+  return new_node;
 }
+
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::PrintWordList() {
   int i = 0;

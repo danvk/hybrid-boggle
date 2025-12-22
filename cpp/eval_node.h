@@ -2,12 +2,12 @@
 #define EVAL_NODE_H
 
 #include <limits.h>
-#include <span>
 
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <span>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -79,6 +79,7 @@ class ChoiceNode {
 
   // Shallow copy -- excludes children
   void CopyFrom(ChoiceNode& other);
+  void SetChildren(std::span<SumNode* const> children);
 
   unsigned int ScoreWithForces(int cell, const vector<int>& forces) const;
 
