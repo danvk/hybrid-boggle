@@ -508,31 +508,34 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   const int idx = 2 * depth;
   auto ranges = equal_ranges(words, idx, start, end);
 
-  uint32_t child_cells = 0;
-  vector<ChoiceNode*> children;
-  children.reserve(ranges.size());
-  uint32_t bound = points;
-  for (int i = 0; i < ranges.size(); i++) {
+  // TODO: could be 8 for all but the root node
+  char buf[sizeof(SumNode) + 16 * sizeof(SumNode*)];
+  auto node = new (buf) SumNode;
+  node->bound_ = node->points_ = points;
+  int num_children = ranges.size();
+  for (int i = 0; i < num_children; i++) {
     const auto& [cell, range_start, range_end] = ranges[i];
-    child_cells |= (1 << (cell - 1));
+    node->child_cells_ |= (1 << (cell - 1));
 
     auto child =
         RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena);
-    children.push_back(child);
-    bound += child->Bound();
+    node->children_[i] = child;
+    node->bound_ += child->Bound();
   }
 
-  auto node = arena.NewSumNodeWithCapacity(ranges.size());
-  node->points_ = points;
-  node->bound_ = bound;
-  node->SetChildren(child_cells, children);
-
-  auto [it, was_inserted] = sum_nodes_.insert(node);
-  if (!was_inserted) {
-    arena.DiscardLastNode();
+  auto it = sum_nodes_.find(node);
+  if (it != sum_nodes_.end()) {
     node = *it;
+    return node;
+  } else {
+    auto new_node = arena.NewSumNodeWithCapacity(num_children);
+    new_node->CopyFrom(*node);
+    for (int i = 0; i < num_children; i++) {
+      new_node->children_[i] = node->children_[i];
+    }
+    sum_nodes_.emplace(new_node);
+    return new_node;
   }
-  return node;
 }
 
 template <int M, int N>
@@ -549,30 +552,33 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
 
+  char buf[sizeof(ChoiceNode) + 26 * sizeof(ChoiceNode*)];
+  auto node = new (buf) ChoiceNode;
+  node->bound_ = 0;
   uint32_t letter_mask = 0;
-  vector<SumNode*> children;
-  children.reserve(ranges.size());
-  uint32_t bound = 0;
-
-  for (int i = 0; i < ranges.size(); i++) {
+  int num_children = ranges.size();
+  for (int i = 0; i < num_children; i++) {
     const auto& [letter, range_start, range_end] = ranges[i];
     letter_mask |= (1 << (letter - 1));
     auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena);
-    children.push_back(child);
-    bound = max(bound, child->Bound());
+    node->children_[i] = child;
+    node->bound_ = max(node->bound_, (uint32_t)child->bound_);
   }
-
-  auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
-  node->bound_ = bound;
   node->child_letters_ = letter_mask;
-  memcpy(&node->children_[0], children.data(), children.size() * sizeof(SumNode*));
 
-  auto [it, was_inserted] = choice_nodes_.insert(node);
-  if (!was_inserted) {
-    arena.DiscardLastNode();
+  auto it = choice_nodes_.find(node);
+  if (it != choice_nodes_.end()) {
     node = *it;
+    return node;
+  } else {
+    auto new_node = arena.NewChoiceNodeWithCapacity(num_children);
+    new_node->CopyFrom(*node);
+    for (int i = 0; i < num_children; i++) {
+      new_node->children_[i] = node->children_[i];
+    }
+    choice_nodes_.insert(new_node);
+    return new_node;
   }
-  return node;
 }
 
 template <int M, int N>
