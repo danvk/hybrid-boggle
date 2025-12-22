@@ -38,6 +38,8 @@ class EvalNodeArena {
   SumNode* NewSumNodeWithCapacity(uint8_t capacity);
   ChoiceNode* NewChoiceNodeWithCapacity(uint8_t capacity);
 
+  void DiscardLastNode();
+
   SumNode* GetCanonicalNode(int points) {
     assert(points >= 1 && points <= NUM_INTERNED);
     return canonical_nodes_[points - 1];
@@ -55,12 +57,14 @@ class EvalNodeArena {
   int tip_;
   vector<pair<int, int>> watermarks_;
   vector<SumNode*> canonical_nodes_;
+  std::tuple<int, int, uint64_t> last_;
 };
 
 unique_ptr<EvalNodeArena> create_eval_node_arena();
 
 template <typename T>
 T* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
+  last_ = {cur_buffer_, tip_, num_nodes_};
   num_nodes_++;
   int size = sizeof(T) + capacity * sizeof(T::children_[0]);
   // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;

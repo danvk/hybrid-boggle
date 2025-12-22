@@ -526,12 +526,11 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   node->bound_ = bound;
   node->SetChildren(child_cells, children);
 
-  auto it = sum_nodes_.find(node);
-  if (it != sum_nodes_.end()) {
-    return *it;
+  auto [it, was_inserted] = sum_nodes_.insert(node);
+  if (!was_inserted) {
+    arena.DiscardLastNode();
+    node = *it;
   }
-
-  sum_nodes_.insert(node);
   return node;
 }
 
@@ -567,12 +566,11 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   node->child_letters_ = letter_mask;
   memcpy(&node->children_[0], children.data(), children.size() * sizeof(SumNode*));
 
-  auto it = choice_nodes_.find(node);
-  if (it != choice_nodes_.end()) {
-    return *it;
+  auto [it, was_inserted] = choice_nodes_.insert(node);
+  if (!was_inserted) {
+    arena.DiscardLastNode();
+    node = *it;
   }
-
-  choice_nodes_.insert(node);
   return node;
 }
 

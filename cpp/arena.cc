@@ -63,3 +63,12 @@ void EvalNodeArena::ResetLevel(pair<int, int> level) {
   cur_buffer_ = new_cur_buffer;
   tip_ = new_tip;
 }
+
+void EvalNodeArena::DiscardLastNode() {
+  auto [cur_buffer, tip, num_nodes] = last_;
+  assert(cur_buffer >= 0);
+  cur_buffer_ = cur_buffer;
+  tip_ = tip;
+  num_nodes_ = num_nodes;
+  last_ = {-1, -1, 0};
+}
