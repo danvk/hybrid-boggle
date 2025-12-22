@@ -5,6 +5,7 @@
 #include <functional>
 #include <limits>
 #include <new>
+#include <span>
 #include <variant>
 #include <vector>
 
@@ -214,7 +215,7 @@ unsigned int ChoiceNode::ScoreWithForces(int cell, const vector<int>& forces) co
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
     const SumNode* node,
-    vector<int>& sums,
+    int* sums,
     const ChoiceNode* stacks[MAX_CELLS][MAX_STACK_DEPTH],
     int stack_sizes[MAX_CELLS]
 ) {
@@ -257,55 +258,54 @@ vector<pair<int, string>> SumNode::OrderlyBound(
     failures.push_back({bound, board});
   };
 
-  function<void(int, int, vector<int>&)> rec =
-      [&](int base_points, int num_splits, vector<int>& stack_sums) {
-        int bound = base_points;
-        for (int i = num_splits; i < split_order.size(); ++i) {
-          bound += stack_sums[split_order[i]];
-        }
-        if (bound < cutoff) {
-          return;  // done!
-        }
-        if (num_splits == split_order.size()) {
-          record_failure(bound);
-          return;
-        }
+  auto rec = [&](auto&& self, int base_points, int num_splits, int* stack_sums
+             ) -> void {
+    int bound = base_points;
+    for (int i = num_splits; i < split_order.size(); ++i) {
+      bound += stack_sums[split_order[i]];
+    }
+    if (bound < cutoff) {
+      return;  // done!
+    }
+    if (num_splits == split_order.size()) {
+      record_failure(bound);
+      return;
+    }
 
-        int next_to_split = split_order[num_splits];
-        int base_stack_sizes[MAX_CELLS];
-        for (int i = 0; i < MAX_CELLS; i++) {
-          base_stack_sizes[i] = stack_sizes[i];
+    int next_to_split = split_order[num_splits];
+    int base_stack_sizes[MAX_CELLS];
+    memcpy(base_stack_sizes, stack_sizes, sizeof(base_stack_sizes));
+    int base_sums[MAX_CELLS];
+    memcpy(base_sums, stack_sums, sizeof(base_sums));
+
+    auto& next_stack = stacks[next_to_split];
+
+    int num_letters = cells[next_to_split].size();
+    for (int letter = 0; letter < num_letters; ++letter) {
+      if (letter > 0) {
+        // Restore state
+        memcpy(stack_sums, base_sums, sizeof(base_sums));
+        memcpy(stack_sizes, base_stack_sizes, sizeof(base_stack_sizes));
+      }
+      choices.emplace_back(next_to_split, letter);
+      int points = base_points;
+      for (int i = 0; i < stack_sizes[next_to_split]; i++) {
+        auto choice_node = next_stack[i];
+        auto child = choice_node->GetChildForLetter(letter);
+        if (child) {
+          // visit_at_level[1 + num_splits] += 1;
+          points += advance(child, stack_sums, stacks, stack_sizes);
         }
-        vector<int> base_sums = stack_sums;
+      }
+      self(self, points, num_splits + 1, stack_sums);
+      choices.pop_back();
+    }
+  };
 
-        auto& next_stack = stacks[next_to_split];
-
-        int num_letters = cells[next_to_split].size();
-        for (int letter = 0; letter < num_letters; ++letter) {
-          if (letter > 0) {
-            stack_sums = base_sums;
-            for (int i = 0; i < MAX_CELLS; i++) {
-              stack_sizes[i] = base_stack_sizes[i];
-            }
-          }
-          choices.emplace_back(next_to_split, letter);
-          int points = base_points;
-          for (int i = 0; i < stack_sizes[next_to_split]; i++) {
-            auto choice_node = next_stack[i];
-            auto child = choice_node->GetChildForLetter(letter);
-            if (child) {
-              // visit_at_level[1 + num_splits] += 1;
-              points += advance(child, stack_sums, stacks, stack_sizes);
-            }
-          }
-          rec(points, num_splits + 1, stack_sums);
-          choices.pop_back();
-        }
-      };
-
-  vector<int> sums(cells.size(), 0);
+  int sums[MAX_CELLS];
+  memset(sums, 0, sizeof(sums));
   auto base_points = advance(this, sums, stacks, stack_sizes);
-  rec(base_points, 0, sums);
+  rec(rec, base_points, 0, sums);
   return failures;
 }
 
@@ -415,11 +415,11 @@ SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& a
   );
 }
 
-void SumNode::SetChildren(uint32_t child_cells, const vector<ChoiceNode*>& children) {
+void SumNode::SetChildren(uint32_t child_cells, std::span<ChoiceNode* const> children) {
   child_cells_ = child_cells;
   int num_children = NumChildren();
   assert(children.size() == num_children);
-  memcpy(&children_[0], &children[0], num_children * sizeof(ChoiceNode*));
+  memcpy(&children_[0], children.data(), num_children * sizeof(ChoiceNode*));
 }
 
 vector<const SumNode*> SumNode::OrderlyForceCell(
@@ -430,8 +430,8 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   }
 
   uint32_t non_cell_child_cells = child_cells_ & (~(1u << cell));
-  vector<ChoiceNode*> non_cell_children;
-  non_cell_children.reserve(std::popcount(non_cell_child_cells));
+  ChoiceNode* non_cell_children[MAX_CELLS];
+  int non_cell_children_count = 0;
 
   const ChoiceNode* top_choice = NULL;
   uint32_t remaining_mask = child_cells_;
@@ -442,7 +442,7 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     if (child_cell == cell) {
       top_choice = child;
     } else {
-      non_cell_children.push_back(child);
+      non_cell_children[non_cell_children_count++] = child;
     }
     remaining_mask &= remaining_mask - 1;
   }
@@ -464,8 +464,8 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
         out[letter] = merge_orderly_tree_children(
             child,
             non_cell_child_cells,
-            &non_cell_children[0],
-            non_cell_children.size(),
+            non_cell_children,
+            non_cell_children_count,
             non_cell_points,
             arena
         );
@@ -476,7 +476,9 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
 
   if (top_choice->NumChildren() < num_lets) {
     int other_bound = 0;
-    for (auto c : non_cell_children) {
+
+    for (int i = 0; i < non_cell_children_count; ++i) {
+      auto c = non_cell_children[i];
       if (c) {
         other_bound += c->Bound();
       }
@@ -484,15 +486,19 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
     if (other_bound > 0 || non_cell_points > 0) {
       for (int k = 0; k < num_lets; ++k) {
         if (!out[k]) {
-          auto point_node = arena.NewSumNodeWithCapacity(non_cell_children.size());
+          auto point_node = arena.NewSumNodeWithCapacity(non_cell_children_count);
           point_node->points_ = non_cell_points;
           point_node->bound_ = non_cell_points + other_bound;
-          point_node->SetChildren(non_cell_child_cells, non_cell_children);
+          vector<ChoiceNode*> tmp(
+              non_cell_children, non_cell_children + non_cell_children_count
+          );
+          point_node->SetChildren(non_cell_child_cells, tmp);
           out[k] = point_node;
         }
       }
     }
   }
+
   return out;
 }
 
