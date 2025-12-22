@@ -7,6 +7,7 @@
 #include <span>
 #include <unordered_set>
 
+// #include "ankerl/unordered_dense.h"
 #include "constants.h"
 #include "equal_ranges.h"
 #include "eval_node.h"
@@ -17,6 +18,7 @@ using namespace std;
 // Helper for hashing
 template <class T>
 inline void hash_combine(std::size_t& seed, const T& v) {
+  // Use simple hash combine for std::unordered_set test
   std::hash<T> hasher;
   seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }

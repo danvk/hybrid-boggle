@@ -187,6 +187,7 @@ def get_breaker(args) -> BreakingBundle:
             best_score,
             switchover_score=switchover_score,
             log_breaker_progress=args.log_breaker_progress,
+            build_tree_only=args.build_tree_only,
         )
     elif args.breaker == "ibuckets":
         etb = (PyBucketBoggler if args.python else cpp_bucket_boggler)(t, dims)
@@ -293,6 +294,11 @@ def main():
         "--output_base",
         default="tasks",
         help="Outputs will be written to output_base-thread_id.ndjson.",
+    )
+    parser.add_argument(
+        "--build_tree_only",
+        action="store_true",
+        help="Only build the tree and exit. Useful for benchmarking tree construction.",
     )
     parser.add_argument(
         "--gcs_path",

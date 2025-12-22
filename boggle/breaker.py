@@ -118,6 +118,7 @@ class HybridTreeBreaker:
         switchover_score: int,
         log_breaker_progress: bool,
         max_depth=None,
+        build_tree_only=False,
     ):
         self.etb = etb
         self.boggler = boggler
@@ -129,6 +130,7 @@ class HybridTreeBreaker:
         self.switchover_score = switchover_score
         self.switchover_depth = max_depth or (dims[0] * dims[1] - 4)
         self.log_breaker_progress = log_breaker_progress
+        self.build_tree_only = build_tree_only
 
     def SetBoard(self, board: str):
         return self.etb.parse_board(board)
@@ -175,7 +177,8 @@ class HybridTreeBreaker:
         self.details_.init_nodes = arena.num_nodes()
         self.details_.tree_bytes = arena.bytes_allocated()
 
-        self.attack_tree(tree, 1, [], arena)
+        if not self.build_tree_only:
+            self.attack_tree(tree, 1, [], arena)
 
         self.details_.elapsed_s = time.time() - start_time_s
         self.details_.total_nodes = arena.num_nodes()
