@@ -55,6 +55,7 @@ class EvalNodeArena {
   uint64_t num_nodes_;
   int cur_buffer_;
   int tip_;
+  int num_discarded_;
   vector<pair<int, int>> watermarks_;
   vector<SumNode*> canonical_nodes_;
   std::tuple<int, int, uint64_t> last_;

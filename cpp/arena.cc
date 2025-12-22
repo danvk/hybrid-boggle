@@ -22,6 +22,8 @@ EvalNodeArena::~EvalNodeArena() {
 void EvalNodeArena::PrintStats() {
   cout << "num_buffers: " << buffers_.size() << endl;
   cout << "tip: " << tip_ << endl;
+  cout << "num_nodes: " << num_nodes_ << endl;
+  cout << "num_discarded: " << num_discarded_ << endl;
 }
 
 unique_ptr<EvalNodeArena> create_eval_node_arena() {
@@ -65,6 +67,7 @@ void EvalNodeArena::ResetLevel(pair<int, int> level) {
 }
 
 void EvalNodeArena::DiscardLastNode() {
+  num_discarded_++;
   auto [cur_buffer, tip, num_nodes] = last_;
   assert(cur_buffer >= 0);
   cur_buffer_ = cur_buffer;

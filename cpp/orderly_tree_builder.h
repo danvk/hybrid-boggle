@@ -53,7 +53,6 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
  private:
   struct NodeHasher {
-    using is_transparent = void;
     size_t operator()(const SumNode* a) const {
       return absl::Hash<SumNode*>()(const_cast<SumNode*>(a));
     }
@@ -154,6 +153,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   sum_nodes_.clear();
   choice_nodes_.clear();
   stats_ = stats;
+
+  arena.PrintStats();
 
   return root;
 }
