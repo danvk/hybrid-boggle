@@ -2,7 +2,9 @@
 #define ORDERLY_TREE_BUILDER_H
 
 #include <array>
+#include <functional>
 #include <iomanip>
+#include <unordered_map>
 
 #include "constants.h"
 #include "equal_ranges.h"
@@ -10,6 +12,59 @@
 #include "ibuckets.h"
 
 using namespace std;
+
+// Helper for hashing
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+struct SumNodeKey {
+  uint16_t points;
+  uint32_t child_cells;
+  std::vector<ChoiceNode*> children;
+
+  bool operator==(const SumNodeKey& other) const {
+    return points == other.points && child_cells == other.child_cells &&
+           children == other.children;
+  }
+};
+
+struct ChoiceNodeKey {
+  uint32_t child_letters;
+  std::vector<SumNode*> children;
+
+  bool operator==(const ChoiceNodeKey& other) const {
+    return child_letters == other.child_letters && children == other.children;
+  }
+};
+
+struct NodeHasher {
+  std::size_t operator()(const SumNodeKey& k) const {
+    std::size_t seed = 0;
+    hash_combine(seed, k.points);
+    hash_combine(seed, k.child_cells);
+    for (auto* ptr : k.children) {
+      hash_combine(seed, ptr);
+    }
+    return seed;
+  }
+
+  std::size_t operator()(const ChoiceNodeKey& k) const {
+    std::size_t seed = 0;
+    hash_combine(seed, k.child_letters);
+    for (auto* ptr : k.children) {
+      hash_combine(seed, ptr);
+    }
+    return seed;
+  }
+};
+
+struct Deduper {
+  std::unordered_map<SumNodeKey, SumNode*, NodeHasher> sum_cache;
+  std::unordered_map<ChoiceNodeKey, ChoiceNode*, NodeHasher> choice_cache;
+};
 
 struct TreeBuilderStats {
   float collect_s;
@@ -71,14 +126,16 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
       const vector<WordPath>& words,
       pair<int, int> range,
       int depth,
-      EvalNodeArena& arena
+      EvalNodeArena& arena,
+      Deduper& deduper
   );
   ChoiceNode* RangeToChoiceNode(
       int cell,
       const vector<WordPath>& words,
       pair<int, int> range,
       int depth,
-      EvalNodeArena& arena
+      EvalNodeArena& arena,
+      Deduper& deduper
   );
 
   void PrintWordList();
@@ -131,7 +188,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   stats.n_uniq = words_.size();
   // PrintWordList();
 
-  auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
+  Deduper deduper;
+  auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena, deduper);
 
   auto end4 = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
@@ -490,7 +548,11 @@ int PathLength(const array<uint8_t, N>& a) {
 // Endpoints are _inclusive_; equal ends = 1-element list
 template <int M, int N>
 SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
-    const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena
+    const vector<WordPath>& words,
+    pair<int, int> range,
+    int depth,
+    EvalNodeArena& arena,
+    Deduper& deduper
 ) {
   int start = range.first;
   int end = range.second;
@@ -509,22 +571,36 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   const int idx = 2 * depth;
   auto ranges = equal_ranges(words, idx, start, end);
 
-  auto node = arena.NewSumNodeWithCapacity(ranges.size());
-  node->bound_ = node->points_ = points;
-
-  uint32_t child_cells = 0;
   vector<ChoiceNode*> children;
   children.reserve(ranges.size());
+  uint32_t child_cells = 0;
+  
   for (int i = 0; i < ranges.size(); i++) {
     const auto& [cell, range_start, range_end] = ranges[i];
     child_cells |= (1 << (cell - 1));
 
     auto child =
-        RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena);
+        RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena, deduper);
     children.push_back(child);
+  }
+
+  // Check cache
+  SumNodeKey key{static_cast<uint16_t>(points), child_cells, children};
+  auto it = deduper.sum_cache.find(key);
+  if (it != deduper.sum_cache.end()) {
+    return it->second;
+  }
+
+  auto node = arena.NewSumNodeWithCapacity(ranges.size());
+  node->bound_ = node->points_ = points;
+  
+  for (auto* child : children) {
     node->bound_ += child->bound_;
   }
+  
   node->SetChildren(child_cells, children);
+  
+  deduper.sum_cache[key] = node;
   return node;
 }
 
@@ -534,7 +610,8 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     const vector<WordPath>& words,
     pair<int, int> range,
     int depth,
-    EvalNodeArena& arena
+    EvalNodeArena& arena,
+    Deduper& deduper
 ) {
   int start = range.first;
   int end = range.second;
@@ -542,20 +619,35 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   const auto idx = 2 * depth + 1;
   auto ranges = equal_ranges(words, idx, start, end);
 
-  auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
-  node->bound_ = 0;
+  vector<SumNode*> children;
+  children.reserve(ranges.size());
   uint32_t letter_mask = 0;
+
   for (int i = 0; i < ranges.size(); i++) {
     const auto& [letter, range_start, range_end] = ranges[i];
     letter_mask |= (1 << (letter - 1));
-    auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena);
-    node->children_[i] = child;
-    node->bound_ = max(node->bound_, (uint32_t)child->bound_);
+    auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena, deduper);
+    children.push_back(child);
   }
+
+  ChoiceNodeKey key{letter_mask, children};
+  auto it = deduper.choice_cache.find(key);
+  if (it != deduper.choice_cache.end()) {
+    return it->second;
+  }
+
+  auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
+  node->bound_ = 0;
   node->child_letters_ = letter_mask;
+  
+  for (int i = 0; i < children.size(); i++) {
+    node->children_[i] = children[i];
+    node->bound_ = max(node->bound_, (uint32_t)children[i]->bound_);
+  }
+  
+  deduper.choice_cache[key] = node;
   return node;
 }
-
 template <int M, int N>
 void OrderlyTreeBuilder<M, N>::PrintWordList() {
   int i = 0;
