@@ -2,6 +2,7 @@
 #define EVAL_NODE_H
 
 #include <limits.h>
+#include <span>
 
 #include <cassert>
 #include <iostream>
@@ -35,7 +36,7 @@ class SumNode {
   // Must have forces.size() == M * N; set forces[i] = -1 to not force a cell.
   unsigned int ScoreWithForces(const vector<int>& forces) const;
 
-  void SetChildren(uint32_t child_cells, const vector<ChoiceNode*>& children);
+  void SetChildren(uint32_t child_cells, std::span<ChoiceNode* const> children);
 
   int NodeCount() const;
   int WordCount() const;

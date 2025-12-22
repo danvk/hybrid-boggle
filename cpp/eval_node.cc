@@ -5,6 +5,7 @@
 #include <functional>
 #include <limits>
 #include <new>
+#include <span>
 #include <variant>
 #include <vector>
 
@@ -415,11 +416,11 @@ SumNode* merge_orderly_tree(const SumNode* a, const SumNode* b, EvalNodeArena& a
   );
 }
 
-void SumNode::SetChildren(uint32_t child_cells, const vector<ChoiceNode*>& children) {
+void SumNode::SetChildren(uint32_t child_cells, std::span<ChoiceNode* const> children) {
   child_cells_ = child_cells;
   int num_children = NumChildren();
   assert(children.size() == num_children);
-  memcpy(&children_[0], &children[0], num_children * sizeof(ChoiceNode*));
+  memcpy(&children_[0], children.data(), num_children * sizeof(ChoiceNode*));
 }
 
 vector<const SumNode*> SumNode::OrderlyForceCell(

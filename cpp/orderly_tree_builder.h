@@ -4,7 +4,8 @@
 #include <array>
 #include <functional>
 #include <iomanip>
-#include <unordered_map>
+#include <span>
+#include <unordered_set>
 
 #include "constants.h"
 #include "equal_ranges.h"
@@ -20,28 +21,36 @@ inline void hash_combine(std::size_t& seed, const T& v) {
   seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-struct SumNodeKey {
+// Key Views for lookups avoiding allocation
+struct SumNodeKeyView {
   uint16_t points;
   uint32_t child_cells;
-  std::vector<ChoiceNode*> children;
-
-  bool operator==(const SumNodeKey& other) const {
-    return points == other.points && child_cells == other.child_cells &&
-           children == other.children;
-  }
+  std::span<ChoiceNode* const> children;
 };
 
-struct ChoiceNodeKey {
+struct ChoiceNodeKeyView {
   uint32_t child_letters;
-  std::vector<SumNode*> children;
-
-  bool operator==(const ChoiceNodeKey& other) const {
-    return child_letters == other.child_letters && children == other.children;
-  }
+  std::span<SumNode* const> children;
 };
 
+// Transparent Hasher
 struct NodeHasher {
-  std::size_t operator()(const SumNodeKey& k) const {
+  using is_transparent = void;
+
+  // Hash for SumNode*
+  std::size_t operator()(const SumNode* n) const {
+    std::size_t seed = 0;
+    hash_combine(seed, n->points_);
+    hash_combine(seed, n->child_cells_);
+    int num = n->NumChildren();
+    for (int i = 0; i < num; ++i) {
+      hash_combine(seed, n->children_[i]);
+    }
+    return seed;
+  }
+
+  // Hash for SumNodeKeyView
+  std::size_t operator()(const SumNodeKeyView& k) const {
     std::size_t seed = 0;
     hash_combine(seed, k.points);
     hash_combine(seed, k.child_cells);
@@ -51,7 +60,19 @@ struct NodeHasher {
     return seed;
   }
 
-  std::size_t operator()(const ChoiceNodeKey& k) const {
+  // Hash for ChoiceNode*
+  std::size_t operator()(const ChoiceNode* n) const {
+    std::size_t seed = 0;
+    hash_combine(seed, n->child_letters_);
+    int num = n->NumChildren();
+    for (int i = 0; i < num; ++i) {
+      hash_combine(seed, n->children_[i]);
+    }
+    return seed;
+  }
+
+  // Hash for ChoiceNodeKeyView
+  std::size_t operator()(const ChoiceNodeKeyView& k) const {
     std::size_t seed = 0;
     hash_combine(seed, k.child_letters);
     for (auto* ptr : k.children) {
@@ -61,9 +82,63 @@ struct NodeHasher {
   }
 };
 
+// Transparent Equality
+struct NodeEqual {
+  using is_transparent = void;
+
+  // SumNode Comparisons
+  bool operator()(const SumNode* a, const SumNode* b) const {
+    if (a->points_ != b->points_ || a->child_cells_ != b->child_cells_) return false;
+    int num = a->NumChildren();
+    // Assuming canonical/deduplicated children, pointer equality check is sufficient
+    for (int i = 0; i < num; ++i) {
+      if (a->children_[i] != b->children_[i]) return false;
+    }
+    return true;
+  }
+
+  bool operator()(const SumNode* n, const SumNodeKeyView& k) const {
+    if (n->points_ != k.points || n->child_cells_ != k.child_cells) return false;
+    int num = n->NumChildren();
+    if (num != (int)k.children.size()) return false;
+    for (int i = 0; i < num; ++i) {
+      if (n->children_[i] != k.children[i]) return false;
+    }
+    return true;
+  }
+
+  bool operator()(const SumNodeKeyView& k, const SumNode* n) const {
+    return (*this)(n, k);
+  }
+
+  // ChoiceNode Comparisons
+  bool operator()(const ChoiceNode* a, const ChoiceNode* b) const {
+    if (a->child_letters_ != b->child_letters_) return false;
+    int num = a->NumChildren();
+    for (int i = 0; i < num; ++i) {
+      if (a->children_[i] != b->children_[i]) return false;
+    }
+    return true;
+  }
+
+  bool operator()(const ChoiceNode* n, const ChoiceNodeKeyView& k) const {
+    if (n->child_letters_ != k.child_letters) return false;
+    int num = n->NumChildren();
+    if (num != (int)k.children.size()) return false;
+    for (int i = 0; i < num; ++i) {
+      if (n->children_[i] != k.children[i]) return false;
+    }
+    return true;
+  }
+
+  bool operator()(const ChoiceNodeKeyView& k, const ChoiceNode* n) const {
+    return (*this)(n, k);
+  }
+};
+
 struct Deduper {
-  std::unordered_map<SumNodeKey, SumNode*, NodeHasher> sum_cache;
-  std::unordered_map<ChoiceNodeKey, ChoiceNode*, NodeHasher> choice_cache;
+  std::unordered_set<SumNode*, NodeHasher, NodeEqual> sum_cache;
+  std::unordered_set<ChoiceNode*, NodeHasher, NodeEqual> choice_cache;
 };
 
 struct TreeBuilderStats {
@@ -585,10 +660,10 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   }
 
   // Check cache
-  SumNodeKey key{static_cast<uint16_t>(points), child_cells, children};
+  SumNodeKeyView key{static_cast<uint16_t>(points), child_cells, children};
   auto it = deduper.sum_cache.find(key);
   if (it != deduper.sum_cache.end()) {
-    return it->second;
+    return *it;
   }
 
   auto node = arena.NewSumNodeWithCapacity(ranges.size());
@@ -600,7 +675,7 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
   
   node->SetChildren(child_cells, children);
   
-  deduper.sum_cache[key] = node;
+  deduper.sum_cache.insert(node);
   return node;
 }
 
@@ -630,10 +705,10 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     children.push_back(child);
   }
 
-  ChoiceNodeKey key{letter_mask, children};
+  ChoiceNodeKeyView key{letter_mask, children};
   auto it = deduper.choice_cache.find(key);
   if (it != deduper.choice_cache.end()) {
-    return it->second;
+    return *it;
   }
 
   auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
@@ -645,7 +720,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     node->bound_ = max(node->bound_, (uint32_t)children[i]->bound_);
   }
   
-  deduper.choice_cache[key] = node;
+  deduper.choice_cache.insert(node);
   return node;
 }
 template <int M, int N>
