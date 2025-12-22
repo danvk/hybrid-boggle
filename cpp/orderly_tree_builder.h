@@ -186,6 +186,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // PrintWordList();
 
   Deduper deduper;
+  deduper.choice_cache.reserve(words_.size() / 4);
+  deduper.sum_cache.reserve(words_.size() / 4);
   auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena, deduper);
 
   auto end4 = chrono::high_resolution_clock::now();
@@ -213,6 +215,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   cout << "root->children_: " << (uintptr_t)&root->children_ - r << endl;
   */
   cout << "sum_hits: " << sum_hit_ << " choice_hits: " << choice_hit_ << endl;
+  cout << "sum_cache size: " << deduper.sum_cache.size() << endl;
+  cout << "choice_cache size: " << deduper.choice_cache.size() << endl;
   return root;
 }
 
