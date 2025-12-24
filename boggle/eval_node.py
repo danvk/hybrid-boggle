@@ -91,6 +91,8 @@ class SumNode:
         cells: list[str],
         split_order: Sequence[int],
         preset_cells: Sequence[tuple[int, int]],
+        arena=None,
+        max_visits=-1,
     ):
         """Find individual high-scoring boards in this tree without creating new nodes.
 

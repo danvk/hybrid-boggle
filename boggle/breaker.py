@@ -240,7 +240,7 @@ class HybridTreeBreaker:
         arena.reset_level(arena_level)
 
     def switch_to_score(
-        self, tree: SumNode, level: int, choices: list[tuple[int, int]]
+        self, tree: SumNode, level: int, choices: list[tuple[int, int]], arena: PyArena
     ) -> None:
         start_s = time.time()
         remaining_cells = self.split_order[len(choices) :]
@@ -248,7 +248,7 @@ class HybridTreeBreaker:
         self.details_.n_bound += 1
         self.details_.depth[level] += 1
         score_boards = tree.orderly_bound(
-            self.best_score, self.cells, remaining_cells, choices
+            self.best_score, self.cells, remaining_cells, choices, arena
         )
         boards_to_test = [board for _score, board in score_boards]
         bound_elapsed_s = time.time() - start_s

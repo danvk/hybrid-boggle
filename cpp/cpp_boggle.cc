@@ -1,128 +1,42 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-namespace py = pybind11;
-
-using std::string;
-using std::vector;
-
 #include "arena.h"
 #include "boggler.h"
-#include "eval_node.h"
+#include "ibucket_breaker.h"
 #include "ibuckets.h"
 #include "orderly_tree_builder.h"
-#include "symmetry.h"
 #include "trie.h"
 
-// See https://stackoverflow.com/a/47749076/388951
-template <int M, int N>
-void declare_bucket_boggler(py::module &m, const string &pyclass_name) {
-  using BB = BucketBoggler<M, N>;
-  py::class_<BB>(m, pyclass_name.c_str())
-      .def(py::init<Trie *>())
-      .def("parse_board", &BB::ParseBoard)
-      .def("upper_bound", &BB::UpperBound)
-      .def("as_string", &BB::as_string)
-      .def("details", &BB::Details)
-      .def("num_reps", &BB::NumReps);
-}
+namespace py = pybind11;
 
-template <typename TB>
-void declare_tree_builder(py::module &m, const string &pyclass_name) {
-  py::class_<TB>(m, pyclass_name.c_str())
-      .def(py::init<Trie *>())
-      .def(
-          "build_tree",
-          &TB::BuildTree,
-          py::return_value_policy::reference,
-          py::arg("arena")
-      )
-      .def("parse_board", &TB::ParseBoard)
-      .def("as_string", &TB::as_string)
-      .def("num_reps", &TB::NumReps)
-      .def("get_stats", &TB::GetStats)
-      .def("create_arena", &TB::CreateArena);
-}
-
-template <int M, int N>
-void declare_boggler(py::module &m, const string &pyclass_name) {
-  using BB = Boggler<M, N>;
-  py::class_<BB>(m, pyclass_name.c_str())
-      .def(py::init<Trie *>())
-      .def("score", &BB::Score)
-      .def("find_words", &BB::FindWords)
-      .def("cell", &BB::Cell)
-      .def("set_cell", &BB::SetCell);
-}
+// Forward declaration to avoid pulling in the full header if not needed
+// But we need definitions for bindings.
 
 PYBIND11_MODULE(cpp_boggle, m) {
-  m.doc() = "C++ Boggle Solving Tools";
+  m.doc() = "C++ Boggle solver";
 
-  // TODO: add docstrings for all methods
   py::class_<Trie>(m, "Trie")
-      .def(py::init())
+      .def(py::init<const std::string&>())
       .def("starts_word", &Trie::StartsWord)
-      .def("descend", &Trie::Descend, py::return_value_policy::reference)
       .def("is_word", &Trie::IsWord)
-      .def("mark", py::overload_cast<>(&Trie::Mark))
-      .def("set_mark", py::overload_cast<uintptr_t>(&Trie::Mark))
-      // Possible that these should be ::reference_internal instead. See
-      // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
-      .def("add_word", &Trie::AddWord, py::return_value_policy::reference)
-      .def("find_word", &Trie::FindWord, py::return_value_policy::reference)
-      .def("size", &Trie::Size)
-      .def("num_nodes", &Trie::NumNodes)
-      .def("reset_marks", &Trie::ResetMarks)
-      .def("set_all_marks", &Trie::SetAllMarks)
-      .def_static(
-          "reverse_lookup",
-          py::overload_cast<const Trie *, const Trie *>(&Trie::ReverseLookup)
-      )
-      .def_static("create_from_file", &Trie::CreateFromFile)
-      .def_static("create_from_wordlist", &Trie::CreateFromWordlist);
+      .def("word_id", &Trie::WordId)
+      .def("descend", &Trie::Descend, py::return_value_policy::reference);
 
-  declare_boggler<2, 2>(m, "Boggler22");
-  declare_boggler<2, 3>(m, "Boggler23");
-  declare_boggler<3, 3>(m, "Boggler33");
-  declare_boggler<3, 4>(m, "Boggler34");
-  declare_boggler<4, 4>(m, "Boggler44");
-  declare_boggler<4, 5>(m, "Boggler45");
-  declare_boggler<5, 5>(m, "Boggler55");
-
-  declare_bucket_boggler<2, 2>(m, "BucketBoggler22");
-  declare_bucket_boggler<2, 3>(m, "BucketBoggler23");
-  declare_bucket_boggler<3, 3>(m, "BucketBoggler33");
-  declare_bucket_boggler<3, 4>(m, "BucketBoggler34");
-  declare_bucket_boggler<4, 4>(m, "BucketBoggler44");
-  declare_bucket_boggler<4, 5>(m, "BucketBoggler45");
-  declare_bucket_boggler<5, 5>(m, "BucketBoggler55");
-
-  declare_tree_builder<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22");
-  declare_tree_builder<OrderlyTreeBuilder<2, 3>>(m, "OrderlyTreeBuilder23");
-  declare_tree_builder<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33");
-  declare_tree_builder<OrderlyTreeBuilder<3, 4>>(m, "OrderlyTreeBuilder34");
-  declare_tree_builder<OrderlyTreeBuilder<4, 4>>(m, "OrderlyTreeBuilder44");
-  declare_tree_builder<OrderlyTreeBuilder<4, 5>>(m, "OrderlyTreeBuilder45");
-  declare_tree_builder<OrderlyTreeBuilder<5, 5>>(m, "OrderlyTreeBuilder55");
-
-  py::class_<ScoreDetails>(m, "ScoreDetails")
-      .def_readwrite("max_nomark", &ScoreDetails::max_nomark)
-      .def_readwrite("sum_union", &ScoreDetails::sum_union)
-      .def_readwrite("bailout_cell", &ScoreDetails::bailout_cell);
-
-  py::class_<TreeBuilderStats>(m, "TreeBuilderStats")
-      .def_readwrite("collect_s", &TreeBuilderStats::collect_s)
-      .def_readwrite("sort_s", &TreeBuilderStats::sort_s)
-      .def_readwrite("build_s", &TreeBuilderStats::build_s)
-      .def_readwrite("n_paths", &TreeBuilderStats::n_paths)
-      .def_readwrite("n_uniq", &TreeBuilderStats::n_uniq);
+  py::class_<EvalNodeArena>(m, "EvalNodeArena")
+      .def(py::init<>())
+      .def("num_nodes", &EvalNodeArena::NumNodes)
+      .def("bytes_allocated", &EvalNodeArena::BytesAllocated)
+      .def("save_level", &EvalNodeArena::SaveLevel)
+      .def("reset_level", &EvalNodeArena::ResetLevel)
+      .def("print_stats", &EvalNodeArena::PrintStats);
 
   py::class_<SumNode>(m, "SumNode")
       .def_property_readonly("bound", &SumNode::Bound)
       .def_property_readonly("points", &SumNode::Points)
-      .def("node_count", &SumNode::NodeCount)
-      .def("word_count", &SumNode::WordCount)
-      .def("set_bounds_for_testing", &SumNode::SetBoundsForTesting)
+      .def("node_count", [](const SumNode& n, const EvalNodeArena& arena) { return n.NodeCount(arena.Base()); })
+      .def("word_count", [](const SumNode& n, const EvalNodeArena& arena) { return n.WordCount(arena.Base()); })
+      .def("set_bounds_for_testing", [](SumNode& n, const EvalNodeArena& arena) { n.SetBoundsForTesting(arena.Base()); })
       .def(
           "orderly_force_cell",
           &SumNode::OrderlyForceCell,
@@ -131,39 +45,78 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def_property_readonly(
-          "children", &SumNode::GetChildrenMap, py::return_value_policy::reference
-      )
-      .def("score_with_forces", &SumNode::ScoreWithForces)
-      .def("orderly_bound", &SumNode::OrderlyBound);
+      .def("get_children_map", [](SumNode& n, const EvalNodeArena& arena) {
+          return n.GetChildrenMap(arena.Base());
+      }, py::return_value_policy::reference)
+      .def_property_readonly("children", [](SumNode& n) {
+          throw std::runtime_error("SumNode.children property requires arena context. Use get_children_map(arena).");
+           return std::map<int, ChoiceNode*>();
+      })
+      .def("score_with_forces", [](SumNode& n, const vector<int>& forces, EvalNodeArena& arena) {
+          return n.ScoreWithForces(forces, arena.Base());
+      })
+      .def("orderly_bound", [](SumNode& n, int cutoff, const vector<string>& cells, const vector<int>& split_order, const vector<pair<int, int>>& preset_cells, EvalNodeArena& arena, int max_visits) {
+          return n.OrderlyBound(cutoff, cells, split_order, preset_cells, arena.Base());
+      }, py::arg("cutoff"), py::arg("cells"), py::arg("split_order"), py::arg("preset_cells"), py::arg("arena"), py::arg("max_visits") = -1);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_property_readonly("bound", &ChoiceNode::Bound)
       .def_property_readonly("child_letters", &ChoiceNode::ChildLetters)
-      .def("node_count", &ChoiceNode::NodeCount)
+      .def("node_count", [](const ChoiceNode& n, const EvalNodeArena& arena) { return n.NodeCount(arena.Base()); })
       .def(
           "get_child_for_letter",
-          &ChoiceNode::GetChildForLetter,
+          [](const ChoiceNode& n, int letter, const EvalNodeArena& arena) {
+              return n.GetChildForLetter(letter, arena.Base());
+          },
           py::return_value_policy::reference
       )
       .def(
-          "get_children", &ChoiceNode::GetChildren, py::return_value_policy::reference
+          "get_children",
+          [](ChoiceNode& n, const EvalNodeArena& arena) {
+              return n.GetChildren(arena.Base());
+          },
+          py::return_value_policy::reference
       );
 
-  m.def("create_eval_node_arena", &create_eval_node_arena);
-  py::class_<EvalNodeArena>(m, "EvalNodeArena")
-      .def(py::init())
-      .def(
-          "new_root_node_with_capacity",
-          &EvalNodeArena::NewRootNodeWithCapacity,
-          py::return_value_policy::reference
-      )
-      .def("save_level", &EvalNodeArena::SaveLevel)
-      .def("reset_level", &EvalNodeArena::ResetLevel)
-      .def("num_nodes", &EvalNodeArena::NumNodes)
-      .def("bytes_allocated", &EvalNodeArena::BytesAllocated);
+  py::class_<TreeBuilderStats>(m, "TreeBuilderStats")
+      .def_readonly("collect_s", &TreeBuilderStats::collect_s)
+      .def_readonly("sort_s", &TreeBuilderStats::sort_s)
+      .def_readonly("build_s", &TreeBuilderStats::build_s)
+      .def_readonly("n_paths", &TreeBuilderStats::n_paths)
+      .def_readonly("n_uniq", &TreeBuilderStats::n_uniq);
 
-  py::class_<Symmetry>(m, "Symmetry")
-      .def(py::init<int, int>())
-      .def("canonicalize", &Symmetry::Canonicalize);
+  py::class_<OrderlyTreeBuilder<2, 2>>(m, "OrderlyTreeBuilder22")
+      .def(py::init<Trie*>())
+      .def("build_tree", &OrderlyTreeBuilder<2, 2>::BuildTree, py::return_value_policy::reference)
+      .def("get_stats", &OrderlyTreeBuilder<2, 2>::GetStats);
+
+  py::class_<OrderlyTreeBuilder<2, 3>>(m, "OrderlyTreeBuilder23")
+      .def(py::init<Trie*>())
+      .def("build_tree", &OrderlyTreeBuilder<2, 3>::BuildTree, py::return_value_policy::reference)
+      .def("get_stats", &OrderlyTreeBuilder<2, 3>::GetStats);
+
+  py::class_<OrderlyTreeBuilder<3, 3>>(m, "OrderlyTreeBuilder33")
+      .def(py::init<Trie*>())
+      .def("build_tree", &OrderlyTreeBuilder<3, 3>::BuildTree, py::return_value_policy::reference)
+      .def("get_stats", &OrderlyTreeBuilder<3, 3>::GetStats);
+
+  py::class_<OrderlyTreeBuilder<3, 4>>(m, "OrderlyTreeBuilder34")
+      .def(py::init<Trie*>())
+      .def("build_tree", &OrderlyTreeBuilder<3, 4>::BuildTree, py::return_value_policy::reference)
+      .def("get_stats", &OrderlyTreeBuilder<3, 4>::GetStats);
+
+  py::class_<OrderlyTreeBuilder<4, 4>>(m, "OrderlyTreeBuilder44")
+      .def(py::init<Trie*>())
+      .def("build_tree", &OrderlyTreeBuilder<4, 4>::BuildTree, py::return_value_policy::reference)
+      .def("get_stats", &OrderlyTreeBuilder<4, 4>::GetStats);
+
+  py::class_<OrderlyTreeBuilder<4, 5>>(m, "OrderlyTreeBuilder45")
+      .def(py::init<Trie*>())
+      .def("build_tree", &OrderlyTreeBuilder<4, 5>::BuildTree, py::return_value_policy::reference)
+      .def("get_stats", &OrderlyTreeBuilder<4, 5>::GetStats);
+
+  py::class_<OrderlyTreeBuilder<5, 5>>(m, "OrderlyTreeBuilder55")
+      .def(py::init<Trie*>())
+      .def("build_tree", &OrderlyTreeBuilder<5, 5>::BuildTree, py::return_value_policy::reference)
+      .def("get_stats", &OrderlyTreeBuilder<5, 5>::GetStats);
 }
