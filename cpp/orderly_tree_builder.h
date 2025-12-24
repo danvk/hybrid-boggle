@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <span>
 #include <vector>
-
 #include "constants.h"
 #include "equal_ranges.h"
 #include "eval_node.h"
@@ -37,16 +36,14 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   using BoardClassBoggler<M, N>::bd_;
   using BoardClassBoggler<M, N>::used_;
 
-  const SumNode* BuildTree(EvalNodeArena& arena, vector<uint32_t>& out_score_prefixes);
-
+  const SumNode* BuildTree(EvalNodeArena& arena);
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
-
+  
   struct WordPath {
     array<uint8_t, 2 * M * N> path;
     uint32_t word_id : 24;
     uint8_t points : 8;
   };
-
   TreeBuilderStats GetStats() const { return stats_; }
 
  private:
@@ -60,39 +57,33 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
-
   static bool WordComparator(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
   void PrintWordList();
+  
+  SumNode* RangeToSumNode(const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena);
+  ChoiceNode* RangeToChoiceNode(int cell, const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena);
 };
 
 template <unsigned long N>
 int PathLength(const array<uint8_t, N>& a) {
   int len = 0;
-  for (int i = 0; i < N; i += 2, len++) {
-    if (a[i] == '\0') break;
-  }
+  for (int i = 0; i < N; i += 2, len++) { if (a[i] == '\0') break; }
   return len;
 }
 
 template <int M, int N>
-const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, vector<uint32_t>& out_score_prefixes) {
+const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   TreeBuilderStats stats;
   auto start = chrono::high_resolution_clock::now();
-  
   words_.clear();
   words_.reserve(20'000'000);
-
-  for (int cell = 0; cell < M * N; cell++) {
-    DoAllDescents(cell, 0, 0, dict_, arena);
-  }
+  for (int cell = 0; cell < M * N; cell++) DoAllDescents(cell, 0, 0, dict_, arena);
+  
   auto end1 = chrono::high_resolution_clock::now();
   stats.collect_s = chrono::duration_cast<chrono::milliseconds>(end1 - start).count() / 1000.0;
 
-  if (words_.empty()) {
-    auto root_ref = arena.NewSumNodeWithCapacity(0);
-    return arena.ToPtr<SumNode>(root_ref);
-  }
+  if (words_.empty()) return arena.NewRootNodeWithCapacity(0);
 
   sort(words_.begin(), words_.end(), WordComparator);
   auto end2 = chrono::high_resolution_clock::now();
@@ -103,143 +94,91 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena, vector<
   auto end3 = chrono::high_resolution_clock::now();
   stats.n_uniq = words_.size();
 
-  // Build Score Prefixes
-  out_score_prefixes.clear();
-  out_score_prefixes.reserve(words_.size() + 1);
-  out_score_prefixes.push_back(0);
-  uint32_t running_score = 0;
-  for (const auto& w : words_) {
-      running_score += w.points;
-      out_score_prefixes.push_back(running_score);
-  }
-
-  // BFS Implementation
-  struct PendingSum { NodeRef node; int start; int end; };
-  struct PendingChoice { NodeRef node; int start; int end; };
-  
-  vector<PendingSum> current_sum_nodes;
-  
-  // Initialize Root
-  int root_depth = 0;
-  int root_start = 0;
-  int root_end = words_.size();
-  int root_points = 0;
-  if (PathLength(words_[root_start].path) == root_depth) {
-    root_points = words_[root_start].points;
-    ++root_start;
-  }
-  
-  auto root_ranges = equal_ranges(words_, 2 * root_depth, root_start, root_end);
-  auto root_ref = arena.NewSumNodeWithCapacity(root_ranges.size());
-  auto root = arena.ToPtr<SumNode>(root_ref);
-  root->points_ = root_points;
-  root->range_start_ = root_start;
-  root->range_end_ = root_end;
-  root->bound_ = root_points + (out_score_prefixes[root_end] - out_score_prefixes[root_start]);
-  
-  uint32_t root_child_cells = 0;
-  for(const auto& r : root_ranges) root_child_cells |= (1 << (r.cell - 1));
-  root->child_cells_ = root_child_cells;
-
-  current_sum_nodes.push_back({root_ref, root_start, root_end});
-  
-  int depth = 0;
-  while (!current_sum_nodes.empty()) {
-    vector<PendingChoice> next_choice_nodes;
-    for (const auto& task : current_sum_nodes) {
-        auto node = arena.ToPtr<SumNode>(task.node);
-        int start = task.start;
-        int end = task.end;
-        
-        auto ranges = equal_ranges(words_, 2 * depth, start, end);
-        
-        for (int i = 0; i < ranges.size(); ++i) {
-            const auto& [cell, r_start, r_end] = ranges[i];
-            
-            auto child_ranges = equal_ranges(words_, 2 * depth + 1, r_start, r_end);
-            
-            auto child_ref = arena.NewChoiceNodeWithCapacity(child_ranges.size());
-            auto child = arena.ToPtr<ChoiceNode>(child_ref);
-            child->range_start_ = r_start;
-            child->range_end_ = r_end;
-            child->bound_ = out_score_prefixes[r_end] - out_score_prefixes[r_start];
-            uint32_t letters = 0;
-            for(const auto& cr : child_ranges) letters |= (1 << (cr.cell - 1));
-            child->child_letters_ = letters;
-            
-            node->children_[i] = child_ref;
-            next_choice_nodes.push_back({child_ref, r_start, r_end});
-        }
-    }
-    
-    if (next_choice_nodes.empty()) break;
-    
-    vector<PendingSum> next_sum_nodes;
-    for (const auto& task : next_choice_nodes) {
-        auto node = arena.ToPtr<ChoiceNode>(task.node);
-        int start = task.start;
-        int end = task.end;
-        
-        auto ranges = equal_ranges(words_, 2 * depth + 1, start, end);
-        
-        for (int i = 0; i < ranges.size(); ++i) {
-            const auto& [letter, r_start, r_end] = ranges[i];
-            
-            int next_points = 0;
-            int next_start = r_start;
-            if (PathLength(words_[next_start].path) == depth + 1) {
-                next_points = words_[next_start].points;
-                ++next_start;
-            }
-            size_t next_len = r_end - next_start;
-            
-            if (next_len == 0 && next_points <= NUM_INTERNED) {
-                // Canonical leaves
-                // Bound is implicitly set by Canonical Node (points_ == bound_)
-                node->children_[i] = arena.ToRef(arena.GetCanonicalNode(next_points));
-            } else {
-                auto child_ranges = equal_ranges(words_, 2 * (depth + 1), next_start, r_end);
-                auto child_ref = arena.NewSumNodeWithCapacity(child_ranges.size());
-                auto child = arena.ToPtr<SumNode>(child_ref);
-                child->points_ = next_points;
-                child->range_start_ = next_start;
-                child->range_end_ = r_end;
-                child->bound_ = next_points + (out_score_prefixes[r_end] - out_score_prefixes[next_start]);
-                uint32_t cells = 0;
-                for(const auto& cr : child_ranges) cells |= (1 << (cr.cell - 1));
-                child->child_cells_ = cells;
-                
-                node->children_[i] = child_ref;
-                next_sum_nodes.push_back({child_ref, next_start, r_end});
-            }
-        }
-    }
-    
-    current_sum_nodes = move(next_sum_nodes);
-    depth++;
-  }
-  
-  // No bottom-up pass needed!
+  root_ = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
 
   auto end4 = chrono::high_resolution_clock::now();
   stats.build_s = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count() / 1000.0;
   words_.clear();
   words_.shrink_to_fit();
   stats_ = stats;
-
-  return arena.ToPtr<SumNode>(root_ref);
+  return root_;
 }
 
-// ... rest of file ...
+template <int M, int N>
+SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena) {
+    int start = range.first;
+    int end = range.second;
+    int points = 0;
+    if (PathLength(words[start].path) == depth) {
+        points = words[start].points;
+        ++start;
+    }
+    if (end - start == 0 && points <= NUM_INTERNED) return arena.GetCanonicalNode(points);
+    
+    auto ranges = equal_ranges(words, 2*depth, start, end);
+    auto node = arena.NewSumNodeWithCapacity(ranges.size());
+    node->points_ = points;
+    node->bound_ = points;
+    uint32_t mask = 0;
+    
+    for(int i=0; i<ranges.size(); ++i) {
+        const auto& [cell, s, e] = ranges[i];
+        mask |= (1 << (cell-1));
+        auto child = RangeToChoiceNode(cell-1, words, {s, e}, depth, arena);
+        node->children_[i] = child;
+        node->bound_ += child->Bound();
+    }
+    node->child_cells_ = mask;
+    return node;
+}
+
+template <int M, int N>
+ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(int cell, const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena) {
+    auto ranges = equal_ranges(words, 2*depth + 1, range.first, range.second);
+    auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
+    node->bound_ = 0;
+    uint32_t mask = 0;
+    
+    for(int i=0; i<ranges.size(); ++i) {
+        const auto& [let, s, e] = ranges[i];
+        mask |= (1 << (let-1));
+        auto child = RangeToSumNode(words, {s, e}, depth+1, arena);
+        node->children_[i] = child;
+        node->bound_ = max(node->bound_, child->Bound());
+    }
+    node->child_letters_ = mask;
+    return node;
+}
+
+// ... DoAllDescents and others same as before ...
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::DoAllDescents(
+    int cell, int n, int length, Trie* t, EvalNodeArena& arena
+) {
+  char* c = &bd_[cell][0];
+  int j = 0;
+  while (*c) {
+    auto cc = *c - 'a';
+    if (t->StartsWord(cc)) {
+      int cell_order = cell_to_order_[cell];
+      choices_[cell_order] = j;
+      used_ ^= (1 << cell);
+      used_ordered_ ^= (1 << cell_order);
+
+      DoDFS(cell, n + 1, length + (cc == kQ ? 2 : 1), t->Descend(cc), arena);
+
+      used_ordered_ ^= (1 << cell_order);
+      used_ ^= (1 << cell);
+    }
+    c++;
+    j++;
+  }
+}
+
 #define REC(idx) do { if ((used_ & (1 << idx)) == 0) { DoAllDescents(idx, n, length, t, arena); } } while (0)
 #define REC3(a, b, c) REC(a); REC(b); REC(c)
 #define REC5(a, b, c, d, e) REC3(a, b, c); REC(d); REC(e)
 #define REC8(a, b, c, d, e, f, g, h) REC5(a, b, c, d, e); REC3(f, g, h)
-
-// ... DoDFS implementations (same as before) ...
-// I will keep the DoDFS parts from previous write.
-// Since I'm using write_file with content, I need to provide full content.
-// I'll copy the DoDFS part again.
 
 // 2x2
 template<>

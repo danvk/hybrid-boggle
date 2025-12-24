@@ -10,9 +10,6 @@
 
 namespace py = pybind11;
 
-// Forward declaration to avoid pulling in the full header if not needed
-// But we need definitions for bindings.
-
 PYBIND11_MODULE(cpp_boggle, m) {
   m.doc() = "C++ Boggle solver";
 
@@ -22,6 +19,8 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def("is_word", &Trie::IsWord)
       .def("word_id", &Trie::WordId)
       .def("descend", &Trie::Descend, py::return_value_policy::reference);
+
+  py::class_<EvalNodeArena::State>(m, "ArenaState");
 
   py::class_<EvalNodeArena>(m, "EvalNodeArena")
       .def(py::init<>())
@@ -34,9 +33,9 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<SumNode>(m, "SumNode")
       .def_property_readonly("bound", &SumNode::Bound)
       .def_property_readonly("points", &SumNode::Points)
-      .def("node_count", [](const SumNode& n, const EvalNodeArena& arena) { return n.NodeCount(arena.Base()); })
-      .def("word_count", [](const SumNode& n, const EvalNodeArena& arena) { return n.WordCount(arena.Base()); })
-      .def("set_bounds_for_testing", [](SumNode& n, const EvalNodeArena& arena) { n.SetBoundsForTesting(arena.Base()); })
+      .def("node_count", &SumNode::NodeCount)
+      .def("word_count", &SumNode::WordCount)
+      .def("set_bounds_for_testing", &SumNode::SetBoundsForTesting)
       .def(
           "orderly_force_cell",
           &SumNode::OrderlyForceCell,
@@ -45,36 +44,23 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def("get_children_map", [](SumNode& n, const EvalNodeArena& arena) {
-          return n.GetChildrenMap(arena.Base());
-      }, py::return_value_policy::reference)
-      .def_property_readonly("children", [](SumNode& n) {
-          throw std::runtime_error("SumNode.children property requires arena context. Use get_children_map(arena).");
-           return std::map<int, ChoiceNode*>();
-      })
-      .def("score_with_forces", [](SumNode& n, const vector<int>& forces, EvalNodeArena& arena) {
-          return n.ScoreWithForces(forces, arena.Base());
-      })
-      .def("orderly_bound", [](SumNode& n, int cutoff, const vector<string>& cells, const vector<int>& split_order, const vector<pair<int, int>>& preset_cells, EvalNodeArena& arena, int max_visits) {
-          return n.OrderlyBound(cutoff, cells, split_order, preset_cells, arena.Base());
-      }, py::arg("cutoff"), py::arg("cells"), py::arg("split_order"), py::arg("preset_cells"), py::arg("arena"), py::arg("max_visits") = -1);
+      .def("get_children_map", &SumNode::GetChildrenMap, py::return_value_policy::reference)
+      .def_property_readonly("children", &SumNode::GetChildrenMap)
+      .def("score_with_forces", &SumNode::ScoreWithForces)
+      .def("orderly_bound", &SumNode::OrderlyBound);
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_property_readonly("bound", &ChoiceNode::Bound)
       .def_property_readonly("child_letters", &ChoiceNode::ChildLetters)
-      .def("node_count", [](const ChoiceNode& n, const EvalNodeArena& arena) { return n.NodeCount(arena.Base()); })
+      .def("node_count", &ChoiceNode::NodeCount)
       .def(
           "get_child_for_letter",
-          [](const ChoiceNode& n, int letter, const EvalNodeArena& arena) {
-              return n.GetChildForLetter(letter, arena.Base());
-          },
+          &ChoiceNode::GetChildForLetter,
           py::return_value_policy::reference
       )
       .def(
           "get_children",
-          [](ChoiceNode& n, const EvalNodeArena& arena) {
-              return n.GetChildren(arena.Base());
-          },
+          &ChoiceNode::GetChildren,
           py::return_value_policy::reference
       );
 

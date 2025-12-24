@@ -1,36 +1,26 @@
 #ifndef ARENA_H
 #define ARENA_H
 
-#include <limits.h>
-
-#include <cassert>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <unordered_map>
-#include <variant>
 #include <vector>
+#include <cstdint>
+#include <iostream>
+#include <memory>
+#include <cassert>
 
 using namespace std;
 
 class ChoiceNode;
 class SumNode;
 
-// Allocate this much memory at once.
-const uint64_t EVAL_NODE_ARENA_BUFFER_SIZE = 64 << 20;
-
+// Simple bump-pointer arena for 64-bit pointers.
+// We use a vector of large blocks to ensure pointer stability.
+constexpr size_t BLOCK_SIZE = 64 * 1024 * 1024; // 64MB blocks
 constexpr int NUM_INTERNED = 128;
 
 class EvalNodeArena {
  public:
   EvalNodeArena();
   ~EvalNodeArena();
-
-  uint64_t NumNodes() { return num_nodes_; }
-  uint64_t BytesAllocated() { return buffers_.size() * EVAL_NODE_ARENA_BUFFER_SIZE; }
-
-  pair<int, int> SaveLevel();
-  void ResetLevel(pair<int, int> level);
 
   template <typename T>
   T* NewNodeWithCapacity(uint8_t capacity);
@@ -43,17 +33,28 @@ class EvalNodeArena {
     return canonical_nodes_[points - 1];
   }
 
-  // For testing
+  // Testing helper
   SumNode* NewRootNodeWithCapacity(uint8_t capacity);
+  
+  uint64_t NumNodes() { return num_nodes_; }
+  uint64_t BytesAllocated() { return bytes_allocated_; }
+  
+  // Minimal checkpointing for force operations
+  // We can just save the index of current block and offset.
+  struct State {
+      size_t block_idx;
+      size_t offset;
+  };
+  State SaveLevel();
+  void ResetLevel(State state);
+
   void PrintStats();
 
  private:
-  void AddBuffer();
-  vector<char*> buffers_;
+  vector<char*> blocks_;
+  size_t current_offset_;
   uint64_t num_nodes_;
-  int cur_buffer_;
-  int tip_;
-  vector<pair<int, int>> watermarks_;
+  uint64_t bytes_allocated_;
   vector<SumNode*> canonical_nodes_;
 };
 
@@ -62,15 +63,19 @@ unique_ptr<EvalNodeArena> create_eval_node_arena();
 template <typename T>
 T* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   num_nodes_++;
-  int size = sizeof(T) + capacity * sizeof(T::children_[0]);
-  // cout << "sizeof(EvalNode)=" << sizeof(EvalNode) << " size: " << size << endl;
-  if (tip_ + size > EVAL_NODE_ARENA_BUFFER_SIZE) {
-    AddBuffer();
+  // Size calculation for flexible array member of Pointers (8 bytes)
+  int size = sizeof(T) + capacity * sizeof(void*);
+  size = (size + 7) & ~7; // Align 8
+
+  if (blocks_.empty() || current_offset_ + size > BLOCK_SIZE) {
+      blocks_.push_back(new char[BLOCK_SIZE]);
+      current_offset_ = 0;
   }
-  char* buf = &buffers_[cur_buffer_][tip_];
-  T* n = new (buf) T;
-  // TODO: update tip_ to enforce alignment
-  tip_ += size;
+
+  char* buf = blocks_.back() + current_offset_;
+  T* n = new (buf) T; // Placement new (trivial ctor)
+  current_offset_ += size;
+  bytes_allocated_ += size;
   return n;
 }
 
