@@ -183,6 +183,14 @@ def unique_word_list(xs: Sequence[WordPath]):
 
 
 def dedupe_word_list(xs: Sequence[WordPath]):
+    """For each distinct word, filter out redundant paths.
+
+    A path is redundant if some subset of it can be used to find the same word.
+    This can happen if one letter has already been forced, in which case it's
+    "free" -- we don't need to choose it. Hence you could wind up with both
+    {2=E, 3=E} and {1=F, 2=E, 3=E} as paths to "FEE" if 0=F has already been forced.
+    In this case the longer path is redundant and can be removed for a lower bound.
+    """
     out: list[WordPath] = []
     for _, raw_wps in itertools.groupby(xs, key=lambda wp: wp.word_id):
         raw_wps = list(raw_wps)
