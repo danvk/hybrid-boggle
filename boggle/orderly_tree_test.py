@@ -56,6 +56,28 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     )
 
 
+def test_build_force_tree_cpp():
+    words = ["bee", "fee", "beef"]
+    t = Trie.create_from_wordlist(words)
+    bb = cpp_orderly_tree_builder(t, (2, 2))
+    arena = bb.create_arena()
+
+    # bf ae
+    #  f ae
+    board = "bf fg ae ae"
+    assert bb.parse_board(board)
+    t0 = bb.build_tree(arena)
+    assert t0.bound == 3  # one bee, one beef, two fees (but can't both count)
+
+    t1s = t0.orderly_force_cell(0, 2, arena)
+    assert t1s[1].bound == 2  # two fees
+
+    board1 = "f fg ae ae"
+    assert bb.parse_board(board1)
+    t1 = bb.build_tree(arena)
+    assert t1.bound == 2  # still two fees when building the tree
+
+
 def test_build_force_tree_py():
     words = ["bee", "fee", "beef"]
     t = PyTrie.create_from_wordlist(words)
@@ -67,8 +89,15 @@ def test_build_force_tree_py():
     board = "bf fg ae ae"
     assert bb.parse_board(board)
     t0 = bb.build_tree(arena)
-    assert isinstance(t0, SumNode)
-    assert t0.bound == 3  # one bee, one beef, _one_ fee
+    assert t0.bound == 3  # one bee, one beef, two fees (but can't both count)
+
+    t1s = t0.orderly_force_cell(0, 2, arena)
+    assert t1s[1].bound == 2  # two fees when you force
+
+    board1 = "f fg ae ae"
+    assert bb.parse_board(board1)
+    t1 = bb.build_tree(arena)
+    assert t1.bound == 1  # just one fee with deduplicating when building the tree
 
 
 OTB_PARAMS = [
