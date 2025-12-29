@@ -88,7 +88,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         end3 = time.time()
         stats.n_uniq = len(unique_words)
         print(f" #uniq: {stats.n_uniq}")
-        self.words_.sort()
+        unique_words.sort()
         print_word_list(self.trie_, unique_words)
         self.words_ = []
         root = range_to_sum_node(unique_words, 0, arena)
@@ -229,6 +229,8 @@ def range_to_sum_node(words: Sequence[WordPath], depth: int, arena: PyArena) -> 
     child_range_ends = []
     last_cell = None
     for i, word in enumerate(words):
+        if depth >= len(word.path):
+            print(depth, word.path)
         cell = word.path[depth][0]
         if cell != last_cell:
             child_cells.append(cell)
