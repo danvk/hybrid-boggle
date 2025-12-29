@@ -56,6 +56,21 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     )
 
 
+def test_build_force_tree_py():
+    words = ["bee", "fee", "beef"]
+    t = PyTrie.create_from_wordlist(words)
+    bb = OrderlyTreeBuilder(t, (2, 2))
+    arena = bb.create_arena()
+
+    # bf ae
+    #  f ae
+    board = "bf fg ae ae"
+    assert bb.parse_board(board)
+    t0 = bb.build_tree(arena)
+    assert isinstance(t0, SumNode)
+    assert t0.bound == 3  # one bee, one beef, _one_ fee
+
+
 OTB_PARAMS = [
     (make_py_trie, OrderlyTreeBuilder),
     (Trie.create_from_file, cpp_orderly_tree_builder),
