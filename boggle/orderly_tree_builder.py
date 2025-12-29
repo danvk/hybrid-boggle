@@ -74,6 +74,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         if not self.words_:
             return SumNode()
 
+        print(f"Big list: {stats.n_paths}")
         self.words_.sort()
         end2 = time.time()
         stats.sort_s = end2 - end1
@@ -84,7 +85,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             unique_words = self.words_
         end3 = time.time()
         stats.n_uniq = len(unique_words)
-        # print_word_list(self.trie_, unique_words)
+        print(f" #uniq: {stats.n_uniq}")
+        print_word_list(self.trie_, unique_words)
         self.words_ = []
         root = range_to_sum_node(unique_words, 0, arena)
         stats.build_s = time.time() - end3
@@ -295,9 +297,9 @@ def main():
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
 
-    if isinstance(orderly_tree, SumNode):
-        with open("tree.dot", "w") as out:
-            out.write(to_dot(orderly_tree, cells=cells))
+    # if isinstance(orderly_tree, SumNode):
+    #     with open("tree.dot", "w") as out:
+    #         out.write(to_dot(orderly_tree, cells=cells))
     # with open("tree.txt", "w") as out:
     #     out.write(eval_node_to_string(orderly_tree, cells))
 
