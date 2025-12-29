@@ -253,6 +253,16 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
         w = word_id_to_word[word.word_id]
         print(f"{i:3d} {word.path} ({word.points}) {w}")
 
+    by_word = dict[str, list[WordPath]]()
+    for w in words:
+        word = word_id_to_word[w.word_id]
+        by_word.setdefault(word, [])
+        by_word[word].append(w)
+    for i, (word, wps) in enumerate(by_word.items()):
+        print(f"{i:3d} {word}")
+        for wp in wps:
+            print(f"    {wp.path} ({wp.points})")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
