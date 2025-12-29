@@ -8,6 +8,7 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 """
 
 import argparse
+import itertools
 import time
 from dataclasses import dataclass
 from typing import Sequence
@@ -76,17 +77,18 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             return SumNode()
 
         print(f"Big list: {stats.n_paths}")
-        self.words_.sort()
+        self.words_.sort(key=lambda wp: (wp.word_id, wp.path))
         end2 = time.time()
         stats.sort_s = end2 - end1
         # print_word_list(self.trie_, self.words_)
         if not self.raw_multiboggle:
-            unique_words = unique_word_list(self.words_)
+            unique_words = dedupe_word_list(self.words_)
         else:
             unique_words = self.words_
         end3 = time.time()
         stats.n_uniq = len(unique_words)
         print(f" #uniq: {stats.n_uniq}")
+        self.words_.sort()
         print_word_list(self.trie_, unique_words)
         self.words_ = []
         root = range_to_sum_node(unique_words, 0, arena)
@@ -176,6 +178,31 @@ def unique_word_list(xs: Sequence[WordPath]):
         elif x.word_id != last_word_id:
             out[-1].points += x.points
             last_word_id = x.word_id
+    return out
+
+
+def dedupe_word_list(xs: Sequence[WordPath]):
+    out: list[WordPath] = []
+    for _, raw_wps in itertools.groupby(xs, key=lambda wp: wp.word_id):
+        raw_wps = list(raw_wps)
+        wps = [set(wp.path) for wp in raw_wps]
+        is_valid = [True] * len(wps)
+        for i, wp1 in enumerate(wps):
+            if not is_valid[i]:
+                continue
+            for j in range(i + 1, len(wps)):
+                if not is_valid[j]:
+                    continue
+                wp2 = wps[j]
+                if wp1.issubset(wp2):
+                    is_valid[j] = False
+                    print(f"{wp1} issubset {wp2}")
+                elif wp2.issubset(wp1):
+                    is_valid[i] = False
+                    break
+        for wp in (wp for ok, wp in zip(is_valid, raw_wps) if ok):
+            out.append(wp)
+
     return out
 
 
