@@ -90,7 +90,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         # print(f" #uniq: {stats.n_uniq}")
         unique_words.sort()
         unique_words = unique_word_list(unique_words)
-        print_word_list(self.trie_, unique_words)
+        # print_word_list(self.trie_, unique_words)
         self.words_ = []
         root = range_to_sum_node(unique_words, 0, arena)
         stats.build_s = time.time() - end3
