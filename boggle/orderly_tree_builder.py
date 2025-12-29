@@ -87,8 +87,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             unique_words = self.words_
         end3 = time.time()
         stats.n_uniq = len(unique_words)
-        print(f" #uniq: {stats.n_uniq}")
+        # print(f" #uniq: {stats.n_uniq}")
         unique_words.sort()
+        unique_words = unique_word_list(unique_words)
         print_word_list(self.trie_, unique_words)
         self.words_ = []
         root = range_to_sum_node(unique_words, 0, arena)
@@ -196,7 +197,7 @@ def dedupe_word_list(xs: Sequence[WordPath]):
                 wp2 = wps[j]
                 if wp1.issubset(wp2):
                     is_valid[j] = False
-                    print(f"{wp1} issubset {wp2}")
+                    # print(f"{wp1} issubset {wp2}")
                 elif wp2.issubset(wp1):
                     is_valid[i] = False
                     break
