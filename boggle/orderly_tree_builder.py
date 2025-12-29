@@ -63,6 +63,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
+        self.is_forced_ = [len(cell) == 1 for cell in self.bd_]
         choices = [0] * len(self.bd_)
 
         start = time.time()
@@ -127,7 +128,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.do_all_descents(idx, length, t, choices, arena)
 
         if t.is_word():
-            path = decode(self.used_ordered_, choices, SPLIT_ORDER[self.dims])
+            path = decode(
+                self.used_ordered_, choices, SPLIT_ORDER[self.dims], self.is_forced_
+            )
             self.words_.append(
                 WordPath(path=path, word_id=t.word_id, points=SCORES[length])
             )
@@ -142,7 +145,12 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         return self.stats_
 
 
-def decode(used_ordered: int, choices: Sequence[int], split_order: Sequence[int]):
+def decode(
+    used_ordered: int,
+    choices: Sequence[int],
+    split_order: Sequence[int],
+    is_forced: Sequence[bool],
+):
     out = []
     while used_ordered:
         order_index = countr_zero(used_ordered)
@@ -151,7 +159,8 @@ def decode(used_ordered: int, choices: Sequence[int], split_order: Sequence[int]
 
         # remove the cell from used_ordered
         used_ordered &= used_ordered - 1
-        out.append((cell, letter))
+        if not is_forced[cell]:
+            out.append((cell, letter))
     return out
 
 
