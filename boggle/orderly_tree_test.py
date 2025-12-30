@@ -100,6 +100,32 @@ def test_build_force_tree_py():
     assert t1.bound == 1  # just one fee with deduplicating when building the tree
 
 
+def test_deduping_force_equivalence():
+    _, otb = get_trie_otb("testdata/boggle-words-4.txt", (2, 3), True)
+    arena = otb.create_arena()
+
+    # nr ae ae
+    # ln jz nr
+    assert otb.parse_board("nr ln ae jz ae nr")
+
+    # Basic orderly tree: no cells are forced
+    base_tree = otb.build_tree(arena)
+    assert base_tree.bound == 28
+
+    # Build tree directly with the first cell forced.
+    otb.dedupe_forced = True
+    assert otb.parse_board("r ln ae jz ae nr")
+    direct_tree = otb.build_tree(arena)
+    assert direct_tree.bound == 20
+
+    # Force the first cell on the base tree using orderly_force_cell.
+    forced_trees = base_tree.orderly_force_cell(0, 2, arena)
+    assert len(forced_trees) == 2
+    forced_tree = forced_trees[1]
+    # This should match direct_tree.bound, but it does not.
+    assert forced_tree.bound == 26
+
+
 OTB_PARAMS = [
     (make_py_trie, OrderlyTreeBuilder),
     (Trie.create_from_file, cpp_orderly_tree_builder),
