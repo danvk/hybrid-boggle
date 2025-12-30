@@ -10,7 +10,7 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 import argparse
 import itertools
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Sequence
 
 from boggle.arena import PyArena, create_eval_node_arena_py
@@ -32,6 +32,7 @@ class WordPath:
     path: list[tuple[int, int]]
     word_id: int
     points: int
+    word_ids: set[int] = field(default_factory=set, compare=False)
 
 
 @dataclass
@@ -135,7 +136,12 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                 self.used_ordered_, choices, SPLIT_ORDER[self.dims], self.is_forced_
             )
             self.words_.append(
-                WordPath(path=path, word_id=t.word_id, points=SCORES[length])
+                WordPath(
+                    path=path,
+                    word_id=t.word_id,
+                    points=SCORES[length],
+                    word_ids={t.word_id},
+                )
             )
 
         self.used_ordered_ ^= 1 << self.cell_to_order[cell]
@@ -178,6 +184,7 @@ def unique_word_list(xs: Sequence[WordPath]):
             last_word_id = x.word_id
         elif x.word_id != last_word_id:
             out[-1].points += x.points
+            out[-1].word_ids.update(x.word_ids)
             last_word_id = x.word_id
     return out
 
@@ -228,8 +235,10 @@ def range_to_sum_node(words: Sequence[WordPath], depth: int, arena: PyArena) -> 
     # If there are points on _this_ node, they'll be on a unique first node.
     n = words[0]
     points = 0
+    word_ids = set()
     if len(n.path) == depth:
         points = n.points
+        word_ids = n.word_ids
         words = words[1:]
 
     # Find intervals for each distinct cell
@@ -255,6 +264,7 @@ def range_to_sum_node(words: Sequence[WordPath], depth: int, arena: PyArena) -> 
     ]
     node = SumNode()
     node.points = points
+    node.word_ids = word_ids
     node.children = {cell: child for cell, child in zip(child_cells, children)}
     node.bound = node.points + sum(child.bound for child in node.children.values())
     return node

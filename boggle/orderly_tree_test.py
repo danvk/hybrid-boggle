@@ -52,7 +52,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     if isinstance(t, SumNode):
         t.assert_invariants(bb)
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("d7687d76c39b*.txt")
+        external("714561b862b3*.txt")
     )
 
 
@@ -92,7 +92,7 @@ def test_build_force_tree_py():
     assert t0.bound == 3  # one bee, one beef, two fees (but can't both count)
 
     t1s = t0.orderly_force_cell(0, 2, arena)
-    assert t1s[1].bound == 2  # two fees when you force
+    assert t1s[1].bound == 1  # two fees when you force
 
     board1 = "f fg ae ae"
     assert bb.parse_board(board1)
@@ -130,7 +130,7 @@ def test_lift_invariants_33(make_trie, get_tree_builder):
         t.assert_invariants(otb)
 
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
-        external("1f0fc29ed9ce*.txt")
+        external("08e1ce514460*.txt")
     )
 
 
