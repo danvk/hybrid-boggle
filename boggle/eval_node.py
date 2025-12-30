@@ -56,10 +56,44 @@ class SumNode:
             return [self] * num_lets
         top_choice = self.children.get(cell)
 
-        if top_choice is None:
-            return [self] * num_lets  # See comment in C++
-
+        # If the forced cell is not a direct child, it might be deeper in the tree.
+        # We must recurse on ALL children to propagate the force.
+        # If the cell is not present in a child's subtree, the recursion will simply return copies (or the child itself).
+        
+        # If top_choice exists, we handle it specially as 'Main' for each letter.
+        # But we still need to recurse on others.
+        
+        # Compute forced versions of all children (except cell, which is handled by top_choice logic if present)
         non_cell_children = {k: v for k, v in self.children.items() if k != cell}
+        forced_others = {
+            k: v.orderly_force_cell(cell, num_lets, arena)
+            for k, v in non_cell_children.items()
+        }
+
+        if top_choice is None:
+            # If forced cell is not a child, then 'Main' is empty for all letters.
+            # We just merge the forced versions of others.
+            out = []
+            for letter in range(num_lets):
+                # Construct map for this letter
+                current_others = {k: forced_others[k][letter] for k in forced_others}
+                
+                # Merge them. Since Main is empty, we just create a SumNode with these children.
+                # Points from this node (self.points) are preserved (words ending here didn't use forced cell).
+                # Actually, if we force a cell, words ending here (length X) are valid?
+                # Yes, because 'cell' was not used in the path to here.
+                # So we keep self.points.
+                
+                n = SumNode()
+                n.points = self.points
+                n.word_ids = self.word_ids
+                n.children = current_others
+                n.bound = n.points + sum(child.bound for child in n.children.values())
+                arena.add_node(n)
+                out.append(n)
+            return out
+
+        # If top_choice exists
         non_cell_points = self.points
         non_cell_word_ids = self.word_ids
 
@@ -71,32 +105,48 @@ class SumNode:
             if letter < num_lets:
                 child = top_choice.get_child_for_letter(letter)
                 if child:
-                    # Subtract the forced path (child) from the unforced paths (non_cell_children)
-                    # to prevent double-counting words.
-                    purified_children = {
-                        k: subtract_sum_from_choice(v, child, arena)
-                        for k, v in non_cell_children.items()
-                    }
-                    out[letter] = merge_orderly_tree_children(
-                        child,
-                        purified_children,
-                        non_cell_points,
-                        non_cell_word_ids,
-                        arena,
-                    )
+                    # Construct purified children using the forced versions for this letter
+                    current_others = {k: forced_others[k][letter] for k in forced_others}
+                    
+                # Subtract the forced path (child) from the unforced paths (current_others)
+                # to prevent double-counting words.
+                # We subtract the 'k' branch of Main from the 'k' branch of Others.
+                purified_children = {}
+                for k, v in current_others.items():
+                    if k in child.children:
+                        # Main has a branch for cell k
+                        main_k = child.children[k]
+                        purified_children[k] = subtract_choice(v, main_k, arena)
+                    else:
+                        # Main doesn't use cell k (or uses it differently/not at start)
+                        purified_children[k] = v
+                
+                out[letter] = merge_orderly_tree_children(
+                    child,
+                    purified_children,
+                    non_cell_points,
+                    non_cell_word_ids,
+                    arena,
+                )
             remaining_bits &= remaining_bits - 1  # Clear the lowest set bit
 
         if top_choice.child_letters.bit_count() < num_lets:
-            # TODO: if there's >1 of these, this could result in a lot of duplicate work.
-            other_bound = sum(c.bound for c in non_cell_children.values())
-            if other_bound > 0 or non_cell_points > 0:
-                for i, child in enumerate(out):
-                    if not child:
+            # For letters not in top_choice, Main is empty.
+            # We use forced_others directly.
+            # other_bound is sum of bounds of forced_others?
+            # We construct the node.
+            for i, child in enumerate(out):
+                if not child:
+                    current_others = {k: forced_others[k][i] for k in forced_others}
+                    other_bound = sum(c.bound for c in current_others.values())
+                    
+                    if other_bound > 0 or non_cell_points > 0:
+                        print(f"DEBUG: Filling missing choice for cell {cell} letter {i} bound {other_bound}")
                         point_node = SumNode()
                         point_node.points = non_cell_points
                         point_node.word_ids = non_cell_word_ids.copy()
                         point_node.bound = point_node.points + other_bound
-                        point_node.children = non_cell_children
+                        point_node.children = current_others
                         arena.add_node(point_node)
                         out[i] = point_node
         return out
@@ -295,6 +345,31 @@ class ChoiceNode:
         mask = (1 << letter) - 1
         index = (self.child_letters & mask).bit_count()
         return self.children[index] if index < len(self.children) else None
+
+    def orderly_force_cell(
+        self, cell: int, num_lets: int, arena: PyArena
+    ) -> list["ChoiceNode"]:
+        """Return trees for each possible choice for cell."""
+        child_vectors = []
+        children = self.get_children()
+        for child in children:
+            child_vectors.append(child.orderly_force_cell(cell, num_lets, arena))
+
+        out = []
+        for letter_idx in range(num_lets):
+            new_children = []
+            # Gather the i-th forced tree from each child
+            for vec in child_vectors:
+                new_children.append(vec[letter_idx])
+
+            n = ChoiceNode()
+            n.child_letters = self.child_letters
+            n.children = new_children
+            n.bound = max(c.bound for c in n.children) if n.children else 0
+            arena.add_node(n)
+            out.append(n)
+
+        return out
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
