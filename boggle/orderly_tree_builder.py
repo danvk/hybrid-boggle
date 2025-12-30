@@ -57,6 +57,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
         self.raw_multiboggle = False
+        self.dedupe_forced = False
         self.words_ = []
         self.stats_ = None
 
@@ -82,15 +83,20 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         end2 = time.time()
         stats.sort_s = end2 - end1
         # print_word_list(self.trie_, self.words_)
-        if not self.raw_multiboggle:
+        if self.raw_multiboggle:
+            unique_words = self.words_
+        elif self.dedupe_forced:
             unique_words = dedupe_word_list(self.words_)
         else:
             unique_words = self.words_
+
         end3 = time.time()
         stats.n_uniq = len(unique_words)
         # print(f" #uniq: {stats.n_uniq}")
-        unique_words.sort()
-        unique_words = unique_word_list(unique_words)
+        if not self.raw_multiboggle:
+            # TODO: does tree building even work without uniquing?
+            unique_words.sort()
+            unique_words = unique_word_list(unique_words)
         # print_word_list(self.trie_, unique_words)
         self.words_ = []
         root = range_to_sum_node(unique_words, 0, arena)
@@ -321,6 +327,14 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
             print(f"    {wp.path} ({wp.points})")
 
 
+def parse_force(force: str) -> tuple[int, str]:
+    cell_str, letter = force.split("=")
+    assert len(letter) == 1
+    cell = int(cell_str)
+    assert 0 <= cell < 25
+    return (cell, letter)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
@@ -330,10 +344,24 @@ def main():
         action="store_true",
         help="Do not dedupe words on SumNodes. (Requires --python)",
     )
+    parser.add_argument(
+        "--dedupe_forced",
+        action="store_true",
+        help="Deduplicate redundant words from forced cells in the board. (Requires --python)",
+    )
+    parser.add_argument(
+        "forces",
+        nargs="*",
+        help="cell=letter sequence to force (e.g. '0=e'). Must match split_order.",
+    )
     args = parser.parse_args()
     if args.raw_multiboggle:
         assert args.python, "--raw_multiboggle require --python"
+    if args.dedupe_forced:
+        assert args.python, "--dedupe_forced require --python"
+    assert not (args.dedupe_forced and args.raw_multiboggle)
     board = args.board
+    forces = [parse_force(x) for x in args.forces]
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
@@ -344,8 +372,8 @@ def main():
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     otb = builder(trie, dims)
-    if args.raw_multiboggle:
-        otb.raw_multiboggle = True
+    otb.raw_multiboggle = args.raw_multiboggle
+    otb.dedupe_forced = args.dedupe_forced
     o_arena = otb.create_arena()
     assert otb.parse_board(board)
     arenas = []
@@ -363,6 +391,17 @@ def main():
     # print_word_list(trie, otb.words_)
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
+
+    tree = orderly_tree
+    for i, (cell, letter) in enumerate(forces):
+        assert SPLIT_ORDER[dims][i] == cell
+        print(f"Forcing {cell}={letter}")
+        idx = cells[cell].index(letter)
+        start_s = time.time()
+        trees = tree.orderly_force_cell(cell, len(cells[cell]), o_arena)
+        elapsed_s = time.time() - start_s
+        tree = trees[idx]
+        print(f"{cell}={letter} {elapsed_s:.02}s, {tree_stats(tree)}")
 
     # if isinstance(orderly_tree, SumNode):
     #     with open("tree.dot", "w") as out:
