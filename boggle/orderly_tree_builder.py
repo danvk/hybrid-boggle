@@ -21,7 +21,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import ChoiceNode, SumNode, countr_zero
+from boggle.eval_node import ChoiceNode, SumNode, countr_zero, eval_node_to_string
 from boggle.make_dot import to_dot
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
@@ -335,6 +335,15 @@ def parse_force(force: str) -> tuple[int, str]:
     return (cell, letter)
 
 
+def dump_tree(t: SumNode, cells: list[str], file_base: str):
+    # if isinstance(t, SumNode):
+    #     with open(f"{file_base}.dot", "w") as out:
+    #         out.write(to_dot(t, cells=cells))
+    with open(f"{file_base}.txt", "w") as out:
+        out.write(eval_node_to_string(t, cells))
+    print(f"Wrote {file_base}.dot and {file_base}.txt")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
@@ -350,6 +359,11 @@ def main():
         help="Deduplicate redundant words from forced cells in the board. (Requires --python)",
     )
     parser.add_argument(
+        "--write_dot",
+        action="store_true",
+        help="Write DOT files of the tree to tree.dot, tree1.dot, etc. (--python only)",
+    )
+    parser.add_argument(
         "forces",
         nargs="*",
         help="cell=letter sequence to force (e.g. '0=e'). Must match split_order.",
@@ -359,6 +373,8 @@ def main():
         assert args.python, "--raw_multiboggle require --python"
     if args.dedupe_forced:
         assert args.python, "--dedupe_forced require --python"
+    if args.write_dot:
+        assert args.python, "--write_dot require --python"
     assert not (args.dedupe_forced and args.raw_multiboggle)
     board = args.board
     forces = [parse_force(x) for x in args.forces]
@@ -393,6 +409,8 @@ def main():
     print(f"arena bytes: {o_arena.bytes_allocated()}")
 
     tree = orderly_tree
+    if args.write_dot:
+        dump_tree(tree, cells, "tree")
     for i, (cell, letter) in enumerate(forces):
         assert SPLIT_ORDER[dims][i] == cell
         print(f"Forcing {cell}={letter}")
@@ -402,12 +420,8 @@ def main():
         elapsed_s = time.time() - start_s
         tree = trees[idx]
         print(f"{cell}={letter} {elapsed_s:.02}s, {tree_stats(tree)}")
-
-    # if isinstance(orderly_tree, SumNode):
-    #     with open("tree.dot", "w") as out:
-    #         out.write(to_dot(orderly_tree, cells=cells))
-    # with open("tree.txt", "w") as out:
-    #     out.write(eval_node_to_string(orderly_tree, cells))
+        if args.write_dot:
+            dump_tree(tree, cells, f"tree{i+1}")
 
 
 if __name__ == "__main__":
