@@ -13,10 +13,13 @@ using namespace std;
 
 struct TreeBuilderStats {
   float collect_s;
+  float sortw_s;
+  float dedupe_s;
   float sort_s;
   // float uniq_s; -- too fast, not worth tracking
   float build_s;
   uint32_t n_paths;
+  uint32_t n_paths_uniq;
   uint32_t n_uniq;
 };
 
@@ -58,13 +61,16 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int num_paths_;
   vector<WordPath> words_;
   TreeBuilderStats stats_;
+  bool is_forced_[M * N];
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
 
-  static bool WordComparator(const WordPath& a, const WordPath& b);
+  static bool WordThenPath(const WordPath& a, const WordPath& b);
+  static bool PathThenWord(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
+  static void DedupeWordList(vector<WordPath>& words);
 
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(
@@ -99,6 +105,10 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
   // cout << "Count paths: " << duration << " ms" << endl;
 
+  for (int cell = 0; cell < M * N; cell++) {
+    is_forced_[i] = strlen(bd_[cell]) == 1;
+  }
+
   // 20M is large enough to fit the word list for almost all boards.
   // This is ~700MB for a 4x4 board, and only held temporarily.
   words_.clear();
@@ -107,8 +117,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
-  auto end1 = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
+  auto end = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.collect_s = duration / 1000.0;
 
   if (words_.empty()) {
@@ -117,24 +127,40 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     return root;
   }
 
-  sort(words_.begin(), words_.end(), WordComparator);
-  auto end2 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end2 - end1).count();
-  stats.sort_s = duration / 1000.0;
+  // TODO: optionalize this step
   stats.n_paths = words_.size();
+  start = end;
+  sort(words_.begin(), words_.end(), WordThenPath);
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  stats.sortw_s = duration / 1000.0;
+
+  start = end;
+  DedupeWordList(words_);
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  stats.dedupe_s = duration / 1000.0;
+  stats.n_paths_uniq = words_.size();
+
+  start = end;
+  sort(words_.begin(), words_.end(), PathThenWord);
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  stats.sort_s = duration / 1000.0;
   // PrintWordList();
 
+  start = end;
   UniqueWordList(words_);
-  auto end3 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end3 - end2).count();
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   // stats.uniq_secs = duration / 1000.0;
   stats.n_uniq = words_.size();
   // PrintWordList();
 
+  start = end;
   auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
-
-  auto end4 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.build_s = duration / 1000.0;
 
   words_.clear();
@@ -423,7 +449,11 @@ void OrderlyTreeBuilder<M, N>::AddWord(
   word.path.fill('\0');
   while (used_ordered) {
     int order_index = std::countr_zero(used_ordered);
+    used_ordered &= used_ordered - 1;
     int cell = split_order[order_index];
+    if (is_forced_[cell]) {
+      continue;
+    }
     int letter = choices[order_index];
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -435,14 +465,13 @@ void OrderlyTreeBuilder<M, N>::AddWord(
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
-    used_ordered &= used_ordered - 1;
   }
   word.points = kWordScores[length];
   word.word_id = word_id;
 }
 
 template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath& b) {
+bool OrderlyTreeBuilder<M, N>::PathThenWord(const WordPath& a, const WordPath& b) {
   const auto& ap = a.path;
   const auto& bp = b.path;
   auto result = memcmp(ap.data(), bp.data(), 2 * M * N);
@@ -451,6 +480,18 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
   }
 
   return a.word_id < b.word_id;
+}
+
+template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::WordThenPath(const WordPath& a, const WordPath& b) {
+  auto result = a.word_id - b.word_id;
+  if (a.word_id != b.word_id) {
+    return a.word_id < b.word_id;
+  }
+  const auto& ap = a.path;
+  const auto& bp = b.path;
+  auto result = memcmp(ap.data(), bp.data(), 2 * M * N);
+  return result < 0;
 }
 
 template <int M, int N>
@@ -474,6 +515,19 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
       last.word_id = w.word_id;
     }
     // otherwise: drop it
+  }
+  words.erase(words.begin() + write_idx, words.end());
+}
+
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
+  int write_idx = 1;
+  WordPath last = words[0];
+
+  auto n = words.size();
+  for (int i = 1; i < n; i++) {
+    const auto& w = words[i];
+    // TODO: ...
   }
   words.erase(words.begin() + write_idx, words.end());
 }
