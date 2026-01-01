@@ -31,6 +31,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
       cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
     used_ordered_ = 0;
+    dedupe_forced_ = false;
   }
   virtual ~OrderlyTreeBuilder() {}
 
@@ -53,6 +54,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   TreeBuilderStats GetStats() const { return stats_; }
 
+  bool dedupe_forced_;
+
  private:
   SumNode* root_;
   int cell_to_order_[M * N];
@@ -71,6 +74,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   static bool PathThenWord(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
   static void DedupeWordList(vector<WordPath>& words);
+  static bool IsSubset(const WordPath& sub, const WordPath& super);
 
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(
@@ -106,7 +110,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // cout << "Count paths: " << duration << " ms" << endl;
 
   for (int cell = 0; cell < M * N; cell++) {
-    is_forced_[i] = strlen(bd_[cell]) == 1;
+    is_forced_[cell] = strlen(bd_[cell]) == 1;
   }
 
   // 20M is large enough to fit the word list for almost all boards.
@@ -136,7 +140,9 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   stats.sortw_s = duration / 1000.0;
 
   start = end;
-  DedupeWordList(words_);
+  if (dedupe_forced_) {
+    DedupeWordList(words_);
+  }
   end = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.dedupe_s = duration / 1000.0;
@@ -484,7 +490,6 @@ bool OrderlyTreeBuilder<M, N>::PathThenWord(const WordPath& a, const WordPath& b
 
 template <int M, int N>
 bool OrderlyTreeBuilder<M, N>::WordThenPath(const WordPath& a, const WordPath& b) {
-  auto result = a.word_id - b.word_id;
   if (a.word_id != b.word_id) {
     return a.word_id < b.word_id;
   }
@@ -520,15 +525,94 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
 }
 
 template <int M, int N>
-void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
-  int write_idx = 1;
-  WordPath last = words[0];
+bool OrderlyTreeBuilder<M, N>::IsSubset(const WordPath& sub, const WordPath& super) {
+  const uint8_t* s = sub.path.data();
+  const uint8_t* p = super.path.data();
+  int i = 0;
+  int j = 0;
+  // Paths are null-terminated (0 valued entries).
+  // The max length is 2*M*N.
+  while (i < 2 * M * N && s[i] != 0) {
+    if (j >= 2 * M * N || p[j] == 0) return false;
 
-  auto n = words.size();
-  for (int i = 1; i < n; i++) {
-    const auto& w = words[i];
-    // TODO: ...
+    // Check cell (even index) and letter (odd index)
+    // Both s and p are sorted by cell split-order.
+    if (s[i] == p[j] && s[i + 1] == p[j + 1]) {
+      i += 2;
+      j += 2;
+    } else {
+      // Skip element in super. Since the path is sorted by split order,
+      // if we have a mismatch, the cell in 'super' must be "earlier" or "different".
+      // We just advance 'super' to see if we can find the matching cell later.
+      j += 2;
+    }
   }
+  return true;
+}
+
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
+  if (words.empty()) return;
+
+  int write_idx = 0;
+  size_t n = words.size();
+  size_t i = 0;
+
+  // Since we assume words are sorted by word_id, we process each block of identical word_ids.
+  while (i < n) {
+    size_t j = i + 1;
+    while (j < n && words[j].word_id == words[i].word_id) {
+      j++;
+    }
+    // Range [i, j) contains paths for the same word.
+    int count = j - i;
+
+    // Optimization for single path words
+    if (count == 1) {
+      if (write_idx != i) {
+        words[write_idx] = words[i];
+      }
+      write_idx++;
+      i = j;
+      continue;
+    }
+
+    // Identify redundant paths
+    // A path is redundant if it is a superset of another path (meaning the other is a subset).
+    // If A is subset of B, B is redundant (B has extra constraints/steps for same result).
+    // We want minimal paths (subsets).
+    std::vector<bool> is_valid(count, true);
+
+    for (int k1 = 0; k1 < count; ++k1) {
+      if (!is_valid[k1]) continue;
+      for (int k2 = k1 + 1; k2 < count; ++k2) {
+        if (!is_valid[k2]) continue;
+
+        // Check if words[i+k1] is subset of words[i+k2]
+        if (IsSubset(words[i + k1], words[i + k2])) {
+          // k1 is subset of k2 -> k2 is redundant (has more nodes than needed)
+          is_valid[k2] = false;
+        } else if (IsSubset(words[i + k2], words[i + k1])) {
+          // k2 is subset of k1 -> k1 is redundant
+          is_valid[k1] = false;
+          break;
+        }
+      }
+    }
+
+    // Compact valid paths
+    for (int k = 0; k < count; ++k) {
+      if (is_valid[k]) {
+        if (write_idx != i + k) {
+          words[write_idx] = words[i + k];
+        }
+        write_idx++;
+      }
+    }
+
+    i = j;
+  }
+
   words.erase(words.begin() + write_idx, words.end());
 }
 

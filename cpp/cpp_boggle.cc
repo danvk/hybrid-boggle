@@ -41,7 +41,8 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
       .def("as_string", &TB::as_string)
       .def("num_reps", &TB::NumReps)
       .def("get_stats", &TB::GetStats)
-      .def("create_arena", &TB::CreateArena);
+      .def("create_arena", &TB::CreateArena)
+      .def_readwrite("dedupe_forced", &TB::dedupe_forced_);
 }
 
 template <int M, int N>
