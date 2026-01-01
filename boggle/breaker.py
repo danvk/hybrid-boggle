@@ -162,6 +162,7 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.num_reps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
+        self.etb.dedupe_forced = True
         tree = self.etb.build_tree(arena)
         ts = self.etb.get_stats()
         self.details_.tree_secs = [ts.collect_s, ts.sort_s, ts.build_s]

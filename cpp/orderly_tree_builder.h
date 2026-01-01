@@ -537,9 +537,13 @@ bool OrderlyTreeBuilder<M, N>::IsSubset(const WordPath& sub, const WordPath& sup
 
     // Check cell (even index) and letter (odd index)
     // Both s and p are sorted by cell split-order.
-    if (s[i] == p[j] && s[i + 1] == p[j + 1]) {
-      i += 2;
-      j += 2;
+    if (s[i] == p[j]) {
+      if (s[i + 1] == p[j + 1]) {
+        i += 2;
+        j += 2;
+      } else {
+        return false;
+      }
     } else {
       // Skip element in super. Since the path is sorted by split order,
       // if we have a mismatch, the cell in 'super' must be "earlier" or "different".
