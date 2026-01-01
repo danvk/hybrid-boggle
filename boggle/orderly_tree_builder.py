@@ -38,9 +38,12 @@ class WordPath:
 @dataclass
 class TreeBuilderStats:
     collect_s: float
+    sortw_s: float
+    dedupe_s: float
     sort_s: float
     build_s: float
     n_paths: int
+    n_paths_uniq: int
     n_uniq: int
 
 
@@ -62,7 +65,16 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.stats_ = None
 
     def build_tree(self, arena: PyArena = None):
-        stats = TreeBuilderStats(collect_s=0, sort_s=0, build_s=0, n_paths=0, n_uniq=0)
+        stats = TreeBuilderStats(
+            collect_s=0,
+            sortw_s=0,
+            dedupe_s=0,
+            sort_s=0,
+            build_s=0,
+            n_paths=0,
+            n_paths_uniq=0,
+            n_uniq=0,
+        )
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
@@ -72,35 +84,44 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         start = time.time()
         for cell in range(len(self.bd_)):
             self.do_all_descents(cell, 0, self.trie_, choices, arena)
-        end1 = time.time()
-        stats.collect_s = end1 - start
+        end = time.time()
+        stats.collect_s = end - start
         stats.n_paths = len(self.words_)
         if not self.words_:
             return SumNode()
 
         print(f"Big list: {stats.n_paths}")
+        start = end
         self.words_.sort(key=lambda wp: (wp.word_id, wp.path))
-        end2 = time.time()
-        stats.sort_s = end2 - end1
+        end = time.time()
+        stats.sortw_s = end - start
         # print_word_list(self.trie_, self.words_)
         if self.raw_multiboggle:
             unique_words = self.words_
         elif self.dedupe_forced:
+            start = end
             unique_words = dedupe_word_list(self.words_)
+            end = time.time()
+            stats.dedupe_s = end - start
+            stats.n_paths_uniq = len(unique_words)
         else:
             unique_words = self.words_
 
-        end3 = time.time()
-        stats.n_uniq = len(unique_words)
         # print(f" #uniq: {stats.n_uniq}")
         if not self.raw_multiboggle:
             # TODO: does tree building even work without uniquing?
+            start = end
             unique_words.sort()
+            end = time.time()
+            stats.sort_s = end - start
             unique_words = unique_word_list(unique_words)
+            stats.n_uniq = len(unique_words)
         # print_word_list(self.trie_, unique_words)
         self.words_ = []
+        start = end
         root = range_to_sum_node(unique_words, 0, arena)
-        stats.build_s = time.time() - end3
+        end = time.time()
+        stats.build_s = end - start
         self.stats_ = stats
         return root
 
