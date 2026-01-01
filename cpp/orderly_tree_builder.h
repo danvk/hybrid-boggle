@@ -558,7 +558,8 @@ void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
   size_t n = words.size();
   size_t i = 0;
 
-  // Since we assume words are sorted by word_id, we process each block of identical word_ids.
+  // Since we assume words are sorted by word_id, we process each block of identical
+  // word_ids.
   while (i < n) {
     size_t j = i + 1;
     while (j < n && words[j].word_id == words[i].word_id) {
@@ -578,9 +579,9 @@ void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
     }
 
     // Identify redundant paths
-    // A path is redundant if it is a superset of another path (meaning the other is a subset).
-    // If A is subset of B, B is redundant (B has extra constraints/steps for same result).
-    // We want minimal paths (subsets).
+    // A path is redundant if it is a superset of another path (meaning the other is a
+    // subset). If A is subset of B, B is redundant (B has extra constraints/steps for
+    // same result). We want minimal paths (subsets).
     std::vector<bool> is_valid(count, true);
 
     for (int k1 = 0; k1 < count; ++k1) {

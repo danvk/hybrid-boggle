@@ -406,6 +406,15 @@ def main():
     # print_word_list(trie, otb.words_)
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
+    stats = otb.get_stats()
+    print(f"  build: {stats.build_s:.04} s")
+    print(f"  sort_w: {stats.sortw_s:.04} s")
+    print(f"  dedupe: {stats.dedupe_s:.04} s")
+    print(f"  sort: {stats.sort_s:.04} s")
+    print(f"  build: {stats.build_s:.04} s")
+    print(f"  n_paths: {stats.n_paths}")
+    print(f"  n_paths_uniq: {stats.n_paths_uniq}")
+    print(f"  n_uniq: {stats.n_uniq}")
 
     tree = orderly_tree
     if args.write_dot:
