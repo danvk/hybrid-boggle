@@ -558,6 +558,8 @@ void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
   size_t n = words.size();
   size_t i = 0;
 
+  int max_count = 0;
+
   // Since we assume words are sorted by word_id, we process each block of identical
   // word_ids.
   while (i < n) {
@@ -567,6 +569,7 @@ void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
     }
     // Range [i, j) contains paths for the same word.
     int count = j - i;
+    max_count = max(count, max_count);
 
     // Optimization for single path words
     if (count == 1) {
@@ -615,6 +618,8 @@ void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
   }
 
   words.erase(words.begin() + write_idx, words.end());
+
+  cout << "max paths per word: " << max_count << endl;
 }
 
 template <unsigned long N>

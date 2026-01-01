@@ -407,7 +407,7 @@ def main():
     print(f"arena nodes: {o_arena.num_nodes()}")
     print(f"arena bytes: {o_arena.bytes_allocated()}")
     stats = otb.get_stats()
-    print(f"  build: {stats.build_s:.04} s")
+    print(f"  collect: {stats.collect_s:.04} s")
     print(f"  sort_w: {stats.sortw_s:.04} s")
     print(f"  dedupe: {stats.dedupe_s:.04} s")
     print(f"  sort: {stats.sort_s:.04} s")
