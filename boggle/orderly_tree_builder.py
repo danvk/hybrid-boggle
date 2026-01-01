@@ -371,8 +371,6 @@ def main():
     args = parser.parse_args()
     if args.raw_multiboggle:
         assert args.python, "--raw_multiboggle require --python"
-    if args.dedupe_forced:
-        assert args.python, "--dedupe_forced require --python"
     if args.write_dot:
         assert args.python, "--write_dot require --python"
     assert not (args.dedupe_forced and args.raw_multiboggle)
@@ -388,7 +386,8 @@ def main():
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     otb = builder(trie, dims)
-    otb.raw_multiboggle = args.raw_multiboggle
+    if args.raw_multiboggle:
+        otb.raw_multiboggle = args.raw_multiboggle
     otb.dedupe_forced = args.dedupe_forced
     o_arena = otb.create_arena()
     assert otb.parse_board(board)
