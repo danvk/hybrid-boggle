@@ -60,7 +60,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
         self.raw_multiboggle = False
-        self.dedupe_forced = False
         self.words_ = []
         self.stats_ = None
 
@@ -106,7 +105,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             stats.n_paths_uniq = len(unique_words)
         else:
             unique_words = self.words_
-
         # print(f" #uniq: {stats.n_uniq}")
         if not self.raw_multiboggle:
             # TODO: does tree building even work without uniquing?
@@ -348,14 +346,6 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
             print(f"    {wp.path} ({wp.points})")
 
 
-def parse_force(force: str) -> tuple[int, str]:
-    cell_str, letter = force.split("=")
-    assert len(letter) == 1
-    cell = int(cell_str)
-    assert 0 <= cell < 25
-    return (cell, letter)
-
-
 def main():
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
@@ -365,24 +355,10 @@ def main():
         action="store_true",
         help="Do not dedupe words on SumNodes. (Requires --python)",
     )
-    parser.add_argument(
-        "--dedupe_forced",
-        action="store_true",
-        help="Deduplicate redundant words from forced cells in the board. (Requires --python)",
-    )
-    parser.add_argument(
-        "forces",
-        nargs="*",
-        help="cell=letter sequence to force (e.g. '0=e'). Must match split_order.",
-    )
     args = parser.parse_args()
     if args.raw_multiboggle:
         assert args.python, "--raw_multiboggle require --python"
-    if args.dedupe_forced:
-        assert args.python, "--dedupe_forced require --python"
-    assert not (args.dedupe_forced and args.raw_multiboggle)
     board = args.board
-    forces = [parse_force(x) for x in args.forces]
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
@@ -422,17 +398,6 @@ def main():
     print(f"  n_paths: {stats.n_paths}")
     print(f"  n_paths_uniq: {stats.n_paths_uniq}")
     print(f"  n_uniq: {stats.n_uniq}")
-
-    tree = orderly_tree
-    for i, (cell, letter) in enumerate(forces):
-        assert SPLIT_ORDER[dims][i] == cell
-        print(f"Forcing {cell}={letter}")
-        idx = cells[cell].index(letter)
-        start_s = time.time()
-        trees = tree.orderly_force_cell(cell, len(cells[cell]), o_arena)
-        elapsed_s = time.time() - start_s
-        tree = trees[idx]
-        print(f"{cell}={letter} {elapsed_s:.02}s, {tree_stats(tree)}")
 
     # if isinstance(orderly_tree, SumNode):
     #     with open("tree.dot", "w") as out:
