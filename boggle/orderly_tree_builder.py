@@ -32,6 +32,7 @@ class WordPath:
     path: list[tuple[int, int]]
     word_id: int
     points: int
+    cell_mask: int
 
 
 @dataclass
@@ -40,6 +41,7 @@ class TreeBuilderStats:
     sortw_s: float
     dedupe_s: float
     sort_s: float
+    resort_s: float
     build_s: float
     n_paths: int
     n_paths_uniq: int
@@ -69,6 +71,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             sortw_s=0,
             dedupe_s=0,
             sort_s=0,
+            resort_s=0,
             build_s=0,
             n_paths=0,
             n_paths_uniq=0,
@@ -115,11 +118,18 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             unique_words = unique_word_list(unique_words)
             stats.n_uniq = len(unique_words)
         # print_word_list(self.trie_, unique_words)
-        self.words_ = []
+
         start = end
         root = range_to_sum_node(unique_words, 0, arena)
         end = time.time()
         stats.build_s = end - start
+
+        self.words_ = unique_words
+        start = end
+        self.words_.sort(key=lambda wp: wp.word_id)
+        end = time.time()
+        stats.resort_s = end - start
+
         self.stats_ = stats
         return root
 

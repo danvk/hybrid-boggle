@@ -115,6 +115,7 @@ PYBIND11_MODULE(cpp_boggle, m) {
       .def_readwrite("collect_s", &TreeBuilderStats::collect_s)
       .def_readwrite("sort_s", &TreeBuilderStats::sort_s)
       .def_readwrite("sortw_s", &TreeBuilderStats::sortw_s)
+      .def_readwrite("resort_s", &TreeBuilderStats::resort_s)
       .def_readwrite("dedupe_s", &TreeBuilderStats::dedupe_s)
       .def_readwrite("build_s", &TreeBuilderStats::build_s)
       .def_readwrite("n_paths", &TreeBuilderStats::n_paths)

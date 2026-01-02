@@ -16,6 +16,7 @@ struct TreeBuilderStats {
   float sortw_s;
   float dedupe_s;
   float sort_s;
+  float resort_s;
   // float uniq_s; -- too fast, not worth tracking
   float build_s;
   uint32_t n_paths;
@@ -48,6 +49,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   struct WordPath {
     array<uint8_t, 2 * M * N> path;
+    uint32_t cell_mask;
     uint32_t word_id : 24;
     uint8_t points : 8;
   };
@@ -70,7 +72,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
 
-  static bool WordThenPath(const WordPath& a, const WordPath& b);
+  static bool WordLessThan(const WordPath& a, const WordPath& b);
   static bool PathThenWord(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
   static void DedupeWordList(vector<WordPath>& words);
@@ -96,7 +98,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
 template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
-  TreeBuilderStats stats;
+  TreeBuilderStats stats{};
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   // cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
@@ -131,22 +133,20 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     return root;
   }
 
-  // TODO: optionalize this step
   stats.n_paths = words_.size();
-  start = end;
-  sort(words_.begin(), words_.end(), WordThenPath);
-  end = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-  stats.sortw_s = duration / 1000.0;
 
-  start = end;
   if (dedupe_forced_) {
+    start = end;
+    sort(words_.begin(), words_.end(), WordLessThan);
+    end = chrono::high_resolution_clock::now();
+    duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    stats.sortw_s = duration / 1000.0;
     DedupeWordList(words_);
+    end = chrono::high_resolution_clock::now();
+    duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    stats.dedupe_s = duration / 1000.0;
+    stats.n_paths_uniq = words_.size();
   }
-  end = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-  stats.dedupe_s = duration / 1000.0;
-  stats.n_paths_uniq = words_.size();
 
   start = end;
   sort(words_.begin(), words_.end(), PathThenWord);
@@ -169,8 +169,14 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.build_s = duration / 1000.0;
 
-  words_.clear();
-  words_.shrink_to_fit();  // release memory ASAP
+  start = end;
+  sort(words_.begin(), words_.end(), WordLessThan);
+  end = chrono::high_resolution_clock::now();
+  // TODO: use chrono::seconds for all durations
+  stats.resort_s = chrono::duration_cast<chrono::seconds>(end - start).count();
+
+  // words_.clear();
+  // words_.shrink_to_fit();  // release memory ASAP
   stats_ = stats;
 
   // arena.PrintStats();
@@ -451,12 +457,14 @@ void OrderlyTreeBuilder<M, N>::AddWord(
   WordPath& word = *words_.rbegin();
   const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
 
+  uint32_t cell_mask = 0;
   int idx = 0;
   word.path.fill('\0');
   while (used_ordered) {
     int order_index = std::countr_zero(used_ordered);
     used_ordered &= used_ordered - 1;
     int cell = split_order[order_index];
+    cell_mask |= (1 << cell);
     if (is_forced_[cell]) {
       continue;
     }
@@ -474,6 +482,7 @@ void OrderlyTreeBuilder<M, N>::AddWord(
   }
   word.points = kWordScores[length];
   word.word_id = word_id;
+  word.cell_mask = cell_mask;
 }
 
 template <int M, int N>
@@ -489,14 +498,8 @@ bool OrderlyTreeBuilder<M, N>::PathThenWord(const WordPath& a, const WordPath& b
 }
 
 template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::WordThenPath(const WordPath& a, const WordPath& b) {
-  if (a.word_id != b.word_id) {
-    return a.word_id < b.word_id;
-  }
-  const auto& ap = a.path;
-  const auto& bp = b.path;
-  auto result = memcmp(ap.data(), bp.data(), 2 * M * N);
-  return result < 0;
+bool OrderlyTreeBuilder<M, N>::WordLessThan(const WordPath& a, const WordPath& b) {
+  return a.word_id < b.word_id;
 }
 
 template <int M, int N>
