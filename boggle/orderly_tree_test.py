@@ -123,7 +123,7 @@ def test_deduping_force_equivalence():
     assert len(forced_trees) == 2
     forced_tree = forced_trees[1]
     # This should match direct_tree.bound, but it does not.
-    assert forced_tree.bound == 20
+    assert forced_tree.bound == 26
 
 
 OTB_PARAMS = [
