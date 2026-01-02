@@ -61,6 +61,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.raw_multiboggle = False
         self.words_ = []
         self.stats_ = None
+        self.dedupe_forced = False
 
     def build_tree(self, arena: PyArena = None):
         stats = TreeBuilderStats(
@@ -76,7 +77,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
-        self.is_forced_ = [len(cell) == 1 for cell in self.bd_]
+        self.is_forced_ = [self.dedupe_forced and len(cell) == 1 for cell in self.bd_]
         choices = [0] * len(self.bd_)
 
         start = time.time()

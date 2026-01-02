@@ -110,7 +110,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // cout << "Count paths: " << duration << " ms" << endl;
 
   for (int cell = 0; cell < M * N; cell++) {
-    is_forced_[cell] = strlen(bd_[cell]) == 1;
+    is_forced_[cell] = dedupe_forced_ && strlen(bd_[cell]) == 1;
   }
 
   // 20M is large enough to fit the word list for almost all boards.
