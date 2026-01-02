@@ -32,9 +32,6 @@ class SumNode:
     points: int
     """Points provided by _this_ node, not children."""
 
-    word_ids: set[int]
-    """Set of word IDs that end at this node."""
-
     bound: int
     """Upper bound on the number of points available in this subtree."""
 
@@ -44,7 +41,6 @@ class SumNode:
     def __init__(self):
         self.children = {}
         self.points = 0
-        self.word_ids = set()
         self.bound = 0
 
     def orderly_force_cell(
@@ -53,7 +49,7 @@ class SumNode:
         """Return trees for each possible choice for cell."""
         # See https://www.danvk.org/2025/04/10/following-insight.html#lift--orderly-force--merge
         if not self.children:
-            return [self] * num_lets
+            return [self]
         top_choice = self.children.get(cell)
 
         if top_choice is None:
@@ -61,7 +57,6 @@ class SumNode:
 
         non_cell_children = {k: v for k, v in self.children.items() if k != cell}
         non_cell_points = self.points
-        non_cell_word_ids = self.word_ids
 
         out = [None] * num_lets
         # Iterate only over set bits in the bitmask
@@ -71,14 +66,8 @@ class SumNode:
             if letter < num_lets:
                 child = top_choice.get_child_for_letter(letter)
                 if child:
-                    # Subtract the forced path (child) from the unforced paths (non_cell_children)
-                    # to prevent double-counting words.
-                    purified_children = {
-                        k: subtract_sum_from_choice(v, child, arena)
-                        for k, v in non_cell_children.items()
-                    }
                     out[letter] = merge_orderly_tree_children(
-                        child, purified_children, non_cell_points, non_cell_word_ids, arena
+                        child, non_cell_children, non_cell_points, arena
                     )
             remaining_bits &= remaining_bits - 1  # Clear the lowest set bit
 
@@ -90,7 +79,6 @@ class SumNode:
                     if not child:
                         point_node = SumNode()
                         point_node.points = non_cell_points
-                        point_node.word_ids = non_cell_word_ids.copy()
                         point_node.bound = point_node.points + other_bound
                         point_node.children = non_cell_children
                         arena.add_node(point_node)
@@ -466,17 +454,11 @@ def split_orderly_tree(tree: SumNode, arena: PyArena):
 
 def merge_orderly_tree(a: SumNode, b: SumNode, arena: PyArena) -> SumNode:
     """Merge two orderly(N) trees."""
-    return merge_orderly_tree_children(
-        a, b.children, b.points, b.word_ids, arena
-    )
+    return merge_orderly_tree_children(a, b.children, b.points, arena)
 
 
 def merge_orderly_tree_children(
-    a: SumNode,
-    bc: dict[int, ChoiceNode],
-    b_points: int,
-    b_word_ids: set[int],
-    arena: PyArena,
+    a: SumNode, bc: dict[int, ChoiceNode], b_points: int, arena: PyArena
 ) -> SumNode:
     in_a = a
     ac = a.children
@@ -497,7 +479,6 @@ def merge_orderly_tree_children(
     n = SumNode()
     n.children = out
     n.points = in_a.points + b_points
-    n.word_ids = in_a.word_ids | b_word_ids
     n.bound = n.points + sum(child.bound for child in n.children.values())
     arena.add_node(n)
     return n
@@ -537,179 +518,5 @@ def merge_orderly_choice_children(
         remaining_bits &= remaining_bits - 1  # Clear the lowest set bit
 
     n.children = out
-    arena.add_node(n)
-    return n
-
-
-def subtract_tree(a: SumNode, b: SumNode, arena: PyArena) -> SumNode:
-    """Subtract tree b from tree a (a - b).
-
-    Removes any word IDs present in b from a.
-    If a node becomes empty (no points, no children), it might remain as a ghost
-    (bound 0) which is fine.
-    """
-    new_word_ids = a.word_ids - b.word_ids
-    new_points = a.points
-    # We can't easily recalculate points from word_ids without the dictionary,
-    # but in our specific case, if we remove all word_ids, points should be 0.
-    # If we remove some, points should decrease.
-    # However, since we don't have a map from ID to points here, we assume
-    # that if word_ids match, the points match.
-    # If a.word_ids is not empty and b.word_ids contains all of them, points -> 0.
-    # For partial overlap, it's tricky. But in "deduping", we expect full overlap
-    # for specific words.
-    # Simplified logic: if we remove IDs, we should ideally adjust points.
-    # BUT, SumNode.points is just an integer.
-    # Constraint: we only support this if we assume each ID contributes points?
-    # Or simply: if we remove an ID, we remove its points.
-    # Problem: we don't know how many points an ID is worth without the word length or lookups.
-    # Workaround:
-    # If a.word_ids is subset of b.word_ids, points = 0.
-    # If disjoint, points = a.points.
-    # If partial... we might be stuck.
-    # BUT for the deduping case, we usually see full word matches.
-    if not new_word_ids:
-        new_points = 0
-    elif new_word_ids == a.word_ids:
-        new_points = a.points
-    else:
-        # Partial overlap.
-        # If b's IDs were fully present in a, we can safely subtract b's points.
-        if b.word_ids.issubset(a.word_ids):
-            new_points = max(0, a.points - b.points)
-        else:
-            # If b has IDs not in a, but we removed some shared IDs...
-            # This implies a structure mismatch or different word IDs ending at same node.
-            # We'll conservatively keep a's points to avoid undercounting,
-            # unless we can be smarter. 
-            # In orderly trees, if paths match, word sets should be consistent.
-            new_points = a.points
-
-    # If nothing changes in points or IDs, and children don't change, return a.
-    # But checking deep equality is slow. So we always create a new node if there's overlap.
-
-    # Check intersection of children
-    common_cells = set(a.children.keys()) & set(b.children.keys())
-    
-    new_children = {}
-    children_changed = False
-    
-    for cell, child_a in a.children.items():
-        if cell in common_cells:
-            child_b = b.children[cell]
-            new_child = subtract_choice(child_a, child_b, arena)
-            new_children[cell] = new_child
-            if new_child is not child_a:
-                children_changed = True
-        else:
-            new_children[cell] = child_a
-
-    if not children_changed and new_word_ids == a.word_ids:
-        return a
-
-    n = SumNode()
-    n.points = new_points
-    n.word_ids = new_word_ids
-    n.children = new_children
-    n.bound = n.points + sum(child.bound for child in n.children.values())
-    arena.add_node(n)
-    return n
-
-
-def subtract_choice(a: ChoiceNode, b: ChoiceNode, arena: PyArena) -> ChoiceNode:
-    # Iterate over common letters
-    common_mask = a.child_letters & b.child_letters
-    
-    if common_mask == 0:
-        return a
-
-    new_children = []
-    children_changed = False
-    
-    # Iterate through a's children
-    a_children = a.get_children()
-    # We need to map index back to letter to find b's child
-    child_idx = 0
-    
-    for letter in range(32):
-        if a.child_letters & (1 << letter):
-            child_a = a_children[child_idx]
-            if b.child_letters & (1 << letter):
-                child_b = b.get_child_for_letter(letter)
-                new_child = subtract_tree(child_a, child_b, arena)
-                new_children.append(new_child)
-                if new_child is not child_a:
-                    children_changed = True
-            else:
-                new_children.append(child_a)
-            child_idx += 1
-            
-    if not children_changed:
-        return a
-
-    n = ChoiceNode()
-    n.child_letters = a.child_letters
-    n.children = new_children
-    n.bound = max(c.bound for c in n.children) if n.children else 0
-    arena.add_node(n)
-    return n
-
-
-def subtract_sum_from_choice(choice: ChoiceNode, sub: SumNode, arena: PyArena) -> ChoiceNode:
-    """Subtract SumNode 'sub' from each branch of ChoiceNode 'choice'."""
-    new_children = []
-    children_changed = False
-    
-    # Iterate through choice's children
-    choice_children = choice.get_children()
-    child_idx = 0
-    
-    # We must construct a new ChoiceNode with the same letters, but potentially modified children.
-    # The letters mask stays the same (unless a child becomes empty/null? No, we keep empty children usually)
-    # Actually, if a child becomes empty/bound 0, we can keep it.
-    
-    for letter in range(32):
-        if choice.child_letters & (1 << letter):
-            child_sum = choice_children[child_idx]
-            # Recursively subtract sub from the child SumNode.
-            # Why? Because 'sub' represents the path starting *after* the forced cell.
-            # 'child_sum' represents the path starting *after* the choice cell + letter.
-            # If the paths align structurally, we subtract.
-            # NOTE: We assume sub and child_sum start at the same 'logical' position in the word path?
-            # Yes, because in Orderly Tree, the path is sorted by cell index.
-            # Main (sub) starts after forced cell 0. So it contains cells > 0.
-            # Others (choice) starts at cell 1. Children start after cell 1.
-            # So both contain cells > 1.
-            # So they line up.
-            
-            # Wait. Main contains cell 1?
-            # If force 0. Main has cells {1, 2, ...}.
-            # Others starts at 1. Child of 1 has cells {2, ...}.
-            # So Main {1, 2} vs Child {2}.
-            # They do NOT line up immediately?
-            # Main has ChoiceNode for 1. Child has ChoiceNode for 2.
-            # SubtractTree(Child, Main) would check:
-            # Child.children keys vs Main.children keys.
-            # Child has key 2. Main has key 1 (and maybe 2).
-            # Common keys? Only 2?
-            # If Main has 1, Child does NOT have 1 (it's past 1).
-            # So SubtractTree ignores 1.
-            # It compares Child(2) vs Main(2).
-            # This is exactly what we want!
-            # It finds the intersection.
-            
-            new_child = subtract_tree(child_sum, sub, arena)
-            new_children.append(new_child)
-            if new_child is not child_sum:
-                children_changed = True
-            child_idx += 1
-            
-    if not children_changed:
-        return choice
-
-    n = ChoiceNode()
-    n.child_letters = choice.child_letters
-    n.children = new_children
-    n.bound = max(c.bound for c in n.children) if n.children else 0
     arena.add_node(n)
     return n
