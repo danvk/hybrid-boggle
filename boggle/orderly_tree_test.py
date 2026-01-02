@@ -24,11 +24,10 @@ from boggle.orderly_tree_builder import OrderlyTreeBuilder
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
 
+TRIE_BUILDER_PARAMS = [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)]
 
-@pytest.mark.parametrize(
-    "TrieT, TreeBuilderT",
-    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
-)
+
+@pytest.mark.parametrize("TrieT, TreeBuilderT", TRIE_BUILDER_PARAMS)
 def test_build_orderly_tree(TrieT, TreeBuilderT):
     words = [
         "sea",
@@ -56,10 +55,7 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     )
 
 
-@pytest.mark.parametrize(
-    "TrieT, TreeBuilderT",
-    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
-)
+@pytest.mark.parametrize("TrieT, TreeBuilderT", TRIE_BUILDER_PARAMS)
 def test_build_force_tree_no_force(TrieT, TreeBuilderT):
     words = ["bee", "fee", "beef"]
     t = TrieT.create_from_wordlist(words)
@@ -83,10 +79,7 @@ def test_build_force_tree_no_force(TrieT, TreeBuilderT):
     assert t1.bound == 2  # still two fees when building the tree
 
 
-@pytest.mark.parametrize(
-    "TrieT, TreeBuilderT",
-    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
-)
+@pytest.mark.parametrize("TrieT, TreeBuilderT", TRIE_BUILDER_PARAMS)
 def test_build_force_tree_force(TrieT, TreeBuilderT):
     words = ["bee", "fee", "beef"]
     t = TrieT.create_from_wordlist(words)
