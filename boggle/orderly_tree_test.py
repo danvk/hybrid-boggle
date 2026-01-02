@@ -56,10 +56,15 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     )
 
 
-def test_build_force_tree_cpp():
+@pytest.mark.parametrize(
+    "TrieT, TreeBuilderT",
+    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
+)
+def test_build_force_tree_no_force(TrieT, TreeBuilderT):
     words = ["bee", "fee", "beef"]
-    t = Trie.create_from_wordlist(words)
-    bb = cpp_orderly_tree_builder(t, (2, 2))
+    t = TrieT.create_from_wordlist(words)
+    bb = TreeBuilderT(t, (2, 2))
+    bb.dedupe_forced = False
     arena = bb.create_arena()
 
     # bf ae
@@ -78,10 +83,14 @@ def test_build_force_tree_cpp():
     assert t1.bound == 2  # still two fees when building the tree
 
 
-def test_build_force_tree_py():
+@pytest.mark.parametrize(
+    "TrieT, TreeBuilderT",
+    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
+)
+def test_build_force_tree_force(TrieT, TreeBuilderT):
     words = ["bee", "fee", "beef"]
-    t = PyTrie.create_from_wordlist(words)
-    bb = OrderlyTreeBuilder(t, (2, 2))
+    t = TrieT.create_from_wordlist(words)
+    bb = TreeBuilderT(t, (2, 2))
     bb.dedupe_forced = True
     arena = bb.create_arena()
 
