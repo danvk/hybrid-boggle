@@ -82,6 +82,7 @@ def test_build_force_tree_py():
     words = ["bee", "fee", "beef"]
     t = PyTrie.create_from_wordlist(words)
     bb = OrderlyTreeBuilder(t, (2, 2))
+    bb.dedupe_forced = True
     arena = bb.create_arena()
 
     # bf ae
