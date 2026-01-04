@@ -464,10 +464,10 @@ void OrderlyTreeBuilder<M, N>::AddWord(
     int order_index = std::countr_zero(used_ordered);
     used_ordered &= used_ordered - 1;
     int cell = split_order[order_index];
-    cell_mask |= (1 << cell);
     if (is_forced_[cell]) {
       continue;
     }
+    cell_mask |= (1 << cell);
     int letter = choices[order_index];
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push

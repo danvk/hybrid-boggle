@@ -170,8 +170,14 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             path = decode(
                 self.used_ordered_, choices, SPLIT_ORDER[self.dims], self.is_forced_
             )
+            cell_mask = sum(1 << cell for cell, _ in path)
             self.words_.append(
-                WordPath(path=path, word_id=t.word_id, points=SCORES[length])
+                WordPath(
+                    path=path,
+                    word_id=t.word_id,
+                    points=SCORES[length],
+                    cell_mask=cell_mask,
+                )
             )
 
         self.used_ordered_ ^= 1 << self.cell_to_order[cell]
@@ -355,6 +361,11 @@ def main():
         "--raw_multiboggle",
         action="store_true",
         help="Do not dedupe words on SumNodes. (Requires --python)",
+    )
+    parser.add_argument(
+        "--dedupe_forced",
+        action="store_true",
+        help="Deduplicate redundant words from forced cells in the board.",
     )
     args = parser.parse_args()
     if args.raw_multiboggle:
