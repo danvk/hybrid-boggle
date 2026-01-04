@@ -236,25 +236,28 @@ def dedupe_word_list(xs: Sequence[WordPath]):
     out: list[WordPath] = []
     for _, raw_wps in itertools.groupby(xs, key=lambda wp: wp.word_id):
         raw_wps = list(raw_wps)
-        wps = [set(wp.path) for wp in raw_wps]
-        is_valid = [True] * len(wps)
-        for i, wp1 in enumerate(wps):
-            if not is_valid[i]:
-                continue
-            for j in range(i + 1, len(wps)):
-                if not is_valid[j]:
-                    continue
-                wp2 = wps[j]
-                if wp1.issubset(wp2):
-                    is_valid[j] = False
-                    # print(f"{wp1} issubset {wp2}")
-                elif wp2.issubset(wp1):
-                    is_valid[i] = False
-                    break
-        for wp in (wp for ok, wp in zip(is_valid, raw_wps) if ok):
-            out.append(wp)
+        out += dedupe_paths_for_word(raw_wps)
 
     return out
+
+
+def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
+    wps = [set(wp.path) for wp in raw_wps]
+    is_valid = [True] * len(wps)
+    for i, wp1 in enumerate(wps):
+        if not is_valid[i]:
+            continue
+        for j in range(i + 1, len(wps)):
+            if not is_valid[j]:
+                continue
+            wp2 = wps[j]
+            if wp1.issubset(wp2):
+                is_valid[j] = False
+                # print(f"{wp1} issubset {wp2}")
+            elif wp2.issubset(wp1):
+                is_valid[i] = False
+                break
+    return [wp for ok, wp in zip(is_valid, raw_wps) if ok]
 
 
 mark = 1
