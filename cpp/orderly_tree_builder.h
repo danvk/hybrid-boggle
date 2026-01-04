@@ -529,6 +529,12 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
 
 template <int M, int N>
 bool OrderlyTreeBuilder<M, N>::IsSubset(const WordPath& sub, const WordPath& super) {
+  // To be a superset, super must must all of sub's cells, plus maybe some others.
+  // If it doesn't use all of sub's cells, then it's not a superset.
+  if ((super.cell_mask & sub.cell_mask) != sub.cell_mask) {
+    return false;
+  }
+
   const uint8_t* s = sub.path.data();
   const uint8_t* p = super.path.data();
   int i = 0;
