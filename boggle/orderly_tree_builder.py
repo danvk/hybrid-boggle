@@ -33,6 +33,7 @@ class WordPath:
     word_id: int
     points: int
     cell_mask: int
+    has_force: bool
 
 
 @dataclass
@@ -177,6 +178,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                     word_id=t.word_id,
                     points=SCORES[length],
                     cell_mask=cell_mask,
+                    has_force=len(path) < length,
                 )
             )
 
@@ -241,7 +243,7 @@ def dedupe_word_list(xs: Sequence[WordPath]):
     return out
 
 
-def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
+def dedupe_all_pairs(raw_wps: list[WordPath]):
     wps = [set(wp.path) for wp in raw_wps]
     is_valid = [True] * len(wps)
     for i, wp1 in enumerate(wps):
@@ -257,7 +259,31 @@ def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
             elif wp2.issubset(wp1):
                 is_valid[i] = False
                 break
-    return [wp for ok, wp in zip(is_valid, raw_wps) if ok]
+    valids = [wp for ok, wp in zip(is_valid, raw_wps) if ok]
+    invalids = [wp for ok, wp in zip(is_valid, raw_wps) if not ok]
+    return valids, invalids
+
+
+def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
+    forced_paths = [wp for wp in raw_wps if wp.has_force]
+    unforced_paths = [wp for wp in raw_wps if not wp.has_force]
+
+    forced_paths, duplicates = dedupe_all_pairs(forced_paths)
+    out = [*forced_paths]
+    forced_wps = [set(wp.path) for wp in forced_paths]
+
+    for wp in unforced_paths:
+        is_valid = True
+        path = set(wp.path)
+        for forced_path in forced_wps:
+            if forced_path.issubset(path):
+                is_valid = False
+                break
+        if is_valid:
+            out.append(wp)
+        else:
+            duplicates.append(wp)
+    return out
 
 
 mark = 1
