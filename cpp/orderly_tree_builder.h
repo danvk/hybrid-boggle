@@ -499,7 +499,21 @@ bool OrderlyTreeBuilder<M, N>::PathThenWord(const WordPath& a, const WordPath& b
 
 template <int M, int N>
 bool OrderlyTreeBuilder<M, N>::WordLessThan(const WordPath& a, const WordPath& b) {
-  return a.word_id < b.word_id;
+  if (a.word_id < b.word_id) {
+    return true;
+  } else if (a.word_id > b.word_id) {
+    return false;
+  }
+
+  auto len_a = std::popcount(a.cell_mask);
+  auto len_b = std::popcount(b.cell_mask);
+  if (len_a < len_b) {
+    return true;
+  } else if (len_a > len_b) {
+    return false;
+  }
+
+  return memcmp(a.path.data(), b.path.data(), 2 * M * N) < 0;
 }
 
 template <int M, int N>
