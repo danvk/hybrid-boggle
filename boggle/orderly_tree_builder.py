@@ -95,11 +95,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             return SumNode()
 
         print(f"Big list: {stats.n_paths}")
-        self.words_.sort()
-        self.words_ = unique_word_list(self.words_)
 
         start = end
-        self.words_.sort(key=lambda wp: (wp.word_id, wp.path))
+        self.words_.sort(key=lambda wp: (wp.word_id, len(wp.path), wp.path))
         end = time.time()
         stats.sortw_s = end - start
         # print_word_list(self.trie_, self.words_)
@@ -113,6 +111,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             stats.n_paths_uniq = len(unique_words)
         else:
             unique_words = self.words_
+
         # print(f" #uniq: {stats.n_uniq}")
         if not self.raw_multiboggle:
             # TODO: does tree building even work without uniquing?
@@ -296,41 +295,42 @@ global_trie = None
 
 
 def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
-    forced_paths = [wp for wp in raw_wps if wp.has_force]
-    unforced_paths = [wp for wp in raw_wps if not wp.has_force]
+    # has_mismatch = forced_paths and min(len(wp.path) for wp in forced_paths) != max(
+    #     len(wp.path) for wp in forced_paths
+    # )
 
-    global n_forced, n_unforced, has_printed
-    n_forced += len(forced_paths)
-    n_unforced += len(unforced_paths)
+    # if has_mismatch or (has_printed < 10 and random.random() < 0.1):
+    #     has_printed += 1
+    #     word_id = raw_wps[0].word_id
+    #     lookup = make_id_lookup_table(global_trie)
+    #     print(f"{word_id} = {lookup[word_id]}")
+    #     print(f"forced ({len(forced_paths)}):")
+    #     print_word_list(global_trie, forced_paths)
+    #     print(f"\nunforced ({len(unforced_paths)}):")
+    #     print_word_list(global_trie, unforced_paths)
 
-    has_mismatch = forced_paths and min(len(wp.path) for wp in forced_paths) != max(
-        len(wp.path) for wp in forced_paths
-    )
+    # identical paths should be next to each other thanks to the sorting and can be collapsed.
+    out = [raw_wps[0]]
+    for wp in raw_wps[1:]:
+        if out[-1].path == wp.path:
+            continue
+        out.append(wp)
 
-    if has_mismatch or (has_printed < 10 and random.random() < 0.1):
-        has_printed += 1
-        word_id = raw_wps[0].word_id
-        lookup = make_id_lookup_table(global_trie)
-        print(f"{word_id} = {lookup[word_id]}")
-        print(f"forced ({len(forced_paths)}):")
-        print_word_list(global_trie, forced_paths)
-        print(f"\nunforced ({len(unforced_paths)}):")
-        print_word_list(global_trie, unforced_paths)
+    # check for subsets, but only in shorter paths
+    start_len = 0
+    this_len = 0
+    is_valid = [True] * len(out)
+    for i, wp in enumerate(out):
+        if i == 0 or len(wp.path) > this_len:
+            start_len = i
+            this_len = len(wp.path)
+            continue
+        for shorter_wp in out[:start_len]:
+            if is_subset(shorter_wp, wp):
+                is_valid[i] = False
 
-    forced_paths, duplicates = dedupe_all_pairs(forced_paths)
-    out = [*forced_paths]
-
-    for wp in unforced_paths:
-        is_valid = True
-        for forced_path in forced_paths:
-            if is_subset(forced_path, wp):
-                is_valid = False
-                break
-        if is_valid:
-            out.append(wp)
-        else:
-            duplicates.append(wp)
-    return out
+    valids = [wp for ok, wp in zip(is_valid, out) if ok]
+    return valids
 
 
 mark = 1
