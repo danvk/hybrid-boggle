@@ -268,26 +268,6 @@ def dedupe_word_list(xs: Sequence[WordPath]):
     return out
 
 
-def dedupe_all_pairs(wps: list[WordPath]):
-    is_valid = [True] * len(wps)
-    for i, wp1 in enumerate(wps):
-        if not is_valid[i]:
-            continue
-        for j in range(i + 1, len(wps)):
-            if not is_valid[j]:
-                continue
-            wp2 = wps[j]
-            if is_subset(wp1, wp2):
-                is_valid[j] = False
-                # print(f"{wp1} issubset {wp2}")
-            elif is_subset(wp2, wp1):
-                is_valid[i] = False
-                break
-    valids = [wp for ok, wp in zip(is_valid, wps) if ok]
-    invalids = [wp for ok, wp in zip(is_valid, wps) if not ok]
-    return valids, invalids
-
-
 n_forced = 0
 n_unforced = 0
 has_printed = False
