@@ -9,6 +9,7 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 
 import argparse
 import itertools
+import random
 import time
 from dataclasses import dataclass
 from typing import Sequence
@@ -94,6 +95,9 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             return SumNode()
 
         print(f"Big list: {stats.n_paths}")
+        self.words_.sort()
+        self.words_ = unique_word_list(self.words_)
+
         start = end
         self.words_.sort(key=lambda wp: (wp.word_id, wp.path))
         end = time.time()
@@ -226,6 +230,28 @@ def unique_word_list(xs: Sequence[WordPath]):
     return out
 
 
+def is_subset(sub: WordPath, super: WordPath) -> bool:
+    if super.cell_mask & sub.cell_mask != sub.cell_mask:
+        return False
+
+    s = sub.path
+    p = super.path
+    i = 0
+    j = 0
+    while i < len(s):
+        if j >= len(p):
+            return False
+        if s[i][0] == p[j][0]:
+            if s[i][1] == p[j][1]:
+                i += 1
+                j += 1
+            else:
+                return False
+        else:
+            j += 1
+    return True
+
+
 def dedupe_word_list(xs: Sequence[WordPath]):
     """For each distinct word, filter out redundant paths.
 
@@ -243,8 +269,7 @@ def dedupe_word_list(xs: Sequence[WordPath]):
     return out
 
 
-def dedupe_all_pairs(raw_wps: list[WordPath]):
-    wps = [set(wp.path) for wp in raw_wps]
+def dedupe_all_pairs(wps: list[WordPath]):
     is_valid = [True] * len(wps)
     for i, wp1 in enumerate(wps):
         if not is_valid[i]:
@@ -253,30 +278,52 @@ def dedupe_all_pairs(raw_wps: list[WordPath]):
             if not is_valid[j]:
                 continue
             wp2 = wps[j]
-            if wp1.issubset(wp2):
+            if is_subset(wp1, wp2):
                 is_valid[j] = False
                 # print(f"{wp1} issubset {wp2}")
-            elif wp2.issubset(wp1):
+            elif is_subset(wp2, wp1):
                 is_valid[i] = False
                 break
-    valids = [wp for ok, wp in zip(is_valid, raw_wps) if ok]
-    invalids = [wp for ok, wp in zip(is_valid, raw_wps) if not ok]
+    valids = [wp for ok, wp in zip(is_valid, wps) if ok]
+    invalids = [wp for ok, wp in zip(is_valid, wps) if not ok]
     return valids, invalids
+
+
+n_forced = 0
+n_unforced = 0
+has_printed = False
+global_trie = None
 
 
 def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
     forced_paths = [wp for wp in raw_wps if wp.has_force]
     unforced_paths = [wp for wp in raw_wps if not wp.has_force]
 
+    global n_forced, n_unforced, has_printed
+    n_forced += len(forced_paths)
+    n_unforced += len(unforced_paths)
+
+    has_mismatch = forced_paths and min(len(wp.path) for wp in forced_paths) != max(
+        len(wp.path) for wp in forced_paths
+    )
+
+    if has_mismatch or (has_printed < 10 and random.random() < 0.1):
+        has_printed += 1
+        word_id = raw_wps[0].word_id
+        lookup = make_id_lookup_table(global_trie)
+        print(f"{word_id} = {lookup[word_id]}")
+        print(f"forced ({len(forced_paths)}):")
+        print_word_list(global_trie, forced_paths)
+        print(f"\nunforced ({len(unforced_paths)}):")
+        print_word_list(global_trie, unforced_paths)
+
     forced_paths, duplicates = dedupe_all_pairs(forced_paths)
     out = [*forced_paths]
-    forced_wps = [set(wp.path) for wp in forced_paths]
 
     for wp in unforced_paths:
         is_valid = True
-        path = set(wp.path)
-        for forced_path in forced_wps:
-            if forced_path.issubset(path):
+        for forced_path in forced_paths:
+            if is_subset(forced_path, wp):
                 is_valid = False
                 break
         if is_valid:
@@ -371,15 +418,15 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
         w = word_id_to_word[word.word_id]
         print(f"{i:3d} {word.path} ({word.points}) {w}")
 
-    by_word = dict[str, list[WordPath]]()
-    for w in words:
-        word = word_id_to_word[w.word_id]
-        by_word.setdefault(word, [])
-        by_word[word].append(w)
-    for i, (word, wps) in enumerate(by_word.items()):
-        print(f"{i:3d} {word}")
-        for wp in wps:
-            print(f"    {wp.path} ({wp.points})")
+    # by_word = dict[str, list[WordPath]]()
+    # for w in words:
+    #     word = word_id_to_word[w.word_id]
+    #     by_word.setdefault(word, [])
+    #     by_word[word].append(w)
+    # for i, (word, wps) in enumerate(by_word.items()):
+    #     print(f"{i:3d} {word}")
+    #     for wp in wps:
+    #         print(f"    {wp.path} ({wp.points})")
 
 
 def main():
@@ -403,6 +450,9 @@ def main():
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
+    global global_trie
+    global_trie = trie
+
     # etb = TreeBuilder(trie, dims)
     # assert etb.parse_board(board)
     # e_arena = etb.create_arena()
@@ -439,6 +489,9 @@ def main():
     print(f"  n_paths: {stats.n_paths}")
     print(f"  n_paths_uniq: {stats.n_paths_uniq}")
     print(f"  n_uniq: {stats.n_uniq}")
+
+    print(f"  {n_forced=}")
+    print(f"  {n_unforced=}")
 
     # if isinstance(orderly_tree, SumNode):
     #     with open("tree.dot", "w") as out:
