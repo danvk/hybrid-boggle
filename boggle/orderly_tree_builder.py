@@ -34,7 +34,6 @@ class WordPath:
     word_id: int
     points: int
     cell_mask: int
-    has_force: bool
 
 
 @dataclass
@@ -100,7 +99,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.words_.sort(key=lambda wp: (wp.word_id, len(wp.path), wp.path))
         end = time.time()
         stats.sortw_s = end - start
-        # print_word_list(self.trie_, self.words_)
+        print_word_list(self.trie_, self.words_)
         if self.raw_multiboggle:
             unique_words = self.words_
         elif self.dedupe_forced:
@@ -121,7 +120,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             stats.sort_s = end - start
             unique_words = unique_word_list(unique_words)
             stats.n_uniq = len(unique_words)
-        print_word_list(self.trie_, unique_words)
+        # print_word_list(self.trie_, unique_words)
 
         start = end
         root = range_to_sum_node(unique_words, 0, arena)
@@ -181,7 +180,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
                     word_id=t.word_id,
                     points=SCORES[length],
                     cell_mask=cell_mask,
-                    has_force=len(path) < length,
                 )
             )
 
@@ -304,9 +302,8 @@ def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
         if i == 0 or len(wp.path) > this_len:
             start_len = i
             this_len = len(wp.path)
-            continue
-        for shorter_wp in out[:start_len]:
-            if is_subset(shorter_wp, wp):
+        for j, shorter_wp in enumerate(out[:start_len]):
+            if is_valid[j] and is_subset(shorter_wp, wp):
                 is_valid[i] = False
 
     valids = [wp for ok, wp in zip(is_valid, out) if ok]

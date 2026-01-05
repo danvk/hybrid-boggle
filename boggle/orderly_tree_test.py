@@ -20,7 +20,11 @@ from boggle.eval_node import (
     split_orderly_tree,
 )
 from boggle.ibuckets import PyBucketBoggler
-from boggle.orderly_tree_builder import OrderlyTreeBuilder
+from boggle.orderly_tree_builder import (
+    OrderlyTreeBuilder,
+    WordPath,
+    dedupe_paths_for_word,
+)
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
 
@@ -533,3 +537,28 @@ def test_missing_top_choice():
 
     # https://www.danvk.org/boggle/?board=rbjfrevpverrresa&multiboggle=1
     assert t.bound == snapshot(1029)
+
+
+def test_dedupe_wordpaths():
+    #  (3)
+    # [(2, 0), (3, 0), (4, 0)] (1)
+    wps = [
+        WordPath(
+            path=[(2, 0), (3, 0), (4, 0)], word_id=1, points=1, cell_mask=4 + 8 + 16
+        ),
+        WordPath(
+            path=[(1, 0), (2, 0), (3, 0), (4, 0)],
+            word_id=1,
+            points=1,
+            cell_mask=2 + 4 + 8 + 16,
+        ),
+    ]
+
+    assert dedupe_paths_for_word(wps) == [
+        WordPath(
+            path=[(2, 0), (3, 0), (4, 0)], word_id=1, points=1, cell_mask=4 + 8 + 16
+        ),
+    ]
+
+    # 55 [(2, 0), (3, 0), (4, 0)] (1) mana
+    # 56 [(1, 0), (2, 0), (3, 0), (4, 0)] (1) mana
