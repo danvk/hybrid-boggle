@@ -99,7 +99,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.words_.sort(key=lambda wp: (wp.word_id, len(wp.path), wp.path))
         end = time.time()
         stats.sortw_s = end - start
-        print_word_list(self.trie_, self.words_)
+        # print_word_list(self.trie_, self.words_)
         if self.raw_multiboggle:
             unique_words = self.words_
         elif self.dedupe_forced:
