@@ -2,6 +2,7 @@
 #define ORDERLY_TREE_BUILDER_H
 
 #include <array>
+#include <bit>
 #include <iomanip>
 
 #include "constants.h"
@@ -585,68 +586,72 @@ void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
   size_t n = words.size();
   size_t i = 0;
 
-  int max_count = 0;
-
-  // Since we assume words are sorted by word_id, we process each block of identical
-  // word_ids.
   while (i < n) {
     size_t j = i + 1;
     while (j < n && words[j].word_id == words[i].word_id) {
       j++;
     }
-    // Range [i, j) contains paths for the same word.
     int count = j - i;
-    max_count = max(count, max_count);
 
-    // Optimization for single path words
-    if (count == 1) {
-      if (write_idx != i) {
-        words[write_idx] = words[i];
-      }
-      write_idx++;
-      i = j;
-      continue;
-    }
+    int group_start = write_idx;
 
-    // Identify redundant paths
-    // A path is redundant if it is a superset of another path (meaning the other is a
-    // subset). If A is subset of B, B is redundant (B has extra constraints/steps for
-    // same result). We want minimal paths (subsets).
-    std::vector<bool> is_valid(count, true);
+    // Step 1: Collapse identical paths
+    if (write_idx != i) words[write_idx] = words[i];
+    write_idx++;
 
-    for (int k1 = 0; k1 < count; ++k1) {
-      if (!is_valid[k1]) continue;
-      for (int k2 = k1 + 1; k2 < count; ++k2) {
-        if (!is_valid[k2]) continue;
-
-        // Check if words[i+k1] is subset of words[i+k2]
-        if (IsSubset(words[i + k1], words[i + k2])) {
-          // k1 is subset of k2 -> k2 is redundant (has more nodes than needed)
-          is_valid[k2] = false;
-        } else if (IsSubset(words[i + k2], words[i + k1])) {
-          // k2 is subset of k1 -> k1 is redundant
-          is_valid[k1] = false;
-          break;
-        }
-      }
-    }
-
-    // Compact valid paths
-    for (int k = 0; k < count; ++k) {
-      if (is_valid[k]) {
-        if (write_idx != i + k) {
-          words[write_idx] = words[i + k];
-        }
+    for (int k = 1; k < count; ++k) {
+      const auto& prev = words[write_idx - 1];
+      const auto& curr = words[i + k];
+      bool same = (prev.cell_mask == curr.cell_mask) &&
+                  (memcmp(prev.path.data(), curr.path.data(), 2 * M * N) == 0);
+      if (!same) {
+        if (write_idx != i + k) words[write_idx] = curr;
         write_idx++;
       }
     }
+
+    int unique_count = write_idx - group_start;
+
+    // Step 2: Subset check (optimized)
+    std::vector<bool> is_valid(unique_count, true);
+    int start_len_idx = 0;
+    int current_len = 0;
+
+    for (int k = 0; k < unique_count; ++k) {
+      const auto& w_k = words[group_start + k];
+      int len = std::popcount(w_k.cell_mask);
+
+      if (k == 0 || len > current_len) {
+        start_len_idx = k;
+        current_len = len;
+      }
+
+      for (int m = 0; m < start_len_idx; ++m) {
+        if (is_valid[m]) {
+          if (IsSubset(words[group_start + m], w_k)) {
+            is_valid[k] = false;
+            break;
+          }
+        }
+      }
+    }
+
+    // Step 3: Compact
+    int valid_write = group_start;
+    for (int k = 0; k < unique_count; ++k) {
+      if (is_valid[k]) {
+        if (valid_write != group_start + k) {
+          words[valid_write] = words[group_start + k];
+        }
+        valid_write++;
+      }
+    }
+    write_idx = valid_write;
 
     i = j;
   }
 
   words.erase(words.begin() + write_idx, words.end());
-
-  cout << "max paths per word: " << max_count << endl;
 }
 
 template <unsigned long N>

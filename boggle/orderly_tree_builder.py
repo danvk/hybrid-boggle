@@ -273,20 +273,6 @@ global_trie = None
 
 
 def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
-    # has_mismatch = forced_paths and min(len(wp.path) for wp in forced_paths) != max(
-    #     len(wp.path) for wp in forced_paths
-    # )
-
-    # if has_mismatch or (has_printed < 10 and random.random() < 0.1):
-    #     has_printed += 1
-    #     word_id = raw_wps[0].word_id
-    #     lookup = make_id_lookup_table(global_trie)
-    #     print(f"{word_id} = {lookup[word_id]}")
-    #     print(f"forced ({len(forced_paths)}):")
-    #     print_word_list(global_trie, forced_paths)
-    #     print(f"\nunforced ({len(unforced_paths)}):")
-    #     print_word_list(global_trie, unforced_paths)
-
     # identical paths should be next to each other thanks to the sorting and can be collapsed.
     out = [raw_wps[0]]
     for wp in raw_wps[1:]:
