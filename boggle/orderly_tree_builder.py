@@ -121,7 +121,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             stats.sort_s = end - start
             unique_words = unique_word_list(unique_words)
             stats.n_uniq = len(unique_words)
-        # print_word_list(self.trie_, unique_words)
+        print_word_list(self.trie_, unique_words)
 
         start = end
         root = range_to_sum_node(unique_words, 0, arena)
@@ -398,15 +398,15 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
         w = word_id_to_word[word.word_id]
         print(f"{i:3d} {word.path} ({word.points}) {w}")
 
-    # by_word = dict[str, list[WordPath]]()
-    # for w in words:
-    #     word = word_id_to_word[w.word_id]
-    #     by_word.setdefault(word, [])
-    #     by_word[word].append(w)
-    # for i, (word, wps) in enumerate(by_word.items()):
-    #     print(f"{i:3d} {word}")
-    #     for wp in wps:
-    #         print(f"    {wp.path} ({wp.points})")
+    by_word = dict[str, list[WordPath]]()
+    for w in words:
+        word = word_id_to_word[w.word_id]
+        by_word.setdefault(word, [])
+        by_word[word].append(w)
+    for i, (word, wps) in enumerate(by_word.items()):
+        print(f"{i:3d} {word}")
+        for wp in wps:
+            print(f"    {wp.path} ({wp.points})")
 
 
 def main():
