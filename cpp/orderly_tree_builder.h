@@ -803,6 +803,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildSubtractionTree(
   size_t n = words_.size();
   size_t i = 0;
 
+  auto start = chrono::high_resolution_clock::now();
   // words_ is sorted by word_id.
   while (i < n) {
     size_t j = i + 1;
@@ -875,10 +876,24 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildSubtractionTree(
 
     i = j;
   }
+  auto end = chrono::high_resolution_clock::now();
+  auto duration1 =
+      chrono::duration_cast<chrono::milliseconds>(end - start).count() / 1000.0;
 
+  start = end;
   std::sort(dupes.begin(), dupes.end(), PathThenWord);
+  end = chrono::high_resolution_clock::now();
+  auto duration2 =
+      chrono::duration_cast<chrono::milliseconds>(end - start).count() / 1000.0;
 
+  start = end;
   auto root = RangeToSumNode(dupes, {0, (int)dupes.size()}, 0, arena);
+  end = chrono::high_resolution_clock::now();
+  auto duration3 =
+      chrono::duration_cast<chrono::milliseconds>(end - start).count() / 1000.0;
+
+  cout << "dedupe: " << duration1 << "\nsort: " << duration2 << "\nbuild: " << duration3
+       << endl;
   return root;
 }
 
