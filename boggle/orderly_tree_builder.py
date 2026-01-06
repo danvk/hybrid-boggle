@@ -113,6 +113,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             stats.n_paths_uniq = len(unique_words)
         else:
             unique_words = self.words_
+            stats.dedupe_s = -1.0
 
         start = end
         unique_words.sort()
@@ -447,6 +448,14 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
     #         print(f"    {wp.path} ({wp.points})")
 
 
+def parse_force(force: str) -> tuple[int, str]:
+    cell_str, letter = force.split("=")
+    assert len(letter) == 1
+    cell = int(cell_str)
+    assert 0 <= cell < 25
+    return (cell, letter)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Get the orderly bound for a board")
     add_standard_args(parser, python=True)
@@ -456,8 +465,14 @@ def main():
         action="store_true",
         help="Deduplicate redundant words from forced cells in the board.",
     )
+    parser.add_argument(
+        "forces",
+        nargs="*",
+        help="cell=letter sequence to force (e.g. '0=e'). Must match split_order.",
+    )
     args = parser.parse_args()
     board = args.board
+    forces = [parse_force(x) for x in args.forces]
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
     trie = get_trie_from_args(args)
@@ -501,6 +516,32 @@ def main():
 
     print(f"  {n_forced=}")
     print(f"  {n_unforced=}")
+
+    tree = orderly_tree
+    for i, (cell, letter) in enumerate(forces):
+        assert SPLIT_ORDER[dims][i] == cell
+        print(f"Forcing {cell}={letter}")
+        idx = cells[cell].index(letter)
+        start_s = time.time()
+        trees = tree.orderly_force_cell(cell, len(cells[cell]), o_arena)
+        elapsed_s = time.time() - start_s
+        tree = trees[idx]
+        print(f"{cell}={letter} {elapsed_s:.02}s, {tree_stats(tree)}")
+
+    if forces:
+        print("Building subtraction tree...")
+        force_ints = [cells[cell].index(letter) for cell, letter in forces]
+        print(force_ints)
+        start = time.time()
+        subtree = otb.build_subtraction_tree(force_ints, o_arena)
+        end = time.time()
+        print(f"build subtraction tree: {end-start:.04}s")
+        print(tree_stats(subtree))
+        start = time.time()
+        t = tree.subtract_tree(subtree)
+        end = time.time()
+        print(tree_stats(t))
+        print(f"subtract: {end-start:.04}s")
 
     # if isinstance(orderly_tree, SumNode):
     #     with open("tree.dot", "w") as out:
