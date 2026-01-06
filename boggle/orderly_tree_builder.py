@@ -141,16 +141,20 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         # 3. Re-sort by path and build a "subtraction tree"
         cell_forces = [*zip(self.split_order, forces)]
         cell_to_force = {cell: force for cell, force in cell_forces}
+        force_mask = sum(1 << cell for cell, _ in cell_forces)
         # print(f"{cell_to_force=}")
 
         def is_compat(wp: WordPath):
-            # TODO: look at cell_mask
+            if force_mask & wp.cell_mask == 0:
+                return True
             return all(
                 cell not in cell_to_force or cell_to_force[cell] == letter
                 for cell, letter in wp.path
             )
 
         def strip_forced(wp: WordPath):
+            if force_mask & wp.cell_mask == 0:
+                return wp
             new_wp = dataclasses.replace(
                 wp,
                 path=[
