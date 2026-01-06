@@ -99,6 +99,10 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.words_.sort(key=lambda wp: (wp.word_id, len(wp.path), wp.path))
         end = time.time()
         stats.sortw_s = end - start
+
+        self.words_ = unique_word_list(self.words_)
+        stats.n_uniq = len(self.words_)
+
         # print_word_list(self.trie_, self.words_)
         if self.dedupe_forced:
             start = end
@@ -113,8 +117,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         unique_words.sort()
         end = time.time()
         stats.sort_s = end - start
-        unique_words = unique_word_list(unique_words)
-        stats.n_uniq = len(unique_words)
         # print_word_list(self.trie_, unique_words)
 
         start = end
@@ -212,12 +214,9 @@ def unique_word_list(xs: Sequence[WordPath]):
     last_path = None
     last_word_id = None
     for x in xs:
-        if x.path != last_path:
+        if x.path != last_path or x.word_id != last_word_id:
             out.append(x)
             last_path = x.path
-            last_word_id = x.word_id
-        elif x.word_id != last_word_id:
-            out[-1].points += x.points
             last_word_id = x.word_id
     return out
 
@@ -301,12 +300,15 @@ def tree_stats(t: SumNode) -> str:
 
 
 def range_to_sum_node(words: Sequence[WordPath], depth: int, arena: PyArena) -> SumNode:
-    # If there are points on _this_ node, they'll be on a unique first node.
-    n = words[0]
+    # If there are points on _this_ node, they'll in short paths at the start.
+    # There might be multiple words (anagrams) that contribute to this node.
+    i = 0
     points = 0
-    if len(n.path) == depth:
-        points = n.points
-        words = words[1:]
+    while i < len(words) and len(words[i].path) == depth:
+        points += words[i].points
+        i += 1
+    if i > 0:
+        words = words[i:]
 
     # Find intervals for each distinct cell
     child_cells = []
