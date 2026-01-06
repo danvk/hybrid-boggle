@@ -576,8 +576,8 @@ def test_forced_tree_32(is_python):
     )
 
 
-# @pytest.mark.parametrize("is_python", [True, False])
-def test_subtraction_tree(is_python=True):
+@pytest.mark.parametrize("is_python", [True, False])
+def test_subtraction_tree(is_python):
     dims = (2, 3)
     trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
     board = "nr lnrsy aeiou mt ae nr"
