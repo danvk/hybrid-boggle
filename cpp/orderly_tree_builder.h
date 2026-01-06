@@ -894,6 +894,14 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildSubtractionTree(
 
   cout << "dedupe: " << duration1 << "\nsort: " << duration2 << "\nbuild: " << duration3
        << endl;
+
+  vector<int> dupes_by_len(16, 0);
+  for (const auto& dupe : dupes) {
+    dupes_by_len[std::popcount(dupe.cell_mask)] += 1;
+  }
+  for (int k = 0; k < 16; k++) {
+    cout << " " << k << "=" << dupes_by_len[k] << endl;
+  }
   return root;
 }
 
