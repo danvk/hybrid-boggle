@@ -616,6 +616,8 @@ def test_subtraction_tree(is_python=True):
 
     rr_deduped = rr.subtract_tree(st)
     assert rr_deduped.bound == tf2dd.bound
+    cells = board_force2.split(" ")
+    assert eval_node_to_string(rr_deduped, cells) == eval_node_to_string(tf2dd, cells)
 
     deduped = [None] * 5
     for letter in range(0, 5):
@@ -632,4 +634,7 @@ def test_subtraction_tree(is_python=True):
         print(board)
         assert otb.parse_board(board)
         t = otb.build_tree(arena)
-        assert t.bound == deduped[letter].bound
+        t_deduped = deduped[letter]
+        assert t.bound == t_deduped.bound
+        cs = board.split(" ")
+        assert eval_node_to_string(t, cs) == eval_node_to_string(t_deduped, cs)
