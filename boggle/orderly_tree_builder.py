@@ -8,6 +8,7 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 """
 
 import argparse
+import dataclasses
 import itertools
 import random
 import time
@@ -133,6 +134,57 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.stats_ = stats
         return root
 
+    def build_subtraction_tree(self, forces: list[int], arena) -> SumNode:
+        # self.words_ is sorted by word_id.
+        # 1. Filter down to just the "compatible" paths, stripping forced cells.
+        # 2. Within each word group, sort by length and path, and dedupe, keeping only the dupes.
+        # 3. Re-sort by path and build a "subtraction tree"
+        cell_forces = [*zip(self.split_order, forces)]
+        cell_to_force = {cell: force for cell, force in cell_forces}
+        print(f"{cell_to_force=}")
+
+        def is_compat(wp: WordPath):
+            # TODO: look at cell_mask
+            return all(
+                cell not in cell_to_force or cell_to_force[cell] == letter
+                for cell, letter in wp.path
+            )
+
+        def strip_forced(wp: WordPath):
+            new_wp = dataclasses.replace(
+                wp,
+                path=[
+                    (cell, letter)
+                    for cell, letter in wp.path
+                    if cell not in cell_to_force
+                ],
+            )
+            new_wp.cell_mask = sum(1 << cell for cell, _ in new_wp.path)
+            return new_wp
+
+        dupes: list[WordPath] = []
+        print(f"init list size: {len(self.words_)}")
+        print_word_list(self.trie_, self.words_)
+        for _, word_wps_iter in itertools.groupby(
+            self.words_, key=lambda wp: wp.word_id
+        ):
+            word_wps = [*word_wps_iter]
+            n_init = len(word_wps)
+            word_wps = [wp for wp in word_wps if is_compat(wp)]
+            if not word_wps:
+                continue
+            # TODO: if nothing is forced, bail out early
+            word_wps = [strip_forced(wp) for wp in word_wps]
+            word_wps.sort(key=lambda wp: (wp.word_id, len(wp.path), wp.path))
+            _, word_dupes = dedupe_paths_for_word(word_wps)
+            print(f"  {n_init} -> {len(word_wps)} compat {len(word_dupes)} dupes")
+            dupes += word_dupes
+
+        print(f"Found {len(dupes)} dupes")
+        dupes.sort()
+        root = range_to_sum_node(dupes, 0, arena)
+        return root
+
     def do_all_descents(
         self, cell: int, length: int, t: PyTrie, choices: list[int], arena
     ):
@@ -255,7 +307,8 @@ def dedupe_word_list(xs: Sequence[WordPath]):
     out: list[WordPath] = []
     for _, raw_wps in itertools.groupby(xs, key=lambda wp: wp.word_id):
         raw_wps = list(raw_wps)
-        out += dedupe_paths_for_word(raw_wps)
+        valids, _ = dedupe_paths_for_word(raw_wps)
+        out += valids
 
     return out
 
@@ -269,10 +322,12 @@ global_trie = None
 def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
     # identical paths should be next to each other thanks to the sorting and can be collapsed.
     out = [raw_wps[0]]
+    dupes = []
     for wp in raw_wps[1:]:
         if out[-1].path == wp.path:
-            continue
-        out.append(wp)
+            dupes.append(wp)
+        else:
+            out.append(wp)
 
     # check for subsets, but only in shorter paths
     start_len = 0
@@ -287,7 +342,8 @@ def dedupe_paths_for_word(raw_wps: Sequence[WordPath]):
                 is_valid[i] = False
 
     valids = [wp for ok, wp in zip(is_valid, out) if ok]
-    return valids
+    dupes += [wp for ok, wp in zip(is_valid, out) if not ok]
+    return valids, dupes
 
 
 mark = 1
@@ -378,15 +434,15 @@ def print_word_list(trie: PyTrie, words: Sequence[WordPath]):
         w = word_id_to_word[word.word_id]
         print(f"{i:3d} {word.path} ({word.points}) {w}")
 
-    by_word = dict[str, list[WordPath]]()
-    for w in words:
-        word = word_id_to_word[w.word_id]
-        by_word.setdefault(word, [])
-        by_word[word].append(w)
-    for i, (word, wps) in enumerate(by_word.items()):
-        print(f"{i:3d} {word}")
-        for wp in wps:
-            print(f"    {wp.path} ({wp.points})")
+    # by_word = dict[str, list[WordPath]]()
+    # for w in words:
+    #     word = word_id_to_word[w.word_id]
+    #     by_word.setdefault(word, [])
+    #     by_word[word].append(w)
+    # for i, (word, wps) in enumerate(by_word.items()):
+    #     print(f"{i:3d} {word}")
+    #     for wp in wps:
+    #         print(f"    {wp.path} ({wp.points})")
 
 
 def main():

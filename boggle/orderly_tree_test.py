@@ -542,23 +542,18 @@ def test_missing_top_choice():
 def test_dedupe_wordpaths():
     #  (3)
     # [(2, 0), (3, 0), (4, 0)] (1)
-    wps = [
-        WordPath(
-            path=[(2, 0), (3, 0), (4, 0)], word_id=1, points=1, cell_mask=4 + 8 + 16
-        ),
-        WordPath(
-            path=[(1, 0), (2, 0), (3, 0), (4, 0)],
-            word_id=1,
-            points=1,
-            cell_mask=2 + 4 + 8 + 16,
-        ),
-    ]
+    short = WordPath(
+        path=[(2, 0), (3, 0), (4, 0)], word_id=1, points=1, cell_mask=4 + 8 + 16
+    )
+    long = WordPath(
+        path=[(1, 0), (2, 0), (3, 0), (4, 0)],
+        word_id=1,
+        points=1,
+        cell_mask=2 + 4 + 8 + 16,
+    )
+    wps = [short, long]
 
-    assert dedupe_paths_for_word(wps) == [
-        WordPath(
-            path=[(2, 0), (3, 0), (4, 0)], word_id=1, points=1, cell_mask=4 + 8 + 16
-        ),
-    ]
+    assert dedupe_paths_for_word(wps) == ([short], [long])
 
     # 55 [(2, 0), (3, 0), (4, 0)] (1) mana
     # 56 [(1, 0), (2, 0), (3, 0), (4, 0)] (1) mana
@@ -581,8 +576,8 @@ def test_forced_tree_32(is_python):
     )
 
 
-@pytest.mark.parametrize("is_python", [True, False])
-def test_subtraction_tree(is_python):
+# @pytest.mark.parametrize("is_python", [True, False])
+def test_subtraction_tree(is_python=True):
     dims = (2, 3)
     trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
     board = "nr lnrsy aeiou mt ae nr"
@@ -606,4 +601,16 @@ def test_subtraction_tree(is_python):
     assert t0s[1].bound == 85
 
     t1s = t0s[1].orderly_force_cell(1, 5, arena)
-    assert t1s[2].bound == 41
+    rr = t1s[2]
+    assert rr.bound == 41
+
+    # back to the original board
+    otb.dedupe_forced = False
+    assert otb.parse_board(board)
+    t = otb.build_tree(arena)
+    assert t.bound == 91
+
+    st = otb.build_subtraction_tree([1, 2], arena)
+    print(st.bound)
+    print(st.node_count())
+    assert False
