@@ -136,12 +136,21 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
 
   stats.n_paths = words_.size();
 
+  start = end;
+  sort(words_.begin(), words_.end(), WordLessThan);
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  stats.sortw_s = duration / 1000.0;
+
+  start = end;
+  UniqueWordList(words_);
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  // stats.uniq_secs = duration / 1000.0;
+  stats.n_uniq = words_.size();
+
   if (dedupe_forced_) {
     start = end;
-    sort(words_.begin(), words_.end(), WordLessThan);
-    end = chrono::high_resolution_clock::now();
-    duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    stats.sortw_s = duration / 1000.0;
     DedupeWordList(words_);
     end = chrono::high_resolution_clock::now();
     duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -154,17 +163,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   end = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.sort_s = duration / 1000.0;
-  // PrintWordList();
 
-  start = end;
-  UniqueWordList(words_);
-  end = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-  // stats.uniq_secs = duration / 1000.0;
-  stats.n_uniq = words_.size();
-  // PrintWordList();
-
-  start = end;
   auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
   end = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -525,17 +524,14 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
   auto n = words.size();
   for (int i = 1; i < n; i++) {
     const auto& w = words[i];
-    int result = memcmp(w.path.data(), last.path.data(), 2 * M * N);
-    if (result != 0) {
+    if (w.word_id != last.word_id ||
+        memcmp(w.path.data(), last.path.data(), 2 * M * N) != 0) {
       if (i != write_idx) {
         // cout << "uniq move " << i << " -> " << write_idx << endl;
         words[write_idx] = w;
       }
       last = words[write_idx];
       write_idx++;
-    } else if (w.word_id != last.word_id) {
-      words[write_idx - 1].points += w.points;
-      last.word_id = w.word_id;
     }
     // otherwise: drop it
   }
@@ -668,11 +664,13 @@ template <int M, int N>
 SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena
 ) {
+  // If there are points on _this_ node, they'll in short paths at the start.
+  // There might be multiple words (anagrams) that contribute to this node.
   int start = range.first;
   int end = range.second;
   int points = 0;
-  if (PathLength(words[start].path) == depth) {
-    points = words[start].points;
+  while (start < end && PathLength(words[start].path) == depth) {
+    points += words[start].points;
     ++start;
   }
 
