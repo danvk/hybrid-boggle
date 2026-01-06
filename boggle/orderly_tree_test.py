@@ -562,3 +562,20 @@ def test_dedupe_wordpaths():
 
     # 55 [(2, 0), (3, 0), (4, 0)] (1) mana
     # 56 [(1, 0), (2, 0), (3, 0), (4, 0)] (1) mana
+
+
+@pytest.mark.parametrize("is_python", [True, False])
+def test_forced_tree_32(is_python):
+    dims = (2, 3)
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    board = "r nr ae mt ae n"
+    otb.dedupe_forced = True
+    assert otb.parse_board(board)
+    arena = otb.create_arena()
+    t = otb.build_tree(arena)
+    assert t.bound == 32
+    assert t.node_count() == 102
+    cells = board.split(" ")
+    assert outsource(eval_node_to_string(t, cells)) == snapshot(
+        external("35fcf2479a9f*.txt")
+    )
