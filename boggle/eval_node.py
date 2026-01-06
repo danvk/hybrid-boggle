@@ -167,12 +167,16 @@ class SumNode:
     def subtract_tree(self, other: Self) -> Self:
         res = SumNode()
         res.points = self.points - other.points
+        assert self.points >= other.points
 
         for cell, child in self.children.items():
             if cell in other.children:
-                res.children[cell] = child.subtract_tree(other.children[cell])
+                subtracted_child = child.subtract_tree(other.children[cell])
+                if subtracted_child.bound > 0:
+                    res.children[cell] = subtracted_child
             else:
-                res.children[cell] = child
+                if child.bound > 0:
+                    res.children[cell] = child
 
         for cell in other.children:
             if cell not in self.children:
@@ -305,23 +309,29 @@ class ChoiceNode:
             )
 
         res = ChoiceNode()
-        res.child_letters = self.child_letters
 
         remaining_bits = self.child_letters
         child_idx = 0
+        new_child_letters = 0
         while remaining_bits:
             letter = countr_zero(remaining_bits)
             child = self.children[child_idx]
             other_child = other.get_child_for_letter(letter)
 
+            subtracted_child = None
             if other_child:
-                res.children.append(child.subtract_tree(other_child))
+                subtracted_child = child.subtract_tree(other_child)
             else:
-                res.children.append(child)
+                subtracted_child = child
+
+            if subtracted_child.bound > 0:
+                res.children.append(subtracted_child)
+                new_child_letters |= 1 << letter
 
             child_idx += 1
             remaining_bits &= remaining_bits - 1
 
+        res.child_letters = new_child_letters
         res.bound = max((child.bound for child in res.children), default=0)
         return res
 

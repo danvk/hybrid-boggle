@@ -120,3 +120,78 @@ def test_subtract_tree():
     t_d.children[0].child_letters = 1 << 2  # Letter C
     with pytest.raises(ValueError, match="Other tree has child letters .* not in self"):
         t_a.subtract_tree(t_d)
+
+
+def test_subtract_tree_drops_zero_bound():
+    # Tree A:
+    # Root (pts=10)
+    #   Cell 0 (ChoiceNode)
+    #     A -> SumNode(pts=5)
+    #     B -> SumNode(pts=3)
+    #   Cell 1 (ChoiceNode)
+    #     C -> SumNode(pts=2)
+
+    t_a = sum_node(
+        points=10,
+        children={
+            0: choice_node(
+                children=[
+                    sum_node(points=5),  # A
+                    sum_node(points=3),  # B
+                ]
+            ),
+            1: choice_node(
+                children=[
+                    sum_node(points=2)  # C
+                ]
+            ),
+        },
+    )
+    t_a.children[0].child_letters = (1 << 0) | (1 << 1)
+    t_a.children[1].child_letters = 1 << 2
+    t_a.set_bounds_for_testing()
+
+    # Tree B:
+    # Root (pts=0)
+    #   Cell 0 (ChoiceNode)
+    #     A -> SumNode(pts=5)  <-- Completely subtracts A
+    #   Cell 1 (ChoiceNode)
+    #     C -> SumNode(pts=2)  <-- Completely subtracts Cell 1
+
+    t_b = sum_node(
+        points=0,
+        children={
+            0: choice_node(
+                children=[
+                    sum_node(points=5)  # A
+                ]
+            ),
+            1: choice_node(
+                children=[
+                    sum_node(points=2)  # C
+                ]
+            ),
+        },
+    )
+    t_b.children[0].child_letters = 1 << 0
+    t_b.children[1].child_letters = 1 << 2
+    t_b.set_bounds_for_testing()
+
+    res = t_a.subtract_tree(t_b)
+
+    # Root points: 10 - 0 = 10
+    assert res.points == 10
+
+    # Cell 0: A should be gone, B remains.
+    assert 0 in res.children
+    c0 = res.children[0]
+    assert c0.child_letters == (1 << 1)  # Only B
+    assert len(c0.children) == 1
+    assert c0.children[0].points == 3
+    assert c0.bound == 3
+
+    # Cell 1: C subtracted completely. ChoiceNode bound becomes 0. Should be dropped.
+    assert 1 not in res.children
+
+    # Root bound: 10 + 3 (from Cell 0) = 13
+    assert res.bound == 13
