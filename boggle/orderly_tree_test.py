@@ -579,3 +579,25 @@ def test_forced_tree_32(is_python):
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
         external("35fcf2479a9f*.txt")
     )
+
+
+def test_subtraction_tree():
+    is_python = True
+    dims = (2, 3)
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    board = "nr lnrsy aeiou mt ae nr"
+    otb.dedupe_forced = False
+    assert otb.parse_board(board)
+    arena = otb.create_arena()
+    t = otb.build_tree(arena)
+    assert t.bound == 91
+
+    board_force2 = "r lnrsy aeiou mt ae r"
+    assert otb.parse_board(board_force2)
+    tf2 = otb.build_tree(arena)
+    assert tf2.bound == 84
+
+    otb.dedupe_forced = True
+    assert otb.parse_board(board_force2)
+    tf2dd = otb.build_tree(arena)
+    assert tf2dd.bound == 64
