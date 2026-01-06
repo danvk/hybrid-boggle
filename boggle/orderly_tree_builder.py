@@ -168,9 +168,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         for _, word_wps_iter in itertools.groupby(
             self.words_, key=lambda wp: wp.word_id
         ):
-            word_wps = [*word_wps_iter]
-            n_init = len(word_wps)
-            word_wps = [wp for wp in word_wps if is_compat(wp)]
+            word_wps = [wp for wp in word_wps_iter if is_compat(wp)]
             if not word_wps:
                 continue
             # TODO: if nothing is forced, bail out early
