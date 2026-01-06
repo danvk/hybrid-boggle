@@ -165,7 +165,7 @@ class SumNode:
         # return failures, visit_at_level, elim_at_level
         return failures
 
-    def subtract_tree(self, other: Self) -> Self:
+    def subtract_tree(self, other: Self, arena=None) -> Self:
         res = SumNode()
         res.points = self.points - other.points
         assert self.points >= other.points
@@ -303,7 +303,7 @@ class ChoiceNode:
         index = (self.child_letters & mask).bit_count()
         return self.children[index] if index < len(self.children) else None
 
-    def subtract_tree(self, other: Self) -> Self:
+    def subtract_tree(self, other: Self, arena=None) -> Self:
         if (other.child_letters & ~self.child_letters) != 0:
             raise ValueError(
                 f"Other tree has child letters {bin(other.child_letters & ~self.child_letters)} not in self"

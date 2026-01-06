@@ -538,7 +538,7 @@ def main():
         print(f"build subtraction tree: {end-start:.04}s")
         print(tree_stats(subtree))
         start = time.time()
-        t = tree.subtract_tree(subtree)
+        t = tree.subtract_tree(subtree, o_arena)
         end = time.time()
         print(tree_stats(t))
         print(f"subtract: {end-start:.04}s")
