@@ -510,6 +510,7 @@ def main():
     print(f"  dedupe: {stats.dedupe_s:.04} s")
     print(f"  sort: {stats.sort_s:.04} s")
     print(f"  build: {stats.build_s:.04} s")
+    print(f"  resort: {stats.resort_s:.04} s")
     print(f"  n_paths: {stats.n_paths}")
     print(f"  n_paths_uniq: {stats.n_paths_uniq}")
     print(f"  n_uniq: {stats.n_uniq}")
