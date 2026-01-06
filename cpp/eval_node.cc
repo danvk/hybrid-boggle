@@ -212,6 +212,113 @@ unsigned int ChoiceNode::ScoreWithForces(int cell, const vector<int>& forces) co
   return score;
 }
 
+const SumNode* SumNode::SubtractTree(const SumNode* other, EvalNodeArena& arena) const {
+  uint32_t remaining_self = child_cells_;
+  uint32_t remaining_other = other->child_cells_;
+
+  if ((remaining_other & ~remaining_self) != 0) {
+    throw std::runtime_error("Other tree has child at cell which is missing in self");
+  }
+
+  int idx_self = 0;
+  int idx_other = 0;
+
+  vector<ChoiceNode*> new_children;
+  uint32_t new_child_cells = 0;
+
+  while (remaining_self) {
+    int cell = std::countr_zero(remaining_self);
+    auto child = children_[idx_self++];
+
+    const ChoiceNode* new_child = nullptr;
+
+    // Check if other has this cell. Since other is a subset, if it has any bits set,
+    // the lowest bit must be >= cell.
+    int other_cell = remaining_other ? std::countr_zero(remaining_other) : -1;
+
+    if (other_cell == cell) {
+      auto other_child = other->children_[idx_other++];
+      new_child = child->SubtractTree(other_child, arena);
+      remaining_other &= remaining_other - 1;
+    } else {
+      new_child = child;
+    }
+
+    if (new_child && new_child->Bound() > 0) {
+      new_children.push_back(const_cast<ChoiceNode*>(new_child));
+      new_child_cells |= (1u << cell);
+    }
+
+    remaining_self &= remaining_self - 1;
+  }
+
+  int new_points = (int)points_ - (int)other->points_;
+
+  auto res = arena.NewSumNodeWithCapacity(new_children.size());
+  res->points_ = new_points;
+  res->child_cells_ = new_child_cells;
+
+  uint32_t bound = new_points;
+  for (size_t i = 0; i < new_children.size(); ++i) {
+    res->children_[i] = new_children[i];
+    bound += new_children[i]->Bound();
+  }
+  res->bound_ = bound;
+  return res;
+}
+
+const ChoiceNode* ChoiceNode::SubtractTree(
+    const ChoiceNode* other, EvalNodeArena& arena
+) const {
+  if ((other->child_letters_ & ~child_letters_) != 0) {
+    throw std::runtime_error("Other tree has child letters not in self");
+  }
+
+  uint32_t remaining_self = child_letters_;
+  // Since other is a subset mask, we can iterate just like SumNode
+  uint32_t remaining_other = other->child_letters_;
+
+  int idx_self = 0;
+  int idx_other = 0;
+
+  vector<SumNode*> new_children;
+  uint32_t new_child_letters = 0;
+
+  while (remaining_self) {
+    int letter = std::countr_zero(remaining_self);
+    auto child = children_[idx_self++];
+
+    const SumNode* new_child = nullptr;
+    int other_letter = remaining_other ? std::countr_zero(remaining_other) : -1;
+
+    if (other_letter == letter) {
+      auto other_child = other->children_[idx_other++];
+      new_child = child->SubtractTree(other_child, arena);
+      remaining_other &= remaining_other - 1;
+    } else {
+      new_child = child;
+    }
+
+    if (new_child && new_child->Bound() > 0) {
+      new_children.push_back(const_cast<SumNode*>(new_child));
+      new_child_letters |= (1u << letter);
+    }
+
+    remaining_self &= remaining_self - 1;
+  }
+
+  auto res = arena.NewChoiceNodeWithCapacity(new_children.size());
+  res->child_letters_ = new_child_letters;
+  
+  uint32_t bound = 0;
+  for (size_t i = 0; i < new_children.size(); ++i) {
+    res->children_[i] = new_children[i];
+    bound = std::max(bound, new_children[i]->Bound());
+  }
+  res->bound_ = bound;
+  return res;
+}
+
 // block-scope functions cannot be declared inline.
 inline uint16_t advance(
     const SumNode* node,

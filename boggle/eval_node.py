@@ -165,14 +165,13 @@ class SumNode:
         # return failures, visit_at_level, elim_at_level
         return failures
 
-    def subtract_tree(self, other: Self, arena=None) -> Self:
+    def subtract_tree(self, other: Self, arena: PyArena = None) -> Self:
         res = SumNode()
         res.points = self.points - other.points
-        assert self.points >= other.points
 
         for cell, child in self.children.items():
             if cell in other.children:
-                subtracted_child = child.subtract_tree(other.children[cell])
+                subtracted_child = child.subtract_tree(other.children[cell], arena)
                 if subtracted_child.bound > 0:
                     res.children[cell] = subtracted_child
             else:
@@ -186,6 +185,8 @@ class SumNode:
                 )
 
         res.bound = res.points + sum(child.bound for child in res.children.values())
+        if arena:
+            arena.add_node(res)
         return res
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
@@ -303,13 +304,14 @@ class ChoiceNode:
         index = (self.child_letters & mask).bit_count()
         return self.children[index] if index < len(self.children) else None
 
-    def subtract_tree(self, other: Self, arena=None) -> Self:
+    def subtract_tree(self, other: Self, arena: PyArena = None) -> Self:
         if (other.child_letters & ~self.child_letters) != 0:
             raise ValueError(
                 f"Other tree has child letters {bin(other.child_letters & ~self.child_letters)} not in self"
             )
 
         res = ChoiceNode()
+        # res.child_letters is built below
 
         remaining_bits = self.child_letters
         child_idx = 0
@@ -321,7 +323,7 @@ class ChoiceNode:
 
             subtracted_child = None
             if other_child:
-                subtracted_child = child.subtract_tree(other_child)
+                subtracted_child = child.subtract_tree(other_child, arena)
             else:
                 subtracted_child = child
 
@@ -334,6 +336,8 @@ class ChoiceNode:
 
         res.child_letters = new_child_letters
         res.bound = max((child.bound for child in res.children), default=0)
+        if arena:
+            arena.add_node(res)
         return res
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---

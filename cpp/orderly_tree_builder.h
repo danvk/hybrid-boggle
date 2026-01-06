@@ -1,6 +1,7 @@
 #ifndef ORDERLY_TREE_BUILDER_H
 #define ORDERLY_TREE_BUILDER_H
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <iomanip>
@@ -45,6 +46,8 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
   /** Build an EvalTree for the current board. */
   const SumNode* BuildTree(EvalNodeArena& arena);
+
+  const SumNode* BuildSubtractionTree(const vector<int>& forces, EvalNodeArena& arena);
 
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
@@ -728,6 +731,155 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   }
   node->child_letters_ = letter_mask;
   return node;
+}
+
+template <int M, int N>
+const SumNode* OrderlyTreeBuilder<M, N>::BuildSubtractionTree(
+    const vector<int>& forces, EvalNodeArena& arena
+) {
+  if (words_.empty()) {
+    // Return empty tree if no words (e.g. BuildTree wasn't called or produced nothing)
+    auto root = arena.NewSumNodeWithCapacity(0);
+    return root;
+  }
+
+  // 1. Build force mask and map
+  uint32_t force_mask = 0;
+  int cell_to_force[M * N];
+  std::fill(std::begin(cell_to_force), std::end(cell_to_force), -1);
+
+  const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
+  for (size_t i = 0; i < forces.size(); ++i) {
+    if (forces[i] >= 0) {
+      int cell = split_order[i];
+      cell_to_force[cell] = forces[i];
+      force_mask |= (1 << cell);
+    }
+  }
+
+  auto is_compat = [&](const WordPath& wp) {
+    if ((force_mask & wp.cell_mask) == 0) return true;
+    const uint8_t* p = wp.path.data();
+    for (int i = 0; i < 2 * M * N; i += 2) {
+      if (p[i] == 0) break;
+      int cell = p[i] - 1;
+      int letter = p[i + 1] - 1;
+      if (cell_to_force[cell] != -1 && cell_to_force[cell] != letter) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  auto strip_forced = [&](const WordPath& wp) {
+    if ((force_mask & wp.cell_mask) == 0) return wp;
+    WordPath new_wp;
+    new_wp.word_id = wp.word_id;
+    new_wp.points = wp.points;
+    new_wp.path.fill(0);
+
+    const uint8_t* src = wp.path.data();
+    uint8_t* dst = new_wp.path.data();
+    int dst_idx = 0;
+    uint32_t new_mask = 0;
+
+    for (int i = 0; i < 2 * M * N; i += 2) {
+      if (src[i] == 0) break;
+      int cell = src[i] - 1;
+      // int letter = src[i + 1] - 1;
+      if (cell_to_force[cell] == -1) {
+        dst[dst_idx++] = src[i];
+        dst[dst_idx++] = src[i + 1];
+        new_mask |= (1 << cell);
+      }
+    }
+    new_wp.cell_mask = new_mask;
+    return new_wp;
+  };
+
+  vector<WordPath> dupes;
+  dupes.reserve(words_.size() / 10);  // heuristic
+
+  size_t n = words_.size();
+  size_t i = 0;
+
+  // words_ is sorted by word_id.
+  while (i < n) {
+    size_t j = i + 1;
+    while (j < n && words_[j].word_id == words_[i].word_id) {
+      j++;
+    }
+
+    // Process group [i, j)
+    vector<WordPath> group;
+    group.reserve(j - i);
+    for (size_t k = i; k < j; ++k) {
+      if (is_compat(words_[k])) {
+        group.push_back(strip_forced(words_[k]));
+      }
+    }
+
+    if (!group.empty()) {
+      std::sort(group.begin(), group.end(), WordLessThan);
+
+      // Dedupe and collect dupes
+      vector<WordPath> unique_paths;
+      unique_paths.reserve(group.size());
+
+      if (!group.empty()) {
+        unique_paths.push_back(group[0]);
+        for (size_t k = 1; k < group.size(); ++k) {
+          const auto& prev = unique_paths.back();
+          const auto& curr = group[k];
+          bool same = (prev.cell_mask == curr.cell_mask) &&
+                      (memcmp(prev.path.data(), curr.path.data(), 2 * M * N) == 0);
+          if (same) {
+            dupes.push_back(curr);
+          } else {
+            unique_paths.push_back(curr);
+          }
+        }
+      }
+
+      // Subset check
+      size_t u_count = unique_paths.size();
+      std::vector<bool> is_valid(u_count, true);
+      int start_len_idx = 0;
+      int current_len = 0;
+
+      for (size_t k = 0; k < u_count; ++k) {
+        const auto& w_k = unique_paths[k];
+        int len = std::popcount(w_k.cell_mask);
+
+        if (k == 0 || len > current_len) {
+          start_len_idx = k;
+          current_len = len;
+        }
+
+        for (int m = 0; m < start_len_idx; ++m) {
+          if (is_valid[m]) {
+            if (IsSubset(unique_paths[m], w_k)) {
+              is_valid[k] = false;
+              break;
+            }
+          }
+        }
+      }
+
+      for (size_t k = 0; k < u_count; ++k) {
+        if (!is_valid[k]) {
+          dupes.push_back(unique_paths[k]);
+        }
+      }
+    }
+
+    i = j;
+  }
+
+  std::sort(dupes.begin(), dupes.end(), PathThenWord);
+
+  auto root = RangeToSumNode(dupes, {0, (int)dupes.size()}, 0, arena);
+  return root;
 }
 
 template <int M, int N>

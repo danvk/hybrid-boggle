@@ -37,6 +37,13 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
           py::return_value_policy::reference,
           py::arg("arena")
       )
+      .def(
+          "build_subtraction_tree",
+          &TB::BuildSubtractionTree,
+          py::return_value_policy::reference,
+          py::arg("forces"),
+          py::arg("arena")
+      )
       .def("parse_board", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
       .def("num_reps", &TB::NumReps)
@@ -140,7 +147,14 @@ PYBIND11_MODULE(cpp_boggle, m) {
           "children", &SumNode::GetChildrenMap, py::return_value_policy::reference
       )
       .def("score_with_forces", &SumNode::ScoreWithForces)
-      .def("orderly_bound", &SumNode::OrderlyBound);
+      .def("orderly_bound", &SumNode::OrderlyBound)
+      .def(
+          "subtract_tree",
+          &SumNode::SubtractTree,
+          py::return_value_policy::reference,
+          py::arg("other"),
+          py::arg("arena")
+      );
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_property_readonly("bound", &ChoiceNode::Bound)

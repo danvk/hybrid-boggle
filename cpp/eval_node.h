@@ -55,6 +55,8 @@ class SumNode {
   vector<const SumNode*> OrderlyForceCell(int cell, int num_lets, EvalNodeArena& arena)
       const;
 
+  const SumNode* SubtractTree(const SumNode* other, EvalNodeArena& arena) const;
+
   vector<ChoiceNode*> GetChildren();
   map<int, ChoiceNode*> GetChildrenMap();
   void SetBoundsForTesting();
@@ -88,6 +90,9 @@ class ChoiceNode {
 
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;
+  
+  const ChoiceNode* SubtractTree(const ChoiceNode* other, EvalNodeArena& arena) const;
+
   void SetBoundsForTesting();
 
  private:
