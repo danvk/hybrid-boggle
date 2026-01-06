@@ -162,7 +162,7 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.num_reps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
-        self.etb.dedupe_forced = True
+        self.etb.dedupe_forced = False
         tree = self.etb.build_tree(arena)
         ts = self.etb.get_stats()
         self.details_.tree_secs = [ts.collect_s, ts.sort_s, ts.build_s]
@@ -236,6 +236,15 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # this can happen on truly dead-end paths
             choices[-1] = (cell, letter)
+            if level == 2:
+                lets = [let for _, let in choices]
+                print(f"  Using subtraction tree for {lets}, bound before={tree.bound}")
+                start = time.time()
+                st = self.etb.build_subtraction_tree(lets, arena)
+                tree = tree.subtract_tree(st, arena)
+                end = time.time()
+                elapsed = end - start
+                print(f"  bound after={tree.bound}, {elapsed:.02}s")
             self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
         arena.reset_level(arena_level)
