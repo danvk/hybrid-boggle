@@ -581,8 +581,8 @@ def test_forced_tree_32(is_python):
     )
 
 
-# @pytest.mark.parametrize("is_python", [True, False])
-def test_subtraction_tree(is_python=True):
+@pytest.mark.parametrize("is_python", [True, False])
+def test_subtraction_tree(is_python):
     dims = (2, 3)
     trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
     board = "nr lnrsy aeiou mt ae nr"
@@ -592,12 +592,18 @@ def test_subtraction_tree(is_python=True):
     t = otb.build_tree(arena)
     assert t.bound == 91
 
-    board_force2 = "r lnrsy aeiou mt ae r"
+    board_force2 = "r r aeiou mt ae nr"
     assert otb.parse_board(board_force2)
     tf2 = otb.build_tree(arena)
-    assert tf2.bound == 84
+    assert tf2.bound == 45
 
     otb.dedupe_forced = True
     assert otb.parse_board(board_force2)
     tf2dd = otb.build_tree(arena)
-    assert tf2dd.bound == 64
+    assert tf2dd.bound == 26
+
+    t0s = t.orderly_force_cell(0, 2, arena)
+    assert t0s[1].bound == 85
+
+    t1s = t0s[1].orderly_force_cell(1, 5, arena)
+    assert t1s[2].bound == 41
