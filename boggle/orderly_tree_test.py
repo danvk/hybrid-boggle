@@ -613,4 +613,6 @@ def test_subtraction_tree(is_python=True):
     st = otb.build_subtraction_tree([1, 2], arena)
     print(st.bound)
     print(st.node_count())
-    assert False
+
+    rr_deduped = rr.subtract_tree(st)
+    assert rr_deduped.bound == tf2dd.bound
