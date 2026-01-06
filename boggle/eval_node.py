@@ -163,6 +163,7 @@ class SumNode:
         rec(base_points, 0, sums)
         self.num_visits = num_visits  # for visualizing backtracking behavior
         # return failures, visit_at_level, elim_at_level
+        return failures
 
     def subtract_tree(self, other: Self) -> Self:
         res = SumNode()
