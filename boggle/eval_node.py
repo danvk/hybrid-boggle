@@ -163,7 +163,25 @@ class SumNode:
         rec(base_points, 0, sums)
         self.num_visits = num_visits  # for visualizing backtracking behavior
         # return failures, visit_at_level, elim_at_level
-        return failures
+
+    def subtract_tree(self, other: Self) -> Self:
+        res = SumNode()
+        res.points = self.points - other.points
+
+        for cell, child in self.children.items():
+            if cell in other.children:
+                res.children[cell] = child.subtract_tree(other.children[cell])
+            else:
+                res.children[cell] = child
+
+        for cell in other.children:
+            if cell not in self.children:
+                raise ValueError(
+                    f"Other tree has child at cell {cell} which is missing in self"
+                )
+
+        res.bound = res.points + sum(child.bound for child in res.children.values())
+        return res
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
@@ -279,6 +297,33 @@ class ChoiceNode:
         mask = (1 << letter) - 1
         index = (self.child_letters & mask).bit_count()
         return self.children[index] if index < len(self.children) else None
+
+    def subtract_tree(self, other: Self) -> Self:
+        if (other.child_letters & ~self.child_letters) != 0:
+            raise ValueError(
+                f"Other tree has child letters {bin(other.child_letters & ~self.child_letters)} not in self"
+            )
+
+        res = ChoiceNode()
+        res.child_letters = self.child_letters
+
+        remaining_bits = self.child_letters
+        child_idx = 0
+        while remaining_bits:
+            letter = countr_zero(remaining_bits)
+            child = self.children[child_idx]
+            other_child = other.get_child_for_letter(letter)
+
+            if other_child:
+                res.children.append(child.subtract_tree(other_child))
+            else:
+                res.children.append(child)
+
+            child_idx += 1
+            remaining_bits &= remaining_bits - 1
+
+        res.bound = max((child.bound for child in res.children), default=0)
+        return res
 
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
