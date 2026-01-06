@@ -141,7 +141,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         # 3. Re-sort by path and build a "subtraction tree"
         cell_forces = [*zip(self.split_order, forces)]
         cell_to_force = {cell: force for cell, force in cell_forces}
-        print(f"{cell_to_force=}")
+        # print(f"{cell_to_force=}")
 
         def is_compat(wp: WordPath):
             # TODO: look at cell_mask
@@ -163,8 +163,8 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             return new_wp
 
         dupes: list[WordPath] = []
-        print(f"init list size: {len(self.words_)}")
-        print_word_list(self.trie_, self.words_)
+        # print(f"init list size: {len(self.words_)}")
+        # print_word_list(self.trie_, self.words_)
         for _, word_wps_iter in itertools.groupby(
             self.words_, key=lambda wp: wp.word_id
         ):
@@ -177,7 +177,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             word_wps = [strip_forced(wp) for wp in word_wps]
             word_wps.sort(key=lambda wp: (wp.word_id, len(wp.path), wp.path))
             _, word_dupes = dedupe_paths_for_word(word_wps)
-            print(f"  {n_init} -> {len(word_wps)} compat {len(word_dupes)} dupes")
+            # print(f"  {n_init} -> {len(word_wps)} compat {len(word_dupes)} dupes")
             dupes += word_dupes
 
         print(f"Found {len(dupes)} dupes")
