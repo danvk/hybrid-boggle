@@ -78,6 +78,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
             n_paths_uniq=0,
             n_uniq=0,
         )
+        self.words_ = []
         self.used_ = 0
         self.used_ordered_ = 0
         self.num_letters = [len(cell) for cell in self.bd_]
