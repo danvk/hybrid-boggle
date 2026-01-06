@@ -61,7 +61,6 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         self.cell_to_order = {cell: i for i, cell in enumerate(SPLIT_ORDER[dims])}
         self.split_order = SPLIT_ORDER[dims]
         self.lookup = make_lookup_table(trie)
-        self.raw_multiboggle = False
         self.words_ = []
         self.stats_ = None
         self.dedupe_forced = False
@@ -101,9 +100,7 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         end = time.time()
         stats.sortw_s = end - start
         # print_word_list(self.trie_, self.words_)
-        if self.raw_multiboggle:
-            unique_words = self.words_
-        elif self.dedupe_forced:
+        if self.dedupe_forced:
             start = end
             unique_words = dedupe_word_list(self.words_)
             end = time.time()
@@ -112,15 +109,12 @@ class OrderlyTreeBuilder(BoardClassBoggler):
         else:
             unique_words = self.words_
 
-        # print(f" #uniq: {stats.n_uniq}")
-        if not self.raw_multiboggle:
-            # TODO: does tree building even work without uniquing?
-            start = end
-            unique_words.sort()
-            end = time.time()
-            stats.sort_s = end - start
-            unique_words = unique_word_list(unique_words)
-            stats.n_uniq = len(unique_words)
+        start = end
+        unique_words.sort()
+        end = time.time()
+        stats.sort_s = end - start
+        unique_words = unique_word_list(unique_words)
+        stats.n_uniq = len(unique_words)
         # print_word_list(self.trie_, unique_words)
 
         start = end
@@ -398,18 +392,11 @@ def main():
     add_standard_args(parser, python=True)
     parser.add_argument("board", type=str, help="Board class to bound.")
     parser.add_argument(
-        "--raw_multiboggle",
-        action="store_true",
-        help="Do not dedupe words on SumNodes. (Requires --python)",
-    )
-    parser.add_argument(
         "--dedupe_forced",
         action="store_true",
         help="Deduplicate redundant words from forced cells in the board.",
     )
     args = parser.parse_args()
-    if args.raw_multiboggle:
-        assert args.python, "--raw_multiboggle require --python"
     board = args.board
     cells = board.split(" ")
     dims = LEN_TO_DIMS[len(cells)]
@@ -424,8 +411,6 @@ def main():
 
     builder = OrderlyTreeBuilder if args.python else cpp_orderly_tree_builder
     otb = builder(trie, dims)
-    if args.raw_multiboggle:
-        otb.raw_multiboggle = args.raw_multiboggle
     otb.dedupe_forced = args.dedupe_forced
     o_arena = otb.create_arena()
     assert otb.parse_board(board)
