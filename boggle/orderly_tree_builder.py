@@ -10,7 +10,6 @@ See https://www.danvk.org/2025/02/21/orderly-boggle.html#orderly-trees
 import argparse
 import dataclasses
 import itertools
-import random
 import time
 from dataclasses import dataclass
 from typing import Sequence
@@ -24,7 +23,6 @@ from boggle.dimensional_bogglers import (
     cpp_orderly_tree_builder,
 )
 from boggle.eval_node import ChoiceNode, SumNode, countr_zero
-from boggle.make_dot import to_dot
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
 
