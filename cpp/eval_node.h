@@ -90,7 +90,7 @@ class ChoiceNode {
 
   // Find child SumNode for given letter using popcount on child_letters_ bitmask
   SumNode* GetChildForLetter(int letter) const;
-  
+
   const ChoiceNode* SubtractTree(const ChoiceNode* other, EvalNodeArena& arena) const;
 
   void SetBoundsForTesting();

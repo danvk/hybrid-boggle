@@ -309,7 +309,7 @@ const ChoiceNode* ChoiceNode::SubtractTree(
 
   auto res = arena.NewChoiceNodeWithCapacity(new_children.size());
   res->child_letters_ = new_child_letters;
-  
+
   uint32_t bound = 0;
   for (size_t i = 0; i < new_children.size(); ++i) {
     res->children_[i] = new_children[i];
