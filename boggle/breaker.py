@@ -91,6 +91,7 @@ class HybridBreakDetails(BreakDetails):
     """Seconds spent evaluating individual boards."""
     best_board: Optional[tuple[int, str]]
     """Highest-scoring board that was evaluated (if any did)"""
+    times: list[tuple[str, int, float]]
 
     def asdict(self):
         d = super().asdict()
@@ -158,6 +159,7 @@ class HybridTreeBreaker:
             bound_secs=defaultdict(float),
             test_secs=0.0,
             best_board=None,
+            times=[],
         )
         self.orig_reps_ = self.details_.num_reps = self.etb.num_reps()
         start_time_s = time.time()
@@ -190,15 +192,24 @@ class HybridTreeBreaker:
         choices: list[tuple[int, int]],
         arena: PyArena,
     ) -> None:
-        self.details_.bounds[level] = max(
-            self.details_.bounds.get(level, 0), tree.bound
-        )
-        if tree.bound < self.best_score:
+        bound = tree.bound
+        self.details_.bounds[level] = max(self.details_.bounds.get(level, 0), bound)
+        if bound < self.best_score:
             self.details_.elim_level[level] += 1
-        elif tree.bound <= self.switchover_score or level > self.switchover_depth:
+            return
+        if level < 4:
+            start = time.time()
+        if bound <= self.switchover_score or level > self.switchover_depth:
             self.switch_to_score(tree, level, choices)
         else:
             self.force_and_filter(tree, level, choices, arena)
+        if level < 4:
+            end = time.time()
+            elapsed = end - start
+            key = " ".join(
+                f"{cell}={self.cells[cell][letter]}" for cell, letter in choices
+            )
+            self.details_.times.append((key, bound, elapsed))
 
     def force_and_filter(
         self,
