@@ -37,6 +37,7 @@ def test_breaker(is_python):
         (2, 2),
         15,
         switchover_score=20,
+        deduping_force_score=None,
         max_depth=3,
         log_breaker_progress=False,
     )
@@ -72,7 +73,7 @@ def test_breaker(is_python):
             "total_nodes": 678,
             "tree_bytes": 0,
             "n_paths": 1492,
-            "n_paths_uniq": 800,
+            "n_paths_uniq": 1374,
             "tree_secs": [],
             "total_bytes": 21696,
             "n_bound": 3,
