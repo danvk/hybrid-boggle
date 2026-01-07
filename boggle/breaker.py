@@ -238,13 +238,13 @@ class HybridTreeBreaker:
             choices[-1] = (cell, letter)
             if level == 2:
                 lets = [let for _, let in choices]
-                print(f"  Using subtraction tree for {lets}, bound before={tree.bound}")
-                start = time.time()
+                # print(f"  Using subtraction tree for {lets}, bound before={tree.bound}")
+                # start = time.time()
                 st = self.etb.build_subtraction_tree(lets, arena)
                 tree = tree.subtract_tree(st, arena)
-                end = time.time()
-                elapsed = end - start
-                print(f"  bound after={tree.bound}, {elapsed:.02}s")
+                # end = time.time()
+                # elapsed = end - start
+                # print(f"  bound after={tree.bound}, {elapsed:.02}s")
             self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
         arena.reset_level(arena_level)
