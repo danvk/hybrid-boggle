@@ -1,7 +1,9 @@
 #ifndef ORDERLY_TREE_BUILDER_H
 #define ORDERLY_TREE_BUILDER_H
 
+#include <algorithm>
 #include <array>
+#include <bit>
 #include <iomanip>
 
 #include "constants.h"
@@ -13,10 +15,14 @@ using namespace std;
 
 struct TreeBuilderStats {
   float collect_s;
+  float sortw_s;
+  float dedupe_s;
   float sort_s;
+  float resort_s;
   // float uniq_s; -- too fast, not worth tracking
   float build_s;
   uint32_t n_paths;
+  uint32_t n_paths_uniq;
   uint32_t n_uniq;
 };
 
@@ -28,6 +34,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
       cell_to_order_[BucketBoggler<M, N>::SPLIT_ORDER[i]] = i;
     }
     used_ordered_ = 0;
+    dedupe_forced_ = false;
   }
   virtual ~OrderlyTreeBuilder() {}
 
@@ -40,15 +47,20 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   /** Build an EvalTree for the current board. */
   const SumNode* BuildTree(EvalNodeArena& arena);
 
+  const SumNode* BuildSubtractionTree(const vector<int>& forces, EvalNodeArena& arena);
+
   unique_ptr<EvalNodeArena> CreateArena() { return create_eval_node_arena(); }
 
   struct WordPath {
     array<uint8_t, 2 * M * N> path;
+    uint32_t cell_mask;
     uint32_t word_id : 24;
     uint8_t points : 8;
   };
 
   TreeBuilderStats GetStats() const { return stats_; }
+
+  bool dedupe_forced_;
 
  private:
   SumNode* root_;
@@ -58,13 +70,18 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   int num_paths_;
   vector<WordPath> words_;
   TreeBuilderStats stats_;
+  bool is_forced_[M * N];
+  bool has_resorted_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void AddWord(int* choices, unsigned int used_ordered, uint32_t word_id, int length);
 
-  static bool WordComparator(const WordPath& a, const WordPath& b);
+  static bool WordLessThan(const WordPath& a, const WordPath& b);
+  static bool PathThenWord(const WordPath& a, const WordPath& b);
   static void UniqueWordList(vector<WordPath>& words);
+  static void DedupeWordList(vector<WordPath>& words);
+  static bool IsSubset(const WordPath& sub, const WordPath& super);
 
   // TODO: doesn't C++ have a range API now?
   SumNode* RangeToSumNode(
@@ -86,7 +103,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
 
 template <int M, int N>
 const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
-  TreeBuilderStats stats;
+  TreeBuilderStats stats{};
   auto start = chrono::high_resolution_clock::now();
   // cout << "alignment_of<EvalNode>=" << alignment_of<EvalNode>() << endl;
   // cout << "sizeof<WordPath>=" << sizeof(WordPath) << endl;
@@ -99,6 +116,11 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   // auto duration = chrono::duration_cast<chrono::milliseconds>(end0 - start).count();
   // cout << "Count paths: " << duration << " ms" << endl;
 
+  for (int cell = 0; cell < M * N; cell++) {
+    is_forced_[cell] = dedupe_forced_ && strlen(bd_[cell]) == 1;
+  }
+  has_resorted_ = false;
+
   // 20M is large enough to fit the word list for almost all boards.
   // This is ~700MB for a 4x4 board, and only held temporarily.
   words_.clear();
@@ -107,8 +129,8 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   for (int cell = 0; cell < M * N; cell++) {
     DoAllDescents(cell, 0, 0, dict_, arena);
   }
-  auto end1 = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(end1 - start).count();
+  auto end = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.collect_s = duration / 1000.0;
 
   if (words_.empty()) {
@@ -117,28 +139,44 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
     return root;
   }
 
-  sort(words_.begin(), words_.end(), WordComparator);
-  auto end2 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end2 - end1).count();
-  stats.sort_s = duration / 1000.0;
   stats.n_paths = words_.size();
-  // PrintWordList();
 
+  start = end;
+  sort(words_.begin(), words_.end(), WordLessThan);
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  stats.sortw_s = duration / 1000.0;
+
+  start = end;
   UniqueWordList(words_);
-  auto end3 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end3 - end2).count();
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   // stats.uniq_secs = duration / 1000.0;
   stats.n_uniq = words_.size();
-  // PrintWordList();
+
+  if (dedupe_forced_) {
+    start = end;
+    DedupeWordList(words_);
+    end = chrono::high_resolution_clock::now();
+    duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    stats.dedupe_s = duration / 1000.0;
+    stats.n_paths_uniq = words_.size();
+  }
+
+  start = end;
+  sort(words_.begin(), words_.end(), PathThenWord);
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+  stats.sort_s = duration / 1000.0;
 
   auto root = RangeToSumNode(words_, {0, words_.size()}, 0, arena);
-
-  auto end4 = chrono::high_resolution_clock::now();
-  duration = chrono::duration_cast<chrono::milliseconds>(end4 - end3).count();
+  end = chrono::high_resolution_clock::now();
+  duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.build_s = duration / 1000.0;
+  stats.resort_s = -1.0;
 
-  words_.clear();
-  words_.shrink_to_fit();  // release memory ASAP
+  // words_.clear();
+  // words_.shrink_to_fit();  // release memory ASAP
   stats_ = stats;
 
   // arena.PrintStats();
@@ -419,11 +457,17 @@ void OrderlyTreeBuilder<M, N>::AddWord(
   WordPath& word = *words_.rbegin();
   const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
 
+  uint32_t cell_mask = 0;
   int idx = 0;
   word.path.fill('\0');
   while (used_ordered) {
     int order_index = std::countr_zero(used_ordered);
+    used_ordered &= used_ordered - 1;
     int cell = split_order[order_index];
+    if (is_forced_[cell]) {
+      continue;
+    }
+    cell_mask |= (1 << cell);
     int letter = choices[order_index];
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -435,14 +479,14 @@ void OrderlyTreeBuilder<M, N>::AddWord(
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
-    used_ordered &= used_ordered - 1;
   }
   word.points = kWordScores[length];
   word.word_id = word_id;
+  word.cell_mask = cell_mask;
 }
 
 template <int M, int N>
-bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath& b) {
+bool OrderlyTreeBuilder<M, N>::PathThenWord(const WordPath& a, const WordPath& b) {
   const auto& ap = a.path;
   const auto& bp = b.path;
   auto result = memcmp(ap.data(), bp.data(), 2 * M * N);
@@ -454,6 +498,25 @@ bool OrderlyTreeBuilder<M, N>::WordComparator(const WordPath& a, const WordPath&
 }
 
 template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::WordLessThan(const WordPath& a, const WordPath& b) {
+  if (a.word_id < b.word_id) {
+    return true;
+  } else if (a.word_id > b.word_id) {
+    return false;
+  }
+
+  auto len_a = std::popcount(a.cell_mask);
+  auto len_b = std::popcount(b.cell_mask);
+  if (len_a < len_b) {
+    return true;
+  } else if (len_a > len_b) {
+    return false;
+  }
+
+  return memcmp(a.path.data(), b.path.data(), 2 * M * N) < 0;
+}
+
+template <int M, int N>
 void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
   int write_idx = 1;
   WordPath last = words[0];  // TODO: use a reference or pointer here
@@ -461,20 +524,129 @@ void OrderlyTreeBuilder<M, N>::UniqueWordList(vector<WordPath>& words) {
   auto n = words.size();
   for (int i = 1; i < n; i++) {
     const auto& w = words[i];
-    int result = memcmp(w.path.data(), last.path.data(), 2 * M * N);
-    if (result != 0) {
+    if (w.word_id != last.word_id ||
+        memcmp(w.path.data(), last.path.data(), 2 * M * N) != 0) {
       if (i != write_idx) {
         // cout << "uniq move " << i << " -> " << write_idx << endl;
         words[write_idx] = w;
       }
       last = words[write_idx];
       write_idx++;
-    } else if (w.word_id != last.word_id) {
-      words[write_idx - 1].points += w.points;
-      last.word_id = w.word_id;
     }
     // otherwise: drop it
   }
+  words.erase(words.begin() + write_idx, words.end());
+}
+
+template <int M, int N>
+bool OrderlyTreeBuilder<M, N>::IsSubset(const WordPath& sub, const WordPath& super) {
+  // To be a superset, super must must all of sub's cells, plus maybe some others.
+  // If it doesn't use all of sub's cells, then it's not a superset.
+  if ((super.cell_mask & sub.cell_mask) != sub.cell_mask) {
+    return false;
+  }
+
+  const uint8_t* s = sub.path.data();
+  const uint8_t* p = super.path.data();
+  int i = 0;
+  int j = 0;
+  // Paths are null-terminated (0 valued entries).
+  // The max length is 2*M*N.
+  while (i < 2 * M * N && s[i] != 0) {
+    if (j >= 2 * M * N || p[j] == 0) return false;
+
+    // Check cell (even index) and letter (odd index)
+    // Both s and p are sorted by cell split-order.
+    if (s[i] == p[j]) {
+      if (s[i + 1] == p[j + 1]) {
+        i += 2;
+        j += 2;
+      } else {
+        return false;
+      }
+    } else {
+      // Skip element in super. Since the path is sorted by split order,
+      // if we have a mismatch, the cell in 'super' must be "earlier" or "different".
+      // We just advance 'super' to see if we can find the matching cell later.
+      j += 2;
+    }
+  }
+  return true;
+}
+
+template <int M, int N>
+void OrderlyTreeBuilder<M, N>::DedupeWordList(vector<WordPath>& words) {
+  if (words.empty()) return;
+
+  int write_idx = 0;
+  size_t n = words.size();
+  size_t i = 0;
+
+  while (i < n) {
+    size_t j = i + 1;
+    while (j < n && words[j].word_id == words[i].word_id) {
+      j++;
+    }
+    int count = j - i;
+
+    int group_start = write_idx;
+
+    // Step 1: Collapse identical paths
+    if (write_idx != i) words[write_idx] = words[i];
+    write_idx++;
+
+    for (int k = 1; k < count; ++k) {
+      const auto& prev = words[write_idx - 1];
+      const auto& curr = words[i + k];
+      bool same = (prev.cell_mask == curr.cell_mask) &&
+                  (memcmp(prev.path.data(), curr.path.data(), 2 * M * N) == 0);
+      if (!same) {
+        if (write_idx != i + k) words[write_idx] = curr;
+        write_idx++;
+      }
+    }
+
+    int unique_count = write_idx - group_start;
+
+    // Step 2: Subset check (optimized)
+    std::vector<bool> is_valid(unique_count, true);
+    int start_len_idx = 0;
+    int current_len = 0;
+
+    for (int k = 0; k < unique_count; ++k) {
+      const auto& w_k = words[group_start + k];
+      int len = std::popcount(w_k.cell_mask);
+
+      if (k == 0 || len > current_len) {
+        start_len_idx = k;
+        current_len = len;
+      }
+
+      for (int m = 0; m < start_len_idx; ++m) {
+        if (is_valid[m]) {
+          if (IsSubset(words[group_start + m], w_k)) {
+            is_valid[k] = false;
+            break;
+          }
+        }
+      }
+    }
+
+    // Step 3: Compact
+    int valid_write = group_start;
+    for (int k = 0; k < unique_count; ++k) {
+      if (is_valid[k]) {
+        if (valid_write != group_start + k) {
+          words[valid_write] = words[group_start + k];
+        }
+        valid_write++;
+      }
+    }
+    write_idx = valid_write;
+
+    i = j;
+  }
+
   words.erase(words.begin() + write_idx, words.end());
 }
 
@@ -492,11 +664,13 @@ template <int M, int N>
 SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
     const vector<WordPath>& words, pair<int, int> range, int depth, EvalNodeArena& arena
 ) {
+  // If there are points on _this_ node, they'll in short paths at the start.
+  // There might be multiple words (anagrams) that contribute to this node.
   int start = range.first;
   int end = range.second;
   int points = 0;
-  if (PathLength(words[start].path) == depth) {
-    points = words[start].points;
+  while (start < end && PathLength(words[start].path) == depth) {
+    points += words[start].points;
     ++start;
   }
 
@@ -511,16 +685,20 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 
   auto node = arena.NewSumNodeWithCapacity(ranges.size());
   node->bound_ = node->points_ = points;
-  node->num_children_ = ranges.size();
 
+  uint32_t child_cells = 0;
+  vector<ChoiceNode*> children;
+  children.reserve(ranges.size());
   for (int i = 0; i < ranges.size(); i++) {
     const auto& [cell, range_start, range_end] = ranges[i];
+    child_cells |= (1 << (cell - 1));
 
     auto child =
         RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena);
-    node->children_[i] = child;
+    children.push_back(child);
     node->bound_ += child->bound_;
   }
+  node->SetChildren(child_cells, children);
   return node;
 }
 
@@ -539,7 +717,6 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   auto ranges = equal_ranges(words, idx, start, end);
 
   auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
-  node->cell_ = cell;
   node->bound_ = 0;
   uint32_t letter_mask = 0;
   for (int i = 0; i < ranges.size(); i++) {
@@ -547,10 +724,177 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     letter_mask |= (1 << (letter - 1));
     auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena);
     node->children_[i] = child;
-    node->bound_ = max(node->bound_, child->bound_);
+    node->bound_ = max(node->bound_, (uint32_t)child->bound_);
   }
   node->child_letters_ = letter_mask;
   return node;
+}
+
+template <int M, int N>
+const SumNode* OrderlyTreeBuilder<M, N>::BuildSubtractionTree(
+    const vector<int>& forces, EvalNodeArena& arena
+) {
+  if (words_.empty()) {
+    // Return empty tree if no words (e.g. BuildTree wasn't called or produced nothing)
+    auto root = arena.NewSumNodeWithCapacity(0);
+    return root;
+  }
+
+  if (!has_resorted_) {
+    auto start = chrono::high_resolution_clock::now();
+    sort(words_.begin(), words_.end(), WordLessThan);
+    auto end = chrono::high_resolution_clock::now();
+    stats_.resort_s = chrono::duration_cast<chrono::seconds>(end - start).count();
+    has_resorted_ = true;
+  }
+
+  // 1. Build force mask and map
+  uint32_t force_mask = 0;
+  int cell_to_force[M * N];
+  std::fill(std::begin(cell_to_force), std::end(cell_to_force), -1);
+
+  const auto& split_order = BucketBoggler<M, N>::SPLIT_ORDER;
+  for (size_t i = 0; i < forces.size(); ++i) {
+    if (forces[i] >= 0) {
+      int cell = split_order[i];
+      cell_to_force[cell] = forces[i];
+      force_mask |= (1 << cell);
+    }
+  }
+
+  auto is_compat = [&](const WordPath& wp) {
+    if ((force_mask & wp.cell_mask) == 0) return true;
+    const uint8_t* p = wp.path.data();
+    for (int i = 0; i < 2 * M * N; i += 2) {
+      if (p[i] == 0) break;
+      int cell = p[i] - 1;
+      int letter = p[i + 1] - 1;
+      if (cell_to_force[cell] != -1 && cell_to_force[cell] != letter) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  auto strip_forced = [&](const WordPath& wp) {
+    if ((force_mask & wp.cell_mask) == 0) return wp;
+    WordPath new_wp;
+    new_wp.word_id = wp.word_id;
+    new_wp.points = wp.points;
+    new_wp.path.fill(0);
+
+    const uint8_t* src = wp.path.data();
+    uint8_t* dst = new_wp.path.data();
+    int dst_idx = 0;
+    uint32_t new_mask = 0;
+
+    for (int i = 0; i < 2 * M * N; i += 2) {
+      if (src[i] == 0) break;
+      int cell = src[i] - 1;
+      // int letter = src[i + 1] - 1;
+      if (cell_to_force[cell] == -1) {
+        dst[dst_idx++] = src[i];
+        dst[dst_idx++] = src[i + 1];
+        new_mask |= (1 << cell);
+      }
+    }
+    new_wp.cell_mask = new_mask;
+    return new_wp;
+  };
+
+  vector<WordPath> dupes;
+  dupes.reserve(words_.size() / 10);  // heuristic
+
+  size_t n = words_.size();
+  size_t i = 0;
+
+  // words_ is sorted by word_id.
+  while (i < n) {
+    size_t j = i + 1;
+    while (j < n && words_[j].word_id == words_[i].word_id) {
+      j++;
+    }
+
+    // Process group [i, j)
+    vector<WordPath> group;
+    group.reserve(j - i);
+    for (size_t k = i; k < j; ++k) {
+      if (is_compat(words_[k])) {
+        group.push_back(strip_forced(words_[k]));
+      }
+    }
+
+    if (!group.empty()) {
+      std::sort(group.begin(), group.end(), WordLessThan);
+
+      // Dedupe and collect dupes
+      vector<WordPath> unique_paths;
+      unique_paths.reserve(group.size());
+
+      if (!group.empty()) {
+        unique_paths.push_back(group[0]);
+        for (size_t k = 1; k < group.size(); ++k) {
+          const auto& prev = unique_paths.back();
+          const auto& curr = group[k];
+          bool same = (prev.cell_mask == curr.cell_mask) &&
+                      (memcmp(prev.path.data(), curr.path.data(), 2 * M * N) == 0);
+          if (same) {
+            dupes.push_back(curr);
+          } else {
+            unique_paths.push_back(curr);
+          }
+        }
+      }
+
+      // Subset check
+      size_t u_count = unique_paths.size();
+      std::vector<bool> is_valid(u_count, true);
+      int start_len_idx = 0;
+      int current_len = 0;
+
+      for (size_t k = 0; k < u_count; ++k) {
+        const auto& w_k = unique_paths[k];
+        int len = std::popcount(w_k.cell_mask);
+
+        if (k == 0 || len > current_len) {
+          start_len_idx = k;
+          current_len = len;
+        }
+
+        for (int m = 0; m < start_len_idx; ++m) {
+          if (is_valid[m]) {
+            if (IsSubset(unique_paths[m], w_k)) {
+              is_valid[k] = false;
+              break;
+            }
+          }
+        }
+      }
+
+      for (size_t k = 0; k < u_count; ++k) {
+        if (!is_valid[k]) {
+          dupes.push_back(unique_paths[k]);
+        }
+      }
+    }
+
+    i = j;
+  }
+  std::sort(dupes.begin(), dupes.end(), PathThenWord);
+  auto root = RangeToSumNode(dupes, {0, (int)dupes.size()}, 0, arena);
+
+  // cout << "dedupe: " << duration1 << "\nsort: " << duration2 << "\nbuild: " <<
+  // duration3
+  //      << endl;
+
+  // vector<int> dupes_by_len(16, 0);
+  // for (const auto& dupe : dupes) {
+  //   dupes_by_len[std::popcount(dupe.cell_mask)] += 1;
+  // }
+  // for (int k = 0; k < 16; k++) {
+  //   cout << " " << k << "=" << dupes_by_len[k] << endl;
+  // }
+  return root;
 }
 
 template <int M, int N>

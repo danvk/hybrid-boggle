@@ -20,15 +20,18 @@ from boggle.eval_node import (
     split_orderly_tree,
 )
 from boggle.ibuckets import PyBucketBoggler
-from boggle.orderly_tree_builder import OrderlyTreeBuilder
+from boggle.orderly_tree_builder import (
+    OrderlyTreeBuilder,
+    WordPath,
+    dedupe_paths_for_word,
+)
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_py_trie
 
+TRIE_BUILDER_PARAMS = [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)]
 
-@pytest.mark.parametrize(
-    "TrieT, TreeBuilderT",
-    [(PyTrie, OrderlyTreeBuilder), (Trie, cpp_orderly_tree_builder)],
-)
+
+@pytest.mark.parametrize("TrieT, TreeBuilderT", TRIE_BUILDER_PARAMS)
 def test_build_orderly_tree(TrieT, TreeBuilderT):
     words = [
         "sea",
@@ -54,6 +57,54 @@ def test_build_orderly_tree(TrieT, TreeBuilderT):
     assert outsource(eval_node_to_string(t, cells)) == snapshot(
         external("d7687d76c39b*.txt")
     )
+
+
+@pytest.mark.parametrize("TrieT, TreeBuilderT", TRIE_BUILDER_PARAMS)
+def test_build_force_tree_no_force(TrieT, TreeBuilderT):
+    words = ["bee", "fee", "beef"]
+    t = TrieT.create_from_wordlist(words)
+    bb = TreeBuilderT(t, (2, 2))
+    bb.dedupe_forced = False
+    arena = bb.create_arena()
+
+    # bf ae
+    #  f ae
+    board = "bf fg ae ae"
+    assert bb.parse_board(board)
+    t0 = bb.build_tree(arena)
+    assert t0.bound == 3  # one bee, one beef, two fees (but can't both count)
+
+    t1s = t0.orderly_force_cell(0, 2, arena)
+    assert t1s[1].bound == 2  # two fees
+
+    board1 = "f fg ae ae"
+    assert bb.parse_board(board1)
+    t1 = bb.build_tree(arena)
+    assert t1.bound == 2  # still two fees when building the tree
+
+
+@pytest.mark.parametrize("TrieT, TreeBuilderT", TRIE_BUILDER_PARAMS)
+def test_build_force_tree_force(TrieT, TreeBuilderT):
+    words = ["bee", "fee", "beef"]
+    t = TrieT.create_from_wordlist(words)
+    bb = TreeBuilderT(t, (2, 2))
+    bb.dedupe_forced = True
+    arena = bb.create_arena()
+
+    # bf ae
+    #  f ae
+    board = "bf fg ae ae"
+    assert bb.parse_board(board)
+    t0 = bb.build_tree(arena)
+    assert t0.bound == 3  # one bee, one beef, two fees (but can't both count)
+
+    t1s = t0.orderly_force_cell(0, 2, arena)
+    assert t1s[1].bound == 2  # two fees when you force
+
+    board1 = "f fg ae ae"
+    assert bb.parse_board(board1)
+    t1 = bb.build_tree(arena)
+    assert t1.bound == 1  # just one fee with deduplicating when building the tree
 
 
 OTB_PARAMS = [
@@ -173,14 +224,15 @@ def test_orderly_merge():
 
     assert isinstance(t, SumNode)
     assert len(t.children) == 2
+    assert 0 in t.children
+    assert 1 in t.children
     t0 = t.children[0]
     t1 = t.children[1]
     assert isinstance(t0, ChoiceNode)
-    assert t0.cell == 0
+    assert isinstance(t1, ChoiceNode)
     assert t0.bound == snapshot(16)
     assert len(t0.children) == 2
     assert isinstance(t1, ChoiceNode)
-    assert t1.cell == 1
     assert t1.bound == 5
 
     choice0, tree1 = split_orderly_tree(t, arena)
@@ -188,7 +240,7 @@ def test_orderly_merge():
     assert tree1.bound == 5
     tree1.assert_orderly(split_order)
     for child in choice0.children:
-        child.assert_orderly(split_order)
+        child.assert_orderly(split_order, 0)
 
     m0 = merge_orderly_tree(choice0.children[0], tree1, arena)
     assert m0.bound == snapshot(21)
@@ -485,3 +537,104 @@ def test_missing_top_choice():
 
     # https://www.danvk.org/boggle/?board=rbjfrevpverrresa&multiboggle=1
     assert t.bound == snapshot(1029)
+
+
+def test_dedupe_wordpaths():
+    #  (3)
+    # [(2, 0), (3, 0), (4, 0)] (1)
+    short = WordPath(
+        path=[(2, 0), (3, 0), (4, 0)], word_id=1, points=1, cell_mask=4 + 8 + 16
+    )
+    long = WordPath(
+        path=[(1, 0), (2, 0), (3, 0), (4, 0)],
+        word_id=1,
+        points=1,
+        cell_mask=2 + 4 + 8 + 16,
+    )
+    wps = [short, long]
+
+    assert dedupe_paths_for_word(wps) == ([short], [long])
+
+    # 55 [(2, 0), (3, 0), (4, 0)] (1) mana
+    # 56 [(1, 0), (2, 0), (3, 0), (4, 0)] (1) mana
+
+
+@pytest.mark.parametrize("is_python", [True, False])
+def test_forced_tree_32(is_python):
+    dims = (2, 3)
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    board = "r nr ae mt ae n"
+    otb.dedupe_forced = True
+    assert otb.parse_board(board)
+    arena = otb.create_arena()
+    t = otb.build_tree(arena)
+    assert t.bound == 32
+    assert t.node_count() == 102
+    cells = board.split(" ")
+    assert outsource(eval_node_to_string(t, cells)) == snapshot(
+        external("35fcf2479a9f*.txt")
+    )
+
+
+@pytest.mark.parametrize("is_python", [True, False])
+def test_subtraction_tree(is_python):
+    dims = (2, 3)
+    trie, otb = get_trie_otb("wordlists/enable2k.txt", dims, is_python)
+    board = "nr lnrsy aeiou mt ae nr"
+    otb.dedupe_forced = False
+    assert otb.parse_board(board)
+    arena = otb.create_arena()
+    t = otb.build_tree(arena)
+    assert t.bound == 91
+
+    board_force2 = "r r aeiou mt ae nr"
+    assert otb.parse_board(board_force2)
+    tf2 = otb.build_tree(arena)
+    assert tf2.bound == 45
+
+    otb.dedupe_forced = True
+    assert otb.parse_board(board_force2)
+    tf2dd = otb.build_tree(arena)
+    assert tf2dd.bound == 26
+
+    t0s = t.orderly_force_cell(0, 2, arena)
+    assert t0s[1].bound == 85
+
+    t1s = t0s[1].orderly_force_cell(1, 5, arena)
+    rr = t1s[2]
+    assert rr.bound == 41
+
+    # back to the original board
+    otb.dedupe_forced = False
+    assert otb.parse_board(board)
+    t = otb.build_tree(arena)
+    assert t.bound == 91
+
+    st = otb.build_subtraction_tree([1, 2], arena)
+    print(st.bound)
+    print(st.node_count())
+
+    rr_deduped = rr.subtract_tree(st, arena)
+    assert rr_deduped.bound == tf2dd.bound
+    cells = board_force2.split(" ")
+    assert eval_node_to_string(rr_deduped, cells) == eval_node_to_string(tf2dd, cells)
+
+    deduped = [None] * 5
+    for letter in range(0, 5):
+        st = otb.build_subtraction_tree([1, letter], arena)
+        deduped[letter] = t1s[letter].subtract_tree(st, arena)
+
+    otb.dedupe_forced = True
+    cells = board.split(" ")
+    cells[0] = "r"
+    for letter in range(0, 5):
+        nc = [*cells]
+        nc[1] = cells[1][letter]
+        board = " ".join(nc)
+        print(board)
+        assert otb.parse_board(board)
+        t = otb.build_tree(arena)
+        t_deduped = deduped[letter]
+        assert t.bound == t_deduped.bound
+        cs = board.split(" ")
+        assert eval_node_to_string(t, cs) == eval_node_to_string(t_deduped, cs)

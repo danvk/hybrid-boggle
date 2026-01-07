@@ -116,6 +116,7 @@ class HybridTreeBreaker:
         best_score: int,
         *,
         switchover_score: int,
+        deduping_force_score: int,
         log_breaker_progress: bool,
         max_depth=None,
     ):
@@ -129,6 +130,7 @@ class HybridTreeBreaker:
         self.switchover_score = switchover_score
         self.switchover_depth = max_depth or (dims[0] * dims[1] - 4)
         self.log_breaker_progress = log_breaker_progress
+        self.deduping_force_score = deduping_force_score
 
     def SetBoard(self, board: str):
         return self.etb.parse_board(board)
@@ -162,6 +164,7 @@ class HybridTreeBreaker:
         self.orig_reps_ = self.details_.num_reps = self.etb.num_reps()
         start_time_s = time.time()
         arena = self.etb.create_arena()
+        self.etb.dedupe_forced = False
         tree = self.etb.build_tree(arena)
         ts = self.etb.get_stats()
         self.details_.tree_secs = [ts.collect_s, ts.sort_s, ts.build_s]
@@ -235,6 +238,22 @@ class HybridTreeBreaker:
             if not tree:
                 continue  # this can happen on truly dead-end paths
             choices[-1] = (cell, letter)
+            if (
+                level == 2
+                and self.deduping_force_score is not None
+                and tree.bound >= self.deduping_force_score
+            ):
+                lets = [let for _, let in choices]
+                bound_before = tree.bound
+                # print(f"  Using subtraction tree for {lets}, bound before={tree.bound}")
+                start = time.time()
+                st = self.etb.build_subtraction_tree(lets, arena)
+                tree = tree.subtract_tree(st, arena)
+                end = time.time()
+                elapsed = end - start
+                print(
+                    f"  subtraction tree for {lets} bound: {bound_before} -> {tree.bound}, {elapsed:.02}s"
+                )
             self.attack_tree(tree, level + 1, choices, arena)
         choices.pop()
         arena.reset_level(arena_level)

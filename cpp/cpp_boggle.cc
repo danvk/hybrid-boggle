@@ -37,11 +37,19 @@ void declare_tree_builder(py::module &m, const string &pyclass_name) {
           py::return_value_policy::reference,
           py::arg("arena")
       )
+      .def(
+          "build_subtraction_tree",
+          &TB::BuildSubtractionTree,
+          py::return_value_policy::reference,
+          py::arg("forces"),
+          py::arg("arena")
+      )
       .def("parse_board", &TB::ParseBoard)
       .def("as_string", &TB::as_string)
       .def("num_reps", &TB::NumReps)
       .def("get_stats", &TB::GetStats)
-      .def("create_arena", &TB::CreateArena);
+      .def("create_arena", &TB::CreateArena)
+      .def_readwrite("dedupe_forced", &TB::dedupe_forced_);
 }
 
 template <int M, int N>
@@ -113,13 +121,17 @@ PYBIND11_MODULE(cpp_boggle, m) {
   py::class_<TreeBuilderStats>(m, "TreeBuilderStats")
       .def_readwrite("collect_s", &TreeBuilderStats::collect_s)
       .def_readwrite("sort_s", &TreeBuilderStats::sort_s)
+      .def_readwrite("sortw_s", &TreeBuilderStats::sortw_s)
+      .def_readwrite("resort_s", &TreeBuilderStats::resort_s)
+      .def_readwrite("dedupe_s", &TreeBuilderStats::dedupe_s)
       .def_readwrite("build_s", &TreeBuilderStats::build_s)
       .def_readwrite("n_paths", &TreeBuilderStats::n_paths)
+      .def_readwrite("n_paths_uniq", &TreeBuilderStats::n_paths_uniq)
       .def_readwrite("n_uniq", &TreeBuilderStats::n_uniq);
 
   py::class_<SumNode>(m, "SumNode")
       .def_property_readonly("bound", &SumNode::Bound)
-      .def_readonly("points", &SumNode::points_)
+      .def_property_readonly("points", &SumNode::Points)
       .def("node_count", &SumNode::NodeCount)
       .def("word_count", &SumNode::WordCount)
       .def("set_bounds_for_testing", &SumNode::SetBoundsForTesting)
@@ -131,13 +143,21 @@ PYBIND11_MODULE(cpp_boggle, m) {
           py::arg("num_lets"),
           py::arg("arena")
       )
-      .def("get_children", &SumNode::GetChildren, py::return_value_policy::reference)
+      .def_property_readonly(
+          "children", &SumNode::GetChildrenMap, py::return_value_policy::reference
+      )
       .def("score_with_forces", &SumNode::ScoreWithForces)
-      .def("orderly_bound", &SumNode::OrderlyBound);
+      .def("orderly_bound", &SumNode::OrderlyBound)
+      .def(
+          "subtract_tree",
+          &SumNode::SubtractTree,
+          py::return_value_policy::reference,
+          py::arg("other"),
+          py::arg("arena")
+      );
 
   py::class_<ChoiceNode>(m, "ChoiceNode")
       .def_property_readonly("bound", &ChoiceNode::Bound)
-      .def_property_readonly("cell", &ChoiceNode::Cell)
       .def_property_readonly("child_letters", &ChoiceNode::ChildLetters)
       .def("node_count", &ChoiceNode::NodeCount)
       .def(
