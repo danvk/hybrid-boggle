@@ -186,6 +186,7 @@ def get_breaker(args) -> BreakingBundle:
             dims,
             best_score,
             switchover_score=switchover_score,
+            deduping_force_score=args.deduping_force_score,
             log_breaker_progress=args.log_breaker_progress,
         )
     elif args.breaker == "ibuckets":
@@ -250,6 +251,12 @@ def main():
         help="When to switch from splitting the tree by forcing cells to evaluating the "
         "remaining tree with a DFS. Higher values will use less RAM but potentially run "
         "more slowly. The default is 1.7 * best_score.",
+    )
+    parser.add_argument(
+        "--deduping_force_score",
+        type=int,
+        default=None,
+        help="If the bound is above this value after two letters are forced, perform deduping.",
     )
     parser.add_argument(
         "--breaker",

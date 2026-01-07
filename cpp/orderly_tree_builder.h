@@ -71,6 +71,7 @@ class OrderlyTreeBuilder : public BoardClassBoggler<M, N> {
   vector<WordPath> words_;
   TreeBuilderStats stats_;
   bool is_forced_[M * N];
+  bool has_resorted_;
 
   void DoAllDescents(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
   void DoDFS(int cell, int n, int length, Trie* t, EvalNodeArena& arena);
@@ -118,6 +119,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   for (int cell = 0; cell < M * N; cell++) {
     is_forced_[cell] = dedupe_forced_ && strlen(bd_[cell]) == 1;
   }
+  has_resorted_ = false;
 
   // 20M is large enough to fit the word list for almost all boards.
   // This is ~700MB for a 4x4 board, and only held temporarily.
@@ -171,12 +173,7 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildTree(EvalNodeArena& arena) {
   end = chrono::high_resolution_clock::now();
   duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
   stats.build_s = duration / 1000.0;
-
-  start = end;
-  sort(words_.begin(), words_.end(), WordLessThan);
-  end = chrono::high_resolution_clock::now();
-  // TODO: use chrono::seconds for all durations
-  stats.resort_s = chrono::duration_cast<chrono::seconds>(end - start).count();
+  stats.resort_s = -1.0;
 
   // words_.clear();
   // words_.shrink_to_fit();  // release memory ASAP
@@ -741,6 +738,14 @@ const SumNode* OrderlyTreeBuilder<M, N>::BuildSubtractionTree(
     // Return empty tree if no words (e.g. BuildTree wasn't called or produced nothing)
     auto root = arena.NewSumNodeWithCapacity(0);
     return root;
+  }
+
+  if (!has_resorted_) {
+    auto start = chrono::high_resolution_clock::now();
+    sort(words_.begin(), words_.end(), WordLessThan);
+    auto end = chrono::high_resolution_clock::now();
+    stats_.resort_s = chrono::duration_cast<chrono::seconds>(end - start).count();
+    has_resorted_ = true;
   }
 
   // 1. Build force mask and map
