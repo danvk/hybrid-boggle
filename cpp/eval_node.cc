@@ -422,9 +422,8 @@ void SumNode::SetChildren(uint32_t child_cells, std::span<ChoiceNode* const> chi
   memcpy(&children_[0], children.data(), num_children * sizeof(ChoiceNode*));
 }
 
-vector<const SumNode*> SumNode::OrderlyForceCell(
-    int cell, int num_lets, EvalNodeArena& arena
-) const {
+const SumNode* SumNode::OrderlyForceCell(int cell, int letter, EvalNodeArena& arena)
+    const {
   if (NumChildren() == 0) {
     throw runtime_error("tried to force empty cell");
   }
@@ -448,58 +447,26 @@ vector<const SumNode*> SumNode::OrderlyForceCell(
   }
 
   if (!top_choice) {
-    vector<const SumNode*> out(num_lets, this);
-    return out;
+    return this;
   }
 
   int non_cell_points = points_;
 
-  vector<const SumNode*> out(num_lets, nullptr);
-  uint32_t remaining_bits = top_choice->ChildLetters();
-  while (remaining_bits) {
-    int letter = std::countr_zero(remaining_bits);
-    if (letter < num_lets) {
-      auto child = top_choice->GetChildForLetter(letter);
-      if (child) {
-        out[letter] = merge_orderly_tree_children(
-            child,
-            non_cell_child_cells,
-            non_cell_children,
-            non_cell_children_count,
-            non_cell_points,
-            arena
-        );
-      }
-    }
-    remaining_bits &= remaining_bits - 1;
+  uint32_t child_letters = top_choice->ChildLetters();
+  assert(child_letters & (1 << letter));
+
+  auto child = top_choice->GetChildForLetter(letter);
+  if (child) {
+    return merge_orderly_tree_children(
+        child,
+        non_cell_child_cells,
+        non_cell_children,
+        non_cell_children_count,
+        non_cell_points,
+        arena
+    );
   }
-
-  if (top_choice->NumChildren() < num_lets) {
-    int other_bound = 0;
-
-    for (int i = 0; i < non_cell_children_count; ++i) {
-      auto c = non_cell_children[i];
-      if (c) {
-        other_bound += c->Bound();
-      }
-    }
-    if (other_bound > 0 || non_cell_points > 0) {
-      for (int k = 0; k < num_lets; ++k) {
-        if (!out[k]) {
-          auto point_node = arena.NewSumNodeWithCapacity(non_cell_children_count);
-          point_node->points_ = non_cell_points;
-          point_node->bound_ = non_cell_points + other_bound;
-          vector<ChoiceNode*> tmp(
-              non_cell_children, non_cell_children + non_cell_children_count
-          );
-          point_node->SetChildren(non_cell_child_cells, tmp);
-          out[k] = point_node;
-        }
-      }
-    }
-  }
-
-  return out;
+  return nullptr;
 }
 
 void SumNode::SetBoundsForTesting() {
