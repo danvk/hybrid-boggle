@@ -35,11 +35,11 @@ class SumNode:
     bound: int
     """Upper bound on the number of points available in this subtree."""
 
-    children: list["ChoiceNode"]
+    children: dict[int, "ChoiceNode"]
     """The children to sum, sorted by child.cell."""
 
     def __init__(self):
-        self.children = []
+        self.children = {}
         self.points = 0
         self.bound = 0
 
@@ -50,19 +50,12 @@ class SumNode:
         # See https://www.danvk.org/2025/04/10/following-insight.html#lift--orderly-force--merge
         if not self.children:
             return [self]
-        top_choice = None
-        top_choice_idx = None
-        for i, child in enumerate(self.children):
-            if child.cell == cell:
-                top_choice_idx = i
-                top_choice = child
-                break
+        top_choice = self.children.get(cell)
 
         if top_choice is None:
             return [self] * num_lets  # See comment in C++
 
-        non_cell_children = [*self.children]
-        non_cell_children.pop(top_choice_idx)
+        non_cell_children = {k: v for k, v in self.children.items() if k != cell}
         non_cell_points = self.points
 
         out = [None] * num_lets
@@ -80,7 +73,7 @@ class SumNode:
 
         if top_choice.child_letters.bit_count() < num_lets:
             # TODO: if there's >1 of these, this could result in a lot of duplicate work.
-            other_bound = sum(c.bound for c in non_cell_children)
+            other_bound = sum(c.bound for c in non_cell_children.values())
             if other_bound > 0 or non_cell_points > 0:
                 for i, child in enumerate(out):
                     if not child:
@@ -116,9 +109,9 @@ class SumNode:
 
         def advance(node: Self, sums: list[int]):
             num_visits[node] += 1
-            for child in node.children:
-                stacks[child.cell].append(child)
-                sums[child.cell] += child.bound
+            for cell, child in node.children.items():
+                stacks[cell].append(child)
+                sums[cell] += child.bound
             return node.points
 
         def record_failure(bound: int):
@@ -175,20 +168,21 @@ class SumNode:
     # --- Methods below here are only for testing / debugging and may not have C++ equivalents. ---
 
     def get_children(self):
-        return self.children
+        return self.children.values()
 
     def node_count(self):
-        return 1 + sum(child.node_count() for child in self.children if child)
+        return 1 + sum(child.node_count() for child in self.children.values() if child)
 
     def word_count(self):
         return (1 if self.points else 0) + sum(
-            child.word_count() for child in self.children
+            child.word_count() for child in self.children.values()
         )
 
     def score_with_forces(self, forces: list[int]) -> int:
         """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
         return self.points + sum(
-            child.score_with_forces(forces) if child else 0 for child in self.children
+            child.score_with_forces(cell, forces) if child else 0
+            for cell, child in self.children.items()
         )
 
     def assert_orderly(self, split_order: Sequence[int], max_index=None):
@@ -198,11 +192,12 @@ class SumNode:
         it must be that index(split_order, i) > index(split_order, j).
         """
         # sum node children must be sorted by cell (not split_order)
-        for a, b in zip(self.children, self.children[1:]):
-            assert a.cell < b.cell
-        for child in self.children:
+        children = sorted(self.children.items())
+        for (cell_a, _), (cell_b, _) in zip(children, children[1:]):
+            assert cell_a < cell_b, f"{cell_a} not < {cell_b}"
+        for cell, child in self.children.items():
             assert child is not None
-            child.assert_orderly(split_order, max_index)
+            child.assert_orderly(cell, split_order, max_index)
 
     def assert_invariants(self, solver):
         """Ensure the tree is well-formed. Some desirable properties:
@@ -213,17 +208,14 @@ class SumNode:
         - no duplicate choice children for sum nodes
         """
         bound = self.points
-        seen_choices = set[int]()
-        for child in self.children:
+        for child in self.children.values():
             assert child is not None
             bound += child.bound
-            assert child.cell not in seen_choices
-            seen_choices.add(child.cell)
-        assert bound == self.bound
+        assert bound == self.bound, f"{bound} != {self.bound}"
 
-        for child in self.children:
+        for cell, child in self.children.items():
             assert child is not None
-            child.assert_invariants(solver)
+            child.assert_invariants(cell, solver)
 
     def to_string(self, cells: list[str]):
         return eval_node_to_string(self, cells)
@@ -236,7 +228,11 @@ class SumNode:
         if self.points:
             out["points"] = self.points
         if self.children:
-            out["children"] = [c.to_json(max_depth - 1) for c in self.children if c]
+            out["children"] = [
+                c.to_json(cell, max_depth - 1)
+                for cell, c in sorted(self.children.items())
+                if c
+            ]
         return out
 
     def add_word_with_points_for_testing(
@@ -251,15 +247,12 @@ class SumNode:
         word_node.points += points
 
     def set_bounds_for_testing(self):
-        for c in self.children:
+        for c in self.children.values():
             c.set_bounds_for_testing()
-        self.bound = self.points + sum(c.bound for c in self.children)
+        self.bound = self.points + sum(c.bound for c in self.children.values())
 
 
 class ChoiceNode:
-    cell: int
-    """Which cell does this represent on the Boggle board?"""
-
     bound: int
     """Upper bound on the number of points available in this subtree."""
 
@@ -308,11 +301,14 @@ class ChoiceNode:
     def set_bounds_for_testing(self):
         for c in self.children:
             c.set_bounds_for_testing()
-        self.bound = max(c.bound for c in self.children)
+        if self.children:
+            self.bound = max(c.bound for c in self.children)
+        else:
+            self.bound = 0
 
-    def score_with_forces(self, forces: list[int]) -> int:
+    def score_with_forces(self, cell: int, forces: list[int]) -> int:
         """Evaluate a tree with some choices forced. Use -1 to not force a choice."""
-        force = forces[self.cell]
+        force = forces[cell]
         if force >= 0:
             child = self.get_child_for_letter(force)
             if child:
@@ -327,8 +323,8 @@ class ChoiceNode:
             else 0
         )
 
-    def assert_orderly(self, split_order: Sequence[int], max_index=None):
-        idx = split_order.index(self.cell)
+    def assert_orderly(self, cell: int, split_order: Sequence[int], max_index=None):
+        idx = split_order.index(cell)
         if max_index is not None:
             assert idx > max_index
         max_index = idx
@@ -336,7 +332,7 @@ class ChoiceNode:
             if child:
                 child.assert_orderly(split_order, max_index)
 
-    def assert_invariants(self, solver):
+    def assert_invariants(self, cell: int, solver):
         # Verify bitmask consistency
         expected_count = self.child_letters.bit_count()
         assert len(self.children) == expected_count
@@ -354,10 +350,10 @@ class ChoiceNode:
         # Call this on SumNode instead.
         raise NotImplementedError()
 
-    def to_json(self, max_depth=100):
+    def to_json(self, cell: int, max_depth=100):
         out = {
             "type": "CHOICE",
-            "cell": self.cell,
+            "cell": cell,
             "bound": self.bound,
             "child_letters": self.child_letters,
         }
@@ -383,18 +379,20 @@ def _sum_to_list(
     if prev_cell is None or prev_letter is None:
         line = f"{indent}ROOT ({node.bound})"
     else:
-        cell = cells[prev_cell][prev_letter]
-        line = f"{indent}{cell} ({prev_cell}={prev_letter} {node.points}/{node.bound})"
+        cell_char = cells[prev_cell][prev_letter]
+        line = f"{indent}{cell_char} ({prev_cell}={prev_letter} {node.points}/{node.bound})"
     lines.append(line)
-    for child in node.get_children():
+    for cell, child in sorted(node.children.items()):
         if child:
-            _choice_to_list(child, cells, lines, " " + indent)
+            _choice_to_list(child, cell, cells, lines, " " + indent)
         else:
             print("null!")
 
 
-def _choice_to_list(node: ChoiceNode, cells: list[str], lines: list[str], indent=""):
-    line = f"{indent}CHOICE ({node.cell} <{node.bound}) points=0"
+def _choice_to_list(
+    node: ChoiceNode, cell: int, cells: list[str], lines: list[str], indent=""
+):
+    line = f"{indent}CHOICE ({cell} <{node.bound}) points=0"
     lines.append(line)
     # Iterate through children using the bitmask
     child_index = 0
@@ -409,7 +407,7 @@ def _choice_to_list(node: ChoiceNode, cells: list[str], lines: list[str], indent
                         cells,
                         lines,
                         " " + indent,
-                        prev_cell=node.cell,
+                        prev_cell=cell,
                         prev_letter=letter,
                     )
                 else:
@@ -443,14 +441,14 @@ def split_orderly_tree(tree: SumNode, arena: PyArena):
 
     Points on the input tree are put on the output tree.
     """
-    top_choice = tree.children[0]
+    children = sorted(tree.children.items())
+    top_cell, top_choice = children[0]
 
-    children = tree.children[1:]
     n = SumNode()
     arena.add_node(n)
-    n.children = children
+    n.children = dict(children[1:])
     n.points = tree.points
-    n.bound = n.points + sum(child.bound for child in children if child)
+    n.bound = n.points + sum(child.bound for child in n.children.values() if child)
     return top_choice, n
 
 
@@ -460,69 +458,40 @@ def merge_orderly_tree(a: SumNode, b: SumNode, arena: PyArena) -> SumNode:
 
 
 def merge_orderly_tree_children(
-    a: SumNode, bc: Sequence[ChoiceNode], b_points: int, arena: PyArena
+    a: SumNode, bc: dict[int, ChoiceNode], b_points: int, arena: PyArena
 ) -> SumNode:
-    # TODO: it may be safe to merge bc in-place into a and avoid an allocation.
-    #       might need to be careful with the out.append(b) case, though.
     in_a = a
-
-    i_a = 0
-    i_b = 0
     ac = a.children
-    a_n = len(ac)
-    b_n = len(bc)
-    out = []
-    while i_a < a_n and i_b < b_n:
-        a = ac[i_a]
-        if not a:
-            i_a += 1
-            continue
-        b = bc[i_b]
-        if not b:
-            i_b += 1
-            continue
-        if a.cell < b.cell:
-            out.append(a)
-            i_a += 1
-        elif b.cell < a.cell:
-            out.append(b)
-            i_b += 1
-        else:
-            out.append(merge_orderly_choice_children(a, b, arena))
-            i_a += 1
-            i_b += 1
 
-    while i_a < a_n:
-        a = ac[i_a]
-        if a:
-            out.append(a)
-        i_a += 1
+    out = {}
+    all_keys = sorted(list(ac.keys() | bc.keys()))
 
-    while i_b < b_n:
-        b = bc[i_b]
-        if b:
-            out.append(b)
-        i_b += 1
+    for cell in all_keys:
+        in_a_cell = cell in ac
+        in_b_cell = cell in bc
+        if in_a_cell and in_b_cell:
+            out[cell] = merge_orderly_choice_children(ac[cell], bc[cell], cell, arena)
+        elif in_a_cell:
+            out[cell] = ac[cell]
+        elif in_b_cell:
+            out[cell] = bc[cell]
 
     n = SumNode()
     n.children = out
     n.points = in_a.points + b_points
-    n.bound = n.points + sum(child.bound for child in n.children)
+    n.bound = n.points + sum(child.bound for child in n.children.values())
     arena.add_node(n)
     return n
 
 
 def merge_orderly_choice_children(
-    a: ChoiceNode, b: ChoiceNode, arena: PyArena
+    a: ChoiceNode, b: ChoiceNode, cell: int, arena: PyArena
 ) -> ChoiceNode:
     """Merge two orderly choice nodes for the same cell."""
-    assert a.cell == b.cell
-
     # Compute the union of child letters from both nodes
     merged_letters = a.child_letters | b.child_letters
 
     n = ChoiceNode()
-    n.cell = a.cell
     n.child_letters = merged_letters
     n.bound = 0
 

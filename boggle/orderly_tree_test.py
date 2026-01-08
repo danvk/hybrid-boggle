@@ -173,14 +173,15 @@ def test_orderly_merge():
 
     assert isinstance(t, SumNode)
     assert len(t.children) == 2
+    assert 0 in t.children
+    assert 1 in t.children
     t0 = t.children[0]
     t1 = t.children[1]
     assert isinstance(t0, ChoiceNode)
-    assert t0.cell == 0
+    assert isinstance(t1, ChoiceNode)
     assert t0.bound == snapshot(16)
     assert len(t0.children) == 2
     assert isinstance(t1, ChoiceNode)
-    assert t1.cell == 1
     assert t1.bound == 5
 
     choice0, tree1 = split_orderly_tree(t, arena)
@@ -188,7 +189,7 @@ def test_orderly_merge():
     assert tree1.bound == 5
     tree1.assert_orderly(split_order)
     for child in choice0.children:
-        child.assert_orderly(split_order)
+        child.assert_orderly(split_order, 0)
 
     m0 = merge_orderly_tree(choice0.children[0], tree1, arena)
     assert m0.bound == snapshot(21)

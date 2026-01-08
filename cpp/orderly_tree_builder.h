@@ -511,16 +511,20 @@ SumNode* OrderlyTreeBuilder<M, N>::RangeToSumNode(
 
   auto node = arena.NewSumNodeWithCapacity(ranges.size());
   node->bound_ = node->points_ = points;
-  node->num_children_ = ranges.size();
 
+  uint32_t child_cells = 0;
+  vector<ChoiceNode*> children;
+  children.reserve(ranges.size());
   for (int i = 0; i < ranges.size(); i++) {
     const auto& [cell, range_start, range_end] = ranges[i];
+    child_cells |= (1 << (cell - 1));
 
     auto child =
         RangeToChoiceNode(cell - 1, words, {range_start, range_end}, depth, arena);
-    node->children_[i] = child;
+    children.push_back(child);
     node->bound_ += child->bound_;
   }
+  node->SetChildren(child_cells, children);
   return node;
 }
 
@@ -539,7 +543,6 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
   auto ranges = equal_ranges(words, idx, start, end);
 
   auto node = arena.NewChoiceNodeWithCapacity(ranges.size());
-  node->cell_ = cell;
   node->bound_ = 0;
   uint32_t letter_mask = 0;
   for (int i = 0; i < ranges.size(); i++) {
@@ -547,7 +550,7 @@ ChoiceNode* OrderlyTreeBuilder<M, N>::RangeToChoiceNode(
     letter_mask |= (1 << (letter - 1));
     auto child = RangeToSumNode(words, {range_start, range_end}, depth + 1, arena);
     node->children_[i] = child;
-    node->bound_ = max(node->bound_, child->bound_);
+    node->bound_ = max(node->bound_, (uint32_t)child->bound_);
   }
   node->child_letters_ = letter_mask;
   return node;
