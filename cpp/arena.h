@@ -71,7 +71,6 @@ T* EvalNodeArena::NewNodeWithCapacity(uint8_t capacity) {
   T* n = new (buf) T;
   // TODO: update tip_ to enforce alignment
   tip_ += size;
-  n->capacity_ = capacity;
   return n;
 }
 

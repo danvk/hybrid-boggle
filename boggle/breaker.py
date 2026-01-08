@@ -214,30 +214,22 @@ class HybridTreeBreaker:
 
         start_s = time.time()
         self.details_.n_force += 1
-        arena_level = arena.save_level()
-        trees = tree.orderly_force_cell(
-            cell,
-            num_lets,
-            arena,
-        )
-        self.details_.secs_by_level[level] += time.time() - start_s
-        # self.details_.bounds[level] = tree.bound
-
-        if not isinstance(trees, list):
-            print("choice was not really a choice")
-            tagged_trees = [(0, trees)]
-        else:
-            assert len(trees) == num_lets
-            tagged_trees = enumerate(trees)
-
         choices.append(None)
-        for letter, tree in tagged_trees:
-            if not tree:
+        for letter in range(0, num_lets):
+            arena_level = arena.save_level()
+            subtree = tree.orderly_force_cell(
+                cell,
+                letter,
+                arena,
+            )
+            self.details_.secs_by_level[level] += time.time() - start_s
+
+            if not subtree:
                 continue  # this can happen on truly dead-end paths
             choices[-1] = (cell, letter)
-            self.attack_tree(tree, level + 1, choices, arena)
+            self.attack_tree(subtree, level + 1, choices, arena)
+            arena.reset_level(arena_level)
         choices.pop()
-        arena.reset_level(arena_level)
 
     def switch_to_score(
         self, tree: SumNode, level: int, choices: list[tuple[int, int]]

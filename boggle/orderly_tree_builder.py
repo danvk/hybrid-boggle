@@ -20,7 +20,7 @@ from boggle.dimensional_bogglers import (
     LEN_TO_DIMS,
     cpp_orderly_tree_builder,
 )
-from boggle.eval_node import SumNode, countr_zero
+from boggle.eval_node import ChoiceNode, SumNode, countr_zero
 from boggle.make_dot import to_dot
 from boggle.split_order import SPLIT_ORDER
 from boggle.trie import PyTrie, make_id_lookup_table, make_lookup_table
@@ -204,10 +204,10 @@ def range_to_sum_node(words: Sequence[WordPath], depth: int, arena: PyArena) -> 
         range_to_choice_node(cell, words[start : end + 1], depth, arena)
         for cell, start, end in zip(child_cells, child_range_starts, child_range_ends)
     ]
-    node = arena.new_sum_node_with_capacity(len(children))
+    node = SumNode()
     node.points = points
-    node.children = children
-    node.bound = node.points + sum(child.bound for child in node.children)
+    node.children = {cell: child for cell, child in zip(child_cells, children)}
+    node.bound = node.points + sum(child.bound for child in node.children.values())
     return node
 
 
@@ -238,11 +238,10 @@ def range_to_choice_node(
     for letter in child_letters:
         letter_mask |= 1 << letter
 
-    node = arena.new_choice_node_with_capacity(len(children))
-    node.cell = cell
+    node = ChoiceNode()
     node.child_letters = letter_mask
     node.children = children
-    node.bound = max(child.bound for child in node.children)
+    node.bound = max(child.bound for child in node.children) if children else 0
     return node
 
 

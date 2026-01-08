@@ -338,7 +338,11 @@ def main():
     indices: list[int | str]
     needs_canonical_filter = False
     if args.board_ids:
-        indices = [int(x) for x in args.board_ids.split(",")]
+        if "," not in args.board_ids and os.path.exists(args.board_ids):
+            indices = [int(x) for x in open(args.board_ids)]
+            print(f"Read {len(indices)} from {args.board_ids}")
+        else:
+            indices = [int(x) for x in args.board_ids.split(",")]
     elif args.break_class:
         break_class = args.break_class
         assert len(break_class.split(" ")) == w * h
